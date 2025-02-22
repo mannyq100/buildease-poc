@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80">
+  <defs>
+    <!-- Ultra Vibrant Gradients -->
+    <linearGradient id="ultraGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e40af" /> <!-- Blue-800 -->
+      <stop offset="50%" style="stop-color:#3b82f6" /> <!-- Blue-500 -->
+      <stop offset="100%" style="stop-color:#60a5fa" /> <!-- Blue-400 -->
+    </linearGradient>
+    
+    <!-- Accent Gradient -->
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#2563eb" /> <!-- Blue-600 -->
+      <stop offset="100%" style="stop-color:#93c5fd" /> <!-- Blue-300 -->
+    </linearGradient>
+    
+    <!-- Text Bold Gradient -->
+    <linearGradient id="textBoldGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#1e3a8a" /> <!-- Blue-900 -->
+      <stop offset="100%" style="stop-color:#3b82f6" /> <!-- Blue-500 -->
+    </linearGradient>
+    
+    <!-- 3D Effect Shadow -->
+    <filter id="shadow3D" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.25"/>
+    </filter>
+    
+    <!-- Intense Glow -->
+    <filter id="intenseGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background Shape with 3D Effect -->
+  <rect x="5" y="10" width="60" height="60" rx="15" fill="white" filter="url(#shadow3D)" />
+  
+  <!-- Ultra Modern Building Icon -->
+  <g transform="translate(12, 14)">
+    <!-- Dynamic Building Cluster -->
+    <path 
+      d="M23 0 L46 35 L0 35 L23 0 Z" 
+      fill="url(#ultraGradient)" 
+      filter="url(#intenseGlow)"
+    />
+    
+    <!-- Modern Skyscraper -->
+    <rect 
+      x="15" 
+      y="11" 
+      width="16" 
+      height="33" 
+      rx="2"
+      fill="#ffffff"
+      stroke="url(#accentGradient)"
+      stroke-width="1"
+    />
+    
+    <!-- Windows with Gradient -->
+    <rect x="18" y="15" width="10" height="2.5" rx="1" fill="url(#accentGradient)" />
+    <rect x="18" y="20" width="10" height="2.5" rx="1" fill="url(#accentGradient)" />
+    <rect x="18" y="25" width="10" height="2.5" rx="1" fill="url(#accentGradient)" />
+    <rect x="18" y="30" width="10" height="2.5" rx="1" fill="url(#accentGradient)" />
+    <rect x="18" y="35" width="10" height="2.5" rx="1" fill="url(#accentGradient)" />
+    
+    <!-- Dynamic Base -->
+    <rect 
+      x="0" 
+      y="44" 
+      width="46" 
+      height="4" 
+      rx="2"
+      fill="url(#ultraGradient)"
+    />
+    
+    <!-- Accent Circle -->
+    <circle 
+      cx="38" 
+      cy="15" 
+      r="6" 
+      fill="#ffffff"
+      stroke="url(#ultraGradient)"
+      stroke-width="2"
+    />
+    
+    <!-- Geometric Accent -->
+    <polygon
+      points="38,12 40,15 38,18 36,15"
+      fill="url(#ultraGradient)"
+    />
+  </g>
+
+  <!-- Brand Typography with 3D Effect -->
+  <g transform="translate(78, 43)" filter="url(#shadow3D)">
+    <!-- Brand Name -->
+    <text 
+      font-family="'Montserrat', 'Segoe UI', sans-serif" 
+      font-weight="800" 
+      font-size="28"
+      letter-spacing="-0.3">
+      <tspan fill="url(#textBoldGradient)">Build</tspan><tspan fill="#3b82f6">Ease</tspan>
+    </text>
+    
+    <!-- Tagline in Pascal Case -->
+    <text 
+      x="3" 
+      y="18" 
+      font-family="'Montserrat', 'Segoe UI', sans-serif" 
+      font-size="11"
+      font-weight="600"
+      letter-spacing="0.5"
+      fill="#3b82f6">
+      Construction Management
+    </text>
+  </g>
+  
+  <!-- Dynamic Decorative Elements -->
+  <g>
+    <!-- Modern Separator Line -->
+    <path
+      d="M72 25 Q72 32, 72 40 T72 55"
+      stroke="url(#accentGradient)"
+      stroke-width="2"
+      stroke-linecap="round"
+      filter="url(#intenseGlow)"
+    />
+    
+    <!-- Accent Dots -->
+    <circle cx="72" cy="25" r="2.5" fill="url(#ultraGradient)" />
+    <circle cx="72" cy="55" r="2.5" fill="url(#ultraGradient)" />
+    
+    <!-- Dynamic Visual Elements -->
+    <circle cx="225" cy="25" r="3" fill="url(#accentGradient)" opacity="0.8" />
+    <circle cx="232" cy="35" r="2" fill="url(#accentGradient)" opacity="0.6" />
+    <circle cx="224" cy="45" r="2.5" fill="url(#accentGradient)" opacity="0.7" />
+  </g>
+</svg>

@@ -35,207 +35,166 @@ const BuildEaseHomeMockup = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Header */}
-      <header className="bg-white border-b">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center">
-              <Home className="w-8 h-8 text-blue-600" />
-              <span className="ml-2 text-xl font-bold">BuildEase</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon">
-                <Bell className="w-5 h-5" />
-              </Button>
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                <span className="text-sm font-medium text-blue-600">JD</span>
-              </div>
-            </div>
+    <main className="max-w-6xl mx-auto px-4 py-6">
+      <Tabs defaultValue="dashboard" className="space-y-6">
+        <div className="flex justify-between items-center">
+          <TabsList>
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="projects">Projects</TabsTrigger>
+          </TabsList>
+          <div className="flex items-center space-x-2">
+            <Button variant="outline" className="space-x-2">
+              <Plus className="w-4 h-4" />
+              <span>Add Material</span>
+            </Button>
+            <Button className="space-x-2" onClick={()=> navigate("create-project")}>
+              <Plus className="w-4 h-4" />
+              <span>New Project</span>
+            </Button>
           </div>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-4 py-6">
-        <Tabs defaultValue="dashboard" className="space-y-6">
-          <div className="flex justify-between items-center">
-            <TabsList>
-              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-              <TabsTrigger value="projects">Projects</TabsTrigger>
-            </TabsList>
-            <div className="flex items-center space-x-2">
-              <Button variant="outline" className="space-x-2">
-                <Plus className="w-4 h-4" />
-                <span>Add Material</span>
-              </Button>
-              <Button className="space-x-2" onClick={()=> navigate("create-project")}>
-                <Plus className="w-4 h-4" />
-                <span>New Project</span>
-              </Button>
-            </div>
+        <TabsContent value="dashboard" className="space-y-6">
+          {/* Quick Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-2">
+                  <Package className="w-5 h-5 text-blue-600" />
+                  <span className="font-medium">Active Projects</span>
+                </div>
+                <div className="mt-2">
+                  <span className="text-2xl font-bold">2</span>
+                  <span className="text-sm text-gray-600 ml-2">In Progress</span>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-2">
+                  <TrendingUp className="w-5 h-5 text-green-600" />
+                  <span className="font-medium">Total Budget</span>
+                </div>
+                <div className="mt-2">
+                  <span className="text-2xl font-bold">$165,000</span>
+                  <span className="text-sm text-gray-600 ml-2">Allocated</span>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-2">
+                  <Users className="w-5 h-5 text-purple-600" />
+                  <span className="font-medium">Team Members</span>
+                </div>
+                <div className="mt-2">
+                  <span className="text-2xl font-bold">8</span>
+                  <span className="text-sm text-gray-600 ml-2">Active</span>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
-          <TabsContent value="dashboard" className="space-y-6">
-            {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-2">
-                    <Package className="w-5 h-5 text-blue-600" />
-                    <span className="font-medium">Active Projects</span>
-                  </div>
-                  <div className="mt-2">
-                    <span className="text-2xl font-bold">2</span>
-                    <span className="text-sm text-gray-600 ml-2">In Progress</span>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-2">
-                    <TrendingUp className="w-5 h-5 text-green-600" />
-                    <span className="font-medium">Total Budget</span>
-                  </div>
-                  <div className="mt-2">
-                    <span className="text-2xl font-bold">$165,000</span>
-                    <span className="text-sm text-gray-600 ml-2">Allocated</span>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-2">
-                    <Users className="w-5 h-5 text-purple-600" />
-                    <span className="font-medium">Team Members</span>
-                  </div>
-                  <div className="mt-2">
-                    <span className="text-2xl font-bold">8</span>
-                    <span className="text-sm text-gray-600 ml-2">Active</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Active Projects */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Active Projects</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <ProjectCard 
-                  name="Villa Construction"
-                  phase="Foundation"
-                  progress={65}
-                  budget="$120,000"
-                  endDate="Aug 2024"
-                  navigate={navigate}
-                />
-                <ProjectCard 
-                  name="Office Renovation"
-                  phase="Planning"
-                  progress={30}
-                  budget="$45,000"
-                  endDate="Oct 2024"
-                  navigate={navigate}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Recent Activity */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <ActivityItem 
-                  icon={<Package className="w-5 h-5" />}
-                  title="Material Delivered"
-                  description="20 bags of cement delivered"
-                  time="2 hours ago"
-                  project="Villa Construction"
-                />
-                <ActivityItem 
-                  icon={<FileText className="w-5 h-5" />}
-                  title="Progress Photo Added"
-                  description="Foundation work progress"
-                  time="5 hours ago"
-                  project="Villa Construction"
-                />
-                <ActivityItem 
-                  icon={<FileText className="w-5 h-5" />}
-                  title="Document Updated"
-                  description="Updated construction timeline"
-                  time="Yesterday"
-                  project="Office Renovation"
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="projects" className="space-y-6">
-            {/* Search and Filter */}
-            <div className="flex space-x-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <Input className="pl-10" placeholder="Search projects..." />
-              </div>
-              <Button variant="outline" size="icon">
-                <Filter className="w-5 h-5" />
-              </Button>
-            </div>
-
-            {/* Projects Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <ProjectDetailCard 
+          {/* Active Projects */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Active Projects</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ProjectCard 
                 name="Villa Construction"
-                type="Residential"
                 phase="Foundation"
                 progress={65}
                 budget="$120,000"
-                spent="$52,450"
-                team={8}
-                startDate="Jan 15, 2024"
                 endDate="Aug 2024"
                 navigate={navigate}
               />
-              <ProjectDetailCard 
+              <ProjectCard 
                 name="Office Renovation"
-                type="Commercial"
                 phase="Planning"
                 progress={30}
                 budget="$45,000"
-                spent="$12,500"
-                team={5}
-                startDate="Feb 1, 2024"
                 endDate="Oct 2024"
                 navigate={navigate}
               />
-            </div>
-          </TabsContent>
-        </Tabs>
-      </main>
+            </CardContent>
+          </Card>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 w-full bg-white border-t md:hidden">
-        <div className="flex justify-around p-4">
-          <Button variant="ghost" size="icon">
-            <Home className="w-5 h-5" />
-          </Button>
-          <Button variant="ghost" size="icon">
-            <Package className="w-5 h-5" />
-          </Button>
-          <Button variant="ghost" size="icon">
-            <Users className="w-5 h-5" />
-          </Button>
-          <Button variant="ghost" size="icon">
-            <Settings className="w-5 h-5" />
-          </Button>
-        </div>
-      </nav>
-    </div>
+          {/* Recent Activity */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ActivityItem 
+                icon={<Package className="w-5 h-5" />}
+                title="Material Delivered"
+                description="20 bags of cement delivered"
+                time="2 hours ago"
+                project="Villa Construction"
+              />
+              <ActivityItem 
+                icon={<FileText className="w-5 h-5" />}
+                title="Progress Photo Added"
+                description="Foundation work progress"
+                time="5 hours ago"
+                project="Villa Construction"
+              />
+              <ActivityItem 
+                icon={<FileText className="w-5 h-5" />}
+                title="Document Updated"
+                description="Updated construction timeline"
+                time="Yesterday"
+                project="Office Renovation"
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="projects" className="space-y-6">
+          {/* Search and Filter */}
+          <div className="flex space-x-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Input className="pl-10" placeholder="Search projects..." />
+            </div>
+            <Button variant="outline" size="icon">
+              <Filter className="w-5 h-5" />
+            </Button>
+          </div>
+
+          {/* Projects Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ProjectDetailCard 
+              name="Villa Construction"
+              type="Residential"
+              phase="Foundation"
+              progress={65}
+              budget="$120,000"
+              spent="$52,450"
+              team={8}
+              startDate="Jan 15, 2024"
+              endDate="Aug 2024"
+              navigate={navigate}
+            />
+            <ProjectDetailCard 
+              name="Office Renovation"
+              type="Commercial"
+              phase="Planning"
+              progress={30}
+              budget="$45,000"
+              spent="$12,500"
+              team={5}
+              startDate="Feb 1, 2024"
+              endDate="Oct 2024"
+              navigate={navigate}
+            />
+          </div>
+        </TabsContent>
+      </Tabs>
+    </main>
   );
 };
 

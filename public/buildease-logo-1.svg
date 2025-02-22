@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80">
+  <defs>
+    <!-- Vibrant Primary Gradient -->
+    <linearGradient id="primaryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e3a8a" /> <!-- Blue-900 -->
+      <stop offset="100%" style="stop-color:#3b82f6" /> <!-- Blue-500 -->
+    </linearGradient>
+    
+    <!-- Vibrant Secondary Gradient -->
+    <linearGradient id="secondaryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2563eb" /> <!-- Blue-600 -->
+      <stop offset="100%" style="stop-color:#60a5fa" /> <!-- Blue-400 -->
+    </linearGradient>
+    
+    <!-- Text Gradient -->
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#1e3a8a" /> <!-- Blue-900 -->
+      <stop offset="100%" style="stop-color:#2563eb" /> <!-- Blue-600 -->
+    </linearGradient>
+    
+    <!-- Enhanced Shadow -->
+    <filter id="enhancedShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.2"/>
+    </filter>
+    
+    <!-- Glow Effect -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background Element -->
+  <rect x="10" y="15" width="50" height="50" rx="8" fill="white" filter="url(#enhancedShadow)" />
+  
+  <!-- Modern Building Icon -->
+  <g transform="translate(15, 17)">
+    <!-- Main Building -->
+    <path 
+      d="M0 45 L20 5 L40 45 Z" 
+      fill="url(#primaryGradient)" 
+      filter="url(#glow)"
+    />
+    
+    <!-- Modern Building Accent -->
+    <rect 
+      x="12" 
+      y="18" 
+      width="16" 
+      height="27" 
+      fill="url(#secondaryGradient)"
+    />
+    
+    <!-- Windows -->
+    <rect x="16" y="22" width="8" height="3" rx="1" fill="white" opacity="0.8" />
+    <rect x="16" y="28" width="8" height="3" rx="1" fill="white" opacity="0.8" />
+    <rect x="16" y="34" width="8" height="3" rx="1" fill="white" opacity="0.8" />
+    <rect x="16" y="40" width="8" height="3" rx="1" fill="white" opacity="0.8" />
+    
+    <!-- Building Base -->
+    <rect 
+      x="0" 
+      y="45" 
+      width="40" 
+      height="3" 
+      fill="url(#secondaryGradient)"
+      filter="url(#glow)"
+    />
+    
+    <!-- Design Accent -->
+    <circle 
+      cx="35" 
+      cy="15" 
+      r="5" 
+      fill="url(#secondaryGradient)" 
+    />
+  </g>
+
+  <!-- Text Elements -->
+  <g transform="translate(75, 45)" filter="url(#enhancedShadow)">
+    <!-- Brand Name -->
+    <text 
+      font-family="'Poppins', 'Segoe UI', 'Arial', sans-serif" 
+      font-weight="800" 
+      font-size="28"
+      letter-spacing="-0.5">
+      <tspan fill="url(#textGradient)">BuildEase</tspan>
+    </text>
+    
+    <!-- Tagline in Pascal Case -->
+    <text 
+      x="2" 
+      y="17" 
+      font-family="'Poppins', 'Segoe UI', 'Arial', sans-serif" 
+      font-size="11"
+      font-weight="500"
+      letter-spacing="0.3"
+      fill="#3b82f6">
+      Construction Management
+    </text>
+  </g>
+  
+  <!-- Decorative Elements -->
+  <g>
+    <!-- Separator Line -->
+    <line 
+      x1="70" 
+      y1="28" 
+      x2="70" 
+      y2="52" 
+      stroke="url(#secondaryGradient)" 
+      stroke-width="2" 
+      stroke-linecap="round"
+    />
+    
+    <!-- Accent Dots -->
+    <circle cx="70" cy="28" r="2" fill="url(#primaryGradient)" />
+    <circle cx="70" cy="52" r="2" fill="url(#primaryGradient)" />
+    
+    <!-- Extra Pop Elements -->
+    <circle cx="225" cy="30" r="3" fill="url(#secondaryGradient)" opacity="0.7" />
+    <circle cx="220" cy="40" r="2" fill="url(#secondaryGradient)" opacity="0.5" />
+    <circle cx="227" cy="50" r="1.5" fill="url(#secondaryGradient)" opacity="0.3" />
+  </g>
+</svg>
