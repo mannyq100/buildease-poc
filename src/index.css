@@ -1,39 +1,61 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
+    /* Base colors */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 222 84% 4.9%;
 
+    /* Card styles */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222 84% 4.9%;
+    --card-border: 215 32% 92%;
+    --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 
+    /* Popover styles */
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 222 84% 4.9%;
 
-    --primary: 221.2 83.2% 53.3%;
+    /* Primary brand colors - Enhanced blue */
+    --primary: 221 83% 53.3%;
     --primary-foreground: 210 40% 98%;
+    --primary-lighter: 217 91% 60%;
+    --primary-darker: 221 80% 45%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary colors */
+    --secondary: 214 32% 91%;
+    --secondary-foreground: 222 47% 11.2%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted elements */
+    --muted: 214 32% 91%;
+    --muted-foreground: 215 16% 47%;
 
+    /* Accent colors */
     --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent-foreground: 222 47% 11.2%;
 
-    --destructive: 0 84.2% 60.2%;
+    /* Destructive colors */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    /* Success colors */
+    --success: 142 72% 29%;
+    --success-foreground: 210 40% 98%;
+    
+    /* Warning colors */
+    --warning: 45 93% 47%;
+    --warning-foreground: 222 47% 11.2%;
 
-    --radius: 0.75rem;
+    /* Border and input styles */
+    --border: 215 32% 92%;
+    --input: 215 32% 92%;
+    --ring: 221 83% 53.3%;
+
+    /* Radius for rounded corners */
+    --radius: 0.5rem;
   }
 }
 
@@ -45,6 +67,22 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-medium tracking-tight;
+  }
+
+  h1 {
+    @apply text-3xl sm:text-4xl;
+  }
+
+  h2 {
+    @apply text-2xl sm:text-3xl;
+  }
+
+  h3 {
+    @apply text-xl sm:text-2xl;
+  }
 
   /* Smooth scrolling and better tap highlights */
   html {
@@ -54,7 +92,7 @@
 
   /* Better focus styles */
   :focus-visible {
-    @apply outline-none ring-2 ring-ring ring-offset-2;
+    @apply outline-none ring-2 ring-primary/50 ring-offset-2;
   }
 
   /* Custom scrollbar */
@@ -67,22 +105,38 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-gray-300 rounded-full;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-gray-400;
+    @apply bg-gray-300 rounded-full hover:bg-gray-400 transition-colors;
   }
 }
 
-/* Smooth transitions for form elements */
+/* Custom component styles */
 @layer components {
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-md;
+  }
+  
   .input-transition {
-    @apply transition-all duration-200 ease-in-out;
+    @apply transition-all duration-200 ease-in-out focus:ring-2 focus:ring-primary/30;
   }
 
   .button-transition {
     @apply transform transition-all duration-200 ease-in-out active:scale-95;
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary to-primary-lighter bg-clip-text text-transparent;
+  }
+  
+  .gradient-bg {
+    @apply bg-gradient-to-r from-primary to-primary-lighter text-primary-foreground;
+  }
+  
+  .card-gradient {
+    @apply bg-gradient-to-b from-white to-gray-50;
+  }
+  
+  .header-gradient {
+    @apply bg-gradient-to-b from-white via-white to-white/50 backdrop-blur-md;
   }
 }
 
@@ -94,6 +148,10 @@
 
   .animate-fade-in {
     animation: fadeIn 0.5s ease-out;
+  }
+  
+  .animate-pulse-subtle {
+    animation: pulseShadow 2s ease-in-out infinite;
   }
 }
 
@@ -114,5 +172,14 @@
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes pulseShadow {
+  0%, 100% {
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
   }
 }
