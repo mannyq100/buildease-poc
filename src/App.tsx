@@ -15,7 +15,9 @@ import Team from "./pages/Team";
 import Schedule from "./pages/Schedule";
 import Materials from "./pages/Materials";
 import Documents from "./pages/Documents";
+import Expenses from "./pages/Expenses";
 import UIComponentsDemo from "./pages/UIComponentsDemo";
+import Projects from "./pages/Projects";
 
 const queryClient = new QueryClient();
 
@@ -39,10 +41,11 @@ const App = () => (
             <Route path="/ui-components" element={<UIComponentsDemo />} />
             
             {/* Sidebar navigation routes */}
-            <Route path="/projects" element={<Dashboard />} />
+            <Route path="/projects" element={<Projects />} />
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/team" element={<Team />} />
             <Route path="/materials" element={<Materials />} />
+            <Route path="/expenses" element={<Expenses />} />
             <Route path="/documents" element={<Documents />} />
             <Route path="/settings" element={<Dashboard />} />
             

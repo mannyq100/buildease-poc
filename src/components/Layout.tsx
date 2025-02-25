@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Bell, User, Menu, X, Home, LayoutDashboard, Clock, Users, Package, Settings, FileText, LogOut, Moon, Sun } from 'lucide-react';
+import { Bell, User, Menu, X, Home, LayoutDashboard, Clock, Users, Package, Settings, FileText, LogOut, Moon, Sun, DollarSign } from 'lucide-react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
@@ -77,6 +77,11 @@ const Layout = () => {
       icon: <Package className="w-5 h-5" />
     },
     {
+      label: "Expenses",
+      path: "/expenses",
+      icon: <DollarSign className="w-5 h-5" />
+    },
+    {
       label: "Documents",
       path: "/documents",
       icon: <FileText className="w-5 h-5" />
@@ -110,7 +115,7 @@ const Layout = () => {
               <img 
                 src={isDarkMode ? "/buildease-logo-1.svg" : "/buildease-logo-1.svg"} 
                 alt="BuildEase" 
-                className="h-10 w-auto" 
+                className="h-14 w-auto" 
               />
               <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-10 h-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
             </Link>
@@ -179,7 +184,7 @@ const Layout = () => {
                 <img 
                   src={isDarkMode ? "/buildease-logo-1.svg" : "/buildease-logo-1.svg"} 
                   alt="BuildEase" 
-                  className="h-8 w-auto" 
+                  className="h-12 w-auto" 
                 />
               </Link>
               <button

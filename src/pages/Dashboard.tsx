@@ -108,7 +108,7 @@ const Dashboard = () => {
       className="mb-3"
         title="Projects Dashboard"
         subtitle="Manage and monitor your construction projects"
-        breadcrumbs={breadcrumbItems}
+        // breadcrumbs={breadcrumbItems}
         action={
           <Button 
             onClick={() => navigate("/create-project")} 
