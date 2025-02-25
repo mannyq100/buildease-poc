@@ -105,6 +105,7 @@ const Dashboard = () => {
   return (
     <DashboardLayout withGradient>
       <PageHeader
+      className="mb-3"
         title="Projects Dashboard"
         subtitle="Manage and monitor your construction projects"
         breadcrumbs={breadcrumbItems}
