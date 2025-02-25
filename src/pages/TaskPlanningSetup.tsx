@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const TaskPlanningSetupMockup = () => {
+const TaskPlanningSetup = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
@@ -239,4 +239,4 @@ const TaskPlanningSetupMockup = () => {
   );
 };
 
-export default TaskPlanningSetupMockup;
+export default TaskPlanningSetup;

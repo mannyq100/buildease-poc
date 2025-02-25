@@ -6,10 +6,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "@/components/Layout";
 import Dashboard from "./pages/Dashboard";
 import ProjectDetails from "./pages/ProjectDetails";
-import PhaseDetailsMockup from "./pages/PhaseDetailsMockup";
-import ProjectInputMockup from "./pages/ProjectInputMockup";
+import PhaseDetails from "./pages/PhaseDetails";
+import ProjectInputs from "./pages/ProjectInputs";
 import GeneratedPlan from "./pages/GeneratedPlan";
-import TaskPlanningSetupMockup from "./pages/TaskPlanningSetupMockup";
+import TaskPlanningSetup from "./pages/TaskPlanningSetup";
 import NotFound from "./pages/NotFound";
 import Team from "./pages/Team";
 import Schedule from "./pages/Schedule";
@@ -31,13 +31,13 @@ const App = () => (
           <Route element={<Layout />}>
             {/* Main routes */}
             <Route path="/" element={<Dashboard />} />
-            <Route path="/create-project" element={<ProjectInputMockup />} />
+            <Route path="/create-project" element={<ProjectInputs />} />
             <Route path="/generated-plan" element={<GeneratedPlan />} />
             <Route path="/project-details" element={<ProjectDetails />} />
             <Route path="/project/:id" element={<ProjectDetails />} />
-            <Route path="/phase-details" element={<PhaseDetailsMockup />} />
-            <Route path="/phase/:id" element={<PhaseDetailsMockup />} />
-            <Route path="/generate-tasks" element={<TaskPlanningSetupMockup />} />
+            <Route path="/phase-details" element={<PhaseDetails />} />
+            <Route path="/phase/:id" element={<PhaseDetails />} />
+            <Route path="/generate-tasks" element={<TaskPlanningSetup />} />
             <Route path="/ui-components" element={<UIComponentsDemo />} />
             
             {/* Sidebar navigation routes */}

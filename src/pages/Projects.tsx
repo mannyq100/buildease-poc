@@ -13,7 +13,8 @@ import {
   ArrowUpDown,
   MoreHorizontal,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -213,18 +214,44 @@ const Projects = () => {
 
   return (
     <div className="container mx-auto p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Projects</h1>
-        <p className="text-gray-500 dark:text-gray-400">Manage and monitor your construction projects</p>
-      </div>
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="relative mb-12 overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 to-indigo-700 p-8 text-white shadow-xl"
+      >
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-2">
+            <Building className="h-8 w-8" />
+            <h1 className="text-3xl font-bold">Projects</h1>
+          </div>
+          <p className="text-blue-100 max-w-2xl">Manage and monitor your construction projects with comprehensive analytics and progress tracking</p>
+        </div>
+        <div className="absolute right-0 top-0 opacity-10">
+          <svg width="400" height="400" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+            <g fill="none" stroke="white" strokeWidth="2">
+              <path d="M100,100 L700,100 L700,700 L100,700 z" />
+              <path d="M200,200 L600,200 L600,600 L200,600 z" />
+              <path d="M300,300 L500,300 L500,500 L300,500 z" />
+              <line x1="100" y1="100" x2="700" y2="700" />
+              <line x1="700" y1="100" x2="100" y2="700" />
+            </g>
+          </svg>
+        </div>
+      </motion.div>
 
       {/* Actions Row */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.2 }}
+        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6"
+      >
         <div className="relative w-full md:w-auto">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
           <Input 
             placeholder="Search projects..." 
-            className="pl-10 w-full md:w-80" 
+            className="pl-10 w-full md:w-80 shadow-sm border-gray-200 focus:border-blue-400 focus:ring-blue-400" 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -233,40 +260,40 @@ const Projects = () => {
         <div className="flex flex-wrap gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2">
+              <Button variant="outline" className="gap-2 border-gray-300 shadow-sm">
                 <Filter size={16} />
                 <span>Filter</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setActiveFilter('all')} className={activeFilter === 'all' ? 'bg-gray-100 dark:bg-gray-800' : ''}>
+            <DropdownMenuContent align="end" className="w-48 shadow-lg border-gray-200">
+              <DropdownMenuItem onClick={() => setActiveFilter('all')} className={activeFilter === 'all' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : ''}>
                 All Projects
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setActiveFilter('in-progress')} className={activeFilter === 'in-progress' ? 'bg-gray-100 dark:bg-gray-800' : ''}>
+              <DropdownMenuItem onClick={() => setActiveFilter('in-progress')} className={activeFilter === 'in-progress' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : ''}>
                 In Progress
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setActiveFilter('completed')} className={activeFilter === 'completed' ? 'bg-gray-100 dark:bg-gray-800' : ''}>
+              <DropdownMenuItem onClick={() => setActiveFilter('completed')} className={activeFilter === 'completed' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : ''}>
                 Completed
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setActiveFilter('upcoming')} className={activeFilter === 'upcoming' ? 'bg-gray-100 dark:bg-gray-800' : ''}>
+              <DropdownMenuItem onClick={() => setActiveFilter('upcoming')} className={activeFilter === 'upcoming' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : ''}>
                 Upcoming
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setActiveFilter('warnings')} className={activeFilter === 'warnings' ? 'bg-gray-100 dark:bg-gray-800' : ''}>
+              <DropdownMenuItem onClick={() => setActiveFilter('warnings')} className={activeFilter === 'warnings' ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400' : ''}>
                 <AlertTriangle size={16} className="mr-2 text-yellow-500" />
                 With Warnings
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2 border-gray-300 shadow-sm">
             <SlidersHorizontal size={16} />
             <span>Sort</span>
           </Button>
 
           <Tabs defaultValue="grid" value={activeTab} onValueChange={setActiveTab} className="hidden md:block">
-            <TabsList>
-              <TabsTrigger value="grid" className="px-3">
+            <TabsList className="h-10 shadow-sm">
+              <TabsTrigger value="grid" className="px-3 data-[state=active]:shadow-sm data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">
                 <div className="grid grid-cols-3 gap-0.5 h-3 w-8">
                   <div className="bg-current rounded-sm"></div>
                   <div className="bg-current rounded-sm"></div>
@@ -276,7 +303,7 @@ const Projects = () => {
                   <div className="bg-current rounded-sm"></div>
                 </div>
               </TabsTrigger>
-              <TabsTrigger value="list" className="px-3">
+              <TabsTrigger value="list" className="px-3 data-[state=active]:shadow-sm data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">
                 <div className="flex flex-col gap-0.5 h-3 w-8">
                   <div className="bg-current rounded-sm h-0.5"></div>
                   <div className="bg-current rounded-sm h-0.5"></div>
@@ -286,20 +313,26 @@ const Projects = () => {
             </TabsList>
           </Tabs>
 
-          <Button className="gap-2 ml-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all duration-200">
+          <Button className="gap-2 ml-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+          onClick={() => navigate('/create-project')}>
             <Plus size={16} />
             <span>New Project</span>
           </Button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Filter Pills */}
-      <div className="flex flex-wrap gap-2 mb-6">
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.3 }}
+        className="flex flex-wrap gap-2 mb-6"
+      >
         <Button
           variant={activeFilter === 'all' ? 'default' : 'outline'} 
           size="sm"
           onClick={() => setActiveFilter('all')}
-          className={activeFilter === 'all' ? 'bg-blue-600 hover:bg-blue-700' : ''}
+          className={activeFilter === 'all' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-shadow duration-200' : 'border border-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800'}
         >
           All Projects
         </Button>
@@ -307,7 +340,7 @@ const Projects = () => {
           variant={activeFilter === 'in-progress' ? 'default' : 'outline'} 
           size="sm"
           onClick={() => setActiveFilter('in-progress')}
-          className={activeFilter === 'in-progress' ? 'bg-blue-600 hover:bg-blue-700' : ''}
+          className={activeFilter === 'in-progress' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-shadow duration-200' : 'border border-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800'}
         >
           In Progress
         </Button>
@@ -315,7 +348,7 @@ const Projects = () => {
           variant={activeFilter === 'completed' ? 'default' : 'outline'} 
           size="sm"
           onClick={() => setActiveFilter('completed')}
-          className={activeFilter === 'completed' ? 'bg-blue-600 hover:bg-blue-700' : ''}
+          className={activeFilter === 'completed' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-shadow duration-200' : 'border border-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800'}
         >
           Completed
         </Button>
@@ -323,7 +356,7 @@ const Projects = () => {
           variant={activeFilter === 'upcoming' ? 'default' : 'outline'} 
           size="sm"
           onClick={() => setActiveFilter('upcoming')}
-          className={activeFilter === 'upcoming' ? 'bg-blue-600 hover:bg-blue-700' : ''}
+          className={activeFilter === 'upcoming' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-shadow duration-200' : 'border border-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800'}
         >
           Upcoming
         </Button>
@@ -331,127 +364,161 @@ const Projects = () => {
           variant={activeFilter === 'warnings' ? 'default' : 'outline'} 
           size="sm"
           onClick={() => setActiveFilter('warnings')}
-          className={activeFilter === 'warnings' ? 'bg-yellow-600 hover:bg-yellow-700' : ''}
+          className={activeFilter === 'warnings' ? 'bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 shadow-md hover:shadow-lg transition-shadow duration-200' : 'border border-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800'}
         >
           <AlertTriangle size={14} className="mr-1" />
           With Warnings
         </Button>
-      </div>
+      </motion.div>
 
       {/* Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsContent value="grid" className="m-0">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProjects.map((project) => (
-              <ProjectCard 
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4 }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
+            {filteredProjects.map((project, index) => (
+              <motion.div
                 key={project.id}
-                project={project}
-                onClick={() => handleViewProject(project.id)}
-              />
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+              >
+                <ProjectCard 
+                  project={project}
+                  onClick={() => handleViewProject(project.id)}
+                />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </TabsContent>
 
         <TabsContent value="list" className="m-0">
-          <Card>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-4 font-medium">Project</th>
-                      <th className="text-left p-4 font-medium">Client</th>
-                      <th className="text-left p-4 font-medium">Status</th>
-                      <th className="text-left p-4 font-medium">Progress</th>
-                      <th className="text-left p-4 font-medium">Budget</th>
-                      <th className="text-left p-4 font-medium">Team</th>
-                      <th className="text-left p-4 font-medium">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredProjects.map((project) => {
-                      const status = getStatusConfig(project.status);
-                      return (
-                        <tr key={project.id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                          <td className="p-4">
-                            <div className="font-medium">{project.name}</div>
-                            <div className="text-sm text-gray-500">{project.location}</div>
-                          </td>
-                          <td className="p-4">
-                            <div>{project.client}</div>
-                          </td>
-                          <td className="p-4">
-                            <Badge className={status.color}>
-                              {status.label}
-                            </Badge>
-                          </td>
-                          <td className="p-4">
-                            <div className="flex items-center gap-2">
-                              <Progress value={project.progress} className="h-2 w-24" />
-                              <span className="text-sm">{project.progress}%</span>
-                            </div>
-                          </td>
-                          <td className="p-4">
-                            <div className="font-medium">{project.budget}</div>
-                            <div className="text-sm text-gray-500">
-                              Spent: {project.spent}
-                            </div>
-                          </td>
-                          <td className="p-4">
-                            <div className="flex items-center gap-1">
-                              <Users size={14} />
-                              <span>{project.team}</span>
-                            </div>
-                          </td>
-                          <td className="p-4">
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleViewProject(project.id)}
-                              >
-                                View
-                              </Button>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
-                                    <MoreHorizontal size={16} />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem>Edit</DropdownMenuItem>
-                                  <DropdownMenuItem>Duplicate</DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem className="text-red-600">Archive</DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4 }}
+          >
+            <Card className="shadow-lg border-gray-200">
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b bg-gray-50 dark:bg-gray-800/50">
+                        <th className="text-left p-4 font-medium">Project</th>
+                        <th className="text-left p-4 font-medium">Client</th>
+                        <th className="text-left p-4 font-medium">Status</th>
+                        <th className="text-left p-4 font-medium">Progress</th>
+                        <th className="text-left p-4 font-medium">Budget</th>
+                        <th className="text-left p-4 font-medium">Team</th>
+                        <th className="text-left p-4 font-medium">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredProjects.map((project, index) => {
+                        const status = getStatusConfig(project.status);
+                        return (
+                          <motion.tr 
+                            key={project.id} 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.2, delay: index * 0.03 }}
+                            className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                          >
+                            <td className="p-4">
+                              <div className="font-medium">{project.name}</div>
+                              <div className="text-sm text-gray-500">{project.location}</div>
+                            </td>
+                            <td className="p-4">
+                              <div>{project.client}</div>
+                            </td>
+                            <td className="p-4">
+                              <Badge className={status.color}>
+                                {status.label}
+                              </Badge>
+                            </td>
+                            <td className="p-4">
+                              <div className="flex items-center gap-2">
+                                <Progress value={project.progress} className="h-2 w-24" />
+                                <span className="text-sm">{project.progress}%</span>
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              <div className="font-medium">{project.budget}</div>
+                              <div className="text-sm text-gray-500">
+                                Spent: {project.spent}
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              <div className="flex items-center gap-1">
+                                <Users size={14} />
+                                <span>{project.team}</span>
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleViewProject(project.id)}
+                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                >
+                                  View
+                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                      <MoreHorizontal size={16} />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem>Edit</DropdownMenuItem>
+                                    <DropdownMenuItem>Duplicate</DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem className="text-red-600">Archive</DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </td>
+                          </motion.tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </TabsContent>
       </Tabs>
 
       {/* Empty state when no projects match filters */}
       {filteredProjects.length === 0 && (
-        <Card className="bg-gray-50 border-dashed dark:bg-gray-800/50">
-          <CardContent className="py-12 flex flex-col items-center justify-center">
-            <Building size={48} className="text-gray-400 mb-4" />
-            <h3 className="text-xl font-medium mb-2">No projects found</h3>
-            <p className="text-gray-500 text-center max-w-md mb-6">
-              We couldn't find any projects matching your current filters. Try adjusting your search or filters.
-            </p>
-            <Button onClick={() => { setSearchQuery(''); setActiveFilter('all'); }}>
-              Reset Filters
-            </Button>
-          </CardContent>
-        </Card>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Card className="bg-gray-50 border-dashed dark:bg-gray-800/50 overflow-hidden">
+            <CardContent className="py-12 flex flex-col items-center justify-center relative">
+              <div className="absolute inset-0 opacity-5 bg-gradient-radial from-blue-500 to-transparent"></div>
+              <Building size={48} className="text-gray-400 mb-4" />
+              <h3 className="text-xl font-medium mb-2">No projects found</h3>
+              <p className="text-gray-500 text-center max-w-md mb-6">
+                We couldn't find any projects matching your current filters. Try adjusting your search or filters.
+              </p>
+              <Button 
+                onClick={() => { setSearchQuery(''); setActiveFilter('all'); }}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all duration-300"
+              >
+                Reset Filters
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
       )}
     </div>
   );
@@ -500,17 +567,25 @@ const ProjectCard = ({ project, onClick }) => {
   
   return (
     <motion.div
-      whileHover={{ y: -4 }}
+      whileHover={{ y: -8 }}
       transition={{ duration: 0.2 }}
     >
-      <Card className="overflow-hidden h-full cursor-pointer hover:shadow-lg transition-shadow duration-300 flex flex-col" onClick={onClick}>
+      <Card className="overflow-hidden h-full cursor-pointer hover:shadow-xl border border-gray-200 transition-all duration-300 flex flex-col" onClick={onClick}>
         <div className="relative h-48 bg-gray-100 dark:bg-gray-800">
           <img 
             src={project.image} 
             alt={project.name} 
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent"></div>
+          <div className="absolute top-4 left-4">
+            <Badge className="bg-white/90 dark:bg-black/50 backdrop-blur-sm text-blue-700 dark:text-blue-300 shadow-lg px-2.5 py-1">
+              <span className="flex items-center gap-1.5">
+                <Sparkles className="w-3 h-3 text-amber-500" />
+                {project.priority === 'high' ? 'High Priority' : project.priority === 'medium' ? 'Medium Priority' : 'Low Priority'}
+              </span>
+            </Badge>
+          </div>
           <div className="absolute left-4 bottom-4 right-4">
             <div className="flex justify-between items-end">
               <div>
@@ -520,7 +595,7 @@ const ProjectCard = ({ project, onClick }) => {
                   <span>{project.location}</span>
                 </div>
               </div>
-              <Badge className={cn("flex items-center gap-1", status.color)}>
+              <Badge className={cn("flex items-center gap-1 shadow-sm", status.color)}>
                 {status.icon}
                 <span>{status.label}</span>
               </Badge>
@@ -528,7 +603,7 @@ const ProjectCard = ({ project, onClick }) => {
           </div>
           {project.hasWarnings && (
             <div className="absolute top-4 right-4">
-              <div className="bg-yellow-100 text-yellow-700 p-1.5 rounded-full">
+              <div className="bg-yellow-100 text-yellow-700 p-1.5 rounded-full shadow-lg">
                 <AlertCircle className="w-4 h-4" />
               </div>
             </div>
@@ -541,11 +616,11 @@ const ProjectCard = ({ project, onClick }) => {
               <span className="text-sm text-gray-500 dark:text-gray-400">Progress</span>
               <span className="text-sm font-medium">{project.progress}%</span>
             </div>
-            <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden shadow-inner">
               <div 
                 className={cn("h-full rounded-full", getProgressColor(project.progress))} 
                 style={{ width: `${project.progress}%` }}
-              ></div>
+              />
             </div>
           </div>
           
@@ -561,13 +636,20 @@ const ProjectCard = ({ project, onClick }) => {
             <div>
               <div className="text-sm text-gray-500 dark:text-gray-400">Team</div>
               <div className="font-medium flex items-center">
-                <Users className="w-4 h-4 mr-1.5" />
+                <div className="bg-blue-100 dark:bg-blue-900/30 p-1 rounded-full text-blue-600 dark:text-blue-400 mr-1.5">
+                  <Users className="w-3 h-3" />
+                </div>
                 {project.team}
               </div>
             </div>
             <div>
               <div className="text-sm text-gray-500 dark:text-gray-400">Tasks</div>
-              <div className="font-medium">{project.tasksCompleted}/{project.totalTasks}</div>
+              <div className="font-medium flex items-center">
+                <div className="bg-green-100 dark:bg-green-900/30 p-1 rounded-full text-green-600 dark:text-green-400 mr-1.5">
+                  <CheckCircle2 className="w-3 h-3" />
+                </div>
+                {project.tasksCompleted}/{project.totalTasks}
+              </div>
             </div>
           </div>
         </CardContent>

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Footer } from '@/components/layout/Footer';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface NavItem {
   label: string;
@@ -100,66 +101,78 @@ const Layout = () => {
     <div className={`h-screen flex flex-col ${isDarkMode ? 'dark' : ''} ${isDarkMode ? 'bg-slate-900' : 'bg-gray-50'}`}>
       {/* Header */}
       <header className={cn(
-        "border-b sticky top-0 z-30 shadow-sm transition-colors",
+        "border-b sticky top-0 z-30 shadow-md transition-colors",
         isDarkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"
       )}>
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center">
             <button 
-              className="md:hidden mr-2"
+              className="md:hidden mr-2 hover:bg-gray-100 dark:hover:bg-slate-700 p-2 rounded-lg transition-colors"
               onClick={() => setSidebarOpen(!sidebarOpen)}
             >
-              <Menu className="h-6 w-6" />
+              <Menu className="h-5 w-5" />
             </button>
-            <Link to="/" className="flex items-center transition-all duration-300 hover:scale-105 relative">
+            <Link to="/" className="flex items-center transition-all duration-300 hover:scale-105 group relative">
               <img 
                 src={isDarkMode ? "/buildease-logo-1.svg" : "/buildease-logo-1.svg"} 
                 alt="BuildEase" 
                 className="h-14 w-auto" 
               />
-              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-10 h-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-20 h-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
             </Link>
           </div>
           <div className="flex items-center space-x-3">
-            <Button variant="ghost" size="icon" onClick={toggleDarkMode} className="mr-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={toggleDarkMode} 
+              className="mr-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full"
+            >
               {isDarkMode ? 
-                <Sun className="h-5 w-5" /> : 
+                <Sun className="h-5 w-5 text-amber-300" /> : 
                 <Moon className="h-5 w-5" />
               }
             </Button>
 
-            <Button variant="ghost" size="icon" className="relative hover:bg-gray-100">
-              <Bell className="w-5 h-5 text-gray-700" />
-              <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="relative hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full"
+            >
+              <Bell className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+              <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
             </Button>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center space-x-2 hover:bg-gray-100 p-1.5 rounded-full transition-colors">
-                  <Avatar className="h-8 w-8 border border-gray-200">
+                <motion.button 
+                  whileHover={{ scale: 1.05 }}
+                  className="flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-slate-700 p-1.5 rounded-full transition-colors"
+                >
+                  <Avatar className="h-8 w-8 border border-gray-200 dark:border-slate-700 shadow-sm">
                     <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=John" />
-                    <AvatarFallback className="bg-primary/10 text-primary">JD</AvatarFallback>
+                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white">JD</AvatarFallback>
                   </Avatar>
-                </button>
+                </motion.button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-56 shadow-lg border-gray-200 dark:border-slate-700">
                 <DropdownMenuLabel>
                   <div className="flex flex-col">
-                    <span>John Doe</span>
-                    <span className="text-xs text-gray-500">Project Manager</span>
+                    <span className="font-medium">John Doe</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Project Manager</span>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700">
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700">
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-red-600">
+                <DropdownMenuItem className="text-red-600 cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/20">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>
@@ -171,97 +184,145 @@ const Layout = () => {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <aside
-          className={cn(
-            "fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:inset-auto md:h-[calc(100vh-4rem)] overflow-y-auto",
-            sidebarOpen ? "translate-x-0" : "-translate-x-full",
-            isDarkMode ? "bg-slate-800 border-r border-slate-700" : "bg-white border-r border-gray-200"
+        <AnimatePresence>
+          {(sidebarOpen || window.innerWidth >= 768) && (
+            <motion.aside
+              initial={{ x: -320 }}
+              animate={{ x: 0 }}
+              exit={{ x: -320 }}
+              transition={{ ease: "easeOut", duration: 0.25 }}
+              className={cn(
+                "fixed inset-y-0 left-0 z-50 w-64 md:translate-x-0 md:static md:inset-auto md:h-[calc(100vh-4rem)] overflow-y-auto",
+                isDarkMode 
+                  ? "bg-slate-800 border-r border-slate-700 shadow-xl md:shadow-none" 
+                  : "bg-white border-r border-gray-200 shadow-xl md:shadow-none"
+              )}
+            >
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-8 md:hidden">
+                  <Link to="/" className="flex items-center">
+                    <img 
+                      src={isDarkMode ? "/buildease-logo-1.svg" : "/buildease-logo-1.svg"} 
+                      alt="BuildEase" 
+                      className="h-12 w-auto" 
+                    />
+                  </Link>
+                  <button
+                    onClick={() => setSidebarOpen(false)}
+                    className={cn(
+                      "p-2 rounded-lg",
+                      isDarkMode ? "hover:bg-slate-700" : "hover:bg-gray-100"
+                    )}
+                  >
+                    <X className={cn("w-5 h-5", isDarkMode ? "text-slate-400" : "text-gray-500")} />
+                  </button>
+                </div>
+
+                <nav className="space-y-6">
+                  <div className="space-y-1.5">
+                    {mainNavItems.map((item, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                      >
+                        <Button
+                          variant="ghost"
+                          className={cn(
+                            "w-full justify-start font-normal transition-all duration-200",
+                            isActive(item.path) 
+                              ? (isDarkMode 
+                                ? "bg-gradient-to-r from-blue-600/20 to-indigo-600/20 text-white border-l-2 border-blue-500 pl-3.5" 
+                                : "bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-800 border-l-2 border-blue-500 pl-3.5") 
+                              : (isDarkMode 
+                                ? "text-slate-300 hover:bg-slate-700 hover:text-white" 
+                                : "text-gray-600 hover:bg-gray-100 hover:text-black")
+                          )}
+                          onClick={() => navigate(item.path)}
+                        >
+                          {item.icon && (
+                            <span className={cn(
+                              "mr-3",
+                              isActive(item.path) && "text-blue-500"
+                            )}>
+                              {item.icon}
+                            </span>
+                          )}
+                          {item.label}
+                        </Button>
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  <div className="pt-4 border-t space-y-1.5">
+                    <p className={cn("px-3 text-xs font-semibold uppercase mb-2", isDarkMode ? "text-slate-400" : "text-gray-500")}>
+                      Project
+                    </p>
+                    {bottomNavItems.map((item, index) => (
+                      <Button
+                        key={index}
+                        variant="ghost"
+                        className={cn(
+                          "w-full justify-start font-normal transition-all duration-200",
+                          isActive(item.path) 
+                            ? (isDarkMode 
+                              ? "bg-gradient-to-r from-blue-600/20 to-indigo-600/20 text-white border-l-2 border-blue-500 pl-3.5" 
+                              : "bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-800 border-l-2 border-blue-500 pl-3.5") 
+                            : (isDarkMode 
+                              ? "text-slate-300 hover:bg-slate-700 hover:text-white" 
+                              : "text-gray-600 hover:bg-gray-100 hover:text-black")
+                        )}
+                        onClick={() => navigate(item.path)}
+                      >
+                        {item.icon && (
+                          <span className={cn(
+                            "mr-3",
+                            isActive(item.path) && "text-blue-500"
+                          )}>
+                            {item.icon}
+                          </span>
+                        )}
+                        {item.label}
+                      </Button>
+                    ))}
+                  </div>
+                </nav>
+              </div>
+            </motion.aside>
           )}
-        >
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-8 md:hidden">
-              <Link to="/" className="flex items-center">
-                <img 
-                  src={isDarkMode ? "/buildease-logo-1.svg" : "/buildease-logo-1.svg"} 
-                  alt="BuildEase" 
-                  className="h-12 w-auto" 
-                />
-              </Link>
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className={cn(
-                  "p-2 rounded-md",
-                  isDarkMode ? "hover:bg-slate-700" : "hover:bg-gray-100"
-                )}
-              >
-                <X className={cn("w-5 h-5", isDarkMode ? "text-slate-400" : "text-gray-500")} />
-              </button>
-            </div>
-
-            <nav className="space-y-6">
-              <div className="space-y-1">
-                {mainNavItems.map((item, index) => (
-                  <Button
-                    key={index}
-                    variant="ghost"
-                    className={cn(
-                      "w-full justify-start font-normal",
-                      isActive(item.path) 
-                        ? (isDarkMode ? "bg-slate-700 text-white" : "bg-gray-100 text-black") 
-                        : (isDarkMode ? "text-slate-300 hover:bg-slate-700 hover:text-white" : "text-gray-600 hover:bg-gray-100 hover:text-black")
-                    )}
-                    onClick={() => navigate(item.path)}
-                  >
-                    {item.icon && <span className="mr-3">{item.icon}</span>}
-                    {item.label}
-                  </Button>
-                ))}
-              </div>
-
-              <div className="pt-4 border-t space-y-1">
-                <p className={cn("px-3 text-xs font-semibold uppercase mb-2", isDarkMode ? "text-slate-400" : "text-gray-500")}>
-                  Project
-                </p>
-                {bottomNavItems.map((item, index) => (
-                  <Button
-                    key={index}
-                    variant="ghost"
-                    className={cn(
-                      "w-full justify-start font-normal",
-                      isActive(item.path)
-                        ? (isDarkMode ? "bg-slate-700 text-white" : "bg-gray-100 text-black")
-                        : (isDarkMode ? "text-slate-300 hover:bg-slate-700 hover:text-white" : "text-gray-600 hover:bg-gray-100 hover:text-black")
-                    )}
-                    onClick={() => navigate(item.path)}
-                  >
-                    {item.icon && <span className="mr-3">{item.icon}</span>}
-                    {item.label}
-                  </Button>
-                ))}
-              </div>
-            </nav>
-          </div>
-        </aside>
+        </AnimatePresence>
 
         {/* Main content */}
         <main className={cn(
           "flex-1 overflow-auto transition-colors relative flex flex-col",
           isDarkMode && "bg-slate-900 text-white"
         )}>
-          <div className="flex-1">
+          <motion.div 
+            className="flex-1"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
             <Outlet />
-          </div>
+          </motion.div>
           <Footer variant="minimal" />
         </main>
       </div>
 
       {/* Overlay for mobile sidebar */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-40 bg-black/50 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
