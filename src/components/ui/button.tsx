@@ -24,6 +24,11 @@ const buttonVariants = cva(
         warning: "bg-warning text-warning-foreground hover:bg-warning/90 shadow-sm hover:shadow-md dark:shadow-warning/20 dark:hover:shadow-md dark:hover:shadow-warning/40",
         info: "bg-info text-info-foreground hover:bg-info/90 shadow-sm hover:shadow-md dark:shadow-info/20 dark:hover:shadow-md dark:hover:shadow-info/40",
         glass: "bg-white/70 dark:bg-slate-800/70 backdrop-blur-md border border-white/20 dark:border-slate-700/50 hover:bg-white/80 dark:hover:bg-slate-800/80 text-gray-900 dark:text-white shadow-sm hover:shadow-md",
+        primary: "text-white shadow-md hover:shadow-lg border-b-4 hover:-translate-y-[1px] active:border-b-2 active:translate-y-[2px] construction-primary-btn",
+        accent: "text-white shadow-md hover:shadow-lg border-b-4 hover:-translate-y-[1px] active:border-b-2 active:translate-y-[2px] construction-accent-btn",
+        construction: "text-white shadow-md hover:shadow-lg hover:-translate-y-[1px] font-bold relative overflow-hidden after:absolute after:inset-0 after:w-full after:h-full after:bg-white after:opacity-0 hover:after:opacity-10 after:transition-opacity construction-gradient-btn",
+        blueprint: "text-white font-bold construction-blueprint-btn",
+        tool: "text-white shadow-md hover:shadow-lg hover:-translate-y-[1px] font-bold construction-tool-btn",
       },
       size: {
         default: "h-10 px-4 py-2",
@@ -58,6 +63,47 @@ const buttonVariants = cva(
     },
   }
 )
+
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = `
+    .construction-primary-btn {
+      background-color: hsl(var(--deepblue));
+      border-color: hsl(var(--deepblue-dark));
+    }
+    .construction-primary-btn:hover {
+      background-color: hsl(var(--deepblue-light));
+    }
+    
+    .construction-accent-btn {
+      background-color: hsl(var(--burntorange));
+      border-color: hsl(var(--burntorange-dark));
+    }
+    .construction-accent-btn:hover {
+      background-color: hsl(var(--burntorange-light));
+    }
+    
+    .construction-gradient-btn {
+      background: linear-gradient(to right, hsl(var(--deepblue)), hsl(var(--deepblue-light)));
+    }
+    
+    .construction-blueprint-btn {
+      background-color: white;
+      color: hsl(var(--deepblue));
+      border: 2px solid hsl(var(--deepblue));
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .construction-blueprint-btn:hover {
+      background-color: hsl(var(--lightgray));
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .construction-tool-btn {
+      background: linear-gradient(to right, hsl(var(--warning)), hsl(var(--warning-lighter)));
+    }
+  `;
+  document.head.appendChild(style);
+}
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,

@@ -11,10 +11,16 @@ const cardVariants = cva(
         default: "shadow-sm hover:shadow-md dark:shadow-none dark:hover:shadow-md dark:hover:shadow-black/20 border-card-border",
         flat: "border-none shadow-none bg-muted/30",
         elevated: "shadow-md hover:shadow-lg dark:shadow-lg dark:shadow-black/20 dark:hover:shadow-xl dark:hover:shadow-black/30 border-card-border",
-        glass: "bg-white/70 backdrop-blur-md border-white/20 dark:bg-slate-800/70 dark:border-slate-700/50 shadow-sm hover:shadow-md",
-        gradient: "bg-gradient-to-b from-white to-gray-50 dark:from-slate-800 dark:to-slate-900 border-card-border",
+        glass: "bg-white/70 backdrop-blur-md border-white/20 shadow-sm hover:shadow-md",
+        gradient: "bg-gradient-to-b from-white to-gray-50 border-card-border",
         outline: "bg-transparent border-2",
         glow: "border-primary/20 dark:border-primary/30 shadow-sm hover:shadow-primary/20 dark:hover:shadow-primary/30",
+        // Construction theme specific card styles
+        blueprint: "border-2 border-deepblue bg-white bg-opacity-95 pattern-blueprint shadow-md hover:shadow-lg",
+        project: "border-l-4 border-deepblue shadow-md hover:shadow-lg bg-white",
+        material: "border border-burntorange/30 shadow-md hover:shadow-lg bg-white",
+        task: "border-t-4 border-secondary shadow-md hover:shadow-lg bg-white",
+        report: "border border-gray-200 shadow-md hover:shadow-lg bg-white",
       },
       hover: {
         default: "",
@@ -22,6 +28,7 @@ const cardVariants = cva(
         scale: "hover:scale-[1.02]",
         border: "hover:border-primary dark:hover:border-primary",
         glow: "hover:glow-primary",
+        highlight: "hover:border-burntorange dark:hover:border-burntorange",
       },
       animation: {
         none: "",
@@ -37,6 +44,14 @@ const cardVariants = cva(
         lg: "[&>*:not(:first-child)]:p-6 [&>*:first-child]:p-6",
         xl: "[&>*:not(:first-child)]:p-8 [&>*:first-child]:p-8",
         none: "[&>*]:p-0",
+      },
+      rounded: {
+        default: "rounded-lg",
+        none: "rounded-none",
+        sm: "rounded-sm",
+        md: "rounded-md",
+        lg: "rounded-lg",
+        xl: "rounded-xl",
       }
     },
     defaultVariants: {
@@ -44,6 +59,7 @@ const cardVariants = cva(
       hover: "default",
       animation: "none",
       padding: "default",
+      rounded: "default",
     },
   }
 )
@@ -53,15 +69,69 @@ export interface CardProps
     VariantProps<typeof cardVariants> {}
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, variant, hover, animation, padding, ...props }, ref) => (
+  ({ className, variant, hover, animation, padding, rounded, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn(cardVariants({ variant, hover, animation, padding, className }))}
+      className={cn(cardVariants({ variant, hover, animation, padding, rounded, className }))}
       {...props}
     />
   )
 )
 Card.displayName = "Card"
+
+// Add dark mode styling with JavaScript
+if (typeof document !== 'undefined') {
+  const updateCardDarkMode = () => {
+    const isDark = document.documentElement.classList.contains('dark');
+    const cards = document.querySelectorAll('[data-variant]');
+    
+    cards.forEach((card) => {
+      const variant = card.getAttribute('data-variant');
+      
+      if (isDark) {
+        if (variant === 'glass') {
+          card.classList.add('dark-glass');
+        } else if (['project', 'material', 'task', 'report'].includes(variant || '')) {
+          card.classList.add('dark-card-bg');
+        }
+      } else {
+        card.classList.remove('dark-glass', 'dark-card-bg');
+      }
+    });
+  };
+  
+  // Add the needed styles
+  if (typeof document !== 'undefined') {
+    const style = document.createElement('style');
+    style.textContent = `
+      .dark-glass {
+        background-color: hsla(var(--deepblue), 0.7) !important;
+        border-color: hsla(var(--deepblue-light), 0.5) !important;
+      }
+      .dark-card-bg {
+        background-color: hsl(var(--deepblue-dark)) !important;
+      }
+      .dark .dark-card-bg.material {
+        border-color: hsla(var(--burntorange), 0.5) !important;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // Set up listeners for theme changes
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          updateCardDarkMode();
+        }
+      });
+    });
+    
+    observer.observe(document.documentElement, { attributes: true });
+    
+    // Initial update
+    updateCardDarkMode();
+  }
+}
 
 const CardHeader = React.forwardRef<
   HTMLDivElement,
@@ -82,7 +152,7 @@ const CardTitle = React.forwardRef<
   <h3
     ref={ref}
     className={cn(
-      "text-2xl font-semibold leading-none tracking-tight transition-colors",
+      "text-xl font-bold leading-none tracking-tight transition-colors",
       className
     )}
     {...props}

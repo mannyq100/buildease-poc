@@ -24,6 +24,27 @@ export default {
 				ring: 'hsl(var(--ring))',
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
+				// Construction theme colors
+				deepblue: {
+					DEFAULT: 'hsl(var(--deepblue))',
+					light: 'hsl(var(--deepblue-light))',
+					dark: 'hsl(var(--deepblue-dark))'
+				},
+				darkgreen: {
+					DEFAULT: 'hsl(var(--darkgreen))',
+					light: 'hsl(var(--darkgreen-light))',
+					dark: 'hsl(var(--darkgreen-dark))'
+				},
+				burntorange: {
+					DEFAULT: 'hsl(var(--burntorange))',
+					light: 'hsl(var(--burntorange-light))',
+					dark: 'hsl(var(--burntorange-dark))'
+				},
+				lightgray: {
+					DEFAULT: 'hsl(var(--lightgray))',
+					dark: 'hsl(var(--lightgray-dark))',
+					darker: 'hsl(var(--lightgray-darker))'
+				},
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
 					foreground: 'hsl(var(--primary-foreground))',
@@ -103,6 +124,9 @@ export default {
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out'
+			},
+			backgroundBlendMode: {
+				'overlay': 'overlay',
 			}
 		}
 	},

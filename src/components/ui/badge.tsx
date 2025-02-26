@@ -29,10 +29,25 @@ const badgeVariants = cva(
           "border-transparent bg-gradient-to-r from-destructive to-destructive-lighter text-destructive-foreground",
         "gradient-warning": 
           "border-transparent bg-gradient-to-r from-warning to-warning-lighter text-warning-foreground",
-        "glass":
-          "border-transparent bg-white/20 backdrop-blur-md text-foreground dark:bg-slate-800/30 dark:text-white",
-        "dot":
+        glass:
+          "border-transparent bg-white/20 backdrop-blur-md text-foreground construction-glass-badge",
+        dot:
           "pl-1.5 bg-transparent dark:text-white flex items-center before:content-[''] before:h-1.5 before:w-1.5 before:rounded-full before:bg-current before:mr-1",
+        // Construction theme specific badge styles
+        blueprint: 
+          "border-2 border-input bg-white text-foreground construction-blueprint-badge",
+        steel: 
+          "border-transparent text-white construction-steel-badge",
+        concrete: 
+          "border-transparent bg-gray-400 text-white font-bold",
+        wood: 
+          "border-transparent text-white construction-wood-badge",
+        status: 
+          "border text-foreground construction-status-badge",
+        priority:
+          "border-2 text-foreground construction-priority-badge",
+        phase:
+          "text-white construction-phase-badge",
       },
       size: {
         default: "px-2.5 py-0.5 text-xs",
@@ -67,6 +82,56 @@ const badgeVariants = cva(
     },
   }
 )
+
+// Add construction theme badge styles
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = `
+    .dark .construction-glass-badge {
+      background-color: hsla(var(--deepblue), 0.3);
+      color: white;
+    }
+    
+    .construction-blueprint-badge {
+      border-color: hsl(var(--deepblue));
+      color: hsl(var(--deepblue));
+      font-weight: bold;
+    }
+    
+    .construction-steel-badge {
+      background-color: hsl(var(--deepblue-light));
+      font-weight: bold;
+    }
+    
+    .construction-wood-badge {
+      background-color: hsl(var(--burntorange-dark));
+      font-weight: bold;
+    }
+    
+    .construction-status-badge {
+      border-color: hsl(var(--deepblue));
+      color: hsl(var(--deepblue));
+      font-weight: medium;
+    }
+    
+    .dark .construction-status-badge {
+      color: white;
+      border-color: white;
+    }
+    
+    .construction-priority-badge {
+      border-color: hsl(var(--burntorange));
+      color: hsl(var(--burntorange));
+      font-weight: bold;
+    }
+    
+    .construction-phase-badge {
+      background: linear-gradient(to right, hsl(var(--deepblue)), hsl(var(--deepblue-light)));
+      font-weight: bold;
+    }
+  `;
+  document.head.appendChild(style);
+}
 
 export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>,
