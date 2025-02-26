@@ -16,32 +16,47 @@ import {
   BarChart3,
   Building,
   Construction,
-  Stars,
-  Search,
   Sparkles,
+  Search,
   ArrowRight,
   Calendar,
-  CheckCircle
+  CheckCircle,
+  Settings,
+  Bell,
+  LogOut,
+  Menu,
+  User,
+  Briefcase,
+  Hammer,
+  Headphones,
+  HardHat,
+  Clipboard,
+  DollarSign,
+  PieChart,
+  ListTodo,
+  X
 } from 'lucide-react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { DashboardSection } from '@/components/layout/DashboardSection';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { 
-  MetricCard, 
-  ActivityItem, 
-  PhaseCard, 
-  InsightItem 
-} from '@/components/shared';
-import { motion } from 'framer-motion';
-import { HorizontalNav, type NavItem } from '@/components/navigation/HorizontalNav';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { motion, AnimatePresence } from 'framer-motion';
+import { HorizontalNav, type NavItem } from '@/components/navigation/HorizontalNav';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // Check dark mode on component mount and whenever it might change
   useEffect(() => {
@@ -63,441 +78,486 @@ const Dashboard = () => {
     return () => observer.disconnect();
   }, []);
 
-  // Nav items for projects filter
-  const projectNavItems: NavItem[] = [
-    {
-      label: "All Projects",
-      path: "/projects?filter=all",
-      icon: <LayoutDashboard className="h-4 w-4" />,
+  // Navigation items
+  const navItems: NavItem[] = [
+    { 
+      label: 'Dashboard', 
+      path: '/dashboard', 
+      icon: <LayoutDashboard className="w-5 h-5" /> 
+    },
+    { 
+      label: 'Projects', 
+      path: '/projects', 
+      icon: <Briefcase className="w-5 h-5" />,
       badge: {
-        text: "12",
-        color: "blue"
+        text: '4',
+        color: 'blue'
       }
     },
-    {
-      label: "In Progress",
-      path: "/projects?filter=in-progress",
-      icon: <Construction className="h-4 w-4" />,
-      badge: {
-        text: "8",
-        color: "yellow"
-      }
+    { 
+      label: 'Schedule', 
+      path: '/schedule', 
+      icon: <Calendar className="w-5 h-5" /> 
     },
-    {
-      label: "Completed",
-      path: "/projects?filter=completed",
-      icon: <CheckCircle className="h-4 w-4" />,
-      badge: {
-        text: "3",
-        color: "green"
-      }
+    { 
+      label: 'Materials', 
+      path: '/materials', 
+      icon: <Package className="w-5 h-5" /> 
     },
-    {
-      label: "On Hold",
-      path: "/projects?filter=on-hold",
-      icon: <AlertTriangle className="h-4 w-4" />,
-      badge: {
-        text: "1",
-        color: "red"
-      }
+    { 
+      label: 'Expenses', 
+      path: '/expenses', 
+      icon: <DollarSign className="w-5 h-5" /> 
     }
   ];
 
-  // Breadcrumb items for the page header
-  const breadcrumbItems = [
-    { label: 'Home', href: '/' },
-    { label: 'Projects', href: '/projects' }
-  ];
-
   return (
-    <DashboardLayout withGradient>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8 }}
-        className="relative mb-8"
-      >
-        <div 
-          className={cn(
-            "absolute inset-0 -mx-8 -mt-4 h-[280px] bg-gradient-to-br opacity-20 rounded-b-3xl", 
-            isDarkMode 
-              ? "from-indigo-900 via-blue-900 to-indigo-950" 
-              : "from-blue-100 via-indigo-100 to-purple-100"
-          )}
-        />
-        
-        <PageHeader
-          className="mb-3 relative z-10"
-          title={
-            <span className="flex items-center gap-2">
-              Projects Dashboard
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
-                <Sparkles className="h-5 w-5 inline" />
-              </span>
-            </span>
-          }
-          subtitle="Manage and monitor your construction projects"
-          // breadcrumbs={breadcrumbItems}
-          action={
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
-              <Button 
-                onClick={() => navigate("/create-project")} 
-                size="sm"
-                className="group space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-xl border-0"
-              >
-                <Plus className="w-4 h-4 transition-transform group-hover:rotate-90" />
-                <span>New Project</span>
-              </Button>
-            </motion.div>
-          }
-          backgroundVariant="transparent"
-          animated
-          size="lg"
-        />
-      </motion.div>
-      
-      {/* Project Overview Section */}
-      <motion.div 
-        className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-      >
-        <MetricCard
-          icon={<LayoutDashboard className="h-5 w-5 text-blue-500" />}
-          label="Active Projects"
-          value="12"
-          subtext="+3 from last month"
-          trend="positive"
-        />
-        <MetricCard
-          icon={<Users className="h-5 w-5 text-indigo-500" />}
-          label="Team Members"
-          value="24"
-          subtext="+2 new this month"
-          trend="positive"
-        />
-        <MetricCard
-          icon={<TrendingUp className="h-5 w-5 text-green-500" />}
-          label="Completion Rate"
-          value="86%"
-          subtext="+12% from last month"
-          trend="positive"
-        />
-      </motion.div>
-
-      {/* Filter and Search Section */}
-      <motion.div 
-        className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8 sticky top-0 z-20 backdrop-blur-sm px-4 py-3 -mx-4 rounded-lg"
-        style={{
-          backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.75)' : 'rgba(255, 255, 255, 0.8)'
-        }}
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-      >
-        <HorizontalNav 
-          items={projectNavItems} 
-          showIcons={true} 
-          size="md" 
-          variant="glass" 
-          animated={true}
-        />
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="relative w-full md:w-auto min-w-[250px] group">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-500 group-hover:text-blue-500 transition-colors duration-200" />
-                <Input
-                  type="text"
-                  placeholder="Search projects..."
-                  className={cn(
-                    "pl-10 transition-all duration-200 border-2",
-                    isDarkMode 
-                      ? "bg-slate-800/50 border-slate-700 focus:border-blue-500 text-white" 
-                      : "bg-white/90 border-gray-200 focus:border-blue-500 text-black"
-                  )}
-                />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Search for projects by name or client</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </motion.div>
-
-      {/* Projects Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-        className="mb-8"
-      >
-        <DashboardSection
-          title={
-            <span className="flex items-center">
-              Current Projects
-              <Badge className="ml-2 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                8 active
-              </Badge>
-            </span>
-          }
-          icon={<Building className="h-5 w-5" />}
-          subtitle="Your active construction projects"
-          variant="glass"
-          className="mb-6"
-          collapsible
-          animate
-        >
-          <div className="space-y-5">
-            <PhaseCard
-              name="Villa Construction"
-              progress={65}
-              startDate="Jan 15, 2024"
-              endDate="Aug 2024"
-              status="in-progress"
-              budget="$120,000"
-              spent="$52,450"
-              onClick={() => navigate("/project/1")}
-            />
-            <PhaseCard
-              name="Office Renovation"
-              progress={30}
-              startDate="Feb 1, 2024"
-              endDate="Oct 2024"
-              status="in-progress"
-              budget="$45,000"
-              spent="$12,500"
-              onClick={() => navigate("/project/2")}
-            />
-            <PhaseCard
-              name="Apartment Complex"
-              progress={12}
-              startDate="Mar 1, 2024"
-              endDate="Dec 2024"
-              status="in-progress"
-              budget="$350,000"
-              spent="$42,000"
-              onClick={() => navigate("/project/3")}
-            />
-          </div>
-          <motion.div 
-            className="mt-4 flex justify-center"
-            whileHover={{ scale: 1.05 }}
-          >
-            <Button 
-              variant="outline" 
-              onClick={() => navigate("/projects")}
-              className="group flex items-center gap-2 text-blue-600 border-blue-200 hover:border-blue-400 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/30"
-            >
-              View All Projects 
-              <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+    <div className="min-h-screen bg-[#F3F4F6] dark:bg-slate-900">
+      {/* Fixed Navigation Bar */}
+      <header className="sticky top-0 z-50 w-full bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 shadow-sm">
+        <div className="flex h-16 items-center justify-between px-4 md:px-6">
+          {/* Logo and mobile menu button */}
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+              <Menu className="h-6 w-6" />
             </Button>
-          </motion.div>
-        </DashboardSection>
-      </motion.div>
-
-      {/* Recent Activity & Deadlines */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="h-full"
-        >
-          <DashboardSection
-            title="Recent Activity"
-            icon={<Clock className="h-5 w-5" />}
-            subtitle="Latest actions across your projects"
-            variant="outlined"
-            collapsible
-            animate
-            className="h-full"
-          >
-            <div className="space-y-3 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
-              <ActivityItem
-                icon={<Package className="w-5 h-5" />}
-                title="Material Delivered"
-                description="20 bags of cement delivered"
-                time="2 hours ago"
-                project="Villa Construction"
-                iconColor="blue"
-              />
-              <ActivityItem
-                icon={<FileText className="w-5 h-5" />}
-                title="Progress Photo Added"
-                description="Foundation work progress"
-                time="5 hours ago"
-                project="Villa Construction"
-                iconColor="indigo"
-              />
-              <ActivityItem
-                icon={<FileText className="w-5 h-5" />}
-                title="Document Updated"
-                description="Updated construction timeline"
-                time="Yesterday"
-                project="Office Renovation"
-                iconColor="purple"
-              />
-              <ActivityItem
-                icon={<Users className="w-5 h-5" />}
-                title="Team Updated"
-                description="2 new team members added"
-                time="2 days ago"
-                project="Villa Construction"
-                iconColor="green"
-              />
-              <ActivityItem
-                icon={<TrendingUp className="w-5 h-5" />}
-                title="Budget Updated"
-                description="Approved additional $5,000"
-                time="3 days ago"
-                project="Office Renovation"
-                iconColor="amber"
-              />
+            <div className="flex items-center gap-2">
+              <HardHat className="h-6 w-6 text-[#1E3A8A]" />
+              <span className="font-bold text-lg text-[#1E3A8A] hidden sm:inline-block">BuildEase</span>
             </div>
-          </DashboardSection>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="h-full"
-        >
-          <DashboardSection
-            title="Upcoming Deadlines"
-            icon={<Calendar className="h-5 w-5" />}
-            subtitle="Tasks that need attention soon"
-            variant="highlight"
-            collapsible
-            animate
-            className="h-full"
-          >
-            <div className="space-y-3">
-              <DeadlineItem
-                title="Foundation Inspection"
-                project="Villa Construction"
-                dueDate="Mar 15, 2024"
-                daysLeft={5}
-              />
-              <DeadlineItem
-                title="Material Order Deadline"
-                project="Office Renovation"
-                dueDate="Mar 20, 2024"
-                daysLeft={10}
-              />
-              <DeadlineItem
-                title="Team Allocation Update"
-                project="Villa Construction"
-                dueDate="Mar 25, 2024"
-                daysLeft={15}
-              />
-            </div>
-          </DashboardSection>
-        </motion.div>
-      </div>
-
-      {/* Project Insights */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.5 }}
-        className="mb-4"
-      >
-        <DashboardSection
-          title="Project Insights"
-          icon={<Sparkles className="h-5 w-5" />}
-          subtitle="Key metrics and analytics from your projects"
-          variant="gradient"
-          collapsible
-          animate
-        >
-          <div className="space-y-3">
-            <InsightItem
-              title="Resource Optimization"
-              description="Schedule material deliveries 2 weeks before each phase to optimize inventory management"
-              type="default"
-            />
-            <InsightItem
-              title="Weather Alert"
-              description="Forecasted rain next week may impact foundation work - consider rescheduling"
-              type="alert"
-            />
-            <InsightItem
-              title="Cost Savings"
-              description="Bulk purchase of materials could save 12% on total cost"
-              type="success"
-            />
-            <InsightItem
-              title="Performance Improvement"
-              description="Team productivity has increased by 8% this month after new scheduling system"
-              type="performance"
-            />
           </div>
-        </DashboardSection>
-      </motion.div>
-    </DashboardLayout>
-  );
-};
 
-// Deadline item component
-interface DeadlineItemProps {
-  title: string;
-  project: string;
-  dueDate: string;
-  daysLeft: number;
-}
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center space-x-4">
+            {navItems.map((item) => (
+              <Button
+                key={item.path}
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "flex items-center gap-2",
+                  item.path === '/dashboard' && "bg-[#1E3A8A]/10 text-[#1E3A8A] dark:bg-[#1E3A8A]/20 dark:text-blue-400"
+                )}
+                onClick={() => navigate(item.path)}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+                {item.badge && (
+                  <Badge className="ml-1 bg-[#1E3A8A] text-white">{item.badge.text}</Badge>
+                )}
+              </Button>
+            ))}
+          </nav>
 
-const DeadlineItem: React.FC<DeadlineItemProps> = ({ title, project, dueDate, daysLeft }) => {
-  // Calculate status based on days left
-  const getStatus = () => {
-    if (daysLeft <= 3) return 'critical';
-    if (daysLeft <= 7) return 'warning';
-    return 'normal';
-  };
-  
-  const status = getStatus();
-  
-  const statusClasses = {
-    critical: "bg-red-100/80 border-red-200 text-red-800 dark:bg-red-900/30 dark:border-red-700/50 dark:text-red-300",
-    warning: "bg-yellow-100/80 border-yellow-200 text-yellow-800 dark:bg-yellow-900/30 dark:border-yellow-700/50 dark:text-yellow-300",
-    normal: "bg-blue-100/80 border-blue-200 text-blue-800 dark:bg-blue-900/30 dark:border-blue-700/50 dark:text-blue-300"
-  };
-
-  const statusIcons = {
-    critical: <AlertTriangle className="w-4 h-4 text-red-500" />,
-    warning: <Clock className="w-4 h-4 text-yellow-500" />,
-    normal: <Calendar className="w-4 h-4 text-blue-500" />
-  };
-  
-  return (
-    <motion.div 
-      className={`p-3.5 rounded-lg border flex items-center justify-between transition-all duration-300 ${statusClasses[status]}`}
-      whileHover={{ scale: 1.02, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}
-    >
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5">
-          {statusIcons[status]}
+          {/* User Menu & Actions */}
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="text-gray-500 dark:text-gray-400">
+              <Bell className="h-5 w-5" />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src="/avatar.png" alt="User" />
+                    <AvatarFallback className="bg-[#1E3A8A] text-white">JD</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem>
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
-        <div>
-          <h4 className="font-medium">{title}</h4>
-          <p className="text-sm mt-1 opacity-80">{project} • Due {dueDate}</p>
+
+        {/* Mobile Navigation Menu */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="md:hidden border-t border-gray-200 dark:border-slate-800"
+            >
+              <div className="flex flex-col space-y-1 p-2">
+                {navItems.map((item) => (
+                  <Button
+                    key={item.path}
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "justify-start",
+                      item.path === '/dashboard' && "bg-[#1E3A8A]/10 text-[#1E3A8A] dark:bg-[#1E3A8A]/20 dark:text-blue-400"
+                    )}
+                    onClick={() => {
+                      navigate(item.path);
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    {item.icon}
+                    <span className="ml-2">{item.label}</span>
+                    {item.badge && (
+                      <Badge className="ml-auto bg-[#1E3A8A] text-white">{item.badge.text}</Badge>
+                    )}
+                  </Button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </header>
+
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-8">
+        {/* Page Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-[#1E1E1E] dark:text-white">Dashboard</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">Welcome back to your project hub</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Search projects..."
+                className="pl-9 w-full max-w-xs bg-white dark:bg-slate-800"
+              />
+            </div>
+            <Button onClick={() => navigate('/create-project')} className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white">
+              <Plus className="mr-2 h-4 w-4" />
+              New Project
+            </Button>
+          </div>
         </div>
-      </div>
-      <div className="flex items-center space-x-2 font-medium text-sm">
-        <span className={cn(
-          "rounded-full px-2.5 py-0.5",
-          status === 'critical' ? "bg-red-200 text-red-800 dark:bg-red-900/50 dark:text-red-300" :
-          status === 'warning' ? "bg-yellow-200 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300" :
-          "bg-blue-200 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300"
-        )}>
-          {daysLeft} days left
-        </span>
-        <ChevronRight className="w-4 h-4" />
-      </div>
-    </motion.div>
+
+        {/* Metrics Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card className="bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Active Projects</p>
+                  <p className="text-3xl font-bold mt-1 text-[#1E1E1E] dark:text-white">4</p>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-[#1E3A8A]/10 flex items-center justify-center">
+                  <Briefcase className="h-6 w-6 text-[#1E3A8A]" />
+                </div>
+              </div>
+              <div className="mt-4">
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-500 dark:text-gray-400">Progress</span>
+                  <span className="font-medium text-[#1E3A8A] dark:text-blue-400">68%</span>
+                </div>
+                <Progress value={68} className="h-1.5 bg-[#1E3A8A]/20">
+                  <div className="h-full bg-[#1E3A8A]" />
+                </Progress>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Pending Tasks</p>
+                  <p className="text-3xl font-bold mt-1 text-[#1E1E1E] dark:text-white">16</p>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-[#D97706]/10 flex items-center justify-center">
+                  <ListTodo className="h-6 w-6 text-[#D97706]" />
+                </div>
+              </div>
+              <div className="mt-4 flex items-center justify-between">
+                <Badge className="bg-[#D97706]">5 due today</Badge>
+                <Button variant="ghost" size="sm" className="text-[#D97706] h-8 px-2">
+                  <span>View all</span>
+                  <ArrowRight className="ml-1 h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Materials</p>
+                  <p className="text-3xl font-bold mt-1 text-[#1E1E1E] dark:text-white">24</p>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-[#FFD700]/10 flex items-center justify-center">
+                  <Package className="h-6 w-6 text-[#FFD700]" />
+                </div>
+              </div>
+              <div className="mt-4 flex items-center justify-between">
+                <Badge variant="outline" className="border-orange-500 text-orange-500">3 low stock</Badge>
+                <Button variant="ghost" size="sm" className="text-[#FFD700] h-8 px-2">
+                  <span>Order now</span>
+                  <ArrowRight className="ml-1 h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Budget Used</p>
+                  <p className="text-3xl font-bold mt-1 text-[#1E1E1E] dark:text-white">$42,500</p>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+                  <DollarSign className="h-6 w-6 text-green-600" />
+                </div>
+              </div>
+              <div className="mt-4">
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-500 dark:text-gray-400">Total budget</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">$120,000</span>
+                </div>
+                <Progress value={35} className="h-1.5 bg-green-100">
+                  <div className="h-full bg-green-600" />
+                </Progress>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Projects Progress */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-[#1E1E1E] dark:text-white">Projects Progress</h2>
+            <Button variant="outline" onClick={() => navigate('/projects')} className="text-[#1E3A8A] border-[#1E3A8A]">
+              View All Projects
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+            {/* Project 1 */}
+            <Card className="bg-white dark:bg-slate-800 hover:shadow-md transition-shadow">
+              <CardContent className="p-0">
+                <div className="flex flex-col md:flex-row md:items-center gap-4 p-6">
+                  <div className="flex-1">
+                    <div className="flex items-center mb-2">
+                      <h3 className="font-semibold text-[#1E1E1E] dark:text-white">Residential Renovation</h3>
+                      <Badge className="ml-2 bg-[#1E3A8A]">Active</Badge>
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                      Completion deadline: August 15, 2024
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="w-full max-w-md">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-gray-500 dark:text-gray-400">Progress</span>
+                          <span className="font-medium text-[#1E1E1E] dark:text-white">75%</span>
+                        </div>
+                        <Progress value={75} className="h-2">
+                          <div className="h-full bg-[#1E3A8A]" />
+                        </Progress>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center flex-wrap gap-3">
+                    <div className="flex -space-x-2">
+                      {[1, 2, 3].map((_, i) => (
+                        <Avatar key={i} className="border-2 border-white dark:border-slate-800 h-8 w-8">
+                          <AvatarFallback className="bg-[#1E3A8A] text-white">{["JD", "MB", "TS"][i]}</AvatarFallback>
+                        </Avatar>
+                      ))}
+                    </div>
+                    <Button variant="outline" size="sm" className="ml-2" onClick={() => navigate('/project/1')}>
+                      Details
+                      <ChevronRight className="ml-1 h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Project 2 */}
+            <Card className="bg-white dark:bg-slate-800 hover:shadow-md transition-shadow">
+              <CardContent className="p-0">
+                <div className="flex flex-col md:flex-row md:items-center gap-4 p-6">
+                  <div className="flex-1">
+                    <div className="flex items-center mb-2">
+                      <h3 className="font-semibold text-[#1E1E1E] dark:text-white">Commercial Office Space</h3>
+                      <Badge className="ml-2 bg-[#D97706]">Planning</Badge>
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                      Completion deadline: December 10, 2024
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="w-full max-w-md">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-gray-500 dark:text-gray-400">Progress</span>
+                          <span className="font-medium text-[#1E1E1E] dark:text-white">25%</span>
+                        </div>
+                        <Progress value={25} className="h-2">
+                          <div className="h-full bg-[#D97706]" />
+                        </Progress>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center flex-wrap gap-3">
+                    <div className="flex -space-x-2">
+                      {[1, 2].map((_, i) => (
+                        <Avatar key={i} className="border-2 border-white dark:border-slate-800 h-8 w-8">
+                          <AvatarFallback className="bg-[#D97706] text-white">{["AW", "RL"][i]}</AvatarFallback>
+                        </Avatar>
+                      ))}
+                    </div>
+                    <Button variant="outline" size="sm" className="ml-2" onClick={() => navigate('/project/2')}>
+                      Details
+                      <ChevronRight className="ml-1 h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Recent Activity & Upcoming Tasks */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Recent Activity */}
+          <Card className="bg-white dark:bg-slate-800">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl text-[#1E1E1E] dark:text-white">Recent Activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-5">
+                {[
+                  { 
+                    icon: <Package className="h-6 w-6 text-[#1E3A8A]" />, 
+                    title: "Materials delivered", 
+                    description: "Cement and reinforcement steel",
+                    timestamp: "2 hours ago"
+                  },
+                  { 
+                    icon: <Clipboard className="h-6 w-6 text-[#D97706]" />, 
+                    title: "Task completed", 
+                    description: "Foundation inspection passed",
+                    timestamp: "Yesterday"
+                  },
+                  { 
+                    icon: <Users className="h-6 w-6 text-green-500" />, 
+                    title: "Team meeting", 
+                    description: "Weekly progress review",
+                    timestamp: "2 days ago"
+                  }
+                ].map((activity, idx) => (
+                  <div key={idx} className="flex items-start gap-4">
+                    <div className="rounded-full p-2 bg-gray-100 dark:bg-slate-700 flex-shrink-0">
+                      {activity.icon}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-[#1E1E1E] dark:text-white">
+                        {activity.title}
+                      </h4>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        {activity.description}
+                      </p>
+                    </div>
+                    <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
+                      {activity.timestamp}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+            <CardFooter className="pt-0">
+              <Button variant="ghost" className="text-[#1E3A8A] dark:text-blue-400 w-full justify-center">
+                View All Activity
+              </Button>
+            </CardFooter>
+          </Card>
+
+          {/* Upcoming Tasks */}
+          <Card className="bg-white dark:bg-slate-800">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl text-[#1E1E1E] dark:text-white">Upcoming Tasks</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-5">
+                {[
+                  {
+                    title: "Site inspection",
+                    project: "Residential Renovation",
+                    dueDate: "Today",
+                    daysLeft: 0,
+                    priority: "high"
+                  },
+                  {
+                    title: "Material ordering",
+                    project: "Commercial Office Space",
+                    dueDate: "Tomorrow",
+                    daysLeft: 1,
+                    priority: "medium"
+                  },
+                  {
+                    title: "Foundation planning",
+                    project: "Commercial Office Space",
+                    dueDate: "In 3 days",
+                    daysLeft: 3,
+                    priority: "low"
+                  }
+                ].map((task, idx) => (
+                  <div 
+                    key={idx} 
+                    className={cn(
+                      "flex items-start p-3 border rounded-lg",
+                      task.priority === "high" 
+                        ? "border-red-200 bg-red-50 dark:border-red-800/30 dark:bg-red-900/10" 
+                        : task.priority === "medium"
+                        ? "border-amber-200 bg-amber-50 dark:border-amber-800/30 dark:bg-amber-900/10"
+                        : "border-green-200 bg-green-50 dark:border-green-800/30 dark:bg-green-900/10"
+                    )}
+                  >
+                    <div className="flex-1">
+                      <h4 className="font-medium text-[#1E1E1E] dark:text-white">{task.title}</h4>
+                      <div className="flex items-center mt-1">
+                        <Badge variant="outline" className="mr-2 text-xs">
+                          {task.project}
+                        </Badge>
+                        <span className={cn(
+                          "text-xs",
+                          task.daysLeft === 0 
+                            ? "text-red-600 dark:text-red-400" 
+                            : task.daysLeft <= 2 
+                            ? "text-amber-600 dark:text-amber-400" 
+                            : "text-green-600 dark:text-green-400"
+                        )}>
+                          Due {task.dueDate}
+                        </span>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="sm" className="text-[#1E3A8A]">
+                      <CheckCircle className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+            <CardFooter className="pt-0">
+              <Button variant="ghost" className="text-[#1E3A8A] dark:text-blue-400 w-full justify-center">
+                View All Tasks
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      </main>
+    </div>
   );
 };
 

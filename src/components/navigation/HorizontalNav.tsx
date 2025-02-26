@@ -12,11 +12,12 @@ import { Badge } from '@/components/ui/badge';
 
 export interface NavItem {
   label: string;
-  path: string;
+  path?: string;
+  value?: string;
   icon?: React.ReactNode;
   badge?: {
     text: string;
-    color: 'blue' | 'green' | 'red' | 'yellow' | 'purple' | 'indigo';
+    color: string;
   };
 }
 

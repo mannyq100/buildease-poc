@@ -53,7 +53,7 @@ import { format } from 'date-fns';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface DatePickerProps {
@@ -106,6 +106,7 @@ const ProjectDetails = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
   const [phases, setPhases] = useState<Phase[]>([
     {
       id: 1,
@@ -194,32 +195,32 @@ const ProjectDetails = () => {
   const projectNavItems: NavItem[] = [
     {
       label: "Overview",
-      path: `/project/${id}?tab=overview`,
+      value: "overview",
       icon: <Home className="h-4 w-4" />
     },
     {
       label: "Schedule",
-      path: `/project/${id}?tab=schedule`,
+      value: "schedule",
       icon: <Calendar className="h-4 w-4" />
     },
     {
       label: "Budget",
-      path: `/project/${id}?tab=budget`,
+      value: "budget",
       icon: <DollarSign className="h-4 w-4" />
     },
     {
       label: "Team",
-      path: `/project/${id}?tab=team`,
+      value: "team",
       icon: <Users className="h-4 w-4" />
     },
     {
       label: "Materials",
-      path: `/project/${id}?tab=materials`,
+      value: "materials",
       icon: <Package className="h-4 w-4" />
     },
     {
       label: "Documents",
-      path: `/project/${id}?tab=documents`,
+      value: "documents",
       icon: <FileText className="h-4 w-4" />,
       badge: {
         text: "3",
@@ -228,7 +229,7 @@ const ProjectDetails = () => {
     },
     {
       label: "Photos",
-      path: `/project/${id}?tab=photos`,
+      value: "photos",
       icon: <Image className="h-4 w-4" />
     }
   ];
@@ -325,254 +326,159 @@ const ProjectDetails = () => {
   };
 
   return (
-    <DashboardLayout>
-      <PageHeader
-        title={`Residential Renovation #${id}`}
-        subtitle="Modern home renovation project with eco-friendly materials"
-        // breadcrumbs={breadcrumbItems}
-        className="mb-6"
-        action={
-          <div className="flex items-center gap-3">
-            <Button variant="outline" className="gap-2">
-              <FileText className="h-4 w-4" /> Export
-            </Button>
-            <Button className="gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300">
-              <Plus className="h-4 w-4" /> New Update
-            </Button>
-          </div>
-        }
-      />
-
-      <motion.div 
-        className="mb-6"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <HorizontalNav 
-          items={projectNavItems} 
-          variant="glass" 
-          showIcons={true} 
-          size="md" 
-        />
-      </motion.div>
-
-      {/* Project Progress Banner */}
-      <motion.div 
-        className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 shadow-sm border border-blue-100 dark:border-blue-800"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.1 }}
-      >
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Project Progress</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Estimated completion: August 15, 2024</p>
-          </div>
-          <div className="w-full md:w-2/3">
-            <div className="flex justify-between text-sm mb-1">
-              <span className="font-medium">Overall: 45% Complete</span>
-              <span>3 of 7 phases finished</span>
+    <div className="min-h-screen bg-[#F3F4F6] dark:bg-slate-900">
+      {/* Fixed Navigation Bar */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex h-16 items-center justify-between">
+            {/* Logo and Navigation */}
+            <div className="flex items-center gap-8">
+              <div className="flex items-center gap-2">
+                <Building className="h-8 w-8 text-[#1E3A8A]" />
+                <span className="text-xl font-bold text-[#1E3A8A]">BuildEase</span>
+              </div>
+              <nav className="hidden md:flex items-center space-x-4">
+                {projectNavItems.map((item) => (
+                  <Button
+                    key={item.value}
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "flex items-center gap-2",
+                      activeTab === item.value && "bg-[#1E3A8A]/10 text-[#1E3A8A]"
+                    )}
+                    onClick={() => setActiveTab(item.value)}
+                  >
+                    {item.icon}
+                    <span>{item.label}</span>
+                    {item.badge && (
+                      <Badge className="ml-1 bg-[#1E3A8A] text-white">
+                        {item.badge.text}
+                      </Badge>
+                    )}
+                  </Button>
+                ))}
+              </nav>
             </div>
-            <div className="relative h-3 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-              <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full" style={{ width: '45%' }}></div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-3">
+              <Button 
+                variant="outline" 
+                className="gap-2 text-[#D97706] border-[#D97706] hover:bg-[#D97706]/10"
+              >
+                <FileText className="h-4 w-4" /> Export
+              </Button>
+              <Button 
+                className="gap-2 bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white"
+              >
+                <Plus className="h-4 w-4" /> New Update
+              </Button>
             </div>
           </div>
         </div>
-      </motion.div>
-
-      {/* Project Stats */}
-      <motion.div 
-        className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.1 }}
-      >
-        <MetricCard
-          icon={<Calendar className="h-5 w-5 text-blue-500" />}
-          label="Timeline"
-          value="7 months"
-          subtext="Jan - Aug 2024"
-          className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-800"
-        />
-        <MetricCard
-          icon={<DollarSign className="h-5 w-5 text-green-500" />}
-          label="Budget"
-          value="$120,000"
-          subtext="$52,450 spent"
-          className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-800"
-        />
-        <MetricCard
-          icon={<Users className="h-5 w-5 text-indigo-500" />}
-          label="Team Size"
-          value="12"
-          subtext="3 contractors"
-          className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 border-indigo-200 dark:border-indigo-800"
-        />
-        <MetricCard
-          icon={<Package className="h-5 w-5 text-purple-500" />}
-          label="Materials"
-          value="24"
-          subtext="8 pending delivery"
-          className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-800"
-        />
-      </motion.div>
+      </header>
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Project Phases */}
-        <motion.div 
-          className="lg:col-span-2"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-        >
-          <DashboardSection
-            title="Project Phases"
-            icon={<Briefcase className="h-5 w-5" />}
-            subtitle="Construction timeline breakdown"
-            variant="glass"
-            collapsible
-            animate
-            className="mb-6"
-            action={
-              <Dialog open={showPhaseDialog} onOpenChange={setShowPhaseDialog}>
-                <DialogTrigger asChild>
-                  <Button size="sm" className="flex items-center gap-1 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-md hover:shadow-lg transition-all duration-300">
-                    <Plus className="h-4 w-4" />
-                    Add Phase
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-md bg-white dark:bg-gray-900 shadow-xl">
-                  <DialogHeader>
-                    <DialogTitle>Add New Project Phase</DialogTitle>
-                    <DialogDescription>
-                      Create a new phase for your construction project.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="phase-name">Phase Name</Label>
-                      <Input 
-                        id="phase-name"
-                        placeholder="e.g., Roofing, Landscaping"
-                        value={newPhase.name}
-                        onChange={(e) => setNewPhase({...newPhase, name: e.target.value})}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Start Date</Label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full justify-start text-left font-normal",
-                                !newPhase.startDate && "text-muted-foreground"
-                              )}
-                            >
-                              <Calendar className="mr-2 h-4 w-4" />
-                              {newPhase.startDate ? (
-                                format(newPhase.startDate, "PPP")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
-                            <DatePicker
-                              mode="single"
-                              selected={newPhase.startDate}
-                              onSelect={(date) => date && setNewPhase({...newPhase, startDate: date})}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>End Date</Label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full justify-start text-left font-normal",
-                                !newPhase.endDate && "text-muted-foreground"
-                              )}
-                            >
-                              <Calendar className="mr-2 h-4 w-4" />
-                              {newPhase.endDate ? (
-                                format(newPhase.endDate, "PPP")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
-                            <DatePicker
-                              mode="single"
-                              selected={newPhase.endDate}
-                              onSelect={(date) => date && setNewPhase({...newPhase, endDate: date})}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phase-budget">Budget (USD)</Label>
-                      <Input 
-                        id="phase-budget"
-                        placeholder="e.g., 15000"
-                        type="number"
-                        value={newPhase.budget}
-                        onChange={(e) => setNewPhase({...newPhase, budget: e.target.value})}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phase-description">Description</Label>
-                      <Textarea 
-                        id="phase-description"
-                        placeholder="Enter details about this phase"
-                        rows={3}
-                        value={newPhase.description}
-                        onChange={(e) => setNewPhase({...newPhase, description: e.target.value})}
-                      />
-                    </div>
+      <main className="pt-16">
+        {/* Project Header */}
+        <div className="bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-3xl font-bold">Residential Renovation #{id}</h1>
+                <p className="mt-2 text-blue-100">Modern home renovation project with eco-friendly materials</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Badge 
+                  className="px-3 py-1 text-sm bg-green-500 text-white"
+                >
+                  Active
+                </Badge>
+                <Button 
+                  variant="outline" 
+                  className="gap-2 border-white/20 text-white hover:bg-white/10"
+                >
+                  <Settings className="h-4 w-4" /> Settings
+                </Button>
+              </div>
+            </div>
+
+            {/* Project Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/20 rounded-lg">
+                    <Calendar className="h-5 w-5" />
                   </div>
-                  <DialogFooter>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setShowPhaseDialog(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button 
-                      onClick={handleAddPhase}
-                      disabled={!newPhase.name || !newPhase.budget}
-                      className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white"
-                    >
-                      Add Phase
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            }
-          >
-            <div className="space-y-4">
-              {phases.map((phase) => (
-                <div key={phase.id} className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
-                  <div 
-                    className={`flex justify-between items-start p-4 cursor-pointer transition-colors ${
-                      expandedPhase === phase.id 
-                        ? 'bg-blue-50 dark:bg-blue-900/20' 
-                        : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
-                    }`}
-                    onClick={() => togglePhaseExpansion(phase.id)}
+                  <div>
+                    <p className="text-sm text-blue-100">Timeline</p>
+                    <p className="text-lg font-semibold">7 months</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/20 rounded-lg">
+                    <DollarSign className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-blue-100">Budget</p>
+                    <p className="text-lg font-semibold">$120,000</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/20 rounded-lg">
+                    <Users className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-blue-100">Team Size</p>
+                    <p className="text-lg font-semibold">12 members</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/20 rounded-lg">
+                    <CheckSquare className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-blue-100">Progress</p>
+                    <p className="text-lg font-semibold">75% complete</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main Content Area */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Project Phases */}
+              <Card className="bg-white dark:bg-slate-800 shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="text-xl text-[#1E1E1E] dark:text-white">Project Phases</CardTitle>
+                    <CardDescription>Construction timeline breakdown</CardDescription>
+                  </div>
+                  <Button 
+                    size="sm"
+                    className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white"
+                    onClick={() => setShowPhaseDialog(true)}
                   >
-                    <div className="w-full">
+                    <Plus className="h-4 w-4 mr-1" /> Add Phase
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {phases.map((phase) => (
                       <PhaseCard
+                        key={phase.id}
                         name={phase.name}
                         progress={phase.progress}
                         startDate={phase.startDate}
@@ -580,445 +486,112 @@ const ProjectDetails = () => {
                         status={phase.status}
                         budget={phase.budget}
                         spent={phase.spent}
-                        simplified={expandedPhase === phase.id}
-                        className="border-0 p-0 hover:shadow-none"
                       />
-                    </div>
-                    <div className="flex items-center p-2">
-                      <ChevronDown 
-                        className={`h-5 w-5 transition-transform duration-300 ${expandedPhase === phase.id ? 'rotate-180 text-blue-600' : 'text-gray-500'}`} 
-                      />
-                    </div>
+                    ))}
                   </div>
-                  
-                  {expandedPhase === phase.id && (
-                    <motion.div 
-                      className="border-t p-4 space-y-3 bg-gradient-to-b from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-900"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <div className="flex justify-between items-center">
-                        <h4 className="font-medium text-sm text-gray-700 dark:text-gray-300">Tasks</h4>
-                        <Dialog open={showTaskDialog} onOpenChange={setShowTaskDialog}>
-                          <DialogTrigger asChild>
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="flex items-center gap-1 border-dashed hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-700 dark:hover:text-blue-400 transition-colors"
-                              onClick={() => setNewTask({...newTask, phaseId: phase.id})}
-                            >
-                              <Plus className="h-3.5 w-3.5" />
-                              Add Task
-                            </Button>
-                          </DialogTrigger>
-                          
-                          <DialogContent className="sm:max-w-md">
-                            <DialogHeader>
-                              <DialogTitle>Add New Task</DialogTitle>
-                              <DialogDescription>
-                                Create a new task for phase "{phase.name}".
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4 py-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="task-title">Task Title</Label>
-                                <Input 
-                                  id="task-title"
-                                  placeholder="e.g., Install Drywall"
-                                  value={newTask.title}
-                                  onChange={(e) => setNewTask({...newTask, title: e.target.value})}
-                                />
-                              </div>
-                              <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                  <Label>Start Date</Label>
-                                  <Popover>
-                                    <PopoverTrigger asChild>
-                                      <Button
-                                        variant="outline"
-                                        className={cn(
-                                          "w-full justify-start text-left font-normal",
-                                          !newTask.startDate && "text-muted-foreground"
-                                        )}
-                                      >
-                                        <Calendar className="mr-2 h-4 w-4" />
-                                        {newTask.startDate ? (
-                                          format(newTask.startDate, "PPP")
-                                        ) : (
-                                          <span>Pick a date</span>
-                                        )}
-                                      </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0">
-                                      <DatePicker
-                                        mode="single"
-                                        selected={newTask.startDate}
-                                        onSelect={(date) => date && setNewTask({...newTask, startDate: date})}
-                                        initialFocus
-                                      />
-                                    </PopoverContent>
-                                  </Popover>
-                                </div>
-                                <div className="space-y-2">
-                                  <Label>End Date</Label>
-                                  <Popover>
-                                    <PopoverTrigger asChild>
-                                      <Button
-                                        variant="outline"
-                                        className={cn(
-                                          "w-full justify-start text-left font-normal",
-                                          !newTask.endDate && "text-muted-foreground"
-                                        )}
-                                      >
-                                        <Calendar className="mr-2 h-4 w-4" />
-                                        {newTask.endDate ? (
-                                          format(newTask.endDate, "PPP")
-                                        ) : (
-                                          <span>Pick a date</span>
-                                        )}
-                                      </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0">
-                                      <DatePicker
-                                        mode="single"
-                                        selected={newTask.endDate}
-                                        onSelect={(date) => date && setNewTask({...newTask, endDate: date})}
-                                        initialFocus
-                                      />
-                                    </PopoverContent>
-                                  </Popover>
-                                </div>
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="task-priority">Priority</Label>
-                                <Select 
-                                  value={newTask.priority} 
-                                  onValueChange={(value) => setNewTask({...newTask, priority: value})}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select priority" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="Low">Low</SelectItem>
-                                    <SelectItem value="Medium">Medium</SelectItem>
-                                    <SelectItem value="High">High</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="task-assignee">Assigned To</Label>
-                                <Select 
-                                  value={newTask.assignee} 
-                                  onValueChange={(value) => setNewTask({...newTask, assignee: value})}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select team member" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="John Doe">John Doe</SelectItem>
-                                    <SelectItem value="Jane Smith">Jane Smith</SelectItem>
-                                    <SelectItem value="Mike Johnson">Mike Johnson</SelectItem>
-                                    <SelectItem value="Sarah Williams">Sarah Williams</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="task-description">Description</Label>
-                                <Textarea 
-                                  id="task-description"
-                                  placeholder="Enter task details"
-                                  rows={3}
-                                  value={newTask.description}
-                                  onChange={(e) => setNewTask({...newTask, description: e.target.value})}
-                                />
-                              </div>
-                            </div>
-                            <DialogFooter>
-                              <Button 
-                                variant="outline" 
-                                onClick={() => setShowTaskDialog(false)}
-                              >
-                                Cancel
-                              </Button>
-                              <Button 
-                                onClick={handleAddTask}
-                                disabled={!newTask.title}
-                              >
-                                Add Task
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        {tasks.filter(task => task.phaseId === phase.id).length > 0 ? (
-                          tasks.filter(task => task.phaseId === phase.id).map((task) => (
-                            <div 
-                              key={task.id} 
-                              className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-sm transition-all"
-                            >
-                              <div className="flex justify-between items-start mb-2">
-                                <div className="flex gap-2 items-start">
-                                  <div>
-                                    {task.status === 'Completed' ? (
-                                      <CheckSquare className="h-5 w-5 text-green-500" />
-                                    ) : task.status === 'In Progress' ? (
-                                      <Clock className="h-5 w-5 text-blue-500" />
-                                    ) : task.status === 'Delayed' ? (
-                                      <Clock className="h-5 w-5 text-red-500" />
-                                    ) : (
-                                      <ListTodo className="h-5 w-5 text-gray-500" />
-                                    )}
-                                  </div>
-                                  <div>
-                                    <div className="font-medium">{task.title}</div>
-                                    <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">{task.description}</div>
-                                  </div>
-                                </div>
-                                <div>
-                                  <Badge className={`${
-                                    task.priority === 'High' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                                    task.priority === 'Medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                                    'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                  }`}>
-                                    {task.priority}
-                                  </Badge>
-                                </div>
-                              </div>
-                              
-                              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
-                                <span>{task.startDate} - {task.endDate}</span>
-                                <div className="flex items-center">
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <div className="flex -space-x-2">
-                                          {task.assignedTo.map((assignee, index) => (
-                                            <Avatar key={index} className="h-6 w-6 border-2 border-white dark:border-gray-800">
-                                              <AvatarFallback className="bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs">
-                                                {assignee.substring(0, 2).toUpperCase()}
-                                              </AvatarFallback>
-                                            </Avatar>
-                                          ))}
-                                        </div>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p>{task.assignedTo.join(', ')}</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                </div>
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="text-center py-4 text-gray-500 dark:text-gray-400 text-sm italic bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed">
-                            No tasks added yet. Click "Add Task" to create one.
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </DashboardSection>
-          
-          {/* Recent Documents */}
-          <DashboardSection
-            title="Recent Documents"
-            icon={<FileText className="h-5 w-5" />}
-            subtitle="Project documentation"
-            variant="default"
-            collapsible
-            animate
-            className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-all duration-300"
-          >
-            <div className="space-y-3">
-              <DocumentItem
-                title="Construction Permit"
-                type="PDF"
-                date="Feb 15, 2024"
-                size="1.2 MB"
-              />
-              <DocumentItem
-                title="Architectural Plans"
-                type="DWG"
-                date="Jan 20, 2024"
-                size="5.8 MB"
-              />
-              <DocumentItem
-                title="Budget Breakdown"
-                type="XLSX"
-                date="Jan 18, 2024"
-                size="842 KB"
-              />
-            </div>
-          </DashboardSection>
-        </motion.div>
+                </CardContent>
+              </Card>
 
-        {/* Right Sidebar */}
-        <motion.div
-          className="space-y-6"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4, delay: 0.3 }}
-        >
-          {/* Recent Activity */}
-          <DashboardSection
-            title="Recent Activity"
-            icon={<Clock className="h-5 w-5" />}
-            subtitle="Latest project updates"
-            variant="default"
-            collapsible
-            animate
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-all duration-300"
-          >
-            <div className="space-y-4">
-              <ActivityItem
-                icon={<FileText className="h-5 w-5" />}
-                title="Permit Approval"
-                description="Building permit has been approved by the city."
-                time="2 days ago"
-                iconColor="blue"
-              />
-              <ActivityItem
-                icon={<DollarSign className="h-5 w-5" />}
-                title="Payment Made"
-                description="$15,450 paid to contractor for foundation work."
-                time="5 days ago"
-                iconColor="green"
-              />
-              <ActivityItem
-                icon={<Users className="h-5 w-5" />}
-                title="Team Updated"
-                description="2 new contractors added to the team."
-                time="1 week ago"
-                iconColor="indigo"
-              />
+              {/* Recent Activity */}
+              <Card className="bg-white dark:bg-slate-800 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-xl text-[#1E1E1E] dark:text-white">Recent Activity</CardTitle>
+                  <CardDescription>Latest updates and changes</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <ActivityItem
+                      icon={<FileText className="h-5 w-5" />}
+                      title="Permit Approval"
+                      description="Building permit has been approved by the city."
+                      time="2 days ago"
+                      iconColor="blue"
+                    />
+                    <ActivityItem
+                      icon={<DollarSign className="h-5 w-5" />}
+                      title="Payment Made"
+                      description="$15,450 paid to contractor for foundation work."
+                      time="5 days ago"
+                      iconColor="green"
+                    />
+                    <ActivityItem
+                      icon={<Users className="h-5 w-5" />}
+                      title="Team Updated"
+                      description="2 new contractors added to the team."
+                      time="1 week ago"
+                      iconColor="indigo"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </DashboardSection>
-        
-          {/* Project Insights */}
-          <DashboardSection
-            title="Project Insights"
-            icon={<BarChart3 className="h-5 w-5" />}
-            subtitle="AI-powered analysis"
-            variant="default"
-            collapsible
-            animate
-            className={cn(
-              "rounded-lg border shadow-sm hover:shadow-md transition-all duration-300",
-              isDarkMode 
-                ? "bg-indigo-950/30 border-indigo-900/50" 
-                : "bg-gradient-to-br from-blue-50/80 to-indigo-50/80 border-blue-100"
-            )}
-          >
-            <div className="space-y-3">
-              <InsightItem
-                title="Budget Forecast"
-                description="Project is currently 5% under budget. Most savings from efficient material sourcing."
-                type="success"
-              />
-              <InsightItem
-                title="Schedule Analysis"
-                description="Current pace suggests completion 2 weeks ahead of schedule if weather permits."
-                type="default"
-              />
-              <InsightItem
-                title="Risk Detection"
-                description="Material delivery delays possible in May due to supplier capacity constraints."
-                type="warning"
-              />
-            </div>
-          </DashboardSection>
-        
-          {/* Quick Actions */}
-          <DashboardSection
-            title="Quick Actions"
-            icon={<Settings className="h-5 w-5" />}
-            subtitle="Frequent operations"
-            variant="default"
-            collapsible
-            animate
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-all duration-300"
-          >
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" className="justify-start hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 transition-colors">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Message Team
-              </Button>
-              <Button variant="outline" className="justify-start hover:bg-green-50 hover:text-green-700 dark:hover:bg-green-900/20 dark:hover:text-green-400 transition-colors">
-                <FileText className="h-4 w-4 mr-2" />
-                Add Document
-              </Button>
-              <Button variant="outline" className="justify-start hover:bg-indigo-50 hover:text-indigo-700 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400 transition-colors">
-                <Users className="h-4 w-4 mr-2" />
-                Update Team
-              </Button>
-              <Button variant="outline" className="justify-start hover:bg-purple-50 hover:text-purple-700 dark:hover:bg-purple-900/20 dark:hover:text-purple-400 transition-colors">
-                <Calendar className="h-4 w-4 mr-2" />
-                Schedule Meeting
-              </Button>
-            </div>
-          </DashboardSection>
 
-          {/* Project Stats - Reused for sidebar */}
-          <DashboardSection
-            title="Project Stats"
-            icon={<BarChart3 className="h-5 w-5" />}
-            subtitle="Key performance metrics"
-            variant="default"
-            collapsible
-            animate
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-all duration-300"
-          >
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Budget utilization</span>
-                  <span className="font-medium">43%</span>
-                </div>
-                <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full" 
-                    style={{ width: '43%' }}
-                  ></div>
-                </div>
-              </div>
-              
-              <div className="space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Schedule progress</span>
-                  <span className="font-medium">45%</span>
-                </div>
-                <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full" 
-                    style={{ width: '45%' }}
-                  ></div>
-                </div>
-              </div>
-              
-              <div className="space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Team utilization</span>
-                  <span className="font-medium">78%</span>
-                </div>
-                <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full" 
-                    style={{ width: '78%' }}
-                  ></div>
-                </div>
-              </div>
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Project Insights */}
+              <Card className={cn(
+                "border shadow-sm",
+                isDarkMode 
+                  ? "bg-indigo-950/30 border-indigo-900/50" 
+                  : "bg-gradient-to-br from-blue-50/80 to-indigo-50/80 border-blue-100"
+              )}>
+                <CardHeader>
+                  <CardTitle className="text-xl text-[#1E1E1E] dark:text-white">Project Insights</CardTitle>
+                  <CardDescription>AI-powered analysis</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <InsightItem
+                      title="Budget Forecast"
+                      description="Project is currently 5% under budget. Most savings from efficient material sourcing."
+                      type="success"
+                    />
+                    <InsightItem
+                      title="Schedule Analysis"
+                      description="Current pace suggests completion 2 weeks ahead of schedule if weather permits."
+                      type="default"
+                    />
+                    <InsightItem
+                      title="Risk Detection"
+                      description="Material delivery delays possible in May due to supplier capacity constraints."
+                      type="warning"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Quick Actions */}
+              <Card className="bg-white dark:bg-slate-800 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-xl text-[#1E1E1E] dark:text-white">Quick Actions</CardTitle>
+                  <CardDescription>Frequent operations</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="outline" className="justify-start hover:bg-[#1E3A8A]/10 hover:text-[#1E3A8A]">
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Message Team
+                    </Button>
+                    <Button variant="outline" className="justify-start hover:bg-[#D97706]/10 hover:text-[#D97706]">
+                      <FileText className="h-4 w-4 mr-2" />
+                      Add Document
+                    </Button>
+                    <Button variant="outline" className="justify-start hover:bg-[#1E3A8A]/10 hover:text-[#1E3A8A]">
+                      <Users className="h-4 w-4 mr-2" />
+                      Update Team
+                    </Button>
+                    <Button variant="outline" className="justify-start hover:bg-[#D97706]/10 hover:text-[#D97706]">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Schedule Meeting
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </DashboardSection>
-        </motion.div>
-      </div>
-    </DashboardLayout>
+          </div>
+        </div>
+      </main>
+    </div>
   );
 };
 

@@ -1,43 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Building, 
-  Plus, 
-  Search, 
-  Calendar, 
-  Users, 
-  Clock, 
-  AlertTriangle, 
-  Filter, 
-  SlidersHorizontal, 
-  ArrowUpDown,
-  MoreHorizontal,
-  CheckCircle2,
-  AlertCircle,
-  Sparkles
-} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Progress } from '@/components/ui/progress';
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from '@/components/ui/tabs';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { motion } from 'framer-motion';
+} from '@/components/ui/dropdown-menu';
+import { 
+  HardHat,
+  Plus, 
+  CalendarDays, 
+  Users, 
+  Building,
+  DollarSign, 
+  Clock, 
+  Filter, 
+  Search, 
+  ChevronRight, 
+  MoreVertical,
+  Briefcase,
+  ArrowUpRight,
+  Edit,
+  Trash2,
+  Copy,
+  Menu,
+  Bell,
+  User,
+  Settings,
+  LogOut,
+  LayoutDashboard,
+  Calendar,
+  Package,
+  CheckCircle,
+  AlertTriangle
+} from 'lucide-react';
+import { HorizontalNav, type NavItem } from '@/components/navigation/HorizontalNav';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Sample project data
 const projectsData = [
@@ -45,623 +57,612 @@ const projectsData = [
     id: 1,
     name: 'Residential Renovation',
     client: 'Johnson Family',
-    location: 'Portland, OR',
-    budget: '$175,000',
-    spent: '$85,750',
-    startDate: '2023-08-15',
-    endDate: '2023-12-20',
-    status: 'in-progress',
-    progress: 65,
-    team: 8,
-    phases: 5,
-    tasksCompleted: 28,
-    totalTasks: 42,
-    priority: 'high',
-    lastUpdated: '2 hours ago',
-    hasWarnings: true,
-    image: 'https://images.unsplash.com/photo-1613545325278-f24b0cae1224?q=80&w=3270&auto=format&fit=crop'
+    location: 'Austin, TX',
+    type: 'Residential',
+    budget: 120000,
+    spent: 42500,
+    status: 'active',
+    progress: 75,
+    startDate: '2023-12-15',
+    endDate: '2024-08-30',
+    team: ['JD', 'MB', 'TS'],
+    description: 'Complete renovation of a 2-story family home including kitchen, bathrooms, and outdoor deck.',
+    tasks: { total: 42, completed: 28 },
+    imageUrl: 'https://images.unsplash.com/photo-1613545325278-f24b0cae1224?w=800&auto=format&fit=crop&q=60'
   },
   {
     id: 2,
-    name: 'Commercial Office Building',
-    client: 'TechSpace Inc.',
-    location: 'Seattle, WA',
-    budget: '$2,500,000',
-    spent: '$950,000',
-    startDate: '2023-06-10',
-    endDate: '2024-05-30',
-    status: 'in-progress',
-    progress: 38,
-    team: 24,
-    phases: 8,
-    tasksCompleted: 56,
-    totalTasks: 147,
-    priority: 'medium',
-    lastUpdated: '1 day ago',
-    hasWarnings: false,
-    image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=3270&auto=format&fit=crop'
+    name: 'Commercial Office Space',
+    client: 'TechStart Inc.',
+    location: 'Dallas, TX',
+    type: 'Commercial',
+    budget: 450000,
+    spent: 112000,
+    status: 'planning',
+    progress: 25,
+    startDate: '2024-02-01',
+    endDate: '2024-12-10',
+    team: ['AW', 'RL'],
+    description: 'Development of a new 5-floor office building with modern amenities and eco-friendly design.',
+    tasks: { total: 64, completed: 12 },
+    imageUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=60'
   },
   {
     id: 3,
-    name: 'Urban Apartment Complex',
-    client: 'City Development Corp.',
-    location: 'Chicago, IL',
-    budget: '$8,750,000',
-    spent: '$5,600,000',
-    startDate: '2023-03-20',
-    endDate: '2024-11-15',
-    status: 'in-progress',
-    progress: 52,
-    team: 35,
-    phases: 12,
-    tasksCompleted: 103,
-    totalTasks: 217,
-    priority: 'high',
-    lastUpdated: '3 days ago',
-    hasWarnings: true,
-    image: 'https://images.unsplash.com/photo-1545324418-9eda50022eb4?q=80&w=3270&auto=format&fit=crop'
+    name: 'Lakeside Apartment Complex',
+    client: 'Urban Dwellings LLC',
+    location: 'Houston, TX',
+    type: 'Residential',
+    budget: 3500000,
+    spent: 420000,
+    status: 'active',
+    progress: 12,
+    startDate: '2024-03-01',
+    endDate: '2025-06-30',
+    team: ['JD', 'KL', 'MB', 'TS'],
+    description: 'Construction of a luxury apartment complex with 24 units, swimming pool, and fitness center.',
+    tasks: { total: 108, completed: 14 },
+    imageUrl: 'https://images.unsplash.com/photo-1574958269340-fa927503f3dd?w=800&auto=format&fit=crop&q=60'
   },
   {
     id: 4,
     name: 'Historic Building Restoration',
-    client: 'Heritage Foundation',
-    location: 'Boston, MA',
-    budget: '$1,200,000',
-    spent: '$450,000',
-    startDate: '2023-09-05',
-    endDate: '2024-06-30',
-    status: 'in-progress',
-    progress: 25,
-    team: 12,
-    phases: 6,
-    tasksCompleted: 22,
-    totalTasks: 98,
-    priority: 'medium',
-    lastUpdated: '5 hours ago',
-    hasWarnings: false,
-    image: 'https://images.unsplash.com/photo-1531972111897-7fea57a2523e?q=80&w=3271&auto=format&fit=crop'
+    client: 'City of San Antonio',
+    location: 'San Antonio, TX',
+    type: 'Restoration',
+    budget: 750000,
+    spent: 215000,
+    status: 'active',
+    progress: 28,
+    startDate: '2024-01-20',
+    endDate: '2025-01-15',
+    team: ['AW', 'KL', 'RL'],
+    description: 'Careful restoration of a 19th century building while preserving its historical architecture and features.',
+    tasks: { total: 86, completed: 24 },
+    imageUrl: 'https://images.unsplash.com/photo-1516156008625-3a9d6067fab5?w=800&auto=format&fit=crop&q=60'
   },
   {
     id: 5,
-    name: 'School Gymnasium Addition',
-    client: 'Westlake School District',
-    location: 'Denver, CO',
-    budget: '$950,000',
-    spent: '$925,000',
-    startDate: '2023-05-15',
-    endDate: '2023-11-30',
-    status: 'completed',
-    progress: 100,
-    team: 14,
-    phases: 4,
-    tasksCompleted: 87,
-    totalTasks: 87,
-    priority: 'low',
-    lastUpdated: '1 week ago',
-    hasWarnings: false,
-    image: 'https://images.unsplash.com/photo-1505318855053-02442b3fb5a7?q=80&w=3270&auto=format&fit=crop'
+    name: 'Shopping Mall Extension',
+    client: 'Retail Properties Group',
+    location: 'Fort Worth, TX',
+    type: 'Commercial',
+    budget: 2800000,
+    spent: 0,
+    status: 'upcoming',
+    progress: 0,
+    startDate: '2024-08-01',
+    endDate: '2025-12-15',
+    team: [],
+    description: 'Addition of a new wing to an existing shopping mall, including 15 retail spaces and a food court.',
+    tasks: { total: 94, completed: 0 },
+    imageUrl: 'https://images.unsplash.com/photo-1581281658135-64230e4909f1?w=800&auto=format&fit=crop&q=60'
   },
   {
     id: 6,
-    name: 'Hospital Wing Expansion',
-    client: 'Central Medical Center',
-    location: 'Minneapolis, MN',
-    budget: '$5,300,000',
-    spent: '$125,000',
-    startDate: '2023-12-01',
-    endDate: '2025-03-15',
-    status: 'upcoming',
-    progress: 5,
-    team: 28,
-    phases: 10,
-    tasksCompleted: 8,
-    totalTasks: 175,
-    priority: 'high',
-    lastUpdated: '12 hours ago',
-    hasWarnings: false,
-    image: 'https://images.unsplash.com/photo-1626315869436-d6781ba69d6e?q=80&w=3270&auto=format&fit=crop'
+    name: 'Public Library Remodel',
+    client: 'Austin Public Library',
+    location: 'Austin, TX',
+    type: 'Public',
+    budget: 1200000,
+    spent: 1190000,
+    status: 'completed',
+    progress: 100,
+    startDate: '2023-05-10',
+    endDate: '2024-01-20',
+    team: ['JD', 'TS'],
+    description: 'Complete remodeling of the central public library with modern technologies and accessibility features.',
+    tasks: { total: 72, completed: 72 },
+    imageUrl: 'https://images.unsplash.com/photo-1568667256549-094345857637?w=800&auto=format&fit=crop&q=60'
   }
 ];
 
 const Projects = () => {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState('all');
-  const [activeTab, setActiveTab] = useState('grid');
-
-  // Filter projects based on search query and active filter
-  const filteredProjects = projectsData.filter(project => {
-    const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          project.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          project.location.toLowerCase().includes(searchQuery.toLowerCase());
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [currentTab, setCurrentTab] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredProjects, setFilteredProjects] = useState(projectsData);
+  
+  // Check dark mode on component mount and whenever it might change
+  useEffect(() => {
+    const checkDarkMode = () => {
+      setIsDarkMode(document.documentElement.classList.contains('dark'));
+    };
     
-    if (activeFilter === 'all') return matchesSearch;
-    if (activeFilter === 'in-progress') return matchesSearch && project.status === 'in-progress';
-    if (activeFilter === 'completed') return matchesSearch && project.status === 'completed';
-    if (activeFilter === 'upcoming') return matchesSearch && project.status === 'upcoming';
-    if (activeFilter === 'warnings') return matchesSearch && project.hasWarnings;
-    return matchesSearch;
-  });
+    // Check on mount
+    checkDarkMode();
+    
+    // Set up a mutation observer to watch for dark mode changes
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+    
+    // Clean up observer on unmount
+    return () => observer.disconnect();
+  }, []);
 
-  const getStatusConfig = (status) => {
-    switch (status) {
-      case 'in-progress':
-        return {
-          label: 'In Progress',
-          color: 'bg-blue-100 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400'
-        };
+  // Filter projects when tab or search changes
+  useEffect(() => {
+    let filtered = projectsData;
+    
+    // Filter by status
+    if (currentTab !== 'all') {
+      filtered = filtered.filter(project => project.status === currentTab);
+    }
+    
+    // Filter by search
+    if (searchTerm.trim() !== '') {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(project => 
+        project.name.toLowerCase().includes(term) ||
+        project.client.toLowerCase().includes(term) ||
+        project.location.toLowerCase().includes(term) ||
+        project.type.toLowerCase().includes(term)
+      );
+    }
+    
+    setFilteredProjects(filtered);
+  }, [currentTab, searchTerm]);
+  
+  // Navigation items
+  const navItems: NavItem[] = [
+    { 
+      label: 'Dashboard', 
+      path: '/dashboard', 
+      icon: <LayoutDashboard className="w-5 h-5" /> 
+    },
+    { 
+      label: 'Projects', 
+      path: '/projects', 
+      icon: <Briefcase className="w-5 h-5" />,
+      badge: {
+        text: '4',
+        color: 'blue'
+      }
+    },
+    { 
+      label: 'Schedule', 
+      path: '/schedule', 
+      icon: <Calendar className="w-5 h-5" /> 
+    },
+    { 
+      label: 'Materials', 
+      path: '/materials', 
+      icon: <Package className="w-5 h-5" /> 
+    },
+    { 
+      label: 'Expenses', 
+      path: '/expenses', 
+      icon: <DollarSign className="w-5 h-5" /> 
+    }
+  ];
+
+  // Get status badge based on project status
+  const getStatusBadge = (status) => {
+    switch(status) {
+      case 'active':
+        return <Badge className="bg-[#1E3A8A] text-white">Active</Badge>;
+      case 'planning':
+        return <Badge className="bg-[#D97706] text-white">Planning</Badge>;
       case 'completed':
-        return {
-          label: 'Completed',
-          color: 'bg-green-100 text-green-600 border-green-200 dark:bg-green-900/30 dark:text-green-400'
-        };
+        return <Badge className="bg-green-600 text-white">Completed</Badge>;
       case 'upcoming':
-        return {
-          label: 'Upcoming',
-          color: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-900/30 dark:text-gray-400'
-        };
+        return <Badge className="bg-purple-600 text-white">Upcoming</Badge>;
+      case 'on-hold':
+        return <Badge className="bg-red-600 text-white">On Hold</Badge>;
       default:
-        return {
-          label: 'Unknown',
-          color: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-900/30 dark:text-gray-400'
-        };
+        return <Badge className="bg-gray-500 text-white">{status}</Badge>;
     }
   };
 
-  const handleViewProject = (projectId) => {
-    navigate(`/project/${projectId}`);
+  // Format currency
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0
+    }).format(amount);
+  };
+
+  // Format date
+  const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: 'short', day: 'numeric' } as Intl.DateTimeFormatOptions;
+    return new Date(dateString).toLocaleDateString('en-US', options);
   };
 
   return (
-    <div className="container mx-auto p-6">
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="relative mb-12 overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 to-indigo-700 p-8 text-white shadow-xl"
-      >
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-2">
-            <Building className="h-8 w-8" />
-            <h1 className="text-3xl font-bold">Projects</h1>
-          </div>
-          <p className="text-blue-100 max-w-2xl">Manage and monitor your construction projects with comprehensive analytics and progress tracking</p>
-        </div>
-        <div className="absolute right-0 top-0 opacity-10">
-          <svg width="400" height="400" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
-            <g fill="none" stroke="white" strokeWidth="2">
-              <path d="M100,100 L700,100 L700,700 L100,700 z" />
-              <path d="M200,200 L600,200 L600,600 L200,600 z" />
-              <path d="M300,300 L500,300 L500,500 L300,500 z" />
-              <line x1="100" y1="100" x2="700" y2="700" />
-              <line x1="700" y1="100" x2="100" y2="700" />
-            </g>
-          </svg>
-        </div>
-      </motion.div>
-
-      {/* Actions Row */}
-      <motion.div 
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.2 }}
-        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6"
-      >
-        <div className="relative w-full md:w-auto">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-          <Input 
-            placeholder="Search projects..." 
-            className="pl-10 w-full md:w-80 shadow-sm border-gray-200 focus:border-blue-400 focus:ring-blue-400" 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        
-        <div className="flex flex-wrap gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2 border-gray-300 shadow-sm">
-                <Filter size={16} />
-                <span>Filter</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 shadow-lg border-gray-200">
-              <DropdownMenuItem onClick={() => setActiveFilter('all')} className={activeFilter === 'all' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : ''}>
-                All Projects
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setActiveFilter('in-progress')} className={activeFilter === 'in-progress' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : ''}>
-                In Progress
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setActiveFilter('completed')} className={activeFilter === 'completed' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : ''}>
-                Completed
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setActiveFilter('upcoming')} className={activeFilter === 'upcoming' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : ''}>
-                Upcoming
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setActiveFilter('warnings')} className={activeFilter === 'warnings' ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400' : ''}>
-                <AlertTriangle size={16} className="mr-2 text-yellow-500" />
-                With Warnings
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <Button variant="outline" className="gap-2 border-gray-300 shadow-sm">
-            <SlidersHorizontal size={16} />
-            <span>Sort</span>
-          </Button>
-
-          <Tabs defaultValue="grid" value={activeTab} onValueChange={setActiveTab} className="hidden md:block">
-            <TabsList className="h-10 shadow-sm">
-              <TabsTrigger value="grid" className="px-3 data-[state=active]:shadow-sm data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">
-                <div className="grid grid-cols-3 gap-0.5 h-3 w-8">
-                  <div className="bg-current rounded-sm"></div>
-                  <div className="bg-current rounded-sm"></div>
-                  <div className="bg-current rounded-sm"></div>
-                  <div className="bg-current rounded-sm"></div>
-                  <div className="bg-current rounded-sm"></div>
-                  <div className="bg-current rounded-sm"></div>
-                </div>
-              </TabsTrigger>
-              <TabsTrigger value="list" className="px-3 data-[state=active]:shadow-sm data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">
-                <div className="flex flex-col gap-0.5 h-3 w-8">
-                  <div className="bg-current rounded-sm h-0.5"></div>
-                  <div className="bg-current rounded-sm h-0.5"></div>
-                  <div className="bg-current rounded-sm h-0.5"></div>
-                </div>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          <Button className="gap-2 ml-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
-          onClick={() => navigate('/create-project')}>
-            <Plus size={16} />
-            <span>New Project</span>
-          </Button>
-        </div>
-      </motion.div>
-
-      {/* Filter Pills */}
-      <motion.div 
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.3 }}
-        className="flex flex-wrap gap-2 mb-6"
-      >
-        <Button
-          variant={activeFilter === 'all' ? 'default' : 'outline'} 
-          size="sm"
-          onClick={() => setActiveFilter('all')}
-          className={activeFilter === 'all' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-shadow duration-200' : 'border border-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800'}
-        >
-          All Projects
-        </Button>
-        <Button
-          variant={activeFilter === 'in-progress' ? 'default' : 'outline'} 
-          size="sm"
-          onClick={() => setActiveFilter('in-progress')}
-          className={activeFilter === 'in-progress' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-shadow duration-200' : 'border border-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800'}
-        >
-          In Progress
-        </Button>
-        <Button
-          variant={activeFilter === 'completed' ? 'default' : 'outline'} 
-          size="sm"
-          onClick={() => setActiveFilter('completed')}
-          className={activeFilter === 'completed' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-shadow duration-200' : 'border border-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800'}
-        >
-          Completed
-        </Button>
-        <Button
-          variant={activeFilter === 'upcoming' ? 'default' : 'outline'} 
-          size="sm"
-          onClick={() => setActiveFilter('upcoming')}
-          className={activeFilter === 'upcoming' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-shadow duration-200' : 'border border-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800'}
-        >
-          Upcoming
-        </Button>
-        <Button
-          variant={activeFilter === 'warnings' ? 'default' : 'outline'} 
-          size="sm"
-          onClick={() => setActiveFilter('warnings')}
-          className={activeFilter === 'warnings' ? 'bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 shadow-md hover:shadow-lg transition-shadow duration-200' : 'border border-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800'}
-        >
-          <AlertTriangle size={14} className="mr-1" />
-          With Warnings
-        </Button>
-      </motion.div>
-
-      {/* Content Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsContent value="grid" className="m-0">
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-            {filteredProjects.map((project, index) => (
-              <motion.div
-                key={project.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-              >
-                <ProjectCard 
-                  project={project}
-                  onClick={() => handleViewProject(project.id)}
-                />
-              </motion.div>
-            ))}
-          </motion.div>
-        </TabsContent>
-
-        <TabsContent value="list" className="m-0">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
-          >
-            <Card className="shadow-lg border-gray-200">
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b bg-gray-50 dark:bg-gray-800/50">
-                        <th className="text-left p-4 font-medium">Project</th>
-                        <th className="text-left p-4 font-medium">Client</th>
-                        <th className="text-left p-4 font-medium">Status</th>
-                        <th className="text-left p-4 font-medium">Progress</th>
-                        <th className="text-left p-4 font-medium">Budget</th>
-                        <th className="text-left p-4 font-medium">Team</th>
-                        <th className="text-left p-4 font-medium">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredProjects.map((project, index) => {
-                        const status = getStatusConfig(project.status);
-                        return (
-                          <motion.tr 
-                            key={project.id} 
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 0.2, delay: index * 0.03 }}
-                            className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                          >
-                            <td className="p-4">
-                              <div className="font-medium">{project.name}</div>
-                              <div className="text-sm text-gray-500">{project.location}</div>
-                            </td>
-                            <td className="p-4">
-                              <div>{project.client}</div>
-                            </td>
-                            <td className="p-4">
-                              <Badge className={status.color}>
-                                {status.label}
-                              </Badge>
-                            </td>
-                            <td className="p-4">
-                              <div className="flex items-center gap-2">
-                                <Progress value={project.progress} className="h-2 w-24" />
-                                <span className="text-sm">{project.progress}%</span>
-                              </div>
-                            </td>
-                            <td className="p-4">
-                              <div className="font-medium">{project.budget}</div>
-                              <div className="text-sm text-gray-500">
-                                Spent: {project.spent}
-                              </div>
-                            </td>
-                            <td className="p-4">
-                              <div className="flex items-center gap-1">
-                                <Users size={14} />
-                                <span>{project.team}</span>
-                              </div>
-                            </td>
-                            <td className="p-4">
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleViewProject(project.id)}
-                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                >
-                                  View
-                                </Button>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon">
-                                      <MoreHorizontal size={16} />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem>Edit</DropdownMenuItem>
-                                    <DropdownMenuItem>Duplicate</DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="text-red-600">Archive</DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            </td>
-                          </motion.tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </TabsContent>
-      </Tabs>
-
-      {/* Empty state when no projects match filters */}
-      {filteredProjects.length === 0 && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          <Card className="bg-gray-50 border-dashed dark:bg-gray-800/50 overflow-hidden">
-            <CardContent className="py-12 flex flex-col items-center justify-center relative">
-              <div className="absolute inset-0 opacity-5 bg-gradient-radial from-blue-500 to-transparent"></div>
-              <Building size={48} className="text-gray-400 mb-4" />
-              <h3 className="text-xl font-medium mb-2">No projects found</h3>
-              <p className="text-gray-500 text-center max-w-md mb-6">
-                We couldn't find any projects matching your current filters. Try adjusting your search or filters.
-              </p>
-              <Button 
-                onClick={() => { setSearchQuery(''); setActiveFilter('all'); }}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all duration-300"
-              >
-                Reset Filters
-              </Button>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
-    </div>
-  );
-};
-
-// ProjectCard Component
-const ProjectCard = ({ project, onClick }) => {
-  const status = getStatusConfig(project.status);
-  
-  const getProgressColor = (progress) => {
-    if (progress >= 100) return 'bg-gradient-to-r from-green-500 to-emerald-500';
-    if (progress >= 75) return 'bg-gradient-to-r from-blue-500 to-cyan-500';
-    if (progress >= 50) return 'bg-gradient-to-r from-indigo-500 to-blue-500';
-    if (progress >= 25) return 'bg-gradient-to-r from-purple-500 to-indigo-500';
-    return 'bg-gradient-to-r from-slate-500 to-gray-500';
-  };
-
-  function getStatusConfig(status) {
-    switch (status) {
-      case 'in-progress':
-        return {
-          label: 'In Progress',
-          color: 'bg-blue-100 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400',
-          icon: <Clock className="w-3.5 h-3.5" />
-        };
-      case 'completed':
-        return {
-          label: 'Completed',
-          color: 'bg-green-100 text-green-600 border-green-200 dark:bg-green-900/30 dark:text-green-400',
-          icon: <CheckCircle2 className="w-3.5 h-3.5" />
-        };
-      case 'upcoming':
-        return {
-          label: 'Upcoming',
-          color: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-900/30 dark:text-gray-400',
-          icon: <Calendar className="w-3.5 h-3.5" />
-        };
-      default:
-        return {
-          label: 'Unknown',
-          color: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-900/30 dark:text-gray-400',
-          icon: null
-        };
-    }
-  }
-  
-  return (
-    <motion.div
-      whileHover={{ y: -8 }}
-      transition={{ duration: 0.2 }}
-    >
-      <Card className="overflow-hidden h-full cursor-pointer hover:shadow-xl border border-gray-200 transition-all duration-300 flex flex-col" onClick={onClick}>
-        <div className="relative h-48 bg-gray-100 dark:bg-gray-800">
-          <img 
-            src={project.image} 
-            alt={project.name} 
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent"></div>
-          <div className="absolute top-4 left-4">
-            <Badge className="bg-white/90 dark:bg-black/50 backdrop-blur-sm text-blue-700 dark:text-blue-300 shadow-lg px-2.5 py-1">
-              <span className="flex items-center gap-1.5">
-                <Sparkles className="w-3 h-3 text-amber-500" />
-                {project.priority === 'high' ? 'High Priority' : project.priority === 'medium' ? 'Medium Priority' : 'Low Priority'}
-              </span>
-            </Badge>
-          </div>
-          <div className="absolute left-4 bottom-4 right-4">
-            <div className="flex justify-between items-end">
-              <div>
-                <h3 className="text-white font-semibold text-xl truncate mb-1">{project.name}</h3>
-                <div className="flex items-center text-white/80 text-sm">
-                  <Building className="w-3 h-3 mr-1" />
-                  <span>{project.location}</span>
-                </div>
-              </div>
-              <Badge className={cn("flex items-center gap-1 shadow-sm", status.color)}>
-                {status.icon}
-                <span>{status.label}</span>
-              </Badge>
+    <div className="min-h-screen bg-[#F3F4F6] dark:bg-slate-900">
+      {/* Fixed Navigation Bar */}
+      <header className="sticky top-0 z-50 w-full bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 shadow-sm">
+        <div className="flex h-16 items-center justify-between px-4 md:px-6">
+          {/* Logo and mobile menu button */}
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+              <Menu className="h-6 w-6" />
+            </Button>
+            <div className="flex items-center gap-2">
+              <HardHat className="h-6 w-6 text-[#1E3A8A]" />
+              <span className="font-bold text-lg text-[#1E3A8A] hidden sm:inline-block">BuildEase</span>
             </div>
           </div>
-          {project.hasWarnings && (
-            <div className="absolute top-4 right-4">
-              <div className="bg-yellow-100 text-yellow-700 p-1.5 rounded-full shadow-lg">
-                <AlertCircle className="w-4 h-4" />
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center space-x-4">
+            {navItems.map((item) => (
+              <Button
+                key={item.path}
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "flex items-center gap-2",
+                  item.path === '/projects' && "bg-[#1E3A8A]/10 text-[#1E3A8A] dark:bg-[#1E3A8A]/20 dark:text-blue-400"
+                )}
+                onClick={() => navigate(item.path)}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+                {item.badge && (
+                  <Badge className="ml-1 bg-[#1E3A8A] text-white">{item.badge.text}</Badge>
+                )}
+              </Button>
+            ))}
+          </nav>
+
+          {/* User Menu & Actions */}
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="text-gray-500 dark:text-gray-400">
+              <Bell className="h-5 w-5" />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src="/avatar.png" alt="User" />
+                    <AvatarFallback className="bg-[#1E3A8A] text-white">JD</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem>
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        {/* Mobile Navigation Menu */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="md:hidden border-t border-gray-200 dark:border-slate-800"
+            >
+              <div className="flex flex-col space-y-1 p-2">
+                {navItems.map((item) => (
+                  <Button
+                    key={item.path}
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "justify-start",
+                      item.path === '/projects' && "bg-[#1E3A8A]/10 text-[#1E3A8A] dark:bg-[#1E3A8A]/20 dark:text-blue-400"
+                    )}
+                    onClick={() => {
+                      navigate(item.path);
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    {item.icon}
+                    <span className="ml-2">{item.label}</span>
+                    {item.badge && (
+                      <Badge className="ml-auto bg-[#1E3A8A] text-white">{item.badge.text}</Badge>
+                    )}
+                  </Button>
+                ))}
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </header>
+
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-8">
+        {/* Page Header */}
+        <div className="mb-8 bg-gradient-to-r from-[#1E3A8A] to-[#3B82F6] rounded-lg shadow-lg p-6 text-white">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold">Projects</h1>
+              <p className="mt-1 text-blue-100">Manage and monitor all your construction projects</p>
+            </div>
+            <Button onClick={() => navigate('/create-project')} className="bg-white text-[#1E3A8A] hover:bg-blue-50">
+              <Plus className="mr-2 h-4 w-4" />
+              New Project
+            </Button>
+          </div>
+        </div>
+
+        {/* Filters and Controls */}
+        <div className="mb-8">
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm">
+            <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full lg:w-auto">
+              <TabsList className="grid grid-cols-5 w-full lg:w-auto">
+                <TabsTrigger value="all" className="text-sm">All Projects</TabsTrigger>
+                <TabsTrigger value="active" className="text-sm">Active</TabsTrigger>
+                <TabsTrigger value="planning" className="text-sm">Planning</TabsTrigger>
+                <TabsTrigger value="completed" className="text-sm">Completed</TabsTrigger>
+                <TabsTrigger value="upcoming" className="text-sm">Upcoming</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            
+            <div className="flex w-full lg:w-auto items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Search projects..."
+                  className="pl-9 w-full bg-white dark:bg-slate-800"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <Filter className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem>Filter by Client</DropdownMenuItem>
+                  <DropdownMenuItem>Filter by Location</DropdownMenuItem>
+                  <DropdownMenuItem>Filter by Type</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>Clear Filters</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </div>
+
+        {/* Projects Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {filteredProjects.length > 0 ? (
+            filteredProjects.map((project) => (
+              <Card 
+                key={project.id} 
+                className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col"
+              >
+                {/* Project Image with Status Badge Overlay */}
+                <div className="relative h-48 w-full overflow-hidden">
+                  <img 
+                    src={project.imageUrl} 
+                    alt={project.name}
+                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                  <div className="absolute top-4 right-4">
+                    {getStatusBadge(project.status)}
+                  </div>
+                  <div className="absolute bottom-4 left-4">
+                    <Badge variant="glass" className="backdrop-blur-md text-white border-none">
+                      {project.type}
+                    </Badge>
+                  </div>
+                </div>
+                
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-xl text-[#1E1E1E] dark:text-white">
+                        {project.name}
+                      </CardTitle>
+                      <CardDescription className="text-gray-500 dark:text-gray-400 mt-1">
+                        {project.client} • {project.location}
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                
+                <CardContent className="pt-0 flex-1">
+                  <div className="grid grid-cols-2 gap-4 mb-4 mt-4">
+                    <div className="flex flex-col">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">Budget</span>
+                      <span className="font-semibold text-[#1E1E1E] dark:text-white">{formatCurrency(project.budget)}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">Spent</span>
+                      <span className="font-semibold text-[#1E1E1E] dark:text-white">{formatCurrency(project.spent)}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">Start Date</span>
+                      <span className="font-semibold text-[#1E1E1E] dark:text-white">{formatDate(project.startDate)}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">End Date</span>
+                      <span className="font-semibold text-[#1E1E1E] dark:text-white">{formatDate(project.endDate)}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-gray-500 dark:text-gray-400">Progress</span>
+                      <span className="font-medium text-[#1E1E1E] dark:text-white">{project.progress}%</span>
+                    </div>
+                    <Progress 
+                      value={project.progress} 
+                      className="h-2"
+                      style={{
+                        background: isDarkMode ? 'rgba(30, 58, 138, 0.2)' : 'rgba(30, 58, 138, 0.1)'
+                      }}
+                    >
+                      <div 
+                        className="h-full" 
+                        style={{
+                          background: project.status === 'active' ? '#1E3A8A' : 
+                                     project.status === 'planning' ? '#D97706' :
+                                     project.status === 'completed' ? '#16A34A' :
+                                     '#9333EA'
+                        }}
+                      />
+                    </Progress>
+                  </div>
+                  
+                  <div className="flex justify-between items-center mt-auto">
+                    <div className="flex -space-x-2">
+                      {project.team.slice(0, 3).map((initials, i) => (
+                        <Avatar key={i} className="border-2 border-white dark:border-slate-800 h-8 w-8">
+                          <AvatarFallback className={cn(
+                            project.status === 'active' ? 'bg-[#1E3A8A]' : 
+                            project.status === 'planning' ? 'bg-[#D97706]' :
+                            project.status === 'completed' ? 'bg-green-600' :
+                            'bg-purple-600',
+                            'text-white'
+                          )}>
+                            {initials}
+                          </AvatarFallback>
+                        </Avatar>
+                      ))}
+                      {project.team.length > 3 && (
+                        <Avatar className="border-2 border-white dark:border-slate-800 h-8 w-8">
+                          <AvatarFallback className="bg-gray-500 text-white">
+                            +{project.team.length - 3}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="text-[#1E3A8A] border-[#1E3A8A]"
+                        onClick={() => navigate(`/project/${project.id}`)}
+                      >
+                        Details
+                        <ChevronRight className="ml-1 h-4 w-4" />
+                      </Button>
+                      
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => navigate(`/project/${project.id}`)}>
+                            <ArrowUpRight className="mr-2 h-4 w-4" />
+                            <span>View Details</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Edit className="mr-2 h-4 w-4" />
+                            <span>Edit Project</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Copy className="mr-2 h-4 w-4" />
+                            <span>Duplicate</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-red-600 dark:text-red-400">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            <span>Delete Project</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <div className="col-span-full flex flex-col items-center justify-center py-12 text-center bg-white dark:bg-slate-800 rounded-lg shadow-sm">
+              <div className="rounded-full bg-blue-100 dark:bg-blue-900/30 p-3 mb-4">
+                <Briefcase className="h-6 w-6 text-[#1E3A8A]" />
+              </div>
+              <h3 className="text-lg font-medium text-[#1E1E1E] dark:text-white mb-2">No projects found</h3>
+              <p className="text-gray-500 dark:text-gray-400 max-w-md mb-6">
+                We couldn't find any projects matching your current filters. Try adjusting your search or create a new project.
+              </p>
+              <Button onClick={() => navigate('/create-project')} className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90">
+                <Plus className="mr-2 h-4 w-4" />
+                Create New Project
+              </Button>
             </div>
           )}
         </div>
         
-        <CardContent className="py-4 flex-grow">
-          <div className="mb-4">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-sm text-gray-500 dark:text-gray-400">Progress</span>
-              <span className="text-sm font-medium">{project.progress}%</span>
-            </div>
-            <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden shadow-inner">
-              <div 
-                className={cn("h-full rounded-full", getProgressColor(project.progress))} 
-                style={{ width: `${project.progress}%` }}
-              />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">Budget</div>
-              <div className="font-medium">{project.budget}</div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">Spent</div>
-              <div className="font-medium">{project.spent}</div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">Team</div>
-              <div className="font-medium flex items-center">
-                <div className="bg-blue-100 dark:bg-blue-900/30 p-1 rounded-full text-blue-600 dark:text-blue-400 mr-1.5">
-                  <Users className="w-3 h-3" />
-                </div>
-                {project.team}
+        {/* Summary Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="bg-white dark:bg-slate-800">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="rounded-full p-2 bg-blue-100 dark:bg-blue-900/30">
+                <Briefcase className="h-5 w-5 text-[#1E3A8A]" />
               </div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">Tasks</div>
-              <div className="font-medium flex items-center">
-                <div className="bg-green-100 dark:bg-green-900/30 p-1 rounded-full text-green-600 dark:text-green-400 mr-1.5">
-                  <CheckCircle2 className="w-3 h-3" />
-                </div>
-                {project.tasksCompleted}/{project.totalTasks}
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Total Projects</p>
+                <p className="text-2xl font-bold text-[#1E1E1E] dark:text-white">{projectsData.length}</p>
               </div>
-            </div>
-          </div>
-        </CardContent>
-        
-        <CardFooter className="pt-0 pb-4 border-t">
-          <div className="flex items-center justify-between w-full text-sm">
-            <span className="text-gray-500">Client: {project.client}</span>
-            <span className="text-gray-500">Updated {project.lastUpdated}</span>
-          </div>
-        </CardFooter>
-      </Card>
-    </motion.div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white dark:bg-slate-800">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="rounded-full p-2 bg-green-100 dark:bg-green-900/30">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Completed</p>
+                <p className="text-2xl font-bold text-[#1E1E1E] dark:text-white">
+                  {projectsData.filter(p => p.status === 'completed').length}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white dark:bg-slate-800">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="rounded-full p-2 bg-amber-100 dark:bg-amber-900/30">
+                <Clock className="h-5 w-5 text-[#D97706]" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">In Progress</p>
+                <p className="text-2xl font-bold text-[#1E1E1E] dark:text-white">
+                  {projectsData.filter(p => p.status === 'active' || p.status === 'planning').length}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white dark:bg-slate-800">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="rounded-full p-2 bg-red-100 dark:bg-red-900/30">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">At Risk</p>
+                <p className="text-2xl font-bold text-[#1E1E1E] dark:text-white">
+                  {projectsData.filter(p => p.status === 'on-hold').length}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+    </div>
   );
 };
 
