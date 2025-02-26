@@ -392,7 +392,7 @@ const PhaseCard: React.FC<PhaseCardProps> = ({
                       <XCircle className="h-4 w-4" />
                     </Button>
                   </motion.div>
-                </div>
+          </div>
               ) : (
                 <>
                   <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
@@ -425,7 +425,7 @@ const PhaseCard: React.FC<PhaseCardProps> = ({
                   </motion.div>
                 </>
               )}
-            </div>
+          </div>
           </div>
         </motion.div>
       </div>
@@ -562,8 +562,8 @@ const PhaseCard: React.FC<PhaseCardProps> = ({
                                     <Badge className={`${taskStatusBadgeStyles[task.status].bg} ${taskStatusBadgeStyles[task.status].text} text-xs font-normal`}>
                                       {task.status === 'pending' ? 'Pending' : 
                                        task.status === 'in-progress' ? 'In Progress' : 'Completed'}
-                                    </Badge>
-                                  </div>
+      </Badge>
+    </div>
                                   <div className="flex items-center gap-4">
                                     <div className="flex items-center text-sm">
                                       <Clock className={`w-3.5 h-3.5 mr-1 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`} />
@@ -577,9 +577,9 @@ const PhaseCard: React.FC<PhaseCardProps> = ({
                                         <span className={isDarkMode ? "text-slate-400" : "text-gray-600"}>
                                           {getTeamMember(task.assignedTo)?.name || 'Unknown'}
                                         </span>
-                                      </div>
-                                    )}
-                                  </div>
+      </div>
+    )}
+  </div>
                                 </div>
                                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                   <Popover>

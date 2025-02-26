@@ -3,9 +3,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  ChevronRight, 
-  ChevronLeft, 
+import {
+  ChevronRight,
+  ChevronLeft,
   Download,
   Building,
   FileText,
@@ -179,7 +179,7 @@ const GeneratedPlan = () => {
     setSaving(true);
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1500));
-    setHasUnsavedChanges(false);
+      setHasUnsavedChanges(false);
     setSaving(false);
     setEditMode(false);
   };
@@ -221,7 +221,7 @@ const GeneratedPlan = () => {
             ]}
           />
         </motion.div>
-      </div>
+            </div>
 
       {/* Main Content - Enhanced */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 pb-20 relative">
@@ -238,7 +238,7 @@ const GeneratedPlan = () => {
           <div className="absolute inset-0 overflow-hidden">
             <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-full blur-3xl"></div>
             <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-gradient-to-tr from-indigo-500/10 to-purple-500/10 rounded-full blur-3xl"></div>
-          </div>
+            </div>
 
           <div className="relative p-6 sm:p-8">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 space-y-4 sm:space-y-0">
@@ -307,7 +307,7 @@ const GeneratedPlan = () => {
               <div className="flex items-center gap-2">
                 {isEditingTitle ? (
                   <>
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                       <Button 
                         size="sm"
                         variant="outline"
@@ -315,9 +315,9 @@ const GeneratedPlan = () => {
                         className={isDarkMode ? "border-slate-700 text-slate-400" : ""}
                       >
                         Cancel
-                      </Button>
-                    </motion.div>
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  </Button>
+                </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                       <Button 
                         size="sm"
                         onClick={saveTitleEdit}
@@ -327,11 +327,11 @@ const GeneratedPlan = () => {
                         }
                       >
                         Save Changes
-                      </Button>
-                    </motion.div>
+                </Button>
+              </motion.div>
                   </>
                 ) : (
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                     <Button 
                       size="sm"
                       variant="outline"
@@ -343,8 +343,8 @@ const GeneratedPlan = () => {
                     >
                       <PenLine className="w-4 h-4 mr-2" />
                       Edit Project
-                    </Button>
-                  </motion.div>
+                </Button>
+              </motion.div>
                 )}
                 {!isEditingTitle && (
                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -366,8 +366,8 @@ const GeneratedPlan = () => {
                     </Button>
                   </motion.div>
                 )}
-              </div>
             </div>
+          </div>
 
             {/* Quick stats with enhanced visuals */}
             <motion.div 
@@ -402,7 +402,7 @@ const GeneratedPlan = () => {
                     : "bg-blue-50 text-blue-500"
                 }`}>
                   <Calendar className="w-5 h-5" />
-                </div>
+              </div>
                 <div>
                   <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>Duration</p>
                   <p className={`text-lg font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>4 Months</p>
@@ -427,11 +427,11 @@ const GeneratedPlan = () => {
                     : "bg-green-50 text-green-500"
                 }`}>
                   <Users className="w-5 h-5" />
-                </div>
+              </div>
                 <div>
                   <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>Team Size</p>
                   <p className={`text-lg font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>12 People</p>
-                </div>
+              </div>
               </motion.div>
 
               <motion.div 
@@ -456,7 +456,7 @@ const GeneratedPlan = () => {
                 <div>
                   <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>Budget</p>
                   <p className={`text-lg font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>₵148,000</p>
-                </div>
+              </div>
               </motion.div>
 
               <motion.div 
@@ -477,15 +477,15 @@ const GeneratedPlan = () => {
                     : "bg-amber-50 text-amber-500"
                 }`}>
                   <Package className="w-5 h-5" />
-                </div>
+            </div>
                 <div>
                   <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>Resources</p>
                   <p className={`text-lg font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>32 Items</p>
-                </div>
+              </div>
               </motion.div>
             </motion.div>
-          </div>
-        </div>
+              </div>
+            </div>
 
         {/* AI Insights Section - Enhanced */}
         <motion.div
@@ -507,7 +507,7 @@ const GeneratedPlan = () => {
                 <div className={`relative p-1.5 rounded-full ${isDarkMode ? "bg-blue-900/40" : "bg-blue-100"}`}>
                   <Lightbulb className={`w-5 h-5 ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
                   <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                </div>
+          </div>
                 <span className={isDarkMode ? "text-white" : "text-gray-900"}>
                   AI-Generated Insights
                 </span>
@@ -547,8 +547,8 @@ const GeneratedPlan = () => {
                   type="default"
                   animationDelay={0.25}
                 />
-              </div>
-              
+      </div>
+
               <motion.div 
                 className="mt-4 text-right"
                 initial={{ opacity: 0 }}
@@ -594,9 +594,9 @@ const GeneratedPlan = () => {
                     <FileText className="w-4 h-4 mr-2" />
                     Documents
                   </TabsTrigger>
-                </TabsList>
-                <div className="flex items-center gap-2">
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              </TabsList>
+              <div className="flex items-center gap-2">
+                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                     <Button 
                       variant="outline" 
                       size="sm" 
@@ -609,9 +609,9 @@ const GeneratedPlan = () => {
                     >
                       <Sparkles className="w-4 h-4 mr-2" />
                       <span>{isRegenerating ? 'Regenerating...' : 'Regenerate'}</span>
-                    </Button>
-                  </motion.div>
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        </Button>
+                      </motion.div>
+                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                     <Button 
                       variant="outline" 
                       size="sm" 
@@ -619,15 +619,15 @@ const GeneratedPlan = () => {
                     >
                       <FileText className="w-4 h-4 mr-2" />
                       Print
-                    </Button>
-                  </motion.div>
-                </div>
-              </div>
+                  </Button>
+                </motion.div>
+        </div>
+      </div>
 
               <div className={`border rounded-lg ${
                 isDarkMode ? "border-slate-700 bg-slate-800/50" : "border-gray-100"
               }`}>
-                <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait">
                   <TabsContent value="plan" className="mt-0">
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
@@ -661,27 +661,27 @@ const GeneratedPlan = () => {
                             <p className={isDarkMode ? "text-slate-400" : "text-gray-500"}>Gantt chart visualization would appear here</p>
                             <div className="h-64 flex items-center justify-center">
                               <Calendar className={`w-16 h-16 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
-                            </div>
+                </div>
                           </div>
                           <div className="flex gap-2 justify-end mt-4">
-                            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                               <Button variant="outline" size="sm" className={isDarkMode ? "border-slate-700 text-slate-300 hover:bg-slate-700" : ""}>
                                 <Settings className="w-4 h-4 mr-2" />
                                 Configure View
-                              </Button>
-                            </motion.div>
-                            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    </Button>
+                  </motion.div>
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                               <Button size="sm" className={isDarkMode 
                                 ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700" 
                                 : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                               }>
                                 <Download className="w-4 h-4 mr-2" />
                                 Export Timeline
-                              </Button>
-                            </motion.div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                    </Button>
+                  </motion.div>
+                      </div>
+                    </CardContent>
+                  </Card>
                     </motion.div>
                   </TabsContent>
 
@@ -698,14 +698,14 @@ const GeneratedPlan = () => {
                           <CardDescription className={isDarkMode ? "text-slate-400" : "text-gray-500"}>
                             Manage and optimize your project resources
                           </CardDescription>
-                        </CardHeader>
+                    </CardHeader>
                         <CardContent className="p-6">
                           {/* Assume ResourceCard components are rendered here */}
                           <div className="h-64 flex items-center justify-center">
                             <p className={isDarkMode ? "text-slate-400" : "text-gray-500"}>Resource chart would appear here</p>
-                          </div>
-                        </CardContent>
-                      </Card>
+                      </div>
+                    </CardContent>
+                  </Card>
                     </motion.div>
                   </TabsContent>
 
@@ -722,12 +722,12 @@ const GeneratedPlan = () => {
                           <CardDescription className={isDarkMode ? "text-slate-400" : "text-gray-500"}>
                             Generated documents and specifications
                           </CardDescription>
-                        </CardHeader>
+                    </CardHeader>
                         <CardContent className="p-6">
                           {/* Assume DocumentCard components are rendered here */}
                           <div className="h-64 flex items-center justify-center">
                             <p className={isDarkMode ? "text-slate-400" : "text-gray-500"}>Document list would appear here</p>
-                          </div>
+                        </div>
                           <motion.div whileHover={{ y: -3 }} className="mt-4">
                             <Button className={`w-full ${
                               isDarkMode 
@@ -738,16 +738,16 @@ const GeneratedPlan = () => {
                               Generate Additional Document
                             </Button>
                           </motion.div>
-                        </CardContent>
-                      </Card>
+                    </CardContent>
+                  </Card>
                     </motion.div>
                   </TabsContent>
                 </AnimatePresence>
-              </div>
+                </div>
             </Tabs>
           </motion.div>
-        </div>
-      </div>
+                                  </div>
+                                </div>
 
       {/* Action Buttons - Enhanced */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -769,7 +769,7 @@ const GeneratedPlan = () => {
             >
               <ChevronLeft className="w-4 h-4" />
               <span>Adjust Inputs</span>
-            </Button>
+                              </Button>
           </motion.div>
           <motion.div 
             whileHover={{ scale: 1.05 }} 
@@ -780,10 +780,10 @@ const GeneratedPlan = () => {
             <Button className="relative flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-colors shadow-md hover:shadow-xl text-white">
               <span>Continue to Details</span>
               <ChevronRight className="w-4 h-4" />
-            </Button>
+                        </Button>
           </motion.div>
         </motion.div>
-      </div>
+                      </div>
 
       {/* Collaborate Modal */}
       <AnimatePresence>
@@ -813,8 +813,8 @@ const GeneratedPlan = () => {
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                   </svg>
-                </div>
-              </div>
+                            </div>
+                              </div>
               {/* Collaborate form content here */}
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -831,14 +831,14 @@ const GeneratedPlan = () => {
                       <User className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${
                         isDarkMode ? "text-slate-500" : "text-gray-400"
                       }`} />
-                    </div>
+                            </div>
                     <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
                       <Button className={isDarkMode ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-600 hover:bg-blue-700"}>
                         <PlusCircle className="w-4 h-4" />
                       </Button>
                     </motion.div>
-                  </div>
-                </div>
+                          </div>
+                        </div>
                 <div className="space-y-2">
                   <label className={`text-sm font-medium ${isDarkMode ? "text-slate-300" : ""}`}>Project Link</label>
                   <div className="flex gap-2">
@@ -854,8 +854,8 @@ const GeneratedPlan = () => {
                       <Button variant="outline" className={isDarkMode ? "border-slate-700 text-slate-300 hover:bg-slate-700" : ""}>
                         Copy
                       </Button>
-                    </motion.div>
-                  </div>
+            </motion.div>
+                </div>
                 </div>
                 <div className="space-y-2">
                   <label className={`text-sm font-medium ${isDarkMode ? "text-slate-300" : ""}`}>Add a Message</label>
@@ -865,30 +865,30 @@ const GeneratedPlan = () => {
                     }`}
                     placeholder="Add a note to your collaborators..."
                   />
-                </div>
               </div>
+                            </div>
               <div className="flex justify-end gap-2 mt-6">
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button 
                     variant="outline" 
                     onClick={() => setShowCollaborateModal(false)}
                     className={isDarkMode ? "border-slate-700 text-slate-300 hover:bg-slate-700" : ""}
                   >
                     Cancel
-                  </Button>
-                </motion.div>
+                      </Button>
+                    </motion.div>
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="relative group">
                   <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
                   <Button className="relative bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-colors shadow-md hover:shadow-xl text-white">
                     <MessageSquare className="w-4 h-4 mr-2" />
                     Share
-                  </Button>
-                </motion.div>
-              </div>
+                      </Button>
+                    </motion.div>
+                  </div>
             </motion.div>
           </motion.div>
         )}
-      </AnimatePresence>
+        </AnimatePresence>
     </div>
   );
 };
