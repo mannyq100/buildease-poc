@@ -15,21 +15,98 @@ const badgeVariants = cva(
         destructive:
           "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground",
+        success: 
+          "border-transparent bg-success text-success-foreground hover:bg-success/80",
+        warning:
+          "border-transparent bg-warning text-warning-foreground hover:bg-warning/80",
+        info:
+          "border-transparent bg-info text-info-foreground hover:bg-info/80",
+        gradient: 
+          "border-transparent bg-gradient-to-r from-primary to-secondary text-primary-foreground",
+        "gradient-success": 
+          "border-transparent bg-gradient-to-r from-success to-success-lighter text-success-foreground",
+        "gradient-destructive": 
+          "border-transparent bg-gradient-to-r from-destructive to-destructive-lighter text-destructive-foreground",
+        "gradient-warning": 
+          "border-transparent bg-gradient-to-r from-warning to-warning-lighter text-warning-foreground",
+        "glass":
+          "border-transparent bg-white/20 backdrop-blur-md text-foreground dark:bg-slate-800/30 dark:text-white",
+        "dot":
+          "pl-1.5 bg-transparent dark:text-white flex items-center before:content-[''] before:h-1.5 before:w-1.5 before:rounded-full before:bg-current before:mr-1",
+      },
+      size: {
+        default: "px-2.5 py-0.5 text-xs",
+        sm: "px-2 py-0.5 text-[10px]",
+        lg: "px-3 py-1 text-sm",
+        xl: "px-4 py-1.5 text-base rounded-full",
+      },
+      animation: {
+        none: "",
+        pulse: "animate-pulse",
+        bounce: "animate-bounce",
+        glow: "animate-glow",
+      },
+      rounded: {
+        default: "rounded-full",
+        sm: "rounded-sm",
+        md: "rounded-md",
+        lg: "rounded-lg",
+        xl: "rounded-xl",
+      },
+      interactive: {
+        false: "",
+        true: "cursor-pointer hover:opacity-80 active:scale-95 transition-transform",
       },
     },
     defaultVariants: {
       variant: "default",
+      size: "default",
+      animation: "none",
+      rounded: "default",
+      interactive: false,
     },
   }
 )
 
 export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof badgeVariants> {}
+    VariantProps<typeof badgeVariants> {
+  withDot?: boolean
+  dotColor?: string
+  withBorder?: boolean
+  borderColor?: string
+}
 
-function Badge({ className, variant, ...props }: BadgeProps) {
+function Badge({
+  className,
+  variant,
+  size,
+  animation,
+  rounded,
+  interactive,
+  withDot,
+  dotColor,
+  withBorder,
+  borderColor,
+  ...props
+}: BadgeProps) {
   return (
-    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+    <div
+      className={cn(
+        badgeVariants({ variant, size, animation, rounded, interactive }),
+        withBorder && "border-2",
+        withBorder && borderColor ? borderColor : "",
+        className
+      )}
+      {...props}
+    >
+      {withDot && (
+        <span 
+          className={`inline-block w-2 h-2 rounded-full mr-1.5 ${dotColor || "bg-current"}`}
+        />
+      )}
+      {props.children}
+    </div>
   )
 }
 
