@@ -285,6 +285,8 @@ const Projects = () => {
           title="Projects"
           subtitle="Manage and monitor all your construction projects"
           icon={<Briefcase className="h-6 w-6" />}
+          gradient={true}
+          animated={true}
           actions={[
             {
               label: "New Project",

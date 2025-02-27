@@ -416,6 +416,8 @@ const Materials = () => {
           title="Materials"
           subtitle="Track and manage construction materials inventory"
           icon={<Package className="h-6 w-6" />}
+          gradient={true}
+          animated={true}
           actions={[
             {
               label: "Add Material",
@@ -426,7 +428,7 @@ const Materials = () => {
             {
               label: "Export",
               icon: <Download />,
-              variant: "blueprint",
+              variant: "construction",
               onClick: () => {/* Export functionality */}
             }
           ]}

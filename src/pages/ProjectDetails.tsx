@@ -336,6 +336,7 @@ const ProjectDetails = () => {
           subtitle="Modern home renovation project with eco-friendly materials"
           // breadcrumbs={breadcrumbItems}
           gradient={true}
+          animated={true}
           actions={[
             {
               label: "Settings",

@@ -249,6 +249,8 @@ const Documents = () => {
           title="Documents"
           subtitle="Manage and organize your project documents"
           icon={<FileText className="h-6 w-6" />}
+          gradient={true}
+          animated={true}
           actions={[
             {
               label: "Upload Document",
@@ -259,7 +261,7 @@ const Documents = () => {
             {
               label: "Export",
               icon: <Download />,
-              variant: "blueprint",
+              variant: "construction",
               onClick: () => {/* Export functionality */}
             }
           ]}

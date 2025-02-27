@@ -959,6 +959,8 @@ const Schedule = () => {
           title="Schedule"
           subtitle="Manage and track all project tasks and timelines"
           icon={<Calendar className="h-6 w-6" />}
+          gradient={true}
+          animated={true}
           actions={[
             {
               label: "Add Task",

@@ -545,7 +545,8 @@ const Expenses = () => {
     } else {
       setSelectedExpenses([]);
     }
-  }, [isAllSelected]);
+
+  }, [isAllSelected, filteredExpenses]);
 
   // View expense details
   const viewExpenseDetails = (expense: Expense) => {
@@ -775,6 +776,8 @@ const Expenses = () => {
           title="Expenses"
           subtitle="Track, analyze and manage project expenses"
           icon={<DollarSign className="h-6 w-6" />}
+          gradient={true}
+          animated={true}
           actions={[
             {
               label: "Add Expense",
@@ -785,7 +788,7 @@ const Expenses = () => {
             {
               label: "Export",
               icon: <Download />,
-              variant: "blueprint",
+              variant: "construction",
               onClick: () => handleExport()
             }
           ]}

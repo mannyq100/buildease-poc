@@ -123,6 +123,8 @@ const Dashboard = () => {
           title="Dashboard"
           subtitle="Welcome back to your project hub"
           icon={<LayoutDashboard className="h-6 w-6" />}
+          gradient={true}
+          animated={true}
           actions={[
             {
               label: "New Project",
