@@ -106,7 +106,6 @@ import {
   Grid 
 } from '@/components/layout/test';
 import { 
-  MetricCard,
   PageHeader
 } from '@/components/shared';
 import MainNavigation from '@/components/layout/MainNavigation';
@@ -412,102 +411,92 @@ const Materials = () => {
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
       <MainNavigation />
       
-      <PageHeader
-        title="Materials"
-        subtitle="Track and manage construction materials inventory"
-        icon={<Package className="h-6 w-6" />}
-        actions={[
-          {
-            label: "Add Material",
-            icon: <Plus />,
-            variant: "construction",
-            onClick: () => setIsAddMaterialOpen(true)
-          },
-          {
-            label: "Export",
-            icon: <Download />,
-            variant: "blueprint",
-            onClick: () => {/* Export functionality */}
-          }
-        ]}
-      />
-
-      {/* Main content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {/* Metrics Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card variant="glass" hover="lift" animation="fadeIn" className="dark:bg-deepblue-dark/70">
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-start">
-                <CardTitle className="text-lg text-deepblue dark:text-blue-300">Total Materials</CardTitle>
-                <Package className="h-5 w-5 text-deepblue" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col">
-                <span className="text-3xl font-bold">{totalMaterials}</span>
-                <div className="flex items-center mt-2 text-sm">
-                  <span className="text-muted-foreground">Items in inventory</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <PageHeader
+          title="Materials"
+          subtitle="Track and manage construction materials inventory"
+          icon={<Package className="h-6 w-6" />}
+          actions={[
+            {
+              label: "Add Material",
+              icon: <Plus />,
+              variant: "construction",
+              onClick: () => setIsAddMaterialOpen(true)
+            },
+            {
+              label: "Export",
+              icon: <Download />,
+              variant: "blueprint",
+              onClick: () => {/* Export functionality */}
+            }
+          ]}
+        />
 
-          <Card variant="glass" hover="lift" animation="fadeIn" className="dark:bg-deepblue-dark/70">
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-start">
-                <CardTitle className="text-lg text-deepblue dark:text-blue-300">Low Stock</CardTitle>
-                <AlertTriangle className="h-5 w-5 text-burntorange" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col">
-                <span className="text-3xl font-bold">{lowStockCount}</span>
-                <div className="flex items-center mt-2">
-                  <Badge variant="warning" className="text-xs">Need attention</Badge>
+        {/* Materials Statistics */}
+        <div className="mt-8 mb-6">
+          <Grid cols={4} className="w-full gap-6">
+            <Card className="bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-shadow">
+              <CardContent className="p-4 flex items-center space-x-4">
+                <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full">
+                  <Package className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card variant="glass" hover="lift" animation="fadeIn" className="dark:bg-deepblue-dark/70">
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-start">
-                <CardTitle className="text-lg text-deepblue dark:text-blue-300">Out of Stock</CardTitle>
-                <XCircle className="h-5 w-5 text-red-500" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col">
-                <span className="text-3xl font-bold">{outOfStockCount}</span>
-                <div className="flex items-center mt-2">
-                  <Badge variant="destructive" className="text-xs">Action needed</Badge>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Materials</p>
+                  <p className="text-xl font-semibold text-gray-900 dark:text-white">{totalMaterials}</p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card variant="glass" hover="lift" animation="fadeIn" className="dark:bg-deepblue-dark/70">
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-start">
-                <CardTitle className="text-lg text-deepblue dark:text-blue-300">On Order</CardTitle>
-                <Truck className="h-5 w-5 text-darkgreen" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col">
-                <span className="text-3xl font-bold">{onOrderCount}</span>
-                <div className="flex items-center mt-2">
-                  <Badge variant="success" className="text-xs">Pending delivery</Badge>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-shadow">
+              <CardContent className="p-4 flex items-center space-x-4">
+                <div className="bg-amber-100 dark:bg-amber-900/30 p-3 rounded-full">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Low Stock</p>
+                  <p className="text-xl font-semibold text-gray-900 dark:text-white">{lowStockCount}</p>
+                  {lowStockCount > 0 && (
+                    <Badge variant="warning" className="mt-1">Needs attention</Badge>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-shadow">
+              <CardContent className="p-4 flex items-center space-x-4">
+                <div className="bg-red-100 dark:bg-red-900/30 p-3 rounded-full">
+                  <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Out of Stock</p>
+                  <p className="text-xl font-semibold text-gray-900 dark:text-white">{outOfStockCount}</p>
+                  {outOfStockCount > 0 && (
+                    <Badge variant="destructive" className="mt-1">Action needed</Badge>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-shadow">
+              <CardContent className="p-4 flex items-center space-x-4">
+                <div className="bg-green-100 dark:bg-green-900/30 p-3 rounded-full">
+                  <Truck className="w-5 h-5 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">On Order</p>
+                  <p className="text-xl font-semibold text-gray-900 dark:text-white">{onOrderCount}</p>
+                  {onOrderCount > 0 && (
+                    <Badge variant="success" className="mt-1">Pending delivery</Badge>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </Grid>
         </div>
 
         {/* Filters and Controls */}
-        <Card variant="default" className="mb-8">
-          <CardContent className="p-6">
+        <Card className="mb-6 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700">
+          <CardContent className="p-4">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <Input
@@ -560,10 +549,10 @@ const Materials = () => {
         </Card>
 
         {/* Materials Table */}
-        <Card variant="default" className="overflow-hidden">
-          <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-900 border-b">
+        <Card className="overflow-hidden bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 mb-8">
+          <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-900 border-b border-gray-200 dark:border-gray-700 py-4">
             <div className="flex justify-between items-center">
-              <CardTitle>Inventory</CardTitle>
+              <CardTitle className="text-lg text-gray-900 dark:text-white">Inventory</CardTitle>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm">
                   <Settings className="h-4 w-4 mr-2" />
@@ -575,7 +564,7 @@ const Materials = () => {
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="bg-gray-50 dark:bg-slate-800">
                   <TableHead>Material</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Supplier</TableHead>
@@ -598,15 +587,15 @@ const Materials = () => {
                   </TableRow>
                 ) : (
                   filteredMaterials.map((material) => (
-                    <TableRow key={material.id} className="group">
+                    <TableRow key={material.id} className="group hover:bg-gray-50 dark:hover:bg-slate-700/30">
                       <TableCell>
-                        <div className="font-medium">{material.name}</div>
+                        <div className="font-medium text-gray-900 dark:text-white">{material.name}</div>
                         <div className="text-sm text-muted-foreground">
                           {material.project}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">
+                        <Badge variant="outline" className="bg-gray-50 dark:bg-slate-700/50 text-gray-700 dark:text-gray-200">
                           {material.category}
                         </Badge>
                       </TableCell>
@@ -666,7 +655,7 @@ const Materials = () => {
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem 
-                                className="text-red-600"
+                                className="text-red-600 dark:text-red-400"
                                 onClick={() => handleDeleteMaterial(material.id)}
                               >
                                 <Trash className="mr-2 h-4 w-4" />
@@ -682,7 +671,7 @@ const Materials = () => {
               </TableBody>
             </Table>
           </div>
-          <div className="flex items-center justify-between px-4 py-4 border-t">
+          <div className="flex items-center justify-between px-4 py-4 border-t border-gray-200 dark:border-gray-700">
             <div className="text-sm text-muted-foreground">
               Showing <span className="font-medium">{filteredMaterials.length}</span> of{" "}
               <span className="font-medium">{materials.length}</span> materials
@@ -715,8 +704,121 @@ const Materials = () => {
           </div>
         </Card>
 
-        {/* Keep all the existing modals */}
-        {/* ... existing modals ... */}
+        {/* Add Material Dialog */}
+        <Dialog open={isAddMaterialOpen} onOpenChange={setIsAddMaterialOpen}>
+          <DialogContent className="max-w-xl">
+            <DialogHeader>
+              <DialogTitle>Add Material</DialogTitle>
+              <DialogDescription>
+                Add a new material to your inventory
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Name</label>
+                  <Input 
+                    value={newMaterial.name}
+                    onChange={(e) => setNewMaterial({...newMaterial, name: e.target.value})}
+                    placeholder="Material name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Category</label>
+                  <Select 
+                    value={newMaterial.category}
+                    onValueChange={(value) => setNewMaterial({...newMaterial, category: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.filter(c => c !== 'All Categories').map(category => (
+                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Unit</label>
+                  <Input 
+                    value={newMaterial.unit}
+                    onChange={(e) => setNewMaterial({...newMaterial, unit: e.target.value})}
+                    placeholder="e.g., Bag, Ton, Piece"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Unit Price</label>
+                  <Input 
+                    type="number"
+                    value={newMaterial.unitPrice}
+                    onChange={(e) => setNewMaterial({...newMaterial, unitPrice: parseFloat(e.target.value)})}
+                    placeholder="Price per unit"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Stock Level</label>
+                  <Input 
+                    type="number"
+                    value={newMaterial.inStock}
+                    onChange={(e) => setNewMaterial({...newMaterial, inStock: parseInt(e.target.value)})}
+                    placeholder="Current quantity"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Minimum Stock</label>
+                  <Input 
+                    type="number"
+                    value={newMaterial.minStock}
+                    onChange={(e) => setNewMaterial({...newMaterial, minStock: parseInt(e.target.value)})}
+                    placeholder="Reorder threshold"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Supplier</label>
+                  <Input 
+                    value={newMaterial.supplier}
+                    onChange={(e) => setNewMaterial({...newMaterial, supplier: e.target.value})}
+                    placeholder="Supplier name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Project</label>
+                  <Select 
+                    value={newMaterial.project}
+                    onValueChange={(value) => setNewMaterial({...newMaterial, project: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Assign to project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {projects.filter(p => p !== 'All Projects').map(project => (
+                        <SelectItem key={project} value={project}>{project}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsAddMaterialOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddMaterial}>Add Material</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

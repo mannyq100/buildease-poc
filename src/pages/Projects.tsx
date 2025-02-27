@@ -51,6 +51,7 @@ import { HorizontalNav, type NavItem } from '@/components/navigation/HorizontalN
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import MainNavigation from '@/components/layout/MainNavigation';
+import { PageHeader } from '@/components/shared';
 
 // Sample project data
 const projectsData = [
@@ -276,27 +277,26 @@ const Projects = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6] dark:bg-slate-900">
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
       <MainNavigation />
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        {/* Page Header */}
-        <div className="mb-8 bg-gradient-to-r from-[#1E3A8A] to-[#3B82F6] rounded-lg shadow-lg p-6 text-white">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold">Projects</h1>
-              <p className="mt-1 text-blue-100">Manage and monitor all your construction projects</p>
-            </div>
-            <Button onClick={() => navigate('/create-project')} className="bg-white text-[#1E3A8A] hover:bg-blue-50">
-              <Plus className="mr-2 h-4 w-4" />
-              New Project
-            </Button>
-          </div>
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <PageHeader
+          title="Projects"
+          subtitle="Manage and monitor all your construction projects"
+          icon={<Briefcase className="h-6 w-6" />}
+          actions={[
+            {
+              label: "New Project",
+              icon: <Plus />,
+              variant: "construction",
+              onClick: () => navigate('/create-project')
+            }
+          ]}
+        />
 
         {/* Filters and Controls */}
-        <div className="mb-8">
+        <div className="mt-8 mb-8">
           <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm">
             <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full lg:w-auto">
               <TabsList className="grid grid-cols-5 w-full lg:w-auto">
@@ -558,7 +558,7 @@ const Projects = () => {
             </CardContent>
           </Card>
         </div>
-      </main>
+      </div>
     </div>
   );
 };

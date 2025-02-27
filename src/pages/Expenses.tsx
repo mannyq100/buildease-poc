@@ -72,6 +72,7 @@ import {
   Paperclip,
   ChevronLeft,
   ChevronRight,
+  Clock,
 } from 'lucide-react';
 import { 
   DashboardLayout, 
@@ -769,120 +770,120 @@ const Expenses = () => {
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
       <MainNavigation />
       
-      <PageHeader
-        title="Expenses"
-        subtitle="Track, analyze and manage project expenses"
-        icon={<DollarSign className="h-6 w-6" />}
-        actions={[
-          {
-            label: "Add Expense",
-            icon: <Plus />,
-            variant: "construction",
-            onClick: () => setIsAddExpenseOpen(true)
-          },
-          {
-            label: "Export",
-            icon: <Download />,
-            variant: "blueprint",
-            onClick: () => handleExport()
-          }
-        ]}
-      />
-
-      {/* Main content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <PageHeader
+          title="Expenses"
+          subtitle="Track, analyze and manage project expenses"
+          icon={<DollarSign className="h-6 w-6" />}
+          actions={[
+            {
+              label: "Add Expense",
+              icon: <Plus />,
+              variant: "construction",
+              onClick: () => setIsAddExpenseOpen(true)
+            },
+            {
+              label: "Export",
+              icon: <Download />,
+              variant: "blueprint",
+              onClick: () => handleExport()
+            }
+          ]}
+        />
+      
         {/* Metrics Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card variant="glass" hover="lift" animation="fadeIn" className="dark:bg-deepblue-dark/70">
+        <div className="mt-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <Card variant="glass" hover="lift" animation="fadeIn" className="dark:bg-deepblue-dark/70">
               <CardHeader className="pb-2">
-              <div className="flex justify-between items-start">
-                <CardTitle className="text-lg text-deepblue dark:text-blue-300">Total Expenses</CardTitle>
-                <DollarSign className="h-5 w-5 text-burntorange" />
-              </div>
+                <div className="flex justify-between items-start">
+                  <CardTitle className="text-lg text-deepblue dark:text-blue-300">Total Expenses</CardTitle>
+                  <DollarSign className="h-5 w-5 text-burntorange" />
+                </div>
               </CardHeader>
               <CardContent>
-              <div className="flex flex-col">
-                <span className="text-3xl font-bold">${totalExpenses.toLocaleString()}</span>
-                <div className="flex items-center mt-2 text-sm">
-                  <Badge variant={growthInsights.increasing ? "warning" : "success"} className="gap-1">
-                    {growthInsights.increasing ? (
-                      <TrendingUp className="h-3 w-3" />
+                <div className="flex flex-col">
+                  <span className="text-3xl font-bold">${totalExpenses.toLocaleString()}</span>
+                  <div className="flex items-center mt-2 text-sm">
+                    <Badge variant={growthInsights.increasing ? "warning" : "success"} className="gap-1">
+                      {growthInsights.increasing ? (
+                        <TrendingUp className="h-3 w-3" />
+                      ) : (
+                        <TrendingDown className="h-3 w-3" />
+                      )}
+                      {growthInsights.increasing 
+                        ? `+${growthInsights.growthRate.toFixed(1)}%` 
+                        : `-${Math.abs(growthInsights.growthRate).toFixed(1)}%`}
+                    </Badge>
+                    <span className="ml-2 text-muted-foreground">vs last month</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card variant="glass" hover="lift" animation="fadeIn" className="dark:bg-deepblue-dark/70">
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-start">
+                  <CardTitle className="text-lg text-deepblue dark:text-blue-300">Budget Status</CardTitle>
+                  <Building className="h-5 w-5 text-deepblue" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col">
+                  <span className="text-3xl font-bold">${budget.total.toLocaleString()}</span>
+                  <div className="mt-2">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span>Budget spent</span>
+                      <span className="font-medium">{budgetProgress.toFixed(1)}%</span>
+                    </div>
+                    <Progress value={budgetProgress} className="h-2" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card variant="glass" hover="lift" animation="fadeIn" className="dark:bg-deepblue-dark/70">
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-start">
+                  <CardTitle className="text-lg text-deepblue dark:text-blue-300">Top Category</CardTitle>
+                  <PieChart className="h-5 w-5 text-darkgreen" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col">
+                  <span className="text-3xl font-bold truncate">{topCategory?.category || "N/A"}</span>
+                  <div className="flex items-center mt-2 text-sm">
+                    <span className="text-muted-foreground">
+                      ${topCategory?.amount?.toLocaleString() || "0"}
+                    </span>
+                    <span className="mx-2 text-muted-foreground">•</span>
+                    <span className="text-muted-foreground">
+                      {topCategory && totalExpenses > 0
+                        ? ((topCategory.amount! / totalExpenses) * 100).toFixed(1)
+                        : "0"}%
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card variant="glass" hover="lift" animation="fadeIn" className="dark:bg-deepblue-dark/70">
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-start">
+                  <CardTitle className="text-lg text-deepblue dark:text-blue-300">Pending Review</CardTitle>
+                  <AlertCircle className="h-5 w-5 text-burntorange" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col">
+                  <span className="text-3xl font-bold">
+                    {expenses.filter(e => e.status === 'pending').length}
+                  </span>
+                  <div className="flex items-center mt-2">
+                    {expenses.filter(e => e.status === 'pending').length > 0 ? (
+                      <Badge variant="warning" className="text-xs">Action needed</Badge>
                     ) : (
-                      <TrendingDown className="h-3 w-3" />
-                    )}
-                    {growthInsights.increasing 
-                      ? `+${growthInsights.growthRate.toFixed(1)}%` 
-                      : `-${Math.abs(growthInsights.growthRate).toFixed(1)}%`}
-                  </Badge>
-                  <span className="ml-2 text-muted-foreground">vs last month</span>
-                </div>
-              </div>
-              </CardContent>
-            </Card>
-            
-          <Card variant="glass" hover="lift" animation="fadeIn" className="dark:bg-deepblue-dark/70">
-              <CardHeader className="pb-2">
-              <div className="flex justify-between items-start">
-                <CardTitle className="text-lg text-deepblue dark:text-blue-300">Budget Status</CardTitle>
-                <Building className="h-5 w-5 text-deepblue" />
-              </div>
-              </CardHeader>
-              <CardContent>
-              <div className="flex flex-col">
-                <span className="text-3xl font-bold">${budget.total.toLocaleString()}</span>
-                <div className="mt-2">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Budget spent</span>
-                    <span className="font-medium">{budgetProgress.toFixed(1)}%</span>
-                  </div>
-                  <Progress value={budgetProgress} className="h-2" />
-                </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-          <Card variant="glass" hover="lift" animation="fadeIn" className="dark:bg-deepblue-dark/70">
-              <CardHeader className="pb-2">
-              <div className="flex justify-between items-start">
-                <CardTitle className="text-lg text-deepblue dark:text-blue-300">Top Category</CardTitle>
-                <PieChart className="h-5 w-5 text-darkgreen" />
-              </div>
-              </CardHeader>
-              <CardContent>
-              <div className="flex flex-col">
-                <span className="text-3xl font-bold truncate">{topCategory?.category || "N/A"}</span>
-                <div className="flex items-center mt-2 text-sm">
-                  <span className="text-muted-foreground">
-                    ${topCategory?.amount?.toLocaleString() || "0"}
-                  </span>
-                  <span className="mx-2 text-muted-foreground">•</span>
-                  <span className="text-muted-foreground">
-                    {topCategory && totalExpenses > 0
-                      ? ((topCategory.amount! / totalExpenses) * 100).toFixed(1)
-                      : "0"}%
-                  </span>
-                </div>
-              </div>
-              </CardContent>
-            </Card>
-
-          <Card variant="glass" hover="lift" animation="fadeIn" className="dark:bg-deepblue-dark/70">
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-start">
-                <CardTitle className="text-lg text-deepblue dark:text-blue-300">Pending Review</CardTitle>
-                <AlertCircle className="h-5 w-5 text-burntorange" />
-          </div>
-              </CardHeader>
-              <CardContent>
-              <div className="flex flex-col">
-                <span className="text-3xl font-bold">
-                  {expenses.filter(e => e.status === 'pending').length}
-                </span>
-                <div className="flex items-center mt-2">
-                  {expenses.filter(e => e.status === 'pending').length > 0 ? (
-                    <Badge variant="warning" className="text-xs">Action needed</Badge>
-                  ) : (
-                    <Badge variant="success" className="text-xs">All clear</Badge>
+                      <Badge variant="success" className="text-xs">All clear</Badge>
                     )}
                   </div>
                 </div>
@@ -890,168 +891,169 @@ const Expenses = () => {
             </Card>
           </div>
 
-        {/* Filters and Controls */}
-        <Card variant="default" className="mb-8">
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-1 block">Date Range</label>
-            <Select 
-                  value={dateFilter}
-                  onValueChange={setDateFilter}
-            >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select date range" />
-              </SelectTrigger>
-              <SelectContent>
-                    <SelectItem value="all">All Time</SelectItem>
-                    <SelectItem value="thisMonth">This Month</SelectItem>
-                    <SelectItem value="lastMonth">Last Month</SelectItem>
-                    <SelectItem value="thisQuarter">This Quarter</SelectItem>
-                    <SelectItem value="thisYear">This Year</SelectItem>
-              </SelectContent>
-            </Select>
+          {/* Filters and Controls */}
+          <Card variant="default" className="mb-8">
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Date Range</label>
+                  <Select 
+                    value={dateFilter}
+                    onValueChange={setDateFilter}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select date range" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Time</SelectItem>
+                      <SelectItem value="thisMonth">This Month</SelectItem>
+                      <SelectItem value="lastMonth">Last Month</SelectItem>
+                      <SelectItem value="thisQuarter">This Quarter</SelectItem>
+                      <SelectItem value="thisYear">This Year</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Project</label>
+                  <Select 
+                    value={projectFilter} 
+                    onValueChange={setProjectFilter}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Projects</SelectItem>
+                      {projects.map(project => (
+                        <SelectItem key={project} value={project}>{project}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Category</label>
+                  <Select 
+                    value={categoryFilter}
+                    onValueChange={setCategoryFilter}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      {categories.map(category => (
+                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Status</label>
+                  <Select 
+                    value={statusFilter} 
+                    onValueChange={setStatusFilter}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="approved">Approved</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">Project</label>
-            <Select 
-              value={projectFilter} 
-              onValueChange={setProjectFilter}
-            >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select project" />
-              </SelectTrigger>
-              <SelectContent>
-                    <SelectItem value="all">All Projects</SelectItem>
-                {projects.map(project => (
-                  <SelectItem key={project} value={project}>{project}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">Category</label>
-            <Select 
-                  value={categoryFilter}
-                  onValueChange={setCategoryFilter}
-            >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    {categories.map(category => (
-                      <SelectItem key={category} value={category}>{category}</SelectItem>
-                    ))}
-              </SelectContent>
-            </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">Status</label>
-            <Select 
-              value={statusFilter} 
-              onValueChange={setStatusFilter}
-            >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="approved">Approved</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
+            </CardContent>
+          </Card>
+
+          {/* Data Visualization */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <Card variant="default" className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-900 border-b">
+                <CardTitle>Expense Trends</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                {timeSeriesData.length > 0 ? (
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={timeSeriesData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#1E3A8A" stopOpacity={0.8}/>
+                            <stop offset="95%" stopColor="#1E3A8A" stopOpacity={0.1}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" />
+                        <YAxis tickFormatter={(value) => `$${value}`} />
+                        <RechartsTooltip formatter={(value) => [`$${value}`, 'Amount']} />
+                        <Area 
+                          type="monotone" 
+                          dataKey="amount" 
+                          stroke="#1E3A8A" 
+                          fillOpacity={1} 
+                          fill="url(#colorAmount)" 
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="h-64 flex items-center justify-center">
+                    <p className="text-muted-foreground">No data available for the selected filters</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card variant="default" className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-900 border-b">
+                <CardTitle>Expenses by Project</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                {projectChartData.length > 0 ? (
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsWPieChart>
+                        <Pie
+                          data={projectChartData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="amount"
+                          nameKey="name"
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        >
+                          {projectChartData.map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={[
+                                '#1E3A8A', // deepblue
+                                '#166534', // darkgreen
+                                '#D97706', // burntorange
+                                '#0EA5E9', // sky blue
+                                '#8B5CF6', // purple
+                                '#EC4899', // pink
+                              ][index % 6]} 
+                            />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip formatter={(value) => [`$${value}`, 'Amount']} />
+                      </RechartsWPieChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="h-64 flex items-center justify-center">
+                    <p className="text-muted-foreground">No data available for the selected filters</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
-                </div>
-          </CardContent>
-        </Card>
-
-        {/* Data Visualization */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <Card variant="default" className="overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-900 border-b">
-              <CardTitle>Expense Trends</CardTitle>
-              </CardHeader>
-            <CardContent className="p-6">
-              {timeSeriesData.length > 0 ? (
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={timeSeriesData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#1E3A8A" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#1E3A8A" stopOpacity={0.1}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis tickFormatter={(value) => `$${value}`} />
-                      <RechartsTooltip formatter={(value) => [`$${value}`, 'Amount']} />
-                      <Area 
-                        type="monotone" 
-                        dataKey="amount" 
-                        stroke="#1E3A8A" 
-                        fillOpacity={1} 
-                        fill="url(#colorAmount)" 
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : (
-                <div className="h-64 flex items-center justify-center">
-                  <p className="text-muted-foreground">No data available for the selected filters</p>
-                </div>
-              )}
-              </CardContent>
-            </Card>
-
-          <Card variant="default" className="overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-900 border-b">
-              <CardTitle>Expenses by Project</CardTitle>
-              </CardHeader>
-            <CardContent className="p-6">
-              {projectChartData.length > 0 ? (
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RechartsWPieChart>
-                      <Pie
-                        data={projectChartData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="amount"
-                        nameKey="name"
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      >
-                        {projectChartData.map((entry, index) => (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill={[
-                              '#1E3A8A', // deepblue
-                              '#166534', // darkgreen
-                              '#D97706', // burntorange
-                              '#0EA5E9', // sky blue
-                              '#8B5CF6', // purple
-                              '#EC4899', // pink
-                            ][index % 6]} 
-                          />
-                        ))}
-                      </Pie>
-                      <RechartsTooltip formatter={(value) => [`$${value}`, 'Amount']} />
-                    </RechartsWPieChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : (
-                <div className="h-64 flex items-center justify-center">
-                  <p className="text-muted-foreground">No data available for the selected filters</p>
-                </div>
-              )}
-              </CardContent>
-            </Card>
-                </div>
+        </div>
 
         {/* Expenses Table */}
         <Card variant="default" className="overflow-hidden">
@@ -1070,9 +1072,9 @@ const Expenses = () => {
                 {selectedExpenses.length > 0 && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm">
                         Actions <ChevronDown className="ml-1 h-4 w-4" />
-                    </Button>
+                      </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => handleBatchAction('approve')}>
@@ -1091,8 +1093,8 @@ const Expenses = () => {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
-                  </div>
-                </div>
+              </div>
+            </div>
           </CardHeader>
           <div className="overflow-x-auto">
             <Table>
@@ -1130,7 +1132,7 @@ const Expenses = () => {
                         <FileX className="h-12 w-12 mb-2 opacity-30" />
                         <p>No expenses found</p>
                         <p className="text-sm">Try adjusting your filters or add a new expense</p>
-            </div>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -1155,12 +1157,12 @@ const Expenses = () => {
                               <TooltipContent>Receipt uploaded</TooltipContent>
                             </Tooltip>
                           )}
-            </div>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="font-normal">
                           {expense.category}
-                  </Badge>
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-right font-medium">
                         ${expense.amount.toLocaleString()}
@@ -1174,7 +1176,7 @@ const Expenses = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                  <Badge 
+                        <Badge 
                           variant={
                             expense.status === 'approved'
                               ? 'success'
@@ -1189,7 +1191,7 @@ const Expenses = () => {
                             : expense.status === 'rejected'
                             ? 'Rejected'
                             : 'Pending'}
-                  </Badge>
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end">
@@ -1197,7 +1199,7 @@ const Expenses = () => {
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon-sm" className="opacity-0 group-hover:opacity-100">
                                 <MoreHorizontal className="h-4 w-4" />
-                        </Button>
+                              </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => viewExpenseDetails(expense)}>
@@ -1207,11 +1209,11 @@ const Expenses = () => {
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => handleUpdateExpenseStatus(expense.id, 'approved')}>
                                 <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                    Approve
+                                Approve
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleUpdateExpenseStatus(expense.id, 'rejected')}>
                                 <XCircle className="mr-2 h-4 w-4 text-red-500" />
-                    Reject
+                                Reject
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => handleDeleteExpense(expense.id)}>
@@ -1220,7 +1222,7 @@ const Expenses = () => {
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
-            </div>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -1232,9 +1234,9 @@ const Expenses = () => {
             <div className="text-sm text-muted-foreground">
               Showing <span className="font-medium">{paginatedExpenses.length}</span> of{" "}
               <span className="font-medium">{filteredExpenses.length}</span> expenses
-          </div>
+            </div>
             <div className="flex items-center space-x-2">
-            <Button 
+              <Button 
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
@@ -1242,8 +1244,8 @@ const Expenses = () => {
               >
                 <ChevronLeft className="h-4 w-4 mr-1" />
                 Previous
-            </Button>
-                  <Button
+              </Button>
+              <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
@@ -1251,15 +1253,216 @@ const Expenses = () => {
               >
                 Next
                 <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Add Expense Dialog */}
+      <Dialog open={isAddExpenseOpen} onOpenChange={setIsAddExpenseOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Add New Expense</DialogTitle>
+            <DialogDescription>
+              Record a new expense for your construction project.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-3">
+            {/* Basic Info */}
+            <div className="grid gap-3">
+              <label htmlFor="description" className="text-sm font-medium">
+                Description
+              </label>
+              <Input 
+                id="description" 
+                value={newExpense.description} 
+                onChange={(e) => setNewExpense({...newExpense, description: e.target.value})}
+                placeholder="Enter expense description"
+                required
+              />
+            </div>
+            
+            {/* Amount and Category */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid gap-3">
+                <label htmlFor="amount" className="text-sm font-medium">
+                  Amount
+                </label>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                  <Input 
+                    id="amount" 
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={newExpense.amount} 
+                    onChange={(e) => setNewExpense({...newExpense, amount: e.target.value})}
+                    placeholder="0.00"
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid gap-3">
+                <label htmlFor="category" className="text-sm font-medium">
+                  Category
+                </label>
+                <Select 
+                  value={newExpense.category} 
+                  onValueChange={(value) => setNewExpense({...newExpense, category: value})}
+                >
+                  <SelectTrigger id="category">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.filter(c => c !== 'All Categories').map(category => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-        </Card>
+            
+            {/* Date Selection */}
+            <div className="grid gap-3">
+              <label htmlFor="date" className="text-sm font-medium">
+                Date
+              </label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <Input 
+                  id="date" 
+                  type="date" 
+                  value={newExpense.date}
+                  onChange={(e) => setNewExpense({...newExpense, date: e.target.value})}
+                  className="pl-10"
+                />
+              </div>
             </div>
-
-      {/* Modals */}
-      {/* ... existing modals ... */}
+            
+            {/* Project and Phase */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid gap-3">
+                <label htmlFor="project" className="text-sm font-medium">
+                  Project
+                </label>
+                <Select 
+                  value={newExpense.project} 
+                  onValueChange={(value) => setNewExpense({...newExpense, project: value})}
+                >
+                  <SelectTrigger id="project">
+                    <SelectValue placeholder="Select project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.filter(p => p !== 'All Projects').map(project => (
+                      <SelectItem key={project} value={project}>
+                        {project}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="grid gap-3">
+                <label htmlFor="phase" className="text-sm font-medium">
+                  Phase
+                </label>
+                <Select 
+                  value={newExpense.phase} 
+                  onValueChange={(value) => setNewExpense({...newExpense, phase: value})}
+                >
+                  <SelectTrigger id="phase">
+                    <SelectValue placeholder="Select phase" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {phases.filter(p => p !== 'All Phases').map(phase => (
+                      <SelectItem key={phase} value={phase}>
+                        {phase}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+            
+            {/* Payment Method and Vendor */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid gap-3">
+                <label htmlFor="paymentMethod" className="text-sm font-medium">
+                  Payment Method
+                </label>
+                <Select 
+                  value={newExpense.paymentMethod} 
+                  onValueChange={(value) => setNewExpense({...newExpense, paymentMethod: value})}
+                >
+                  <SelectTrigger id="paymentMethod">
+                    <SelectValue placeholder="Select method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Cash">Cash</SelectItem>
+                    <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                    <SelectItem value="Credit Card">Credit Card</SelectItem>
+                    <SelectItem value="Mobile Money">Mobile Money</SelectItem>
+                    <SelectItem value="Check">Check</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="grid gap-3">
+                <label htmlFor="vendor" className="text-sm font-medium">
+                  Vendor/Supplier
+                </label>
+                <Input 
+                  id="vendor" 
+                  value={newExpense.vendor} 
+                  onChange={(e) => setNewExpense({...newExpense, vendor: e.target.value})}
+                  placeholder="Enter vendor name"
+                />
+              </div>
+            </div>
+            
+            {/* Receipt Toggle */}
+            <div className="flex items-center space-x-2 mt-2">
+              <Checkbox 
+                id="receiptUploaded" 
+                checked={newExpense.receiptUploaded}
+                onCheckedChange={(checked) => setNewExpense({...newExpense, receiptUploaded: !!checked})}
+              />
+              <label 
+                htmlFor="receiptUploaded" 
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+              >
+                Receipt uploaded
+              </label>
+              
+              {newExpense.receiptUploaded && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="ml-auto"
+                  onClick={() => {
+                    // In a real application, this would trigger a file upload dialog
+                    alert("This would open a file selection dialog in a real application");
+                  }}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Receipt
+                </Button>
+              )}
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddExpenseOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddExpense}>Add Expense</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 

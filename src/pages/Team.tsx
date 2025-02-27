@@ -99,11 +99,21 @@ import {
   Plus, 
   FileText,
   Radar,
-  PieChart
+  PieChart,
+  Upload,
+  DollarSign,
+  ChevronDown,
+  ArrowUpDown,
+  Check,
+  ChevronsUpDown,
+  UserCog,
+  Settings
 } from 'lucide-react';
 import { DashboardLayout, DashboardSection, Grid } from '@/components/layout/test';
 import { PageHeader } from '@/components/shared';
 import MainNavigation from '@/components/layout/MainNavigation';
+import { Slider } from "@/components/ui/slider";
+import { Separator } from "@/components/ui/separator";
 
 // Define the TeamMember interface
 interface TeamMember {
@@ -268,6 +278,12 @@ interface NewTeamMember {
   phone: string;
   department: string;
   projects: string[];
+  location?: string;
+  skills?: string[];
+  certifications?: string[];
+  workload?: number;
+  joinDate?: string;
+  availability?: string;
 }
 
 const Team = () => {
@@ -334,12 +350,12 @@ const Team = () => {
       projects: newMember.projects,
       status: 'active',
       avatar: '',
-      skills: [],
-      workload: 0,
-      joinDate: new Date().toISOString().split('T')[0],
-      certifications: [],
-      availability: 'Full-time',
-      location: 'Accra, Ghana'
+      skills: newMember.skills || [],
+      workload: newMember.workload || 0,
+      joinDate: newMember.joinDate || new Date().toISOString().split('T')[0],
+      certifications: newMember.certifications || [],
+      availability: newMember.availability || 'Full-time',
+      location: newMember.location || 'Accra, Ghana'
     };
     
     setTeamMembers([...teamMembers, newTeamMember]);
@@ -393,7 +409,7 @@ const Team = () => {
         />
 
         {/* Team Statistics */}
-        <div className=" mb-6">
+        <div className="mt-8 mb-6">
           <Grid cols={4} className="w-full gap-6">
             <Card>
               <CardContent className="p-4 flex items-center space-x-4">
@@ -588,84 +604,267 @@ const Team = () => {
 
       {/* Add Team Member Dialog */}
       <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>
-        <DialogContent className="max-w-xl">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Add Team Member</DialogTitle>
             <DialogDescription>
-              Add a new member to your construction project team.
+              Add a new member to your construction project team. Fill in all required information.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input 
-                  id="name" 
-                  value={newMember.name}
-                  onChange={(e) => setNewMember({...newMember, name: e.target.value})}
-                  placeholder="Enter full name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
-                <Input 
-                  id="role" 
-                  value={newMember.role}
-                  onChange={(e) => setNewMember({...newMember, role: e.target.value})}
-                  placeholder="Enter role"
-                />
+          <div className="grid gap-5 py-4 max-h-[70vh] overflow-y-auto pr-2">
+            {/* Personal Information Section */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-muted-foreground flex items-center">
+                <User className="h-4 w-4 mr-2" />
+                Personal Information
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Profile image upload */}
+                <div className="space-y-2 md:col-span-2 flex flex-col items-center">
+                  <Avatar className="h-24 w-24 border-2 border-muted">
+                    <AvatarFallback className="text-2xl">{newMember.name ? newMember.name.charAt(0) : 'T'}</AvatarFallback>
+                  </Avatar>
+                  
+                  <Button variant="outline" size="sm" className="mt-2">
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Photo
+                  </Button>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="flex items-center">
+                    Full Name <span className="text-red-500 ml-1">*</span>
+                  </Label>
+                  <Input 
+                    id="name" 
+                    value={newMember.name}
+                    onChange={(e) => setNewMember({...newMember, name: e.target.value})}
+                    placeholder="Enter full name"
+                    className="focus:ring-1 focus:ring-deepblue"
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="location">Location</Label>
+                  <Input 
+                    id="location" 
+                    placeholder="Enter location (city, country)"
+                    value={newMember.location || ''}
+                    onChange={(e) => setNewMember({...newMember, location: e.target.value})}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="flex items-center">
+                    Email <span className="text-red-500 ml-1">*</span>
+                  </Label>
+                  <Input 
+                    id="email" 
+                    type="email"
+                    value={newMember.email}
+                    onChange={(e) => setNewMember({...newMember, email: e.target.value})}
+                    placeholder="Enter email address"
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input 
+                    id="phone" 
+                    value={newMember.phone}
+                    onChange={(e) => setNewMember({...newMember, phone: e.target.value})}
+                    placeholder="Enter phone number"
+                  />
+                </div>
               </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input 
-                  id="email" 
-                  type="email"
-                  value={newMember.email}
-                  onChange={(e) => setNewMember({...newMember, email: e.target.value})}
-                  placeholder="Enter email address"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input 
-                  id="phone" 
-                  value={newMember.phone}
-                  onChange={(e) => setNewMember({...newMember, phone: e.target.value})}
-                  placeholder="Enter phone number"
-                />
+            {/* Job Information Section */}
+            <Separator />
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-muted-foreground flex items-center">
+                <Briefcase className="h-4 w-4 mr-2" />
+                Job Information
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="role" className="flex items-center">
+                    Role <span className="text-red-500 ml-1">*</span>
+                  </Label>
+                  <Input 
+                    id="role" 
+                    value={newMember.role}
+                    onChange={(e) => setNewMember({...newMember, role: e.target.value})}
+                    placeholder="Enter role (e.g. Project Manager)"
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="department" className="flex items-center">
+                    Department <span className="text-red-500 ml-1">*</span>
+                  </Label>
+                  <Select 
+                    value={newMember.department} 
+                    onValueChange={(value) => setNewMember({...newMember, department: value})}
+                  >
+                    <SelectTrigger id="department">
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Management">Management</SelectItem>
+                      <SelectItem value="Engineering">Engineering</SelectItem>
+                      <SelectItem value="Construction">Construction</SelectItem>
+                      <SelectItem value="Design">Design</SelectItem>
+                      <SelectItem value="Procurement">Procurement</SelectItem>
+                      <SelectItem value="Quality Control">Quality Control</SelectItem>
+                      <SelectItem value="Safety">Safety</SelectItem>
+                      <SelectItem value="Administration">Administration</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="join-date">Join Date</Label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                    <Input 
+                      id="join-date" 
+                      type="date" 
+                      className="pl-10"
+                      defaultValue={new Date().toISOString().split('T')[0]}
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="availability">Availability</Label>
+                  <Select defaultValue="Full-time">
+                    <SelectTrigger id="availability">
+                      <SelectValue placeholder="Select availability" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Full-time">Full-time</SelectItem>
+                      <SelectItem value="Part-time">Part-time</SelectItem>
+                      <SelectItem value="Contract">Contract</SelectItem>
+                      <SelectItem value="Consultant">Consultant</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="projects" className="flex items-center">
+                    Assigned Projects <span className="text-red-500 ml-1">*</span>
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="villa-project"
+                        onCheckedChange={(checked) => {
+                          const updatedProjects = checked ? 
+                            [...(newMember.projects || []), 'Villa Construction'] :
+                            (newMember.projects || []).filter(p => p !== 'Villa Construction');
+                          setNewMember({...newMember, projects: updatedProjects});
+                        }}
+                      />
+                      <label htmlFor="villa-project" className="text-sm cursor-pointer">Villa Construction</label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="office-project"
+                        onCheckedChange={(checked) => {
+                          const updatedProjects = checked ? 
+                            [...(newMember.projects || []), 'Office Renovation'] :
+                            (newMember.projects || []).filter(p => p !== 'Office Renovation');
+                          setNewMember({...newMember, projects: updatedProjects});
+                        }}
+                      />
+                      <label htmlFor="office-project" className="text-sm cursor-pointer">Office Renovation</label>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="department">Department</Label>
-                <Select 
-                  value={newMember.department} 
-                  onValueChange={(value) => setNewMember({...newMember, department: value})}
-                >
-                  <SelectTrigger id="department">
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Management">Management</SelectItem>
-                    <SelectItem value="Engineering">Engineering</SelectItem>
-                    <SelectItem value="Construction">Construction</SelectItem>
-                    <SelectItem value="Design">Design</SelectItem>
-                  </SelectContent>
-                </Select>
+            {/* Skills & Qualifications Section */}
+            <Separator />
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-muted-foreground flex items-center">
+                <Award className="h-4 w-4 mr-2" />
+                Skills & Qualifications
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="skills">Skills (comma separated)</Label>
+                  <Input 
+                    id="skills" 
+                    placeholder="Enter skills (e.g. Project Planning, AutoCAD)"
+                    onChange={(e) => {
+                      const skillsArray = e.target.value.split(',').map(skill => skill.trim()).filter(Boolean);
+                      setNewMember({...newMember, skills: skillsArray});
+                    }}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="certifications">Certifications (comma separated)</Label>
+                  <Input 
+                    id="certifications" 
+                    placeholder="Enter certifications (e.g. PMP, LEED)"
+                    onChange={(e) => {
+                      const certsArray = e.target.value.split(',').map(cert => cert.trim()).filter(Boolean);
+                      setNewMember({...newMember, certifications: certsArray});
+                    }}
+                  />
+                </div>
+                
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="workload">Initial Workload (%)</Label>
+                  <div className="flex items-center space-x-4">
+                    <Input 
+                      id="workload" 
+                      type="number" 
+                      min="0"
+                      max="100"
+                      defaultValue="0"
+                      className="w-24"
+                      onChange={(e) => setNewMember({...newMember, workload: parseInt(e.target.value) || 0})}
+                    />
+                    <Slider 
+                      defaultValue={[0]} 
+                      max={100} 
+                      step={5}
+                      className="flex-1"
+                      onValueChange={(value) => setNewMember({...newMember, workload: value[0]})}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
           
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddMemberOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddMember}>Add Member</Button>
+          <DialogFooter className="flex items-center justify-between mt-2">
+            <div className="text-sm text-muted-foreground">
+              <span className="text-red-500">*</span> Required fields
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setIsAddMemberOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleAddMember}
+                disabled={!newMember.name || !newMember.role || !newMember.email || !newMember.department || !newMember.projects || newMember.projects.length === 0}
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                Add Member
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -330,85 +330,93 @@ const ProjectDetails = () => {
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
       <MainNavigation />
 
-      {/* Project Header */}
-      {/* <div className="bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] text-white"> */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-          <PageHeader
-            title={`Residential Renovation #${id}`}
-            subtitle="Modern home renovation project with eco-friendly materials"
-            breadcrumbs={breadcrumbItems}
-            gradient={true}
-            action={
-              <div className="flex items-center gap-3">
-                <Badge 
-                  className="px-3 py-1 text-sm bg-green-500 text-white"
-                >
-                  Active
-                </Badge>
-                <Button 
-                  variant="construction" 
-                  className="gap-2 border-white/20 text-white hover:bg-white/10"
-                >
-                  <Settings className="h-4 w-4" /> Settings
-                </Button>
-              </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <PageHeader
+          title={`Residential Renovation #${id}`}
+          subtitle="Modern home renovation project with eco-friendly materials"
+          // breadcrumbs={breadcrumbItems}
+          gradient={true}
+          actions={[
+            {
+              label: "Settings",
+              icon: <Settings />,
+              variant: "construction",
+              onClick: () => navigate(`/project/${id}/settings`)
             }
-          />
+          ]}
+        />
 
-          {/* Project Stats */}
+        {/* Project Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 shadow-sm hover:shadow-md transition-all duration-300 border border-blue-200 dark:border-blue-800/30">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg shadow-sm">
+                  <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">Timeline</p>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">7 months</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
           
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+          <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/30 dark:to-emerald-800/20 shadow-sm hover:shadow-md transition-all duration-300 border border-emerald-200 dark:border-emerald-800/30">
+            <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/20 rounded-lg">
-                  <Calendar className="h-5 w-5" />
+                <div className="p-2 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg shadow-sm">
+                  <DollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-blue-100">Timeline</p>
-                  <p className="text-lg font-semibold">7 months</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">Budget</p>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">$120,000</p>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/20 shadow-sm hover:shadow-md transition-all duration-300 border border-purple-200 dark:border-purple-800/30">
+            <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/20 rounded-lg">
-                  <DollarSign className="h-5 w-5" />
+                <div className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded-lg shadow-sm">
+                  <Users className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-blue-100">Budget</p>
-                  <p className="text-lg font-semibold">$120,000</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">Team Size</p>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">12</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">members</p>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-800/20 shadow-sm hover:shadow-md transition-all duration-300 border border-amber-200 dark:border-amber-800/30">
+            <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/20 rounded-lg">
-                  <Users className="h-5 w-5" />
+                <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-lg shadow-sm">
+                  <CheckSquare className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-blue-100">Team Size</p>
-                  <p className="text-lg font-semibold">12 members</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">Progress</p>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">75%</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">complete</p>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/20 rounded-lg">
-                  <CheckSquare className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-sm text-blue-100">Progress</p>
-                  <p className="text-lg font-semibold">75% complete</p>
-                </div>
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
-      {/* </div> */}
 
-      {/* Project Navigation */}
-      <div className="border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 sticky top-16 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        {/* Project Navigation */}
+        <div className="border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 sticky top-16 z-30 mt-8">
           <HorizontalNav
             items={projectNavItems}
             variant="underlined"
@@ -416,141 +424,141 @@ const ProjectDetails = () => {
             className="py-2"
           />
         </div>
-      </div>
 
-      {/* Tab Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content Area */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Project Phases */}
-            <Card className="bg-white dark:bg-slate-800 shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="text-xl text-[#1E1E1E] dark:text-white">Project Phases</CardTitle>
-                  <CardDescription>Construction timeline breakdown</CardDescription>
-                </div>
-                <Button 
-                  size="sm"
-                  className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white"
-                  onClick={() => setShowPhaseDialog(true)}
-                >
-                  <Plus className="h-4 w-4 mr-1" /> Add Phase
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {phases.map((phase) => (
-                    <PhaseCard
-                      key={phase.id}
-                      name={phase.name}
-                      progress={phase.progress}
-                      startDate={phase.startDate}
-                      endDate={phase.endDate}
-                      status={phase.status}
-                      budget={phase.budget}
-                      spent={phase.spent}
+        {/* Tab Content */}
+        <div className="mt-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main Content Area */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Project Phases */}
+              <Card className="bg-white dark:bg-slate-800 shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="text-xl text-[#1E1E1E] dark:text-white">Project Phases</CardTitle>
+                    <CardDescription>Construction timeline breakdown</CardDescription>
+                  </div>
+                  <Button 
+                    size="sm"
+                    className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white"
+                    onClick={() => setShowPhaseDialog(true)}
+                  >
+                    <Plus className="h-4 w-4 mr-1" /> Add Phase
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {phases.map((phase) => (
+                      <PhaseCard
+                        key={phase.id}
+                        name={phase.name}
+                        progress={phase.progress}
+                        startDate={phase.startDate}
+                        endDate={phase.endDate}
+                        status={phase.status}
+                        budget={phase.budget}
+                        spent={phase.spent}
+                      />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Recent Activity */}
+              <Card className="bg-white dark:bg-slate-800 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-xl text-[#1E1E1E] dark:text-white">Recent Activity</CardTitle>
+                  <CardDescription>Latest updates and changes</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <ActivityItem
+                      icon={<FileText className="h-5 w-5" />}
+                      title="Permit Approval"
+                      description="Building permit has been approved by the city."
+                      time="2 days ago"
+                      iconColor="blue"
                     />
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    <ActivityItem
+                      icon={<DollarSign className="h-5 w-5" />}
+                      title="Payment Made"
+                      description="$15,450 paid to contractor for foundation work."
+                      time="5 days ago"
+                      iconColor="green"
+                    />
+                    <ActivityItem
+                      icon={<Users className="h-5 w-5" />}
+                      title="Team Updated"
+                      description="2 new contractors added to the team."
+                      time="1 week ago"
+                      iconColor="indigo"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
-            {/* Recent Activity */}
-            <Card className="bg-white dark:bg-slate-800 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-xl text-[#1E1E1E] dark:text-white">Recent Activity</CardTitle>
-                <CardDescription>Latest updates and changes</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <ActivityItem
-                    icon={<FileText className="h-5 w-5" />}
-                    title="Permit Approval"
-                    description="Building permit has been approved by the city."
-                    time="2 days ago"
-                    iconColor="blue"
-                  />
-                  <ActivityItem
-                    icon={<DollarSign className="h-5 w-5" />}
-                    title="Payment Made"
-                    description="$15,450 paid to contractor for foundation work."
-                    time="5 days ago"
-                    iconColor="green"
-                  />
-                  <ActivityItem
-                    icon={<Users className="h-5 w-5" />}
-                    title="Team Updated"
-                    description="2 new contractors added to the team."
-                    time="1 week ago"
-                    iconColor="indigo"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Project Insights */}
+              <Card className={cn(
+                "border shadow-sm",
+                isDarkMode 
+                  ? "bg-indigo-950/30 border-indigo-900/50" 
+                  : "bg-gradient-to-br from-blue-50/80 to-indigo-50/80 border-blue-100"
+              )}>
+                <CardHeader>
+                  <CardTitle className="text-xl text-[#1E1E1E] dark:text-white">Project Insights</CardTitle>
+                  <CardDescription>AI-powered analysis</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <InsightItem
+                      title="Budget Forecast"
+                      description="Project is currently 5% under budget. Most savings from efficient material sourcing."
+                      type="success"
+                    />
+                    <InsightItem
+                      title="Schedule Analysis"
+                      description="Current pace suggests completion 2 weeks ahead of schedule if weather permits."
+                      type="default"
+                    />
+                    <InsightItem
+                      title="Risk Detection"
+                      description="Material delivery delays possible in May due to supplier capacity constraints."
+                      type="warning"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Project Insights */}
-            <Card className={cn(
-              "border shadow-sm",
-              isDarkMode 
-                ? "bg-indigo-950/30 border-indigo-900/50" 
-                : "bg-gradient-to-br from-blue-50/80 to-indigo-50/80 border-blue-100"
-            )}>
-              <CardHeader>
-                <CardTitle className="text-xl text-[#1E1E1E] dark:text-white">Project Insights</CardTitle>
-                <CardDescription>AI-powered analysis</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <InsightItem
-                    title="Budget Forecast"
-                    description="Project is currently 5% under budget. Most savings from efficient material sourcing."
-                    type="success"
-                  />
-                  <InsightItem
-                    title="Schedule Analysis"
-                    description="Current pace suggests completion 2 weeks ahead of schedule if weather permits."
-                    type="default"
-                  />
-                  <InsightItem
-                    title="Risk Detection"
-                    description="Material delivery delays possible in May due to supplier capacity constraints."
-                    type="warning"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Quick Actions */}
-            <Card className="bg-white dark:bg-slate-800 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-xl text-[#1E1E1E] dark:text-white">Quick Actions</CardTitle>
-                <CardDescription>Frequent operations</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button variant="outline" className="justify-start hover:bg-[#1E3A8A]/10 hover:text-[#1E3A8A]">
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Message Team
-                  </Button>
-                  <Button variant="outline" className="justify-start hover:bg-[#D97706]/10 hover:text-[#D97706]">
-                    <FileText className="h-4 w-4 mr-2" />
-                    Add Document
-                  </Button>
-                  <Button variant="outline" className="justify-start hover:bg-[#1E3A8A]/10 hover:text-[#1E3A8A]">
-                    <Users className="h-4 w-4 mr-2" />
-                    Update Team
-                  </Button>
-                  <Button variant="outline" className="justify-start hover:bg-[#D97706]/10 hover:text-[#D97706]">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Schedule Meeting
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+              {/* Quick Actions */}
+              <Card className="bg-white dark:bg-slate-800 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-xl text-[#1E1E1E] dark:text-white">Quick Actions</CardTitle>
+                  <CardDescription>Frequent operations</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="outline" className="justify-start hover:bg-[#1E3A8A]/10 hover:text-[#1E3A8A]">
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Message Team
+                    </Button>
+                    <Button variant="outline" className="justify-start hover:bg-[#D97706]/10 hover:text-[#D97706]">
+                      <FileText className="h-4 w-4 mr-2" />
+                      Add Document
+                    </Button>
+                    <Button variant="outline" className="justify-start hover:bg-[#1E3A8A]/10 hover:text-[#1E3A8A]">
+                      <Users className="h-4 w-4 mr-2" />
+                      Update Team
+                    </Button>
+                    <Button variant="outline" className="justify-start hover:bg-[#D97706]/10 hover:text-[#D97706]">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Schedule Meeting
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </div>
