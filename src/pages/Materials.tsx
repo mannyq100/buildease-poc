@@ -106,8 +106,10 @@ import {
   Grid 
 } from '@/components/layout/test';
 import { 
-  MetricCard
+  MetricCard,
+  PageHeader
 } from '@/components/shared';
+import MainNavigation from '@/components/layout/MainNavigation';
 
 // Mock data for materials
 const initialMaterials = [
@@ -408,37 +410,27 @@ const Materials = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
-      {/* Header with construction theme */}
-      <div className="bg-gradient-to-r from-deepblue to-deepblue-light dark:from-deepblue-dark dark:to-deepblue p-6 shadow-md">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-white flex items-center">
-                <Package className="mr-2 h-6 w-6" />
-                Materials Management
-              </h1>
-              <p className="text-blue-100 mt-1">Track and manage construction materials inventory</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button 
-                variant="construction" 
-                onClick={() => setIsAddMaterialOpen(true)}
-                className="bg-white text-deepblue-dark hover:bg-blue-50"
-              >
-                <Plus className="mr-1 h-4 w-4" />
-                Add Material
-              </Button>
-              <Button 
-                variant="blueprint" 
-                onClick={() => {/* Export functionality */}}
-              >
-                <Download className="mr-1 h-4 w-4" />
-                Export
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <MainNavigation />
+      
+      <PageHeader
+        title="Materials"
+        subtitle="Track and manage construction materials inventory"
+        icon={<Package className="h-6 w-6" />}
+        actions={[
+          {
+            label: "Add Material",
+            icon: <Plus />,
+            variant: "construction",
+            onClick: () => setIsAddMaterialOpen(true)
+          },
+          {
+            label: "Export",
+            icon: <Download />,
+            variant: "blueprint",
+            onClick: () => {/* Export functionality */}
+          }
+        ]}
+      />
 
       {/* Main content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">

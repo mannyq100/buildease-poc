@@ -79,6 +79,7 @@ import {
   AlertCircle,
   Info,
   HelpCircle,
+  Download,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import {
@@ -136,6 +137,7 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
+import MainNavigation from '@/components/layout/MainNavigation';
 
 // Define task type
 interface Task {
@@ -843,483 +845,476 @@ const Schedule = () => {
   const phaseOptions = Array.from(new Set(tasks.map(task => task.phase)));
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-deepblue-light to-deepblue-dark p-6 rounded-lg text-white shadow-lg">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center">
-            <Calendar className="mr-2 h-6 w-6" />
-            Project Schedule
-          </h1>
-          <p className="text-blue-100 mt-1">
-            Manage and track all project tasks and timelines
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button 
-            variant="construction" 
-            onClick={() => handleAddTask()}
-            className="bg-white text-deepblue-dark hover:bg-blue-50"
-          >
-            <Plus className="mr-1 h-4 w-4" />
-            Add Task
-          </Button>
-          <Button 
-            variant="outline" 
-            className="bg-blue-800 text-white border-blue-700 hover:bg-blue-700"
-            onClick={() => exportTasks()}
-          >
-            <FileText className="mr-1 h-4 w-4" />
-            Export Schedule
-          </Button>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
+      <MainNavigation />
+      
+      <PageHeader
+        title="Schedule"
+        subtitle="Manage and track all project tasks and timelines"
+        icon={<Calendar className="h-6 w-6" />}
+        actions={[
+          {
+            label: "Add Task",
+            icon: <Plus />,
+            variant: "construction",
+            onClick: () => setIsAddTaskOpen(true)
+          },
+          {
+            label: "Export",
+            icon: <Download />,
+            variant: "construction",
+            onClick: () => exportTasks()
+          }
+        ]}
+      />
 
-      {/* Metrics Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card variant="blueprint">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Tasks</p>
-                <h3 className="text-2xl font-bold mt-1">{taskMetrics.total}</h3>
+      <div className="container mx-auto p-6 space-y-6">
+        {/* Metrics Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card variant="blueprint">
+            <CardContent className="p-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Tasks</p>
+                  <h3 className="text-2xl font-bold mt-1">{taskMetrics.total}</h3>
+                </div>
+                <div className="bg-deepblue-light bg-opacity-20 p-2 rounded-full">
+                  <Clipboard className="h-5 w-5 text-deepblue-light" />
+                </div>
               </div>
-              <div className="bg-deepblue-light bg-opacity-20 p-2 rounded-full">
-                <Clipboard className="h-5 w-5 text-deepblue-light" />
+              <div className="mt-4">
+                <div className="flex justify-between text-sm mb-1">
+                  <span>Overall Progress</span>
+                  <span>{overallCompletion}%</span>
+                </div>
+                <Progress value={overallCompletion} className="h-2" />
               </div>
-            </div>
-            <div className="mt-4">
-              <div className="flex justify-between text-sm mb-1">
-                <span>Overall Progress</span>
-                <span>{overallCompletion}%</span>
-              </div>
-              <Progress value={overallCompletion} className="h-2" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card variant="project">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Completed</p>
-                <h3 className="text-2xl font-bold mt-1">{taskMetrics.completed}</h3>
+          <Card variant="project">
+            <CardContent className="p-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Completed</p>
+                  <h3 className="text-2xl font-bold mt-1">{taskMetrics.completed}</h3>
+                </div>
+                <div className="bg-darkgreen-light bg-opacity-20 p-2 rounded-full">
+                  <CheckCircle className="h-5 w-5 text-darkgreen-light" />
+                </div>
               </div>
-              <div className="bg-darkgreen-light bg-opacity-20 p-2 rounded-full">
-                <CheckCircle className="h-5 w-5 text-darkgreen-light" />
+              <div className="mt-4">
+                <div className="flex justify-between text-sm mb-1">
+                  <span>Completion Rate</span>
+                  <span>{taskMetrics.total > 0 ? Math.round((taskMetrics.completed / taskMetrics.total) * 100) : 0}%</span>
+                </div>
+                <Progress value={taskMetrics.total > 0 ? (taskMetrics.completed / taskMetrics.total) * 100 : 0} className="h-2 bg-gray-200">
+                  <div className="bg-darkgreen-light h-full rounded-full" />
+                </Progress>
               </div>
-            </div>
-            <div className="mt-4">
-              <div className="flex justify-between text-sm mb-1">
-                <span>Completion Rate</span>
-                <span>{taskMetrics.total > 0 ? Math.round((taskMetrics.completed / taskMetrics.total) * 100) : 0}%</span>
-              </div>
-              <Progress value={taskMetrics.total > 0 ? (taskMetrics.completed / taskMetrics.total) * 100 : 0} className="h-2 bg-gray-200">
-                <div className="bg-darkgreen-light h-full rounded-full" />
-              </Progress>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card variant="material">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">In Progress</p>
-                <h3 className="text-2xl font-bold mt-1">{taskMetrics.inProgress}</h3>
+          <Card variant="material">
+            <CardContent className="p-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">In Progress</p>
+                  <h3 className="text-2xl font-bold mt-1">{taskMetrics.inProgress}</h3>
+                </div>
+                <div className="bg-burntorange-light bg-opacity-20 p-2 rounded-full">
+                  <Clock className="h-5 w-5 text-burntorange-light" />
+                </div>
               </div>
-              <div className="bg-burntorange-light bg-opacity-20 p-2 rounded-full">
-                <Clock className="h-5 w-5 text-burntorange-light" />
+              <div className="mt-4">
+                <div className="flex justify-between text-sm mb-1">
+                  <span>Active Tasks</span>
+                  <span>{taskMetrics.total > 0 ? Math.round((taskMetrics.inProgress / taskMetrics.total) * 100) : 0}%</span>
+                </div>
+                <Progress value={taskMetrics.total > 0 ? (taskMetrics.inProgress / taskMetrics.total) * 100 : 0} className="h-2 bg-gray-200">
+                  <div className="bg-burntorange-light h-full rounded-full" />
+                </Progress>
               </div>
-            </div>
-            <div className="mt-4">
-              <div className="flex justify-between text-sm mb-1">
-                <span>Active Tasks</span>
-                <span>{taskMetrics.total > 0 ? Math.round((taskMetrics.inProgress / taskMetrics.total) * 100) : 0}%</span>
-              </div>
-              <Progress value={taskMetrics.total > 0 ? (taskMetrics.inProgress / taskMetrics.total) * 100 : 0} className="h-2 bg-gray-200">
-                <div className="bg-burntorange-light h-full rounded-full" />
-              </Progress>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card variant="task">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">High Priority</p>
-                <h3 className="text-2xl font-bold mt-1">{taskMetrics.highPriority}</h3>
+          <Card variant="task">
+            <CardContent className="p-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">High Priority</p>
+                  <h3 className="text-2xl font-bold mt-1">{taskMetrics.highPriority}</h3>
+                </div>
+                <div className="bg-red-100 p-2 rounded-full">
+                  <Flag className="h-5 w-5 text-red-500" />
+                </div>
               </div>
-              <div className="bg-red-100 p-2 rounded-full">
-                <Flag className="h-5 w-5 text-red-500" />
+              <div className="mt-4">
+                <div className="flex justify-between text-sm mb-1">
+                  <span>Priority Rate</span>
+                  <span>{taskMetrics.total > 0 ? Math.round((taskMetrics.highPriority / taskMetrics.total) * 100) : 0}%</span>
+                </div>
+                <Progress value={taskMetrics.total > 0 ? (taskMetrics.highPriority / taskMetrics.total) * 100 : 0} className="h-2 bg-gray-200">
+                  <div className="bg-red-500 h-full rounded-full" />
+                </Progress>
               </div>
-            </div>
-            <div className="mt-4">
-              <div className="flex justify-between text-sm mb-1">
-                <span>Priority Rate</span>
-                <span>{taskMetrics.total > 0 ? Math.round((taskMetrics.highPriority / taskMetrics.total) * 100) : 0}%</span>
-              </div>
-              <Progress value={taskMetrics.total > 0 ? (taskMetrics.highPriority / taskMetrics.total) * 100 : 0} className="h-2 bg-gray-200">
-                <div className="bg-red-500 h-full rounded-full" />
-              </Progress>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters and Controls */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-        <div className="md:col-span-3">
-          <Select value={selectedProject} onValueChange={setSelectedProject}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Filter by Project" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Projects</SelectItem>
-              {projectOptions.map(project => (
-                <SelectItem key={project} value={project}>{project}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            </CardContent>
+          </Card>
         </div>
-        <div className="md:col-span-3">
-          <Select value={selectedPhase} onValueChange={setSelectedPhase}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Filter by Phase" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Phases</SelectItem>
-              {phaseOptions.map(phase => (
-                <SelectItem key={phase} value={phase}>{phase}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="md:col-span-3">
-          <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Date Range" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="week">This Week</SelectItem>
-              <SelectItem value="month">This Month</SelectItem>
-              <SelectItem value="quarter">This Quarter</SelectItem>
-              <SelectItem value="all">All Time</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="md:col-span-3">
-          <div className="flex justify-end gap-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant={viewMode === 'list' ? 'default' : 'outline'} 
-                    size="icon" 
-                    onClick={() => setViewMode('list')}
-                  >
-                    <List className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>List View</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant={viewMode === 'board' ? 'default' : 'outline'} 
-                    size="icon" 
-                    onClick={() => setViewMode('board')}
-                  >
-                    <GridIcon className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Board View</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant={viewMode === 'calendar' ? 'default' : 'outline'} 
-                    size="icon" 
-                    onClick={() => setViewMode('calendar')}
-                  >
-                    <CalendarIcon className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Calendar View</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+
+        {/* Filters and Controls */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <div className="md:col-span-3">
+            <Select value={selectedProject} onValueChange={setSelectedProject}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Filter by Project" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Projects</SelectItem>
+                {projectOptions.map(project => (
+                  <SelectItem key={project} value={project}>{project}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="md:col-span-3">
+            <Select value={selectedPhase} onValueChange={setSelectedPhase}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Filter by Phase" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Phases</SelectItem>
+                {phaseOptions.map(phase => (
+                  <SelectItem key={phase} value={phase}>{phase}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="md:col-span-3">
+            <Select value={dateRange} onValueChange={setDateRange}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Date Range" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="week">This Week</SelectItem>
+                <SelectItem value="month">This Month</SelectItem>
+                <SelectItem value="quarter">This Quarter</SelectItem>
+                <SelectItem value="all">All Time</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="md:col-span-3">
+            <div className="flex justify-end gap-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant={viewMode === 'list' ? 'default' : 'outline'} 
+                      size="icon" 
+                      onClick={() => setViewMode('list')}
+                    >
+                      <List className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>List View</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant={viewMode === 'board' ? 'default' : 'outline'} 
+                      size="icon" 
+                      onClick={() => setViewMode('board')}
+                    >
+                      <GridIcon className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Board View</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant={viewMode === 'calendar' ? 'default' : 'outline'} 
+                      size="icon" 
+                      onClick={() => setViewMode('calendar')}
+                    >
+                      <CalendarIcon className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Calendar View</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Data Visualization */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Data Visualization */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card variant="default" className="overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-900 border-b">
+              <CardTitle>Tasks by Status</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsPieChart>
+                    <Pie
+                      data={tasksByStatusData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                      nameKey="name"
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {tasksByStatusData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip formatter={(value) => [`${value} tasks`, 'Count']} />
+                  </RechartsPieChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card variant="default" className="overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-900 border-b">
+              <CardTitle>Tasks by Priority</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsBarChart data={tasksByPriorityData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <RechartsTooltip formatter={(value) => [`${value} tasks`, 'Count']} />
+                    <Bar dataKey="value">
+                      {tasksByPriorityData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </RechartsBarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tasks Table */}
         <Card variant="default" className="overflow-hidden">
           <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-900 border-b">
-            <CardTitle>Tasks by Status</CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle>Project Tasks</CardTitle>
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder="Search tasks..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="max-w-xs"
+                  variant="modern"
+                  icon={<Search className="h-4 w-4" />}
+                />
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="p-6">
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsPieChart>
-                  <Pie
-                    data={tasksByStatusData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    nameKey="name"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {tasksByStatusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip formatter={(value) => [`${value} tasks`, 'Count']} />
-                </RechartsPieChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card variant="default" className="overflow-hidden">
-          <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-900 border-b">
-            <CardTitle>Tasks by Priority</CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsBarChart data={tasksByPriorityData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <RechartsTooltip formatter={(value) => [`${value} tasks`, 'Count']} />
-                  <Bar dataKey="value">
-                    {tasksByPriorityData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Bar>
-                </RechartsBarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tasks Table */}
-      <Card variant="default" className="overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-900 border-b">
-          <div className="flex justify-between items-center">
-            <CardTitle>Project Tasks</CardTitle>
-            <div className="flex items-center gap-2">
-              <Input
-                placeholder="Search tasks..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="max-w-xs"
-                variant="modern"
-                icon={<Search className="h-4 w-4" />}
-              />
-            </div>
-          </div>
-        </CardHeader>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[40px]">
-                  <Checkbox 
-                    checked={
-                      filteredTasksForUI.length > 0 && 
-                      filteredTasksForUI.every(task => selectedTasks.includes(task.id))
-                    }
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setSelectedTasks(filteredTasksForUI.map(task => task.id));
-                      } else {
-                        setSelectedTasks([]);
-                      }
-                    }}
-                  />
-                </TableHead>
-                <TableHead>Task</TableHead>
-                <TableHead>Project / Phase</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Assigned To</TableHead>
-                <TableHead>Progress</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTasksForUI.length === 0 ? (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                    No tasks found for the selected filters
-                  </TableCell>
+                  <TableHead className="w-[40px]">
+                    <Checkbox 
+                      checked={
+                        filteredTasksForUI.length > 0 && 
+                        filteredTasksForUI.every(task => selectedTasks.includes(task.id))
+                      }
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedTasks(filteredTasksForUI.map(task => task.id));
+                        } else {
+                          setSelectedTasks([]);
+                        }
+                      }}
+                    />
+                  </TableHead>
+                  <TableHead>Task</TableHead>
+                  <TableHead>Project / Phase</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Priority</TableHead>
+                  <TableHead>Due Date</TableHead>
+                  <TableHead>Assigned To</TableHead>
+                  <TableHead>Progress</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ) : (
-                filteredTasksForUI.map(task => (
-                  <TableRow key={task.id} className="group">
-                    <TableCell>
-                      <Checkbox 
-                        checked={selectedTasks.includes(task.id)}
-                        onCheckedChange={(checked) => {
-                          toggleTaskSelection(task.id, !!checked);
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium">{task.title}</div>
-                      <div className="text-sm text-muted-foreground truncate max-w-[200px]">
-                        {task.description}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{task.project}</span>
-                        <span className="text-sm text-muted-foreground">{task.phase}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusColor(task.status) as any}>
-                        {task.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getPriorityColor(task.priority) as any}>
-                        {task.priority}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span>{new Date(task.dueDate).toLocaleDateString()}</span>
-                        <span className={`text-sm ${getDaysUntilDue(task.dueDate) < 0 ? 'text-red-500' : 'text-muted-foreground'}`}>
-                          {getDaysUntilDue(task.dueDate) === 0 
-                            ? 'Due today' 
-                            : getDaysUntilDue(task.dueDate) > 0 
-                              ? `${getDaysUntilDue(task.dueDate)} days left` 
-                              : `${Math.abs(getDaysUntilDue(task.dueDate))} days overdue`}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium">
-                          {typeof task.assignedTo === 'string' 
-                            ? task.assignedTo.split(' ').map(n => n[0]).join('') 
-                            : task.assignedTo[0]?.name[0] || ''}
-                        </div>
-                        <span>{typeof task.assignedTo === 'string' 
-                          ? task.assignedTo 
-                          : task.assignedTo.map(a => a.name).join(', ')}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <div className="flex justify-between text-xs">
-                          <span>{task.completion}%</span>
-                        </div>
-                        <Progress value={task.completion} className="h-2" />
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon-sm" className="opacity-0 group-hover:opacity-100">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => {
-                              setSelectedTask(task);
-                              setIsTaskDetailOpen(true);
-                            }}>
-                              <Eye className="mr-2 h-4 w-4" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => {
-                              setSelectedTask(task);
-                              setIsEditTaskOpen(true);
-                            }}>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit Task
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleAddComment(task.id)}>
-                              <MessageSquare className="mr-2 h-4 w-4" />
-                              Add Comment
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleAddAttachment(task.id)}>
-                              <Paperclip className="mr-2 h-4 w-4" />
-                              Add Attachment
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleDeleteTask(task.id)}>
-                              <Trash className="mr-2 h-4 w-4 text-red-500" />
-                              Delete Task
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+              </TableHeader>
+              <TableBody>
+                {filteredTasksForUI.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                      No tasks found for the selected filters
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-        <div className="flex items-center justify-between px-4 py-4 border-t">
-          <div className="text-sm text-muted-foreground">
-            Showing <span className="font-medium">{filteredTasksForUI.length}</span> of{" "}
-            <span className="font-medium">{tasks.length}</span> tasks
+                ) : (
+                  filteredTasksForUI.map(task => (
+                    <TableRow key={task.id} className="group">
+                      <TableCell>
+                        <Checkbox 
+                          checked={selectedTasks.includes(task.id)}
+                          onCheckedChange={(checked) => {
+                            toggleTaskSelection(task.id, !!checked);
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">{task.title}</div>
+                        <div className="text-sm text-muted-foreground truncate max-w-[200px]">
+                          {task.description}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{task.project}</span>
+                          <span className="text-sm text-muted-foreground">{task.phase}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusColor(task.status) as any}>
+                          {task.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getPriorityColor(task.priority) as any}>
+                          {task.priority}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span>{new Date(task.dueDate).toLocaleDateString()}</span>
+                          <span className={`text-sm ${getDaysUntilDue(task.dueDate) < 0 ? 'text-red-500' : 'text-muted-foreground'}`}>
+                            {getDaysUntilDue(task.dueDate) === 0 
+                              ? 'Due today' 
+                              : getDaysUntilDue(task.dueDate) > 0 
+                                ? `${getDaysUntilDue(task.dueDate)} days left` 
+                                : `${Math.abs(getDaysUntilDue(task.dueDate))} days overdue`}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium">
+                            {typeof task.assignedTo === 'string' 
+                              ? task.assignedTo.split(' ').map(n => n[0]).join('') 
+                              : task.assignedTo[0]?.name[0] || ''}
+                          </div>
+                          <span>{typeof task.assignedTo === 'string' 
+                            ? task.assignedTo 
+                            : task.assignedTo.map(a => a.name).join(', ')}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex justify-between text-xs">
+                            <span>{task.completion}%</span>
+                          </div>
+                          <Progress value={task.completion} className="h-2" />
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon-sm" className="opacity-0 group-hover:opacity-100">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => {
+                                setSelectedTask(task);
+                                setIsTaskDetailOpen(true);
+                              }}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => {
+                                setSelectedTask(task);
+                                setIsEditTaskOpen(true);
+                              }}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit Task
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleAddComment(task.id)}>
+                                <MessageSquare className="mr-2 h-4 w-4" />
+                                Add Comment
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleAddAttachment(task.id)}>
+                                <Paperclip className="mr-2 h-4 w-4" />
+                                Add Attachment
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleDeleteTask(task.id)}>
+                                <Trash className="mr-2 h-4 w-4 text-red-500" />
+                                Delete Task
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={true}
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-deepblue-light text-white hover:bg-deepblue-dark"
-            >
-              1
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={true}
-            >
-              Next
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
+          <div className="flex items-center justify-between px-4 py-4 border-t">
+            <div className="text-sm text-muted-foreground">
+              Showing <span className="font-medium">{filteredTasksForUI.length}</span> of{" "}
+              <span className="font-medium">{tasks.length}</span> tasks
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={true}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-deepblue-light text-white hover:bg-deepblue-dark"
+              >
+                1
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={true}
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
           </div>
-        </div>
-      </Card>
+        </Card>
 
-      {/* Keep all the existing modals */}
-      {/* ... existing modals ... */}
+        {/* Keep all the existing modals */}
+        {/* ... existing modals ... */}
+      </div>
     </div>
   );
 };

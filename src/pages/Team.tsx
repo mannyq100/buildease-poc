@@ -16,66 +16,128 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle, 
+  CardDescription 
+} from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
+import { 
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@/components/ui/alert';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { 
+  UserPlus, 
   Users, 
-  Plus, 
+  ChevronRight, 
   Search, 
   Filter, 
   MoreHorizontal, 
-  UserPlus, 
   Mail, 
   Phone, 
+  Briefcase, 
+  Clock, 
+  CalendarDays, 
+  MapPin, 
+  CheckCircle, 
+  XCircle, 
+  Award, 
+  Calendar, 
   Building, 
-  Briefcase,
-  Edit,
-  Trash,
-  CheckCircle,
-  XCircle,
-  Clock,
-  Calendar,
-  Award,
-  AlertCircle,
+  Shield, 
+  Wrench, 
+  Download, 
+  Edit, 
+  Trash, 
+  User, 
+  Eye, 
+  List, 
+  Grid as GridIcon,
+  Tag,
+  UserCheck,
   UserX,
-  Star
+  Plus, 
+  FileText,
+  Radar,
+  PieChart
 } from 'lucide-react';
-import { 
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card';
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
-import { 
-  DashboardLayout, 
-  DashboardSection, 
-  Grid 
-} from '@/components/layout/test';
-import { 
-  MetricCard,
-  PageHeader,
-  StatusBadge
-} from '@/components/shared';
+import { DashboardLayout, DashboardSection, Grid } from '@/components/layout/test';
+import { PageHeader } from '@/components/shared';
+import MainNavigation from '@/components/layout/MainNavigation';
 
-// Enhanced team member data with additional fields
-const initialTeamMembers = [
+// Define the TeamMember interface
+interface TeamMember {
+  id: number;
+  name: string;
+  role: string;
+  email: string;
+  phone: string;
+  department: string;
+  projects: string[];
+  status: 'active' | 'inactive';
+  avatar: string;
+  skills: string[];
+  workload: number;
+  joinDate: string;
+  certifications: string[];
+  availability: string;
+  location: string;
+}
+
+// Define props interfaces for the card and list components
+interface TeamMemberCardProps {
+  member: TeamMember;
+  onView: (member: TeamMember) => void;
+  onRemove: (member: TeamMember) => void;
+}
+
+interface TeamMemberListItemProps {
+  member: TeamMember;
+  onView: (member: TeamMember) => void;
+  onRemove: (member: TeamMember) => void;
+}
+
+const initialTeamMembers: TeamMember[] = [
   {
     id: 1,
     name: 'John Doe',
@@ -95,159 +157,131 @@ const initialTeamMembers = [
   },
   {
     id: 2,
-    name: 'Jane Smith',
+    name: 'Sarah Chen',
     role: 'Architect',
-    email: 'jane.smith@example.com',
-    phone: '+1 (555) 987-6543',
+    email: 'sarah.chen@example.com',
+    phone: '+1 (555) 234-5678',
     department: 'Design',
     projects: ['Villa Construction'],
     status: 'active',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jane',
-    skills: ['SketchUp', 'Revit', 'Architectural Design'],
-    workload: 70,
-    joinDate: '03 Mar 2023',
-    certifications: ['Licensed Architect'],
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
+    skills: ['AutoCAD', 'Sustainable Design', '3D Modeling'],
+    workload: 75,
+    joinDate: '3 Mar 2023',
+    certifications: ['Licensed Architect', 'LEED AP'],
     availability: 'Full-time',
-    location: 'Tema, Ghana'
+    location: 'Accra, Ghana'
   },
   {
     id: 3,
-    name: 'Robert Johnson',
+    name: 'Michael Osei',
     role: 'Civil Engineer',
-    email: 'robert.johnson@example.com',
-    phone: '+1 (555) 456-7890',
+    email: 'm.osei@example.com',
+    phone: '+1 (555) 345-6789',
     department: 'Engineering',
-    projects: ['Villa Construction', 'Office Renovation'],
+    projects: ['Office Renovation'],
     status: 'active',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Robert',
-    skills: ['Structural Analysis', 'AutoCAD', 'Site Inspection'],
-    workload: 60,
-    joinDate: '10 Apr 2023',
-    certifications: ['Civil Engineering License'],
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Michael',
+    skills: ['Structural Analysis', 'Site Planning', 'Construction Management'],
+    workload: 90,
+    joinDate: '22 Feb 2023',
+    certifications: ['PE', 'Construction Safety Certificate'],
     availability: 'Full-time',
     location: 'Accra, Ghana'
   },
   {
     id: 4,
-    name: 'Emily Davis',
+    name: 'Emma Thompson',
     role: 'Interior Designer',
-    email: 'emily.davis@example.com',
-    phone: '+1 (555) 234-5678',
+    email: 'emma.t@example.com',
+    phone: '+1 (555) 456-7890',
     department: 'Design',
-    projects: ['Office Renovation'],
+    projects: ['Villa Construction', 'Office Renovation'],
     status: 'active',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emily',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emma',
     skills: ['Space Planning', 'Color Theory', 'Material Selection'],
-    workload: 90,
-    joinDate: '22 May 2023',
-    certifications: ['NCIDQ'],
+    workload: 65,
+    joinDate: '10 Apr 2023',
+    certifications: ['NCIDQ', 'Sustainable Interior Design'],
     availability: 'Full-time',
     location: 'Accra, Ghana'
   },
   {
     id: 5,
-    name: 'Michael Wilson',
-    role: 'Construction Manager',
-    email: 'michael.wilson@example.com',
-    phone: '+1 (555) 876-5432',
-    department: 'Construction',
+    name: 'David Kwesi',
+    role: 'Safety Officer',
+    email: 'd.kwesi@example.com',
+    phone: '+1 (555) 567-8901',
+    department: 'Safety',
     projects: ['Villa Construction'],
     status: 'active',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Michael',
-    skills: ['Safety Protocols', 'Risk Assessment', 'OSHA Compliance'],
-    workload: 65,
-    joinDate: '14 Jun 2023',
-    certifications: ['NEBOSH', 'First Aid'],
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David',
+    skills: ['Risk Assessment', 'Safety Training', 'Compliance Management'],
+    workload: 70,
+    joinDate: '5 May 2023',
+    certifications: ['OSHA Certified', 'First Aid Trainer'],
     availability: 'Full-time',
     location: 'Accra, Ghana'
   },
   {
     id: 6,
-    name: 'Sarah Brown',
+    name: 'Lisa Mensah',
     role: 'Procurement Specialist',
-    email: 'sarah.brown@example.com',
-    phone: '+1 (555) 345-6789',
+    email: 'lisa.m@example.com',
+    phone: '+1 (555) 678-9012',
     department: 'Procurement',
     projects: ['Office Renovation'],
     status: 'inactive',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
-    skills: ['Vendor Management', 'Negotiation', 'Supply Chain'],
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Lisa',
+    skills: ['Vendor Management', 'Contract Negotiation', 'Supply Chain'],
     workload: 0,
-    joinDate: '30 Jul 2023',
-    certifications: ['CPSM'],
-    availability: 'On leave',
+    joinDate: '15 Jan 2023',
+    certifications: ['CPSM', 'Contract Management'],
+    availability: 'On Leave',
     location: 'Accra, Ghana'
   },
   {
     id: 7,
-    name: 'David Miller',
+    name: 'James Addo',
     role: 'Electrical Engineer',
-    email: 'david.miller@example.com',
-    phone: '+1 (555) 654-3210',
-    department: 'Engineering',
-    projects: ['Villa Construction'],
-    status: 'active',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David',
-    skills: ['Electrical Wiring', 'Circuit Design', 'Troubleshooting'],
-    workload: 75,
-    joinDate: '12 Aug 2023',
-    certifications: ['Licensed Electrician'],
-    availability: 'Full-time',
-    location: 'Accra, Ghana'
-  },
-  {
-    id: 8,
-    name: 'Lisa Taylor',
-    role: 'Safety Officer',
-    email: 'lisa.taylor@example.com',
+    email: 'j.addo@example.com',
     phone: '+1 (555) 789-0123',
-    department: 'Safety',
+    department: 'Engineering',
     projects: ['Villa Construction', 'Office Renovation'],
     status: 'active',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Lisa',
-    skills: ['Safety Protocols', 'Risk Assessment', 'OSHA Compliance'],
-    workload: 50,
-    joinDate: '12 Aug 2023',
-    certifications: ['NEBOSH', 'First Aid'],
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=James',
+    skills: ['Power Systems', 'Lighting Design', 'Energy Efficiency'],
+    workload: 80,
+    joinDate: '20 Mar 2023',
+    certifications: ['Licensed Electrician', 'Energy Auditor'],
     availability: 'Full-time',
     location: 'Accra, Ghana'
   }
 ];
 
-// Department options for filtering and forms
-const departments = [
-  'All Departments',
-  'Management',
-  'Design',
-  'Engineering',
-  'Construction',
-  'Procurement',
-  'Safety'
-];
 
-// Role options for forms
-const roles = [
-  'Project Manager',
-  'Architect',
-  'Civil Engineer',
-  'Electrical Engineer',
-  'Interior Designer',
-  'Construction Manager',
-  'Procurement Specialist',
-  'Safety Officer'
-];
+// Define interface for new team members
+interface NewTeamMember {
+  name: string;
+  role: string;
+  email: string;
+  phone: string;
+  department: string;
+  projects: string[];
+}
 
 const Team = () => {
   const navigate = useNavigate();
-  const [teamMembers, setTeamMembers] = useState(initialTeamMembers);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
-  const [departmentFilter, setDepartmentFilter] = useState('All Departments');
-  const [viewMode, setViewMode] = useState('grid');
-  const [selectedMember, setSelectedMember] = useState(null);
-  const [viewProfileDialogOpen, setViewProfileDialogOpen] = useState(false);
-  const [confirmRemoveDialogOpen, setConfirmRemoveDialogOpen] = useState(false);
+  const [departmentFilter, setDepartmentFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('All');
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
-  const [newMember, setNewMember] = useState({
+  const [isViewProfileOpen, setIsViewProfileOpen] = useState(false);
+  const [isConfirmRemoveOpen, setIsConfirmRemoveOpen] = useState(false);
+  const [currentMember, setCurrentMember] = useState<TeamMember | null>(null);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(initialTeamMembers);
+  const [newMember, setNewMember] = useState<NewTeamMember>({
     name: '',
     role: '',
     email: '',
@@ -256,62 +290,53 @@ const Team = () => {
     projects: []
   });
 
-  // Open member profile dialog
-  const openViewProfile = (member) => {
-    setSelectedMember(member);
-    setViewProfileDialogOpen(true);
+  // Function to open the view profile dialog
+  const openViewProfile = (member: TeamMember) => {
+    setCurrentMember(member);
+    setIsViewProfileOpen(true);
   };
 
-  // Open confirm remove dialog
-  const openConfirmRemoveDialog = (member) => {
-    setSelectedMember(member);
-    setConfirmRemoveDialogOpen(true);
+  // Function to open the confirm remove dialog
+  const openConfirmRemoveDialog = (member: TeamMember) => {
+    setCurrentMember(member);
+    setIsConfirmRemoveOpen(true);
   };
 
-  // Filter team members based on search query and department filter
-  const filteredTeamMembers = teamMembers.filter(member => {
+  // Filter team members based on search and filters
+  const filteredMembers = teamMembers.filter(member => {
     const matchesSearch = 
       member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       member.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      member.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (member.skills && member.skills.some(skill => 
-        skill.toLowerCase().includes(searchQuery.toLowerCase())
-      ));
+      member.email.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesDepartment = 
-      departmentFilter === 'All Departments' || 
+      departmentFilter === 'All' || 
       member.department === departmentFilter;
     
-    return matchesSearch && matchesDepartment;
+    const matchesStatus = 
+      statusFilter === 'All' || 
+      (statusFilter === 'Active' && member.status === 'active') ||
+      (statusFilter === 'Inactive' && member.status === 'inactive');
+    
+    return matchesSearch && matchesDepartment && matchesStatus;
   });
-
-  // Count active team members
-  const activeTeamMembers = teamMembers.filter(member => member.status === 'active').length;
-
-  // Calculate average workload
-  const avgWorkload = Math.round(
-    teamMembers
-      .filter(member => member.status === 'active')
-      .reduce((sum, member) => sum + member.workload, 0) / activeTeamMembers
-  );
-
-  // Count total certifications
-  const totalCertifications = teamMembers.reduce(
-    (total, member) => total + (member.certifications ? member.certifications.length : 0), 
-    0
-  );
 
   // Handle adding a new team member
   const handleAddMember = () => {
-    const id = Math.max(...teamMembers.map(m => m.id)) + 1;
-    const newTeamMember = {
-      ...newMember,
+    const id = Math.max(...teamMembers.map(m => m.id), 0) + 1;
+    const newTeamMember: TeamMember = {
       id,
+      name: newMember.name,
+      role: newMember.role,
+      email: newMember.email,
+      phone: newMember.phone,
+      department: newMember.department,
+      projects: newMember.projects,
       status: 'active',
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${newMember.name.split(' ')[0]}`,
+      avatar: '',
       skills: [],
       workload: 0,
-      joinDate: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
+      joinDate: new Date().toISOString().split('T')[0],
       certifications: [],
       availability: 'Full-time',
       location: 'Accra, Ghana'
@@ -329,36 +354,47 @@ const Team = () => {
     setIsAddMemberOpen(false);
   };
 
-  // Handle changing member status (active/inactive)
-  const handleStatusChange = (id, newStatus) => {
+  // Handle changing a team member's status
+  const handleStatusChange = (id: number, newStatus: 'active' | 'inactive') => {
     setTeamMembers(teamMembers.map(member => 
       member.id === id ? { ...member, status: newStatus } : member
     ));
   };
 
   // Handle deleting a team member
-  const handleDeleteMember = (id) => {
+  const handleDeleteMember = (id: number) => {
     setTeamMembers(teamMembers.filter(member => member.id !== id));
-    setConfirmRemoveDialogOpen(false);
+    setIsConfirmRemoveOpen(false);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <PageHeader 
-        title="Team Management" 
-        subtitle="Manage your project team members"
-        action={
-          <Button onClick={() => setIsAddMemberOpen(true)}>
-            <UserPlus className="w-4 h-4 mr-2" />
-            Add Team Member
-          </Button>
-        }
-      />
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
+      <MainNavigation />
       
-      <DashboardLayout>
-        <div className="mb-6 flex flex-col md:flex-row gap-4">
-          {/* Team Statistics */}
-          <Grid cols={4} className="w-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <PageHeader
+          title="Team Management"
+          subtitle="Manage your construction project team members"
+          icon={<Users className="h-6 w-6" />}
+          actions={[
+            {
+              label: "Add Team Member",
+              icon: <UserPlus />,
+              variant: "construction",
+              onClick: () => setIsAddMemberOpen(true)
+            },
+            {
+              label: "Export",
+              icon: <Download />,
+              variant: "blueprint",
+              onClick: () => {/* Export functionality */}
+            }
+          ]}
+        />
+
+        {/* Team Statistics */}
+        <div className=" mb-6">
+          <Grid cols={4} className="w-full gap-6">
             <Card>
               <CardContent className="p-4 flex items-center space-x-4">
                 <div className="bg-blue-100 p-3 rounded-full">
@@ -374,23 +410,25 @@ const Team = () => {
             <Card>
               <CardContent className="p-4 flex items-center space-x-4">
                 <div className="bg-green-100 p-3 rounded-full">
-                  <Briefcase className="w-5 h-5 text-green-600" />
+                  <UserCheck className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Active Projects</p>
-                  <p className="text-xl font-semibold">2</p>
+                  <p className="text-sm text-gray-500">Active</p>
+                  <p className="text-xl font-semibold">{teamMembers.filter(m => m.status === 'active').length}</p>
                 </div>
               </CardContent>
             </Card>
             
             <Card>
               <CardContent className="p-4 flex items-center space-x-4">
-                <div className="bg-yellow-100 p-3 rounded-full">
-                  <Clock className="w-5 h-5 text-yellow-600" />
+                <div className="bg-orange-100 p-3 rounded-full">
+                  <Briefcase className="w-5 h-5 text-orange-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Avg. Workload</p>
-                  <p className="text-xl font-semibold">{avgWorkload}%</p>
+                  <p className="text-sm text-gray-500">Departments</p>
+                  <p className="text-xl font-semibold">
+                    {new Set(teamMembers.map(m => m.department)).size}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -398,206 +436,228 @@ const Team = () => {
             <Card>
               <CardContent className="p-4 flex items-center space-x-4">
                 <div className="bg-purple-100 p-3 rounded-full">
-                  <Award className="w-5 h-5 text-purple-600" />
+                  <Radar className="w-5 h-5 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Certifications</p>
-                  <p className="text-xl font-semibold">{totalCertifications}</p>
+                  <p className="text-sm text-gray-500">Avg. Workload</p>
+                  <p className="text-xl font-semibold">
+                    {teamMembers.length > 0 
+                      ? Math.round(teamMembers.reduce((acc, m) => acc + m.workload, 0) / teamMembers.length) 
+                      : 0}%
+                  </p>
                 </div>
               </CardContent>
             </Card>
           </Grid>
         </div>
-        
-        <div className="mb-4 flex flex-col md:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <Input 
-              className="pl-10" 
-              placeholder="Search team members by name, role, or skills..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          
-          <div className="flex gap-2">
-            <Select 
-              value={departmentFilter} 
-              onValueChange={setDepartmentFilter}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Department" />
-              </SelectTrigger>
-              <SelectContent>
-                {departments.map(department => (
-                  <SelectItem key={department} value={department}>{department}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            <Select defaultValue="all">
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Project" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Projects</SelectItem>
-                <SelectItem value="villa">Villa Construction</SelectItem>
-                <SelectItem value="office">Office Renovation</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            <Button variant="outline" size="icon">
-              <Filter className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-        
-        <DashboardSection>
-          <Tabs defaultValue="grid">
-            <div className="flex justify-between items-center mb-4">
-              <TabsList>
-                <TabsTrigger value="grid">Grid View</TabsTrigger>
-                <TabsTrigger value="list">List View</TabsTrigger>
-              </TabsList>
-              
-              <Select defaultValue="name">
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="name">Name (A-Z)</SelectItem>
-                  <SelectItem value="role">Role</SelectItem>
-                  <SelectItem value="workload">Workload</SelectItem>
-                  <SelectItem value="date">Join Date</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <TabsContent value="grid">
-              <Grid cols={3} gap="lg" className="mt-2">
-                {filteredTeamMembers.map(member => (
-                  <TeamMemberCard 
-                    key={member.id} 
-                    member={member} 
-                    onView={() => openViewProfile(member)}
-                    onRemove={() => openConfirmRemoveDialog(member)}
-                  />
-                ))}
-              </Grid>
-              {filteredTeamMembers.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  No team members found matching your search criteria.
-                </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="list">
-              <div className="space-y-2 mt-2">
-                {filteredTeamMembers.map(member => (
-                  <TeamMemberListItem 
-                    key={member.id} 
-                    member={member} 
-                    onView={() => openViewProfile(member)}
-                    onRemove={() => openConfirmRemoveDialog(member)}
-                  />
-                ))}
-                {filteredTeamMembers.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    No team members found matching your search criteria.
-                  </div>
-                )}
+
+        {/* Filters and Controls */}
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <Input
+                  placeholder="Search team members..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full"
+                  variant="modern"
+                  icon={<Search className="h-4 w-4" />}
+                />
               </div>
-            </TabsContent>
-          </Tabs>
-        </DashboardSection>
-      </DashboardLayout>
-      
+              <div>
+                <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">All Departments</SelectItem>
+                    <SelectItem value="Management">Management</SelectItem>
+                    <SelectItem value="Engineering">Engineering</SelectItem>
+                    <SelectItem value="Construction">Construction</SelectItem>
+                    <SelectItem value="Design">Design</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">All Status</SelectItem>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end">
+                <div className="flex space-x-2">
+                  <Button
+                    variant={viewMode === 'grid' ? 'default' : 'outline'}
+                    size="icon"
+                    onClick={() => setViewMode('grid')}
+                  >
+                    <GridIcon className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === 'list' ? 'default' : 'outline'}
+                    size="icon"
+                    onClick={() => setViewMode('list')}
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Team Members */}
+        {viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {filteredMembers.length === 0 ? (
+              <Card className="col-span-full p-8 text-center">
+                <div className="flex flex-col items-center justify-center">
+                  <Users className="h-12 w-12 text-gray-300 mb-4" />
+                  <h3 className="text-xl font-medium mb-2">No team members found</h3>
+                  <p className="text-gray-500 mb-4">Try adjusting your filters or add a new team member</p>
+                  <Button onClick={() => setIsAddMemberOpen(true)}>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Add Team Member
+                  </Button>
+                </div>
+              </Card>
+            ) : (
+              filteredMembers.map(member => (
+                <TeamMemberCard 
+                  key={member.id} 
+                  member={member} 
+                  onView={() => openViewProfile(member)}
+                  onRemove={() => openConfirmRemoveDialog(member)}
+                />
+              ))
+            )}
+          </div>
+        ) : (
+          <Card className="mb-8 overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Department</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Projects</TableHead>
+                    <TableHead>Workload</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredMembers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8">
+                        <div className="flex flex-col items-center justify-center">
+                          <Users className="h-12 w-12 text-gray-300 mb-4" />
+                          <h3 className="text-xl font-medium mb-2">No team members found</h3>
+                          <p className="text-gray-500 mb-4">Try adjusting your filters or add a new team member</p>
+                          <Button onClick={() => setIsAddMemberOpen(true)}>
+                            <UserPlus className="h-4 w-4 mr-2" />
+                            Add Team Member
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredMembers.map(member => (
+                      <TeamMemberListItem 
+                        key={member.id} 
+                        member={member} 
+                        onView={() => openViewProfile(member)}
+                        onRemove={() => openConfirmRemoveDialog(member)}
+                      />
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+        )}
+      </div>
+
       {/* Add Team Member Dialog */}
       <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle>Add Team Member</DialogTitle>
             <DialogDescription>
-              Add a new member to your project team.
+              Add a new member to your construction project team.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
+          <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">First Name</label>
-                <Input placeholder="First name" />
+                <Label htmlFor="name">Full Name</Label>
+                <Input 
+                  id="name" 
+                  value={newMember.name}
+                  onChange={(e) => setNewMember({...newMember, name: e.target.value})}
+                  placeholder="Enter full name"
+                />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Last Name</label>
-                <Input placeholder="Last name" />
+                <Label htmlFor="role">Role</Label>
+                <Input 
+                  id="role" 
+                  value={newMember.role}
+                  onChange={(e) => setNewMember({...newMember, role: e.target.value})}
+                  placeholder="Enter role"
+                />
               </div>
             </div>
             
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Email</label>
-              <Input 
-                type="email" 
-                placeholder="email@example.com" 
-                value={newMember.email}
-                onChange={(e) => setNewMember({...newMember, email: e.target.value})}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input 
+                  id="email" 
+                  type="email"
+                  value={newMember.email}
+                  onChange={(e) => setNewMember({...newMember, email: e.target.value})}
+                  placeholder="Enter email address"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input 
+                  id="phone" 
+                  value={newMember.phone}
+                  onChange={(e) => setNewMember({...newMember, phone: e.target.value})}
+                  placeholder="Enter phone number"
+                />
+              </div>
             </div>
             
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Phone</label>
-              <Input 
-                placeholder="Phone number" 
-                value={newMember.phone}
-                onChange={(e) => setNewMember({...newMember, phone: e.target.value})}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Role</label>
-              <Select 
-                onValueChange={(value) => setNewMember({...newMember, role: value})}
-                value={newMember.role}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  {roles.map(role => (
-                    <SelectItem key={role} value={role}>{role}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Department</label>
-              <Select 
-                onValueChange={(value) => setNewMember({...newMember, department: value})}
-                value={newMember.department}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select department" />
-                </SelectTrigger>
-                <SelectContent>
-                  {departments.filter(d => d !== 'All Departments').map(department => (
-                    <SelectItem key={department} value={department}>{department}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Assign to Project</label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select project" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="villa">Villa Construction</SelectItem>
-                  <SelectItem value="office">Office Renovation</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="department">Department</Label>
+                <Select 
+                  value={newMember.department} 
+                  onValueChange={(value) => setNewMember({...newMember, department: value})}
+                >
+                  <SelectTrigger id="department">
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Management">Management</SelectItem>
+                    <SelectItem value="Engineering">Engineering</SelectItem>
+                    <SelectItem value="Construction">Construction</SelectItem>
+                    <SelectItem value="Design">Design</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           
@@ -605,66 +665,78 @@ const Team = () => {
             <Button variant="outline" onClick={() => setIsAddMemberOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddMember}>
-              Add Team Member
-            </Button>
+            <Button onClick={handleAddMember}>Add Member</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
-      {/* View Team Member Profile Dialog */}
-      {selectedMember && (
-        <Dialog open={viewProfileDialogOpen} onOpenChange={setViewProfileDialogOpen}>
-          <DialogContent className="sm:max-w-3xl">
-            <DialogHeader>
-              <DialogTitle>Team Member Profile</DialogTitle>
-            </DialogHeader>
-            
-            <div className="py-4">
-              <div className="flex flex-col md:flex-row gap-6">
-                <div className="flex flex-col items-center">
-                  <Avatar className="h-32 w-32 border-2 border-gray-200">
-                    <AvatarImage src={selectedMember.avatar} alt={selectedMember.name} />
-                    <AvatarFallback>{selectedMember.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+
+      {/* View Profile Dialog */}
+      <Dialog open={isViewProfileOpen} onOpenChange={setIsViewProfileOpen}>
+        <DialogContent className="max-w-2xl">
+          {currentMember && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Team Member Profile</DialogTitle>
+              </DialogHeader>
+              
+              <div className="flex flex-col md:flex-row gap-6 py-4">
+                <div className="flex flex-col items-center space-y-4">
+                  <Avatar className="h-24 w-24">
+                    <AvatarImage src={currentMember.avatar} alt={currentMember.name} />
+                    <AvatarFallback className="text-2xl">{currentMember.name.charAt(0)}</AvatarFallback>
                   </Avatar>
-                  
-                  <h3 className="mt-4 text-xl font-semibold text-center">{selectedMember.name}</h3>
-                  <p className="text-gray-600">{selectedMember.role}</p>
-                  
-                  <div className="mt-4 flex gap-2 items-center justify-center">
-                    <Badge className={`${selectedMember.status === 'active' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'}`}>
-                      {selectedMember.status === 'active' ? 'Active' : 'Inactive'}
-                    </Badge>
-                    <Badge className="bg-blue-100 text-blue-600">
-                      {selectedMember.availability}
-                    </Badge>
-                  </div>
+                  <Badge variant={currentMember.status === 'active' ? "success" : "secondary"}>
+                    {currentMember.status === 'active' ? 'Active' : 'Inactive'}
+                  </Badge>
                 </div>
                 
                 <div className="flex-1 space-y-4">
                   <div>
-                    <h4 className="text-sm font-medium text-gray-500 mb-2">Contact Information</h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center">
-                        <Mail className="w-4 h-4 text-gray-400 mr-2" />
-                        <span>{selectedMember.email}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Phone className="w-4 h-4 text-gray-400 mr-2" />
-                        <span>{selectedMember.phone}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Building className="w-4 h-4 text-gray-400 mr-2" />
-                        <span>{selectedMember.location}</span>
-                      </div>
+                    <h2 className="text-xl font-bold">{currentMember.name}</h2>
+                    <p className="text-gray-500">{currentMember.role}</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-500 flex items-center">
+                        <Mail className="h-4 w-4 mr-2 text-gray-400" />
+                        {currentMember.email}
+                      </p>
+                      <p className="text-sm text-gray-500 flex items-center">
+                        <Phone className="h-4 w-4 mr-2 text-gray-400" />
+                        {currentMember.phone}
+                      </p>
+                      <p className="text-sm text-gray-500 flex items-center">
+                        <Building className="h-4 w-4 mr-2 text-gray-400" />
+                        {currentMember.department}
+                      </p>
+                      <p className="text-sm text-gray-500 flex items-center">
+                        <MapPin className="h-4 w-4 mr-2 text-gray-400" />
+                        {currentMember.location}
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-500 flex items-center">
+                        <CalendarDays className="h-4 w-4 mr-2 text-gray-400" />
+                        Join Date: {new Date(currentMember.joinDate).toLocaleDateString()}
+                      </p>
+                      <p className="text-sm text-gray-500 flex items-center">
+                        <Clock className="h-4 w-4 mr-2 text-gray-400" />
+                        Availability: {currentMember.availability}
+                      </p>
+                      <p className="text-sm text-gray-500 flex items-center">
+                        <Award className="h-4 w-4 mr-2 text-gray-400" />
+                        Certifications: {currentMember.certifications.join(', ') || 'None'}
+                      </p>
                     </div>
                   </div>
                   
                   <div>
-                    <h4 className="text-sm font-medium text-gray-500 mb-2">Current Projects</h4>
+                    <h3 className="text-lg font-semibold mb-2">Projects</h3>
                     <div className="flex flex-wrap gap-2">
-                      {selectedMember.projects.map(project => (
-                        <Badge key={project} className="bg-blue-50 text-blue-700 hover:bg-blue-100">
+                      {currentMember.projects.map((project, index) => (
+                        <Badge key={index} variant="outline" className="bg-blue-50">
                           {project}
                         </Badge>
                       ))}
@@ -672,10 +744,10 @@ const Team = () => {
                   </div>
                   
                   <div>
-                    <h4 className="text-sm font-medium text-gray-500 mb-2">Skills & Expertise</h4>
+                    <h3 className="text-lg font-semibold mb-2">Skills</h3>
                     <div className="flex flex-wrap gap-2">
-                      {selectedMember.skills && selectedMember.skills.map(skill => (
-                        <Badge key={skill} variant="outline">
+                      {currentMember.skills.map((skill, index) => (
+                        <Badge key={index} variant="secondary">
                           {skill}
                         </Badge>
                       ))}
@@ -683,268 +755,198 @@ const Team = () => {
                   </div>
                   
                   <div>
-                    <h4 className="text-sm font-medium text-gray-500 mb-2">Certifications</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedMember.certifications && selectedMember.certifications.map(cert => (
-                        <div key={cert} className="flex items-center text-sm">
-                          <Award className="w-4 h-4 text-yellow-500 mr-1" />
-                          <span>{cert}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-500 mb-2">Current Workload</h4>
+                    <h3 className="text-lg font-semibold mb-2">Workload</h3>
                     <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Allocation</span>
-                        <span className={`font-medium ${
-                          selectedMember.workload > 80 ? 'text-red-600' : 
-                          selectedMember.workload > 60 ? 'text-yellow-600' : 
-                          'text-green-600'
-                        }`}>
-                          {selectedMember.workload}%
-                        </span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-500">Current allocation</span>
+                        <span className="text-sm font-medium">{currentMember.workload}%</span>
                       </div>
-                      <Progress 
-                        value={selectedMember.workload} 
-                        className="h-2" 
-                      />
+                      <Progress value={currentMember.workload} className="h-2" />
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-            
-            <DialogFooter className="flex-col sm:flex-row gap-2">
-              <Button variant="outline" onClick={() => setViewProfileDialogOpen(false)}>
-                Close
-              </Button>
-              <Button variant="outline">
-                <Mail className="w-4 h-4 mr-2" />
-                Contact
-              </Button>
-              <Button>
-                <Calendar className="w-4 h-4 mr-2" />
-                Manage Assignments
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
-      
-      {/* Confirm Remove Team Member Dialog */}
-      {selectedMember && (
-        <Dialog open={confirmRemoveDialogOpen} onOpenChange={setConfirmRemoveDialogOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Remove Team Member</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to remove {selectedMember.name} from your team? 
-                This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="py-4">
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start space-x-3">
-                <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-yellow-800">Warning</h4>
-                  <p className="text-sm text-yellow-700 mt-1">
-                    This team member is currently assigned to {selectedMember.projects.length} projects. 
-                    Removing them will require reassigning their tasks.
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setConfirmRemoveDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button 
-                variant="destructive"
-                onClick={() => handleDeleteMember(selectedMember.id)}
-              >
-                <UserX className="w-4 h-4 mr-2" />
-                Remove Team Member
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm Remove Dialog */}
+      <AlertDialog open={isConfirmRemoveOpen} onOpenChange={setIsConfirmRemoveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action will remove {currentMember?.name} from the team. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => currentMember && handleDeleteMember(currentMember.id)}
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
 
-// Team member card component for grid view
-const TeamMemberCard = ({ member, onView, onRemove }) => {
+// Team Member Card Component
+const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ member, onView, onRemove }) => {
   return (
-    <Card className="overflow-hidden hover:shadow-md transition-all duration-300">
-      <CardContent className="p-0">
-        <div className="p-4 flex flex-col items-center border-b">
-          <Avatar className="h-20 w-20">
+    <Card className="overflow-hidden hover:shadow-md transition-shadow">
+      <div className="p-4 border-b flex justify-between items-center">
+        <div className="flex items-center space-x-3">
+          <Avatar>
             <AvatarImage src={member.avatar} alt={member.name} />
-            <AvatarFallback>{member.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+            <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
           </Avatar>
-          
-          <h3 className="mt-3 font-semibold text-center">{member.name}</h3>
-          <p className="text-sm text-gray-600">{member.role}</p>
-          
-          <div className="mt-2">
-            <Badge className={`${member.status === 'active' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'}`}>
-              {member.status === 'active' ? 'Active' : 'Inactive'}
-            </Badge>
+          <div>
+            <h3 className="font-semibold text-lg">{member.name}</h3>
+            <p className="text-sm text-gray-500">{member.role}</p>
           </div>
         </div>
-        
-        <div className="p-4 space-y-4">
-          <div>
-            <h4 className="text-xs font-medium text-gray-500 mb-1">Department</h4>
-            <p className="text-sm">{member.department}</p>
+        <Badge variant={member.status === 'active' ? "success" : "secondary"}>
+          {member.status === 'active' ? 'Active' : 'Inactive'}
+        </Badge>
+      </div>
+      <CardContent className="pt-4">
+        <div className="space-y-3">
+          <div className="flex items-center text-sm">
+            <Mail className="h-4 w-4 mr-2 text-gray-400" />
+            <span className="text-gray-600">{member.email}</span>
+          </div>
+          <div className="flex items-center text-sm">
+            <Phone className="h-4 w-4 mr-2 text-gray-400" />
+            <span className="text-gray-600">{member.phone}</span>
+          </div>
+          <div className="flex items-center text-sm">
+            <Building className="h-4 w-4 mr-2 text-gray-400" />
+            <span className="text-gray-600">{member.department}</span>
           </div>
           
-          <div>
-            <h4 className="text-xs font-medium text-gray-500 mb-1">Projects</h4>
+          <div className="mt-4">
+            <div className="flex justify-between text-sm mb-1">
+              <span className="text-gray-500">Workload</span>
+              <span className="font-medium">{member.workload}%</span>
+            </div>
+            <Progress value={member.workload} className="h-1.5" />
+          </div>
+          
+          <div className="mt-4">
+            <h4 className="text-sm font-medium mb-2">Projects</h4>
             <div className="flex flex-wrap gap-1">
-              {member.projects.map(project => (
-                <Badge key={project} variant="outline" className="text-xs">
+              {member.projects.map((project, index) => (
+                <Badge key={index} variant="outline" className="text-xs">
                   {project}
                 </Badge>
               ))}
             </div>
           </div>
-          
-          <div>
-            <h4 className="text-xs font-medium text-gray-500 mb-1">Workload</h4>
-            <div className="space-y-1">
-              <Progress 
-                value={member.workload} 
-                className="h-1.5" 
-              />
-              <div className="flex justify-between text-xs">
-                <span>Allocation</span>
-                <span className={`font-medium ${
-                  member.workload > 80 ? 'text-red-600' : 
-                  member.workload > 60 ? 'text-yellow-600' : 
-                  'text-green-600'
-                }`}>
-                  {member.workload}%
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="p-3 bg-gray-50 border-t flex justify-between">
-          <Button variant="ghost" size="sm" onClick={onView}>View Profile</Button>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <MoreHorizontal className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>
-                <Mail className="w-4 h-4 mr-2" />
-                Contact
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Calendar className="w-4 h-4 mr-2" />
-                Manage Assignments
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Edit className="w-4 h-4 mr-2" />
-                Edit Details
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-600" onClick={onRemove}>
-                <UserX className="w-4 h-4 mr-2" />
-                Remove Member
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </CardContent>
-    </Card>
-  );
-};
-
-// Team member list item component for list view
-const TeamMemberListItem = ({ member, onView, onRemove }) => {
-  return (
-    <div className="flex items-center p-3 border rounded-lg hover:bg-gray-50 transition-all gap-4">
-      <Avatar>
-        <AvatarImage src={member.avatar} alt={member.name} />
-        <AvatarFallback>{member.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-      </Avatar>
-      
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center">
-          <h4 className="font-medium truncate mr-2">{member.name}</h4>
-          <Badge className={`${member.status === 'active' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'}`}>
-            {member.status === 'active' ? 'Active' : 'Inactive'}
-          </Badge>
-        </div>
-        <p className="text-sm text-gray-600">{member.role} • {member.department}</p>
-      </div>
-      
-      <div className="flex items-center gap-2 min-w-0 max-w-[180px] w-full">
-        <div className="text-sm text-gray-600 mr-2">Projects:</div>
-        <div className="flex flex-wrap gap-1 overflow-hidden">
-          {member.projects.map(project => (
-            <Badge key={project} variant="outline" className="text-xs">
-              {project}
-            </Badge>
-          ))}
-        </div>
-      </div>
-      
-      <div className="w-32">
-        <div className="text-xs mb-1 flex justify-between">
-          <span>Workload</span>
-          <span className={
-            member.workload > 80 ? 'text-red-600' : 
-            member.workload > 60 ? 'text-yellow-600' : 
-            'text-green-600'
-          }>
-            {member.workload}%
-          </span>
-        </div>
-        <Progress value={member.workload} className="h-1.5" />
-      </div>
-      
-      <div className="flex items-center space-x-2">
-        <Button variant="ghost" size="sm" onClick={onView}>
-          View
+      <div className="p-4 border-t bg-gray-50 dark:bg-gray-800/50 flex justify-between">
+        <Button variant="ghost" size="sm" onClick={() => onView(member)}>
+          <Eye className="h-4 w-4 mr-1" />
+          View Profile
         </Button>
-        
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreHorizontal className="w-4 h-4" />
+            <Button variant="ghost" size="sm">
+              <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>
-              <Mail className="w-4 h-4 mr-2" />
-              Contact
+            <DropdownMenuItem onClick={() => onView(member)}>
+              <Eye className="h-4 w-4 mr-2" />
+              View Details
             </DropdownMenuItem>
             <DropdownMenuItem>
-              <Calendar className="w-4 h-4 mr-2" />
-              Manage Assignments
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Member
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600" onClick={onRemove}>
-              <UserX className="w-4 h-4 mr-2" />
+            <DropdownMenuItem 
+              className="text-red-600 dark:text-red-400"
+              onClick={() => onRemove(member)}
+            >
+              <Trash className="h-4 w-4 mr-2" />
               Remove Member
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </div>
+    </Card>
+  );
+};
+
+// Team Member List Item Component
+const TeamMemberListItem: React.FC<TeamMemberListItemProps> = ({ member, onView, onRemove }) => {
+  return (
+    <TableRow className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+      <TableCell>
+        <div className="flex items-center space-x-3">
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={member.avatar} alt={member.name} />
+            <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="font-medium">{member.name}</p>
+            <p className="text-sm text-gray-500">{member.email}</p>
+          </div>
+        </div>
+      </TableCell>
+      <TableCell>{member.role}</TableCell>
+      <TableCell>{member.department}</TableCell>
+      <TableCell>
+        <Badge variant={member.status === 'active' ? "success" : "secondary"}>
+          {member.status === 'active' ? 'Active' : 'Inactive'}
+        </Badge>
+      </TableCell>
+      <TableCell>{member.projects.length}</TableCell>
+      <TableCell>
+        <div className="flex items-center space-x-2">
+          <Progress value={member.workload} className="w-16 h-1.5" />
+          <span className="text-sm">{member.workload}%</span>
+        </div>
+      </TableCell>
+      <TableCell className="text-right">
+        <div className="flex justify-end space-x-2">
+          <Button variant="ghost" size="sm" onClick={() => onView(member)}>
+            <Eye className="h-4 w-4" />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onView(member)}>
+                <Eye className="h-4 w-4 mr-2" />
+                View Details
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Member
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                className="text-red-600 dark:text-red-400"
+                onClick={() => onRemove(member)}
+              >
+                <Trash className="h-4 w-4 mr-2" />
+                Remove Member
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </TableCell>
+    </TableRow>
   );
 };
 

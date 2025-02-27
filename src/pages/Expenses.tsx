@@ -115,6 +115,7 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
+import MainNavigation from '@/components/layout/MainNavigation';
 
 // Define expense type
 interface Expense {
@@ -766,33 +767,27 @@ const Expenses = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
-      {/* Header with construction theme */}
-      <div className="bg-gradient-to-r from-deepblue to-deepblue-light dark:from-deepblue-dark dark:to-deepblue p-6 shadow-md">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-white">Expense Management</h1>
-              <p className="text-blue-100 mt-1">Track, analyze and manage project expenses</p>
-          </div>
-            <div className="flex flex-wrap gap-2">
-            <Button 
-                variant="construction" 
-                onClick={() => handleAddExpense()}
-                leftIcon={<Plus className="h-4 w-4" />}
-              >
-                Add Expense
-            </Button>
-            <Button 
-                variant="blueprint" 
-                onClick={() => handleExport()}
-                leftIcon={<Download className="h-4 w-4" />}
-              >
-                Export
-            </Button>
-          </div>
-          </div>
-        </div>
-      </div>
+      <MainNavigation />
+      
+      <PageHeader
+        title="Expenses"
+        subtitle="Track, analyze and manage project expenses"
+        icon={<DollarSign className="h-6 w-6" />}
+        actions={[
+          {
+            label: "Add Expense",
+            icon: <Plus />,
+            variant: "construction",
+            onClick: () => setIsAddExpenseOpen(true)
+          },
+          {
+            label: "Export",
+            icon: <Download />,
+            variant: "blueprint",
+            onClick: () => handleExport()
+          }
+        ]}
+      />
 
       {/* Main content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">

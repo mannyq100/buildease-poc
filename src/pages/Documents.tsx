@@ -44,7 +44,8 @@ import {
   FileType,
   Archive,
   CheckCircle2,
-  CalendarIcon
+  CalendarIcon,
+  Eye
 } from 'lucide-react';
 import { 
   DashboardLayout, 
@@ -56,6 +57,8 @@ import {
   PageHeader,
   StatusBadge
 } from '@/components/shared';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import MainNavigation from '@/components/layout/MainNavigation';
 
 // Mock data for documents
 const initialDocuments = [
@@ -238,71 +241,151 @@ const Documents = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <PageHeader 
-        title="Documents" 
-        subtitle="Manage your project documents"
-        action={
-          <Button onClick={() => setUploadDialogOpen(true)}>
-            <Upload className="w-4 h-4 mr-2" />
-            Upload Document
-          </Button>
-        }
-      />
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
+      <MainNavigation />
       
-      <DashboardLayout>
-        {/* Document Stats */}
-        <Grid cols={3} className="mb-6">
-          <MetricCard
-            icon={<FileText className="w-5 h-5" />}
-            label="Total Documents"
-            value={documents.length.toString()}
-            subtext="Across all projects"
-          />
-          <MetricCard
-            icon={<CheckCircle2 className="w-5 h-5" />}
-            label="Approved Documents"
-            value={documents.filter(d => d.status === 'approved').length.toString()}
-            subtext="Ready for use"
-          />
-          <MetricCard
-            icon={<CalendarIcon className="w-5 h-5" />}
-            label="Recent Uploads"
-            value={documents.filter(d => new Date(d.uploaded) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length.toString()}
-            subtext="Last 7 days"
-          />
-        </Grid>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Left Sidebar - Categories */}
-          <div className="lg:col-span-1">
-            <DashboardSection>
-              <div className="space-y-1">
-                <h3 className="font-medium mb-3 text-gray-900">Categories</h3>
-                
-                {categories.map(category => (
-                  <button
-                    key={category.id}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-md hover:bg-gray-100 transition-colors"
-                    onClick={() => setCategoryFilter(category.id)}
-                  >
-                    <div className="flex items-center">
-                      <Folder className="w-4 h-4 mr-2 text-primary" />
-                      <span>{category.name}</span>
-                    </div>
-                    <span className="text-sm text-gray-500">{category.count}</span>
-                  </button>
-                ))}
-              </div>
-              
-              <div className="mt-6 pt-4 border-t">
-                <h3 className="font-medium mb-3 text-gray-900">Filters</h3>
-                
-                <div className="space-y-4">
+      <PageHeader
+        title="Documents"
+        subtitle="Manage and organize your project documents"
+        icon={<FileText className="h-6 w-6" />}
+        actions={[
+          {
+            label: "Upload Document",
+            icon: <Upload />,
+            variant: "construction",
+            onClick: () => setUploadDialogOpen(true)
+          },
+          {
+            label: "Export",
+            icon: <Download />,
+            variant: "blueprint",
+            onClick: () => {/* Export functionality */}
+          }
+        ]}
+      />
+
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-6">
+        <DashboardLayout>
+          {/* Metrics Section */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <Card className="bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-300">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                    <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  </div>
                   <div>
-                    <label className="text-sm text-gray-600 mb-1 block">Project</label>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Total Documents</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">{documents.length}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">items</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-300">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                    <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Approved</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {documents.filter(d => d.status === 'approved').length}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">documents</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-300">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+                    <Star className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Starred</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {documents.filter(d => d.starred).length}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">favorites</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-300">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                    <CalendarIcon className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Recent Uploads</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {documents.filter(d => new Date(d.uploaded) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">this week</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Left Sidebar - Categories */}
+            <div className="lg:col-span-1">
+              <Card className="shadow-md rounded-xl transition-all duration-300 hover:shadow-lg border-gray-200 dark:border-slate-800 overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-900 border-b border-gray-200 dark:border-slate-700 pb-3">
+                  <CardTitle className="text-lg text-gray-900 dark:text-white">Categories</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <ul className="divide-y divide-gray-200 dark:divide-slate-700">
+                    {categories.map(category => (
+                      <li key={category.id} className="group">
+                        <button
+                          onClick={() => setCategoryFilter(category.id)}
+                          className={`w-full flex justify-between items-center p-4 text-left text-sm hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors ${
+                            categoryFilter === category.id ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-center">
+                            <Folder className={`w-4 h-4 mr-3 ${
+                              categoryFilter === category.id ? 'text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400'
+                            }`} />
+                            <span className="font-medium">{category.name}</span>
+                          </div>
+                          <Badge variant="secondary" className="bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-slate-600 transition-colors">
+                            {category.count}
+                          </Badge>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <Card className="mt-6 shadow-md rounded-xl transition-all duration-300 hover:shadow-lg border-gray-200 dark:border-slate-800">
+                <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-900 border-b border-gray-200 dark:border-slate-700 pb-3">
+                  <CardTitle className="text-lg text-gray-900 dark:text-white">Filters</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Project</label>
                     <Select value={projectFilter} onValueChange={setProjectFilter}>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800">
                         <SelectValue placeholder="All Projects" />
                       </SelectTrigger>
                       <SelectContent>
@@ -312,11 +395,11 @@ const Documents = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  
-                  <div>
-                    <label className="text-sm text-gray-600 mb-1 block">File Type</label>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">File Type</label>
                     <Select>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800">
                         <SelectValue placeholder="All Types" />
                       </SelectTrigger>
                       <SelectContent>
@@ -328,11 +411,11 @@ const Documents = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  
-                  <div>
-                    <label className="text-sm text-gray-600 mb-1 block">Status</label>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800">
                         <SelectValue placeholder="All Statuses" />
                       </SelectTrigger>
                       <SelectContent>
@@ -342,7 +425,7 @@ const Documents = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <Button 
                     variant="outline" 
                     className="w-full mt-2"
@@ -355,239 +438,253 @@ const Documents = () => {
                     <Filter className="w-4 h-4 mr-2" />
                     Reset Filters
                   </Button>
-                </div>
-              </div>
-            </DashboardSection>
-          </div>
-          
-          {/* Main Content - Document List */}
-          <div className="lg:col-span-3">
-            <div className="mb-4 flex items-center gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <Input 
-                  className="pl-10" 
-                  placeholder="Search documents..." 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              
-              <Select defaultValue="newest">
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">Newest First</SelectItem>
-                  <SelectItem value="oldest">Oldest First</SelectItem>
-                  <SelectItem value="name">Name A-Z</SelectItem>
-                  <SelectItem value="size">Size</SelectItem>
-                </SelectContent>
-              </Select>
+                </CardContent>
+              </Card>
             </div>
-            
-            <DashboardSection>
-              <Tabs defaultValue="all">
-                <TabsList className="mb-4">
-                  <TabsTrigger value="all">All Documents</TabsTrigger>
-                  <TabsTrigger value="starred">Starred</TabsTrigger>
-                  <TabsTrigger value="recent">Recently Added</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="all" className="space-y-2">
-                  {filteredDocuments.length > 0 ? (
-                    filteredDocuments.map(doc => (
-                      <DocumentItem 
-                        key={doc.id} 
-                        document={doc} 
-                        icon={getFileIcon(doc.type)} 
-                        onView={() => openViewDialog(doc)}
-                        onDelete={() => handleDeleteDocument(doc.id)}
-                        onToggleStar={() => handleToggleStar(doc.id)}
+
+            {/* Main Content - Document List */}
+            <div className="lg:col-span-3">
+              <Card className="shadow-md rounded-xl">
+                <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-900 border-b border-gray-200 dark:border-slate-700">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <Input 
+                        className="pl-10" 
+                        placeholder="Search documents..." 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
                       />
-                    ))
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      No documents found matching your search criteria.
                     </div>
-                  )}
-                </TabsContent>
-                
-                <TabsContent value="starred" className="space-y-2">
-                  {filteredDocuments.filter(doc => doc.starred).length > 0 ? (
-                    filteredDocuments.filter(doc => doc.starred).map(doc => (
-                      <DocumentItem 
-                        key={doc.id} 
-                        document={doc} 
-                        icon={getFileIcon(doc.type)} 
-                        onView={() => openViewDialog(doc)}
-                        onDelete={() => handleDeleteDocument(doc.id)}
-                        onToggleStar={() => handleToggleStar(doc.id)}
-                      />
-                    ))
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      No starred documents found.
-                    </div>
-                  )}
-                </TabsContent>
-                
-                <TabsContent value="recent" className="space-y-2">
-                  {/* We'd normally track recently added docs, using a subset for demo */}
-                  {filteredDocuments.slice(0, 3).map(doc => (
-                    <DocumentItem 
-                      key={doc.id} 
-                      document={doc} 
-                      icon={getFileIcon(doc.type)} 
-                      onView={() => openViewDialog(doc)}
-                      onDelete={() => handleDeleteDocument(doc.id)}
-                      onToggleStar={() => handleToggleStar(doc.id)}
-                    />
-                  ))}
-                </TabsContent>
-              </Tabs>
-            </DashboardSection>
-          </div>
-        </div>
-      </DashboardLayout>
-      
-      {/* Upload Document Dialog */}
-      <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Upload New Document</DialogTitle>
-            <DialogDescription>
-              Upload a document to add to your project files.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Project</label>
-              <Select 
-                value={newDocument.project}
-                onValueChange={(value) => setNewDocument({...newDocument, project: value})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select project" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Villa Construction">Villa Construction</SelectItem>
-                  <SelectItem value="Office Renovation">Office Renovation</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Category</label>
-              <Select
-                value={newDocument.category}
-                onValueChange={(value) => setNewDocument({...newDocument, category: value})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="plans">Plans & Blueprints</SelectItem>
-                  <SelectItem value="permits">Permits & Approvals</SelectItem>
-                  <SelectItem value="contracts">Contracts</SelectItem>
-                  <SelectItem value="reports">Reports</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Document Title</label>
-              <Input 
-                placeholder="Enter document title" 
-                value={newDocument.name}
-                onChange={(e) => setNewDocument({...newDocument, name: e.target.value})}
-              />
-            </div>
-            
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-              <Upload className="w-10 h-10 text-gray-400 mx-auto mb-4" />
-              <p className="text-sm text-gray-600 mb-2">
-                Drag & drop your file here, or click to browse
-              </p>
-              <p className="text-xs text-gray-500">
-                Supports: PDF, DOCX, XLSX, DWG, JPG, PNG (max 25MB)
-              </p>
-              <Button variant="outline" className="mt-4">
-                Select File
-              </Button>
+                    <Select defaultValue="newest">
+                      <SelectTrigger className="w-40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="newest">Newest First</SelectItem>
+                        <SelectItem value="oldest">Oldest First</SelectItem>
+                        <SelectItem value="name">Name A-Z</SelectItem>
+                        <SelectItem value="size">Size</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <Tabs defaultValue="all">
+                    <TabsList className="mb-6">
+                      <TabsTrigger value="all">All Documents</TabsTrigger>
+                      <TabsTrigger value="starred">Starred</TabsTrigger>
+                      <TabsTrigger value="recent">Recently Added</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="all" className="space-y-4">
+                      {filteredDocuments.length > 0 ? (
+                        filteredDocuments.map(doc => (
+                          <DocumentItem 
+                            key={doc.id} 
+                            document={doc} 
+                            icon={getFileIcon(doc.type)} 
+                            onView={() => openViewDialog(doc)}
+                            onDelete={() => handleDeleteDocument(doc.id)}
+                            onToggleStar={() => handleToggleStar(doc.id)}
+                          />
+                        ))
+                      ) : (
+                        <div className="text-center py-12">
+                          <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
+                            <FileText className="w-10 h-10 text-gray-400 dark:text-gray-500" />
+                          </div>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No documents found</h3>
+                          <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                            We couldn't find any documents matching your current filters. Try adjusting your search criteria or upload a new document.
+                          </p>
+                          <Button 
+                            onClick={() => setUploadDialogOpen(true)}
+                            className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white shadow-md"
+                          >
+                            <Upload className="w-4 h-4 mr-2" />
+                            Upload a Document
+                          </Button>
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="starred" className="space-y-4">
+                      {filteredDocuments.filter(doc => doc.starred).length > 0 ? (
+                        filteredDocuments.filter(doc => doc.starred).map(doc => (
+                          <DocumentItem 
+                            key={doc.id} 
+                            document={doc} 
+                            icon={getFileIcon(doc.type)} 
+                            onView={() => openViewDialog(doc)}
+                            onDelete={() => handleDeleteDocument(doc.id)}
+                            onToggleStar={() => handleToggleStar(doc.id)}
+                          />
+                        ))
+                      ) : (
+                        <div className="text-center py-12">
+                          <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
+                            <Star className="w-10 h-10 text-gray-400 dark:text-gray-500" />
+                          </div>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No starred documents</h3>
+                          <p className="text-gray-500 dark:text-gray-400">
+                            You haven't starred any documents yet. Star important documents to find them quickly.
+                          </p>
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="recent" className="space-y-4">
+                      {filteredDocuments.slice(0, 3).map(doc => (
+                        <DocumentItem 
+                          key={doc.id} 
+                          document={doc} 
+                          icon={getFileIcon(doc.type)} 
+                          onView={() => openViewDialog(doc)}
+                          onDelete={() => handleDeleteDocument(doc.id)}
+                          onToggleStar={() => handleToggleStar(doc.id)}
+                        />
+                      ))}
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
             </div>
           </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleUploadDocument}>
-              Upload Document
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* View Document Dialog */}
-      {selectedDocument && (
-        <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-          <DialogContent className="sm:max-w-3xl">
+        </DashboardLayout>
+
+        {/* Upload Document Dialog */}
+        <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+          <DialogContent className="sm:max-w-md rounded-xl shadow-lg border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900">
             <DialogHeader>
-              <DialogTitle>{selectedDocument.name}</DialogTitle>
-              <DialogDescription>
-                Uploaded on {selectedDocument.uploaded} by {selectedDocument.uploadedBy}
+              <DialogTitle className="text-2xl font-bold text-gray-900 dark:text-white">Upload Document</DialogTitle>
+              <DialogDescription className="text-gray-600 dark:text-gray-400">
+                Add a new document to your project
               </DialogDescription>
             </DialogHeader>
-            
-            <div className="py-4">
-              <div className="aspect-[4/3] bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-                {/* This would be a document preview in a real app */}
-                <div className="text-center p-8">
-                  {getFileIcon(selectedDocument.type)}
-                  <p className="text-gray-500 mt-2">Document Preview</p>
+            <div className="space-y-4 py-4">
+              {/* Upload area with drag & drop */}
+              <div className="border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl p-6 text-center">
+                <Upload className="w-10 h-10 mx-auto mb-4 text-gray-400 dark:text-gray-500" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                    Drop your file here, or <span className="text-blue-600 dark:text-blue-400">browse</span>
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Supports PDF, DOCX, XLS, DWG, JPG, PNG (Up to 10MB)
+                  </p>
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-500">Project:</span>
-                  <span className="ml-2 font-medium">{selectedDocument.project}</span>
+              {/* Form fields */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Document Name</label>
+                  <Input
+                    placeholder="Enter document name"
+                    value={newDocument.name}
+                    onChange={(e) => setNewDocument({...newDocument, name: e.target.value})}
+                    className="mt-1 border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                  />
                 </div>
                 <div>
-                  <span className="text-gray-500">File Type:</span>
-                  <span className="ml-2 font-medium">{selectedDocument.type}</span>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Project</label>
+                  <Select value={newDocument.project} onValueChange={(value) => setNewDocument({...newDocument, project: value})}>
+                    <SelectTrigger className="mt-1 border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900">
+                      <SelectValue placeholder="Select project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Villa Construction">Villa Construction</SelectItem>
+                      <SelectItem value="Office Renovation">Office Renovation</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
-                  <span className="text-gray-500">Size:</span>
-                  <span className="ml-2 font-medium">{selectedDocument.size}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500">Status:</span>
-                  <span className="ml-2">
-                    <StatusBadge status={selectedDocument.status === 'approved' ? 'completed' : 'pending'} />
-                  </span>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
+                  <Select value={newDocument.category} onValueChange={(value) => setNewDocument({...newDocument, category: value})}>
+                    <SelectTrigger className="mt-1 border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="plans">Plans & Blueprints</SelectItem>
+                      <SelectItem value="permits">Permits & Approvals</SelectItem>
+                      <SelectItem value="contracts">Contracts</SelectItem>
+                      <SelectItem value="reports">Reports</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
-            
-            <DialogFooter className="flex-col sm:flex-row gap-2">
-              <Button variant="outline" onClick={() => setViewDialogOpen(false)}>
-                Close
+            <DialogFooter className="sm:justify-end border-t border-gray-200 dark:border-slate-700 pt-4">
+              <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>
+                Cancel
               </Button>
-              <Button variant="outline">
-                <Download className="w-4 h-4 mr-2" />
-                Download
-              </Button>
-              <Button>
-                <Share2 className="w-4 h-4 mr-2" />
-                Share
+              <Button onClick={handleUploadDocument}>
+                Upload
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      )}
+
+        {/* View Document Dialog */}
+        {selectedDocument && (
+          <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+            <DialogContent className="sm:max-w-3xl">
+              <DialogHeader>
+                <DialogTitle>{selectedDocument.name}</DialogTitle>
+                <DialogDescription>
+                  Uploaded on {selectedDocument.uploaded} by {selectedDocument.uploadedBy}
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="py-4">
+                <div className="aspect-[4/3] bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+                  {/* This would be a document preview in a real app */}
+                  <div className="text-center p-8">
+                    {getFileIcon(selectedDocument.type)}
+                    <p className="text-gray-500 mt-2">Document Preview</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-500">Project:</span>
+                    <span className="ml-2 font-medium">{selectedDocument.project}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">File Type:</span>
+                    <span className="ml-2 font-medium">{selectedDocument.type}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Size:</span>
+                    <span className="ml-2 font-medium">{selectedDocument.size}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Status:</span>
+                    <span className="ml-2">
+                      <StatusBadge status={selectedDocument.status === 'approved' ? 'completed' : 'pending'} />
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <DialogFooter className="flex-col sm:flex-row gap-2">
+                <Button variant="outline" onClick={() => setViewDialogOpen(false)}>
+                  Close
+                </Button>
+                <Button variant="outline">
+                  <Download className="w-4 h-4 mr-2" />
+                  Download
+                </Button>
+                <Button>
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Share
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
     </div>
   );
 };
@@ -595,65 +692,95 @@ const Documents = () => {
 // Document list item component
 const DocumentItem = ({ document, icon, onView, onDelete, onToggleStar }) => {
   return (
-    <div className="flex items-center p-3 border rounded-lg hover:bg-gray-50 transition-all">
-      <div className="p-2 bg-gray-100 rounded-lg mr-3">
-        {icon}
-      </div>
-      
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center">
-          <h4 className="font-medium truncate mr-2">{document.name}</h4>
-          {document.starred && <Star className="w-4 h-4 text-yellow-400 flex-shrink-0" />}
+    <div className="group bg-white dark:bg-slate-800 rounded-xl shadow-md border border-gray-200 dark:border-slate-700 overflow-hidden hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+      <div className="flex items-center p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-900 border-b border-gray-200 dark:border-slate-700">
+        <div className="p-2 mr-3 bg-white dark:bg-slate-700 rounded-lg shadow-sm">
+          {icon}
         </div>
-        <div className="flex text-sm text-gray-600 items-center space-x-2 mt-1">
-          <span>{document.project}</span>
-          <span>•</span>
-          <span>{document.uploaded}</span>
-          <span>•</span>
-          <span>{document.size}</span>
-          {document.status === 'approved' && (
-            <>
-              <span>•</span>
-              <div className="flex items-center text-green-600">
-                <CheckCircle2 className="w-3 h-3 mr-1" />
-                <span>Approved</span>
-              </div>
-            </>
-          )}
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-gray-900 dark:text-white truncate pr-6">
+            {document.name}
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {document.project}
+          </p>
         </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleStar();
+          }}
+          className="absolute top-4 right-4 text-gray-400 hover:text-yellow-400 dark:text-gray-500 dark:hover:text-yellow-300"
+        >
+          <Star className={`w-5 h-5 ${document.starred ? 'fill-yellow-400 text-yellow-400 dark:fill-yellow-300 dark:text-yellow-300' : ''}`} />
+        </button>
       </div>
-      
-      <div className="flex items-center space-x-2 ml-2">
-        <Button variant="ghost" size="sm" onClick={onView}>
-          View
-        </Button>
+      <div className="p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Badge className={`${
+              document.status === 'approved' 
+                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
+                : document.status === 'pending'
+                ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+            }`}>
+              <CheckCircle2 className="w-3 h-3 mr-1" />
+              {document.status.charAt(0).toUpperCase() + document.status.slice(1)}
+            </Badge>
+            <Badge variant="outline" className="bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-gray-300">
+              {document.type}
+            </Badge>
+          </div>
+          <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+            {document.size}
+          </span>
+        </div>
         
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreHorizontal className="w-4 h-4" />
+        <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-slate-700">
+          <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+            <CalendarIcon className="w-4 h-4 mr-1" />
+            {document.uploaded}
+          </div>
+          <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onView();
+              }}
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
+            >
+              <Eye className="w-4 h-4" />
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>
-              <Download className="w-4 h-4 mr-2" />
-              Download
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Share2 className="w-4 h-4 mr-2" />
-              Share
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onToggleStar}>
-              <Star className="w-4 h-4 mr-2" />
-              {document.starred ? 'Unstar' : 'Star'}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600" onClick={onDelete}>
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-gray-600 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700/20"
+            >
+              <Download className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-gray-600 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700/20"
+            >
+              <Share2 className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );

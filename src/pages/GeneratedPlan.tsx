@@ -70,6 +70,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from '@/components/ui/use-toast';
+import MainNavigation from '@/components/layout/MainNavigation';
 
 interface InsightItemProps {
   title: string;
@@ -200,6 +201,8 @@ const GeneratedPlan = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
+      <MainNavigation />
+      
       {/* Header - Enhanced */}
       <div className={`bg-gradient-to-b ${
         isDarkMode 
@@ -221,7 +224,7 @@ const GeneratedPlan = () => {
             ]}
           />
         </motion.div>
-            </div>
+      </div>
 
       {/* Main Content - Enhanced */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 pb-20 relative">

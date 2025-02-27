@@ -43,6 +43,7 @@ import {
   X
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import MainNavigation from '@/components/layout/MainNavigation';
 
 interface FormData {
   name: string;
@@ -167,51 +168,7 @@ const CreateProject = () => {
 
   return (
     <div className="min-h-screen bg-[#F3F4F6] dark:bg-slate-900">
-      {/* Fixed Navigation Bar */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex h-16 items-center justify-between">
-            {/* Logo */}
-            <div className="flex items-center gap-2">
-              <Building className="h-8 w-8 text-[#1E3A8A]" />
-              <span className="text-xl font-bold text-[#1E3A8A]">BuildEase</span>
-            </div>
-
-            {/* Progress Indicator */}
-            <div className="hidden md:flex items-center gap-8">
-              <div className="flex items-center gap-2">
-                <div className="w-48 h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-[#1E3A8A] transition-all duration-300"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-                <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  Step {currentStep} of {totalSteps}
-                </span>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center gap-3">
-              <Button 
-                variant="outline" 
-                className="gap-2 text-[#D97706] border-[#D97706] hover:bg-[#D97706]/10"
-                onClick={() => navigate('/projects')}
-              >
-                Cancel
-              </Button>
-              <Button 
-                className="gap-2 bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white"
-                onClick={handleNext}
-              >
-                {currentStep === totalSteps ? 'Create Project' : 'Next'}
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <MainNavigation />
 
       {/* Main Content */}
       <main className="pt-24 pb-16">

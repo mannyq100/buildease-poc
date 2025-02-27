@@ -50,6 +50,7 @@ import {
 import { HorizontalNav, type NavItem } from '@/components/navigation/HorizontalNav';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import MainNavigation from '@/components/layout/MainNavigation';
 
 // Sample project data
 const projectsData = [
@@ -276,111 +277,7 @@ const Projects = () => {
 
   return (
     <div className="min-h-screen bg-[#F3F4F6] dark:bg-slate-900">
-      {/* Fixed Navigation Bar */}
-      <header className="sticky top-0 z-50 w-full bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 shadow-sm">
-        <div className="flex h-16 items-center justify-between px-4 md:px-6">
-          {/* Logo and mobile menu button */}
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-              <Menu className="h-6 w-6" />
-            </Button>
-            <div className="flex items-center gap-2">
-              <HardHat className="h-6 w-6 text-[#1E3A8A]" />
-              <span className="font-bold text-lg text-[#1E3A8A] hidden sm:inline-block">BuildEase</span>
-            </div>
-          </div>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-4">
-            {navItems.map((item) => (
-              <Button
-                key={item.path}
-                variant="ghost"
-                size="sm"
-                className={cn(
-                  "flex items-center gap-2",
-                  item.path === '/projects' && "bg-[#1E3A8A]/10 text-[#1E3A8A] dark:bg-[#1E3A8A]/20 dark:text-blue-400"
-                )}
-                onClick={() => navigate(item.path)}
-              >
-                {item.icon}
-                <span>{item.label}</span>
-                {item.badge && (
-                  <Badge className="ml-1 bg-[#1E3A8A] text-white">{item.badge.text}</Badge>
-                )}
-              </Button>
-            ))}
-          </nav>
-
-          {/* User Menu & Actions */}
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="text-gray-500 dark:text-gray-400">
-              <Bell className="h-5 w-5" />
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src="/avatar.png" alt="User" />
-                    <AvatarFallback className="bg-[#1E3A8A] text-white">JD</AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-
-        {/* Mobile Navigation Menu */}
-        <AnimatePresence>
-          {isMobileMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden border-t border-gray-200 dark:border-slate-800"
-            >
-              <div className="flex flex-col space-y-1 p-2">
-                {navItems.map((item) => (
-                  <Button
-                    key={item.path}
-                    variant="ghost"
-                    size="sm"
-                    className={cn(
-                      "justify-start",
-                      item.path === '/projects' && "bg-[#1E3A8A]/10 text-[#1E3A8A] dark:bg-[#1E3A8A]/20 dark:text-blue-400"
-                    )}
-                    onClick={() => {
-                      navigate(item.path);
-                      setIsMobileMenuOpen(false);
-                    }}
-                  >
-                    {item.icon}
-                    <span className="ml-2">{item.label}</span>
-                    {item.badge && (
-                      <Badge className="ml-auto bg-[#1E3A8A] text-white">{item.badge.text}</Badge>
-                    )}
-                  </Button>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </header>
+      <MainNavigation />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
