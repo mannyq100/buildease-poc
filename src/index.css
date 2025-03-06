@@ -37,12 +37,40 @@
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
     
+    /* Popover and dropdown colors with solid backgrounds */
+    --popover: 0 0% 100%;  /* Solid white background */
+    --popover-foreground: 222.2 84% 4.9%;
+    
+    /* Input and border colors */
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 210 70% 43%;
+    
     /* Improved shadows for depth */
     --card-shadow: 0 2px 8px -2px rgba(0,0,0,0.1), 0 4px 16px -4px rgba(0,0,0,0.1);
     --card-shadow-hover: 0 4px 12px -2px rgba(0,0,0,0.12), 0 8px 24px -4px rgba(0,0,0,0.12);
     
     /* Improved border radius */
     --radius: 0.75rem;
+    
+    /* Sidebar colors */
+    --sidebar-background: 210 30% 15%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 210 70% 43%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 25 90% 58%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 210 30% 25%;
+    --sidebar-ring: 210 70% 43%;
+    
+    /* Glow effects */
+    --glow-primary: 0 0 15px rgba(14, 165, 233, 0.5);
+    --glow-secondary: 0 0 15px rgba(226, 232, 240, 0.5);
+    --glow-accent: 0 0 15px rgba(249, 115, 22, 0.5);
+    --glow-success: 0 0 15px rgba(22, 163, 74, 0.5);
+    --glow-warning: 0 0 15px rgba(245, 158, 11, 0.5);
+    --glow-error: 0 0 15px rgba(239, 68, 68, 0.5);
+    --glow-info: 0 0 15px rgba(6, 182, 212, 0.5);
   }
 
   .dark {
@@ -55,7 +83,39 @@
     --primary-lighter: 210 70% 60%;
     --primary-darker: 210 70% 40%;
     
-    /* ... other dark mode colors ... */
+    /* Popover and dropdown colors with solid backgrounds for dark mode */
+    --popover: 222.2 84% 4.9%;  /* Solid dark background */
+    --popover-foreground: 210 40% 98%;
+    
+    /* Dark mode neutrals */
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    
+    /* Dark mode input and border colors */
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 210 70% 50%;
+    
+    /* Dark mode sidebar */
+    --sidebar-background: 210 30% 10%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 210 70% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 25 90% 58%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 210 30% 20%;
+    --sidebar-ring: 210 70% 50%;
+    
+    /* Dark mode glow effects */
+    --glow-primary: 0 0 15px rgba(56, 189, 248, 0.4);
+    --glow-secondary: 0 0 15px rgba(71, 85, 105, 0.4);
+    --glow-accent: 0 0 15px rgba(251, 146, 60, 0.4);
+    --glow-success: 0 0 15px rgba(34, 197, 94, 0.4);
+    --glow-warning: 0 0 15px rgba(251, 191, 36, 0.4);
+    --glow-error: 0 0 15px rgba(248, 113, 113, 0.4);
+    --glow-info: 0 0 15px rgba(14, 211, 247, 0.4);
   }
 }
 
@@ -342,3 +402,6 @@
     box-shadow: 0 0 20px rgba(var(--primary), 0.8);
   }
 }
+
+/* Import custom dropdown styles to fix transparency issues */
+@import './components/ui/dropdown-menu-custom.css';

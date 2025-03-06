@@ -82,4 +82,7 @@ export interface TaskMetrics {
 }
 
 // Define view mode type
-export type ViewMode = 'list' | 'calendar' | 'metrics'; 
+export type ViewMode = 'tasks' | 'calendar' | 'metrics';
+
+// Define task view layout type
+export type TaskViewLayout = 'grid' | 'list'; 

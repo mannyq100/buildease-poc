@@ -313,430 +313,29 @@ const Projects = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
           >
-            {/* Summary Stats - Moved to top */}
-            <m.div 
-              className="mt-8"
-              initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <m.div 
-                  whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                  className="col-span-1"
-                >
-                  <Card className="overflow-hidden border-none shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-4">
-                        <div className="rounded-full p-3 bg-blue-100 dark:bg-blue-900/30 shadow-inner">
-                          <Briefcase className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Total Projects</p>
-                          <div className="flex items-end gap-1">
-                            <p className="text-3xl font-bold text-blue-900 dark:text-white">{projectsData.length}</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mt-4 pt-4 border-t border-blue-100 dark:border-blue-900/30">
-                        <div className="flex justify-between text-xs font-medium">
-                          <span className="text-blue-600 dark:text-blue-400">View all projects</span>
-                          <ChevronRight className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </m.div>
+            <ProjectSummaryStats 
+              projectsCount={projectsData.length}
+              completedCount={projectsData.filter(p => p.status === 'completed').length}
+              inProgressCount={projectsData.filter(p => p.status === 'active' || p.status === 'planning').length}
+              totalBudget={totalBudget}
+              totalSpent={totalSpent}
+              spentPercentage={spentPercentage}
+              isDarkMode={isDarkMode}
+            />
 
-                <m.div 
-                  whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                  className="col-span-1"
-                >
-                  <Card className="overflow-hidden border-none shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-4">
-                        <div className="rounded-full p-3 bg-green-100 dark:bg-green-900/30 shadow-inner">
-                          <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-green-700 dark:text-green-300">Completed Projects</p>
-                          <div className="flex items-end gap-1">
-                            <p className="text-3xl font-bold text-green-900 dark:text-white">
-                              {projectsData.filter(p => p.status === 'completed').length}
-                            </p>
-                            <p className="text-sm text-green-600 dark:text-green-400 pb-1">
-                              /{projectsData.length}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mt-4 pt-4 border-t border-green-100 dark:border-green-900/30">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-green-600 dark:text-green-400">Completion rate</span>
-                          <span className="text-xs font-bold text-green-600 dark:text-green-400">
-                            {Math.round((projectsData.filter(p => p.status === 'completed').length / projectsData.length) * 100)}%
-                          </span>
-                        </div>
-                        <Progress 
-                          value={(projectsData.filter(p => p.status === 'completed').length / projectsData.length) * 100} 
-                          className="h-1.5 mt-2 bg-green-100 dark:bg-green-900/30"
-                        >
-                          <div className="h-full bg-green-500 dark:bg-green-400" />
-                        </Progress>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </m.div>
+            <ProjectFilters 
+              currentTab={currentTab} 
+              setCurrentTab={setCurrentTab}
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+            />
 
-                <m.div 
-                  whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                  className="col-span-1"
-                >
-                  <Card className="overflow-hidden border-none shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20">
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-4">
-                        <div className="rounded-full p-3 bg-amber-100 dark:bg-amber-900/30 shadow-inner">
-                          <Activity className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-amber-700 dark:text-amber-300">In Progress</p>
-                          <div className="flex items-end gap-1">
-                            <p className="text-3xl font-bold text-amber-900 dark:text-white">
-                              {projectsData.filter(p => p.status === 'active' || p.status === 'planning').length}
-                            </p>
-                            <p className="text-sm text-amber-600 dark:text-amber-400 pb-1">
-                              projects
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mt-4 pt-4 border-t border-amber-100 dark:border-amber-900/30">
-                        <div className="flex items-center gap-2 text-xs font-medium text-amber-600 dark:text-amber-400">
-                          <Clock className="h-3.5 w-3.5" />
-                          <span>
-                            {projectsData.filter(p => p.status === 'active').length} active,&nbsp;
-                            {projectsData.filter(p => p.status === 'planning').length} planning
-                          </span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </m.div>
-
-                <m.div 
-                  whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                  className="col-span-1"
-                >
-                  <Card className="overflow-hidden border-none shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20">
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-4">
-                        <div className="rounded-full p-3 bg-purple-100 dark:bg-purple-900/30 shadow-inner">
-                          <DollarSign className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-purple-700 dark:text-purple-300">Budget Utilization</p>
-                          <div className="flex items-end gap-1">
-                            <p className="text-3xl font-bold text-purple-900 dark:text-white">
-                              {Math.round(spentPercentage)}%
-                            </p>
-                            <p className="text-sm text-purple-600 dark:text-purple-400 pb-1">
-                              used
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mt-4 pt-4 border-t border-purple-100 dark:border-purple-900/30">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-purple-600 dark:text-purple-400">
-                            {formatCurrency(totalSpent)} of {formatCurrency(totalBudget)}
-                          </span>
-          </div>
-                        <Progress 
-                          value={spentPercentage} 
-                          className="h-1.5 mt-2 bg-purple-100 dark:bg-purple-900/30"
-                        >
-                          <div className="h-full bg-purple-500 dark:bg-purple-400" />
-                        </Progress>
-        </div>
-                    </CardContent>
-                  </Card>
-                </m.div>
-        </div>
-            </m.div>
-
-            {/* Filters and Controls */}
-            <m.div 
-              className="mt-8"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <Card className="bg-white/80 dark:bg-slate-800/80 shadow-xl backdrop-blur-sm border-0 overflow-hidden">
-                <CardContent className="p-4">
-                  <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-                    <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full lg:w-auto">
-                      <TabsList className="grid grid-cols-5 w-full lg:w-auto bg-gray-100/70 dark:bg-slate-700/50 p-1">
-                        <TabsTrigger value="all" className="text-sm">All Projects</TabsTrigger>
-                        <TabsTrigger value="active" className="text-sm">Active</TabsTrigger>
-                        <TabsTrigger value="planning" className="text-sm">Planning</TabsTrigger>
-                        <TabsTrigger value="completed" className="text-sm">Completed</TabsTrigger>
-                        <TabsTrigger value="upcoming" className="text-sm">Upcoming</TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                    
-                    <div className="flex w-full lg:w-auto items-center gap-2">
-                      <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <Input 
-            placeholder="Search projects..." 
-                          className="pl-9 w-full bg-white/80 dark:bg-slate-700/50 border-gray-200 dark:border-slate-600 rounded-full"
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="icon" className="rounded-full bg-white/80 dark:bg-slate-700/50 border-gray-200 dark:border-slate-600">
-                            <Filter className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>Filter by Client</DropdownMenuItem>
-                          <DropdownMenuItem>Filter by Location</DropdownMenuItem>
-                          <DropdownMenuItem>Filter by Type</DropdownMenuItem>
-              <DropdownMenuSeparator />
-                          <DropdownMenuItem>Clear Filters</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-                </div>
-                </div>
-                </CardContent>
-              </Card>
-            </m.div>
-
-            {/* Projects Grid */}
-            <m.div 
-              className="mt-8 mb-8"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-      >
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex gap-2">
-        <Button
-                    variant={view === 'grid' ? 'default' : 'outline'}
-          size="sm"
-                    onClick={() => setView('grid')}
-                    className="flex items-center"
-        >
-                    <LayoutGrid className="h-4 w-4 mr-1" />
-                    Grid
-        </Button>
-        <Button
-                    variant={view === 'list' ? 'default' : 'outline'}
-          size="sm"
-                    onClick={() => setView('list')}
-                    className="flex items-center"
-        >
-                    <List className="h-4 w-4 mr-1" />
-                    List
-        </Button>
-                </div>
-              </div>
-
-              {filteredProjects.length === 0 ? (
-                <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 text-center">
-                  <div className="flex flex-col items-center justify-center py-12">
-                    <Briefcase className="h-12 w-12 text-gray-400 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No projects found</h3>
-                    <p className="text-gray-500 dark:text-gray-400 max-w-md mb-6">
-                      We couldn't find any projects matching your search criteria. Try adjusting your filters or create a new project.
-                    </p>
-                    <Button onClick={() => navigate('/create-project')}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create New Project
-        </Button>
-                  </div>
-                </div>
-              ) : (
-                view === 'grid' ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredProjects.map((project) => (
-                      <Card key={project.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                        <div 
-                          className="h-40 bg-cover bg-center" 
-                          style={{ backgroundImage: `url(${project.imageUrl})` }}
-                        >
-                          <div className="h-full w-full bg-gradient-to-b from-transparent to-black/60 p-4 flex flex-col justify-end">
-                            <div className="flex justify-between items-center">
-                              <Badge variant="outline" className="bg-white/20 backdrop-blur-sm text-white border-white/10">
-                                {project.type}
-                              </Badge>
-                              {getStatusBadge(project.status)}
-                            </div>
-                          </div>
-                        </div>
-                        <CardHeader className="pb-2">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <CardTitle>{project.name}</CardTitle>
-                              <CardDescription>{project.client}</CardDescription>
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="pb-2">
-                          <div className="grid grid-cols-2 gap-y-2 text-sm mb-2">
-                            <div>
-                              <span className="text-gray-500 dark:text-gray-400">Budget:</span>
-                              <div className="font-medium">{formatCurrency(project.budget)}</div>
-                            </div>
-                            <div>
-                              <span className="text-gray-500 dark:text-gray-400">Timeline:</span>
-                              <div className="font-medium">{formatDate(project.startDate)} - {formatDate(project.endDate)}</div>
-                            </div>
-                          </div>
-                          <div className="mt-2">
-                            <div className="flex justify-between text-sm mb-1">
-                              <span className="text-gray-500 dark:text-gray-400">Progress</span>
-                              <span>{project.progress}%</span>
-                            </div>
-                            <Progress value={project.progress} className="h-2" />
-                          </div>
-                        </CardContent>
-                        <CardFooter className="pt-2 flex justify-between border-t">
-                          <Button variant="ghost" size="sm" onClick={() => navigate(`/project/${project.id}`)}>
-                            View Details
-        </Button>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="h-4 w-4" />
-        </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem>Edit</DropdownMenuItem>
-                              <DropdownMenuItem>Duplicate</DropdownMenuItem>
-                              <DropdownMenuItem>Archive</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </CardFooter>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
-                <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead className="bg-gray-50 dark:bg-slate-700">
-                          <tr>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                              Project
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                              Status
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                              Budget
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                              Timeline
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                              Progress
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                              Actions
-                            </th>
-                      </tr>
-                    </thead>
-                        <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
-                          {filteredProjects.map((project) => (
-                            <tr 
-                            key={project.id} 
-                              className="hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer"
-                              onClick={() => navigate(`/project/${project.id}`)}
-                            >
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="flex items-center">
-                                  <div className="h-10 w-10 flex-shrink-0 mr-3">
-                                    <img 
-                                      className="h-10 w-10 rounded-md object-cover" 
-                                      src={project.imageUrl} 
-                                      alt={project.name} 
-                                    />
-                                  </div>
-                                  <div>
-                                    <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                      {project.name}
-                                    </div>
-                                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                                      {project.client}
-                                    </div>
-                                  </div>
-                              </div>
-                            </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                {getStatusBadge(project.status)}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm text-gray-900 dark:text-white">{formatCurrency(project.budget)}</div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400">
-                                  {formatCurrency(project.spent)} spent
-                              </div>
-                            </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                {formatDate(project.startDate)} - {formatDate(project.endDate)}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="flex items-center">
-                                  <div className="mr-2 text-sm font-medium text-gray-900 dark:text-white">
-                                    {project.progress}%
-                                  </div>
-                                  <div className="w-24">
-                                    <Progress value={project.progress} className="h-2" />
-                                  </div>
-                              </div>
-                            </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <div className="flex items-center">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      navigate(`/project/${project.id}`);
-                                    }}
-                                  >
-                                    Details
-                                </Button>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                      <Button 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className="h-8 w-8"
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
-                                        <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem>Edit</DropdownMenuItem>
-                                    <DropdownMenuItem>Duplicate</DropdownMenuItem>
-                                      <DropdownMenuItem>Archive</DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            </td>
-                            </tr>
-                          ))}
-                    </tbody>
-                  </table>
-                </div>
-                  </div>
-                )
-              )}
-            </m.div>
+            <ProjectsList 
+              filteredProjects={filteredProjects}
+              view={view}
+              setView={setView}
+              navigate={navigate}
+            />
           </m.div>
         </LazyMotion>
       </div>
@@ -744,4 +343,571 @@ const Projects = () => {
   );
 };
 
-export default Projects; 
+interface ProjectSummaryStatsProps {
+  projectsCount: number
+  completedCount: number
+  inProgressCount: number
+  totalBudget: number
+  totalSpent: number
+  spentPercentage: number
+  isDarkMode: boolean
+}
+
+function ProjectSummaryStats({
+  projectsCount,
+  completedCount,
+  inProgressCount,
+  totalBudget,
+  totalSpent,
+  spentPercentage,
+  isDarkMode
+}: ProjectSummaryStatsProps) {
+  return (
+    <m.div 
+      className="mt-8"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.1 }}
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <SummaryCard 
+          title="Total Projects"
+          value={projectsCount}
+          icon={<Briefcase className="h-6 w-6 text-blue-600 dark:text-blue-400" />}
+          color="blue"
+          isDarkMode={isDarkMode}
+          footer={
+            <div className="flex justify-between text-xs font-medium">
+              <span className="text-blue-600 dark:text-blue-400">View all projects</span>
+              <ChevronRight className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            </div>
+          }
+        />
+
+        <SummaryCard 
+          title="Completed Projects"
+          value={completedCount}
+          valueLabel={`/${projectsCount}`}
+          icon={<CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />}
+          color="green"
+          isDarkMode={isDarkMode}
+          footer={
+            <>
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-medium text-green-600 dark:text-green-400">Completion rate</span>
+                <span className="text-xs font-bold text-green-600 dark:text-green-400">
+                  {Math.round((completedCount / projectsCount) * 100)}%
+                </span>
+              </div>
+              <Progress 
+                value={(completedCount / projectsCount) * 100} 
+                className="h-1.5 mt-2 bg-green-100 dark:bg-green-900/30"
+              >
+                <div className="h-full bg-green-500 dark:bg-green-400" />
+              </Progress>
+            </>
+          }
+        />
+
+        <SummaryCard 
+          title="In Progress"
+          value={inProgressCount}
+          valueLabel="projects"
+          icon={<Activity className="h-6 w-6 text-amber-600 dark:text-amber-400" />}
+          color="amber"
+          isDarkMode={isDarkMode}
+          footer={
+            <div className="flex items-center gap-2 text-xs font-medium text-amber-600 dark:text-amber-400">
+              <Clock className="h-3.5 w-3.5" />
+              <span>
+                {projectsData.filter(p => p.status === 'active').length} active,&nbsp;
+                {projectsData.filter(p => p.status === 'planning').length} planning
+              </span>
+            </div>
+          }
+        />
+
+        <SummaryCard 
+          title="Budget Utilization"
+          value={Math.round(spentPercentage)}
+          valueLabel="%"
+          icon={<DollarSign className="h-6 w-6 text-purple-600 dark:text-purple-400" />}
+          color="purple"
+          isDarkMode={isDarkMode}
+          footer={
+            <>
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-medium text-purple-600 dark:text-purple-400">
+                  {formatCurrency(totalSpent)} of {formatCurrency(totalBudget)}
+                </span>
+              </div>
+              <Progress 
+                value={spentPercentage} 
+                className="h-1.5 mt-2 bg-purple-100 dark:bg-purple-900/30"
+              >
+                <div className="h-full bg-purple-500 dark:bg-purple-400" />
+              </Progress>
+            </>
+          }
+        />
+      </div>
+    </m.div>
+  )
+}
+
+interface SummaryCardProps {
+  title: string
+  value: number
+  valueLabel?: string
+  icon: React.ReactNode
+  color: 'blue' | 'green' | 'amber' | 'purple' | 'red'
+  isDarkMode: boolean
+  footer: React.ReactNode
+}
+
+function SummaryCard({
+  title,
+  value,
+  valueLabel,
+  icon,
+  color,
+  isDarkMode,
+  footer
+}: SummaryCardProps) {
+  return (
+    <m.div 
+      whileHover={{ y: -5, transition: { duration: 0.2 } }}
+      className="col-span-1"
+    >
+      <Card className={cn(
+        "overflow-hidden border-none shadow-lg hover:shadow-xl transition-all duration-300",
+        `bg-gradient-to-br from-${color}-50 to-${color === 'blue' ? 'indigo' : color}-50`,
+        `dark:from-${color}-900/20 dark:to-${color === 'blue' ? 'indigo' : color}-900/20`
+      )}>
+        <CardContent className="p-6">
+          <div className="flex items-center gap-4">
+            <div className={cn(
+              "rounded-full p-3 shadow-inner",
+              `bg-${color}-100 dark:bg-${color}-900/30`
+            )}>
+              {icon}
+            </div>
+            <div>
+              <p className={cn(
+                "text-sm font-medium",
+                `text-${color}-700 dark:text-${color}-300`
+              )}>
+                {title}
+              </p>
+              <div className="flex items-end gap-1">
+                <p className={cn(
+                  "text-3xl font-bold",
+                  `text-${color}-900 dark:text-white`
+                )}>
+                  {value}
+                </p>
+                {valueLabel && (
+                  <p className={cn(
+                    "text-sm pb-1", 
+                    `text-${color}-600 dark:text-${color}-400`
+                  )}>
+                    {valueLabel}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className={cn(
+            "mt-4 pt-4 border-t",
+            `border-${color}-100 dark:border-${color}-900/30`
+          )}>
+            {footer}
+          </div>
+        </CardContent>
+      </Card>
+    </m.div>
+  )
+}
+
+interface ProjectFiltersProps {
+  currentTab: 'all' | ProjectStatus
+  setCurrentTab: (tab: 'all' | ProjectStatus) => void
+  searchTerm: string
+  setSearchTerm: (term: string) => void
+}
+
+function ProjectFilters({
+  currentTab,
+  setCurrentTab,
+  searchTerm,
+  setSearchTerm
+}: ProjectFiltersProps) {
+  return (
+    <m.div 
+      className="mt-8"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.2 }}
+    >
+      <Card className="bg-white/80 dark:bg-slate-800/80 shadow-xl backdrop-blur-sm border-0 overflow-hidden">
+        <CardContent className="p-4">
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+            <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full lg:w-auto">
+              <TabsList className="grid grid-cols-5 w-full lg:w-auto bg-gray-100/70 dark:bg-slate-700/50 p-1">
+                <TabsTrigger value="all" className="text-sm">All Projects</TabsTrigger>
+                <TabsTrigger value="active" className="text-sm">Active</TabsTrigger>
+                <TabsTrigger value="planning" className="text-sm">Planning</TabsTrigger>
+                <TabsTrigger value="completed" className="text-sm">Completed</TabsTrigger>
+                <TabsTrigger value="upcoming" className="text-sm">Upcoming</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            
+            <div className="flex w-full lg:w-auto items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input 
+                  placeholder="Search projects..." 
+                  className="pl-9 w-full bg-white/80 dark:bg-slate-700/50 border-gray-200 dark:border-slate-600 rounded-full"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="rounded-full bg-white/80 dark:bg-slate-700/50 border-gray-200 dark:border-slate-600">
+                    <Filter className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem>Filter by Client</DropdownMenuItem>
+                  <DropdownMenuItem>Filter by Location</DropdownMenuItem>
+                  <DropdownMenuItem>Filter by Type</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>Clear Filters</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </m.div>
+  )
+}
+
+interface ProjectsListProps {
+  filteredProjects: typeof projectsData
+  view: ViewMode
+  setView: (view: ViewMode) => void
+  navigate: ReturnType<typeof useNavigate>
+}
+
+function ProjectsList({
+  filteredProjects,
+  view,
+  setView,
+  navigate
+}: ProjectsListProps) {
+  return (
+    <m.div 
+      className="mt-8 mb-8"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.3 }}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex gap-2">
+          <Button
+            variant={view === 'grid' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setView('grid')}
+            className="flex items-center"
+          >
+            <LayoutGrid className="h-4 w-4 mr-1" />
+            Grid
+          </Button>
+          <Button
+            variant={view === 'list' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setView('list')}
+            className="flex items-center"
+          >
+            <List className="h-4 w-4 mr-1" />
+            List
+          </Button>
+        </div>
+      </div>
+
+      {filteredProjects.length === 0 ? (
+        <EmptyProjectsState navigate={navigate} />
+      ) : (
+        view === 'grid' ? (
+          <ProjectsGridView projects={filteredProjects} navigate={navigate} />
+        ) : (
+          <ProjectsListView projects={filteredProjects} navigate={navigate} />
+        )
+      )}
+    </m.div>
+  )
+}
+
+function EmptyProjectsState({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 text-center">
+      <div className="flex flex-col items-center justify-center py-12">
+        <Briefcase className="h-12 w-12 text-gray-400 mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No projects found</h3>
+        <p className="text-gray-500 dark:text-gray-400 max-w-md mb-6">
+          We couldn't find any projects matching your search criteria. Try adjusting your filters or create a new project.
+        </p>
+        <Button onClick={() => navigate('/create-project')}>
+          <Plus className="h-4 w-4 mr-2" />
+          Create New Project
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function ProjectsGridView({ 
+  projects, 
+  navigate 
+}: { 
+  projects: typeof projectsData
+  navigate: ReturnType<typeof useNavigate>
+}) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {projects.map((project) => (
+        <ProjectCard 
+          key={project.id} 
+          project={project} 
+          navigate={navigate} 
+        />
+      ))}
+    </div>
+  )
+}
+
+function ProjectCard({ 
+  project, 
+  navigate 
+}: {
+  project: typeof projectsData[0]
+  navigate: ReturnType<typeof useNavigate>
+}) {
+  return (
+    <Card key={project.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+      <div 
+        className="h-40 bg-cover bg-center" 
+        style={{ backgroundImage: `url(${project.imageUrl})` }}
+      >
+        <div className="h-full w-full bg-gradient-to-b from-transparent to-black/60 p-4 flex flex-col justify-end">
+          <div className="flex justify-between items-center">
+            <Badge variant="outline" className="bg-white/20 backdrop-blur-sm text-white border-white/10">
+              {project.type}
+            </Badge>
+            {getStatusBadge(project.status)}
+          </div>
+        </div>
+      </div>
+      <CardHeader className="pb-2">
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle>{project.name}</CardTitle>
+            <CardDescription>{project.client}</CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="pb-2">
+        <div className="grid grid-cols-2 gap-y-2 text-sm mb-2">
+          <div>
+            <span className="text-gray-500 dark:text-gray-400">Budget:</span>
+            <div className="font-medium">{formatCurrency(project.budget)}</div>
+          </div>
+          <div>
+            <span className="text-gray-500 dark:text-gray-400">Timeline:</span>
+            <div className="font-medium">{formatDate(project.startDate)} - {formatDate(project.endDate)}</div>
+          </div>
+        </div>
+        <div className="mt-2">
+          <div className="flex justify-between text-sm mb-1">
+            <span className="text-gray-500 dark:text-gray-400">Progress</span>
+            <span>{project.progress}%</span>
+          </div>
+          <Progress value={project.progress} className="h-2" />
+        </div>
+      </CardContent>
+      <CardFooter className="pt-2 flex justify-between border-t">
+        <Button variant="ghost" size="sm" onClick={() => navigate(`/project/${project.id}`)}>
+          View Details
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem>Edit</DropdownMenuItem>
+            <DropdownMenuItem>Duplicate</DropdownMenuItem>
+            <DropdownMenuItem>Archive</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </CardFooter>
+    </Card>
+  )
+}
+
+function ProjectsListView({ 
+  projects, 
+  navigate 
+}: { 
+  projects: typeof projectsData
+  navigate: ReturnType<typeof useNavigate>
+}) {
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-slate-700">
+            <tr>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Project
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Status
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Budget
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Timeline
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Progress
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
+            {projects.map((project) => (
+              <tr 
+                key={project.id} 
+                className="hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer"
+                onClick={() => navigate(`/project/${project.id}`)}
+              >
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div className="h-10 w-10 flex-shrink-0 mr-3">
+                      <img 
+                        className="h-10 w-10 rounded-md object-cover" 
+                        src={project.imageUrl} 
+                        alt={project.name} 
+                      />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        {project.name}
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {project.client}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {getStatusBadge(project.status)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900 dark:text-white">{formatCurrency(project.budget)}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    {formatCurrency(project.spent)} spent
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                  {formatDate(project.startDate)} - {formatDate(project.endDate)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div className="mr-2 text-sm font-medium text-gray-900 dark:text-white">
+                      {project.progress}%
+                    </div>
+                    <div className="w-24">
+                      <Progress value={project.progress} className="h-2" />
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <div className="flex items-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        navigate(`/project/${project.id}`)
+                      }}
+                    >
+                      Details
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>Edit</DropdownMenuItem>
+                        <DropdownMenuItem>Duplicate</DropdownMenuItem>
+                        <DropdownMenuItem>Archive</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+// Helper Functions
+function getStatusBadge(status: ProjectStatus) {
+  switch(status) {
+    case 'active':
+      return <Badge className="bg-[#1E3A8A] text-white">Active</Badge>
+    case 'planning':
+      return <Badge className="bg-[#D97706] text-white">Planning</Badge>
+    case 'completed':
+      return <Badge className="bg-green-600 text-white">Completed</Badge>
+    case 'upcoming':
+      return <Badge className="bg-purple-600 text-white">Upcoming</Badge>
+    case 'on-hold':
+      return <Badge className="bg-red-600 text-white">On Hold</Badge>
+    default:
+      return <Badge className="bg-gray-500 text-white">{status}</Badge>
+  }
+}
+
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0
+  }).format(amount)
+}
+
+function formatDate(dateString: string) {
+  const options = { year: 'numeric', month: 'short', day: 'numeric' } as Intl.DateTimeFormatOptions
+  return new Date(dateString).toLocaleDateString('en-US', options)
+}
+
+export default Projects 

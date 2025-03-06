@@ -219,37 +219,33 @@ export const groupTasks = (
  */
 export const sortTasks = (
   tasks: Task[], 
-  sortBy: 'title' | 'project' | 'phase' | 'startDate' | 'dueDate' | 'status' | 'priority' | 'completion',
+  sortBy: keyof Task | 'dueDate' = 'dueDate',
   sortDirection: 'asc' | 'desc' = 'asc'
 ): Task[] => {
-  const sortedTasks = [...tasks];
-  
-  sortedTasks.sort((a, b) => {
-    let comparison = 0;
+  return [...tasks].sort((a, b) => {
+    let aValue = a[sortBy as keyof Task];
+    let bValue = b[sortBy as keyof Task];
     
-    switch (sortBy) {
-      case 'title':
-      case 'project':
-      case 'phase':
-      case 'status':
-      case 'priority':
-        comparison = a[sortBy].localeCompare(b[sortBy]);
-        break;
-      case 'startDate':
-      case 'dueDate':
-        comparison = new Date(a[sortBy]).getTime() - new Date(b[sortBy]).getTime();
-        break;
-      case 'completion':
-        comparison = a.completion - b.completion;
-        break;
-      default:
-        comparison = 0;
+    // Handle dates specially
+    if (sortBy === 'startDate' || sortBy === 'dueDate') {
+      aValue = new Date(a[sortBy]).getTime();
+      bValue = new Date(b[sortBy]).getTime();
     }
     
-    return sortDirection === 'asc' ? comparison : -comparison;
+    // Handle string comparison
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
+      return sortDirection === 'asc' 
+        ? aValue.localeCompare(bValue)
+        : bValue.localeCompare(aValue);
+    }
+    
+    // Handle number comparison
+    if (typeof aValue === 'number' && typeof bValue === 'number') {
+      return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+    }
+    
+    return 0;
   });
-  
-  return sortedTasks;
 };
 
 /**
@@ -275,4 +271,32 @@ export const getTaskDependencies = (taskId: number, tasks: Task[]): Task[] => {
  */
 export const getDependentTasks = (taskId: number, tasks: Task[]): Task[] => {
   return tasks.filter(task => task.dependencies?.includes(taskId));
-}; 
+};
+
+export function getTaskStatusColor(status: Task['status']): string {
+  switch (status) {
+    case 'Completed':
+      return 'green';
+    case 'In Progress':
+      return 'blue';
+    case 'Delayed':
+      return 'amber';
+    case 'Blocked':
+      return 'red';
+    case 'Not Started':
+    default:
+      return 'gray';
+  }
+}
+
+export function getTaskPriorityColor(priority: Task['priority']): string {
+  switch (priority) {
+    case 'High':
+      return 'red';
+    case 'Medium':
+      return 'amber';
+    case 'Low':
+    default:
+      return 'blue';
+  }
+} 

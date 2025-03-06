@@ -1,0 +1,38 @@
+/* Custom styles for solid dropdown backgrounds */
+.solid-dropdown [data-radix-popper-content-wrapper] {
+  backdrop-filter: none !important;
+}
+
+/* Override styles for dropdown content */
+div[data-radix-popper-content-wrapper] > div {
+  background-color: hsl(var(--popover)) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  backdrop-filter: none !important;
+  opacity: 1 !important;
+}
+
+/* Ensure all dropdown menu items have solid backgrounds */
+.dropdown-menu-content,
+[role="menu"] {
+  background-color: hsl(var(--popover)) !important;
+  opacity: 1 !important;
+}
+
+/* Ensure all menu items have proper contrast */
+[role="menuitem"] {
+  background-color: transparent !important;
+  color: hsl(var(--popover-foreground)) !important;
+}
+
+[role="menuitem"]:hover,
+[role="menuitem"]:focus {
+  background-color: hsl(var(--accent)) !important;
+  color: hsl(var(--accent-foreground)) !important;
+}
+
+/* Dark mode adjustments */
+.dark div[data-radix-popper-content-wrapper] > div {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid hsl(var(--border)) !important;
+} 

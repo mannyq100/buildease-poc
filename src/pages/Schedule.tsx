@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Task, NewTaskForm, ViewMode, TeamMember } from '@/types/schedule';
+import { Task, NewTaskForm, ViewMode, TeamMember, TaskViewLayout } from '@/types/schedule';
 import { initialTasks, teamMembers } from '@/data/scheduleData';
 import { filterTasks, searchTasks } from '@/utils/scheduleUtils';
 import { TaskList } from '@/components/schedule/TaskList';
@@ -17,6 +17,7 @@ import {
   Calendar, 
   BarChart2, 
   List,
+  LayoutGrid,
   RefreshCw
 } from 'lucide-react';
 
@@ -30,7 +31,8 @@ export default function Schedule() {
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [viewMode, setViewMode] = useState<ViewMode>('tasks');
+  const [taskViewLayout, setTaskViewLayout] = useState<TaskViewLayout>('grid');
   const [isLoading, setIsLoading] = useState(false);
   
   // Apply filters and search
@@ -98,11 +100,10 @@ export default function Schedule() {
   
   const handleTaskSubmit = (data: NewTaskForm) => {
     // Check if we're editing an existing task
-    if (editingTask) {
-      // Update existing task
+    if (data.id) {
       setTasks(prevTasks => 
         prevTasks.map(task => 
-          task.id === editingTask.id 
+          task.id === data.id 
             ? { 
                 ...task,
                 title: data.title,
@@ -113,18 +114,17 @@ export default function Schedule() {
                 dueDate: data.dueDate,
                 status: data.status,
                 priority: data.priority,
-                assignedTo: getTeamMembersFromIds(data.assignedTo),
-                // Keep existing values for fields not in the form
                 completion: data.completion ?? task.completion,
+                assignedTo: getTeamMembersFromIds(data.assignedTo),
                 dependencies: data.dependencies ?? task.dependencies
               } 
             : task
         )
       );
     } else {
-      // Create new task
+      // Create a new task
       const newTask: Task = {
-        id: Math.max(...tasks.map(t => t.id)) + 1,
+        id: Date.now(), // Generate a simple ID
         title: data.title,
         description: data.description,
         project: data.project,
@@ -133,15 +133,15 @@ export default function Schedule() {
         dueDate: data.dueDate,
         status: data.status,
         priority: data.priority,
+        completion: data.completion ?? 0,
         assignedTo: getTeamMembersFromIds(data.assignedTo),
-        completion: data.completion ?? 0, // Default to 0% completion for new tasks
-        dependencies: data.dependencies ?? [], // Default to no dependencies
-        comments: [],
-        attachments: []
+        dependencies: data.dependencies
       };
       
       setTasks([...tasks, newTask]);
     }
+    
+    setIsTaskFormOpen(false);
   };
   
   const handleFilterChange = (newFilters: TaskFiltersType) => {
@@ -155,11 +155,14 @@ export default function Schedule() {
   
   const handleRefresh = () => {
     setIsLoading(true);
-    // Simulate API call
     setTimeout(() => {
       setTasks(initialTasks);
       setIsLoading(false);
     }, 1000);
+  };
+  
+  const toggleTaskViewLayout = () => {
+    setTaskViewLayout(prev => prev === 'grid' ? 'list' : 'grid');
   };
   
   return (
@@ -204,26 +207,52 @@ export default function Schedule() {
       </div>
       
       <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)}>
-        <TabsList>
-          <TabsTrigger value="list" className="flex items-center">
-            <List className="h-4 w-4 mr-1" />
-            List
-          </TabsTrigger>
-          <TabsTrigger value="calendar" className="flex items-center">
-            <Calendar className="h-4 w-4 mr-1" />
-            Calendar
-          </TabsTrigger>
-          <TabsTrigger value="metrics" className="flex items-center">
-            <BarChart2 className="h-4 w-4 mr-1" />
-            Metrics
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex justify-between items-center">
+          <TabsList>
+            <TabsTrigger value="tasks" className="flex items-center">
+              <List className="h-4 w-4 mr-1" />
+              Tasks
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="flex items-center">
+              <Calendar className="h-4 w-4 mr-1" />
+              Calendar
+            </TabsTrigger>
+            <TabsTrigger value="metrics" className="flex items-center">
+              <BarChart2 className="h-4 w-4 mr-1" />
+              Metrics
+            </TabsTrigger>
+          </TabsList>
+          
+          {viewMode === 'tasks' && (
+            <div className="flex gap-2">
+              <Button
+                variant={taskViewLayout === 'grid' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTaskViewLayout('grid')}
+                className="flex items-center"
+              >
+                <LayoutGrid className="h-4 w-4 mr-1" />
+                Grid
+              </Button>
+              <Button
+                variant={taskViewLayout === 'list' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTaskViewLayout('list')}
+                className="flex items-center"
+              >
+                <List className="h-4 w-4 mr-1" />
+                List
+              </Button>
+            </div>
+          )}
+        </div>
         
-        <TabsContent value="list" className="mt-4">
+        <TabsContent value="tasks" className="mt-4">
           <TaskList 
             tasks={filteredTasks}
             onTaskClick={handleTaskClick}
             sortBy="dueDate"
+            viewLayout={taskViewLayout}
             emptyStateMessage={
               searchQuery || Object.values(filters).some(Boolean)
                 ? "No tasks match your search or filters"
