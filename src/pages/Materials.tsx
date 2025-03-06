@@ -1,14 +1,27 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+/**
+ * Materials.tsx - Materials inventory management page
+ * Track, manage, and order construction materials across projects
+ */
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+
+// Icons
+import {
+  AlertTriangle,
+  Download,
+  Edit,
+  Package,
+  Plus,
+  Search,
+  Settings,
+  Trash,
+  Truck,
+  XCircle
+} from 'lucide-react'
+
+// UI Components
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -16,20 +29,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Table,
   TableBody,
@@ -37,288 +46,41 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { 
-  Package, 
-  Plus, 
-  Search, 
-  Filter, 
-  MoreHorizontal, 
-  AlertTriangle,
-  ShoppingCart,
-  Truck,
-  BarChart3,
-  Layers,
-  Edit,
-  Trash,
-  ArrowUpDown,
-  CheckCircle,
-  Clock,
-  Calendar,
-  DollarSign,
-  Building,
-  FileText,
-  Download,
-  Settings,
-  ChevronDown,
-  ChevronUp,
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  Hammer,
-  Wrench,
-  Box,
-  Boxes,
-  Warehouse,
-  TrendingUp,
-  TrendingDown,
-  AlertCircle,
-  XCircle,
-  Save,
-  X
-} from 'lucide-react';
-import { 
-  BarChart as RechartsBarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip as RechartsTooltip, 
-  Legend, 
-  ResponsiveContainer,
-  Cell,
-  PieChart as RechartsPieChart,
-  Pie,
-  LineChart as RechartsLineChart,
-  Line,
-  AreaChart,
-  Area,
-} from 'recharts';
-import { Grid } from '@/components/layout/Grid';
-import { MainNavigation } from '@/components/navigation/MainNavigation';
-import { PageHeader } from '@/components/shared';
-import { usePageActions } from '@/hooks/usePageActions';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/table"
 
-// Mock data for materials
-const initialMaterials = [
-  {
-    id: 1,
-    name: 'Cement',
-    category: 'Concrete',
-    unit: 'Bag',
-    unitPrice: 12.50,
-    inStock: 150,
-    minStock: 50,
-    onOrder: 0,
-    supplier: 'BuildSupply Inc.',
-    lastOrdered: '2024-02-10',
-    project: 'Villa Construction',
-    status: 'In Stock'
-  },
-  {
-    id: 2,
-    name: 'Steel Reinforcement Bars',
-    category: 'Structural',
-    unit: 'Ton',
-    unitPrice: 1200.00,
-    inStock: 5,
-    minStock: 2,
-    onOrder: 0,
-    supplier: 'Steel Masters Ltd.',
-    lastOrdered: '2024-01-15',
-    project: 'Villa Construction',
-    status: 'In Stock'
-  },
-  {
-    id: 3,
-    name: 'Bricks',
-    category: 'Masonry',
-    unit: 'Piece',
-    unitPrice: 0.75,
-    inStock: 2500,
-    minStock: 1000,
-    onOrder: 0,
-    supplier: 'Clay Works Co.',
-    lastOrdered: '2024-01-20',
-    project: 'Villa Construction',
-    status: 'In Stock'
-  },
-  {
-    id: 4,
-    name: 'Sand',
-    category: 'Aggregates',
-    unit: 'Cubic Meter',
-    unitPrice: 45.00,
-    inStock: 20,
-    minStock: 10,
-    onOrder: 15,
-    supplier: 'Quarry Solutions',
-    lastOrdered: '2024-02-05',
-    project: 'Villa Construction',
-    status: 'Low Stock'
-  },
-  {
-    id: 5,
-    name: 'Gravel',
-    category: 'Aggregates',
-    unit: 'Cubic Meter',
-    unitPrice: 55.00,
-    inStock: 15,
-    minStock: 10,
-    onOrder: 0,
-    supplier: 'Quarry Solutions',
-    lastOrdered: '2024-02-05',
-    project: 'Villa Construction',
-    status: 'In Stock'
-  },
-  {
-    id: 6,
-    name: 'Timber',
-    category: 'Wood',
-    unit: 'Board Feet',
-    unitPrice: 3.25,
-    inStock: 500,
-    minStock: 200,
-    onOrder: 0,
-    supplier: 'Woodland Supplies',
-    lastOrdered: '2024-01-25',
-    project: 'Office Renovation',
-    status: 'In Stock'
-  },
-  {
-    id: 7,
-    name: 'Paint - Interior',
-    category: 'Finishes',
-    unit: 'Gallon',
-    unitPrice: 28.99,
-    inStock: 25,
-    minStock: 15,
-    onOrder: 0,
-    supplier: 'Color World Inc.',
-    lastOrdered: '2024-02-15',
-    project: 'Office Renovation',
-    status: 'In Stock'
-  },
-  {
-    id: 8,
-    name: 'Electrical Wiring',
-    category: 'Electrical',
-    unit: 'Roll',
-    unitPrice: 85.50,
-    inStock: 8,
-    minStock: 5,
-    onOrder: 0,
-    supplier: 'Power Systems Ltd.',
-    lastOrdered: '2024-01-30',
-    project: 'Villa Construction',
-    status: 'In Stock'
-  },
-  {
-    id: 9,
-    name: 'PVC Pipes',
-    category: 'Plumbing',
-    unit: 'Length',
-    unitPrice: 18.75,
-    inStock: 30,
-    minStock: 20,
-    onOrder: 0,
-    supplier: 'Plumbing Plus',
-    lastOrdered: '2024-02-01',
-    project: 'Villa Construction',
-    status: 'In Stock'
-  },
-  {
-    id: 10,
-    name: 'Ceramic Tiles',
-    category: 'Finishes',
-    unit: 'Square Meter',
-    unitPrice: 22.50,
-    inStock: 75,
-    minStock: 50,
-    onOrder: 0,
-    supplier: 'Tile Experts',
-    lastOrdered: '2024-02-10',
-    project: 'Office Renovation',
-    status: 'In Stock'
-  },
-  {
-    id: 11,
-    name: 'Glass Panels',
-    category: 'Glazing',
-    unit: 'Square Meter',
-    unitPrice: 95.00,
-    inStock: 5,
-    minStock: 10,
-    onOrder: 15,
-    supplier: 'Clear View Glass',
-    lastOrdered: '2024-02-18',
-    project: 'Office Renovation',
-    status: 'Out of Stock'
-  },
-  {
-    id: 12,
-    name: 'Insulation',
-    category: 'Insulation',
-    unit: 'Roll',
-    unitPrice: 45.25,
-    inStock: 12,
-    minStock: 8,
-    onOrder: 0,
-    supplier: 'Thermal Solutions',
-    lastOrdered: '2024-01-22',
-    project: 'Villa Construction',
-    status: 'In Stock'
-  }
-];
+// Shared Components
+import { Grid } from '@/components/layout/Grid'
+import { MainNavigation } from '@/components/navigation/MainNavigation'
+import { PageHeader } from '@/components/shared'
+import { usePageActions } from '@/hooks/usePageActions'
 
-// Category options for filtering and forms
-const categories = [
-  'All Categories',
-  'Concrete',
-  'Structural',
-  'Masonry',
-  'Aggregates',
-  'Wood',
-  'Finishes',
-  'Electrical',
-  'Plumbing',
-  'Glazing',
-  'Insulation'
-];
+// Custom Components
+import { StatCard } from '@/components/materials/StatCard'
+import { StatusBadge } from '@/components/materials/StatusBadge'
 
-// Project options for filtering and forms
-const projects = [
-  'All Projects',
-  'Villa Construction',
-  'Office Renovation'
-];
+// Types and Data
+import { CATEGORIES } from '@/data/constants/categories'
+import { PROJECTS } from '@/data/constants/projects'
+import { STATUSES } from '@/data/constants/statuses'
+import { INITIAL_MATERIALS } from '@/data/mock/materials'
+import { Material, NewMaterial } from '@/types/materials'
 
-// Status options for filtering
-const statuses = [
-  'All Statuses',
-  'In Stock',
-  'Low Stock',
-  'Out of Stock',
-  'On Order'
-];
-
-const Materials = () => {
-  const navigate = useNavigate();
-  const { getCommonActions } = usePageActions('materials');
-  const [materials, setMaterials] = useState(initialMaterials);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('All Categories');
-  const [projectFilter, setProjectFilter] = useState('All Projects');
-  const [statusFilter, setStatusFilter] = useState('All Statuses');
-  const [isAddMaterialOpen, setIsAddMaterialOpen] = useState(false);
-  const [newMaterial, setNewMaterial] = useState({
+/**
+ * Materials page component
+ * Provides functionality to track, manage, and order construction materials
+ */
+export function Materials() {
+  const navigate = useNavigate()
+  const { getCommonActions } = usePageActions('materials')
+  
+  // State management
+  const [materials, setMaterials] = useState<Material[]>(INITIAL_MATERIALS)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('All Categories')
+  const [projectFilter, setProjectFilter] = useState('All Projects')
+  const [statusFilter, setStatusFilter] = useState('All Statuses')
+  const [isAddMaterialOpen, setIsAddMaterialOpen] = useState(false)
+  const [newMaterial, setNewMaterial] = useState<NewMaterial>({
     name: '',
     category: '',
     unit: '',
@@ -327,53 +89,57 @@ const Materials = () => {
     minStock: 0,
     supplier: '',
     project: ''
-  });
+  })
 
   // Filter materials based on search query and filters
   const filteredMaterials = materials.filter(material => {
     const matchesSearch = 
       material.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       material.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      material.supplier.toLowerCase().includes(searchQuery.toLowerCase());
+      material.supplier.toLowerCase().includes(searchQuery.toLowerCase())
     
     const matchesCategory = 
       categoryFilter === 'All Categories' || 
-      material.category === categoryFilter;
+      material.category === categoryFilter
     
     const matchesProject = 
       projectFilter === 'All Projects' || 
-      material.project === projectFilter;
+      material.project === projectFilter
     
     const matchesStatus = 
       statusFilter === 'All Statuses' || 
-      material.status === statusFilter;
+      material.status === statusFilter
     
-    return matchesSearch && matchesCategory && matchesProject && matchesStatus;
-  });
+    return matchesSearch && matchesCategory && matchesProject && matchesStatus
+  })
 
   // Calculate inventory statistics
-  const totalMaterials = materials.length;
-  const lowStockCount = materials.filter(m => m.status === 'Low Stock').length;
-  const outOfStockCount = materials.filter(m => m.status === 'Out of Stock').length;
-  const onOrderCount = materials.filter(m => m.onOrder > 0).length;
+  const totalMaterials = materials.length
+  const lowStockCount = materials.filter(m => m.status === 'Low Stock').length
+  const outOfStockCount = materials.filter(m => m.status === 'Out of Stock').length
+  const onOrderCount = materials.filter(m => m.onOrder > 0).length
 
-  // Handle adding a new material
-  const handleAddMaterial = () => {
-    const id = Math.max(...materials.map(m => m.id)) + 1;
+  /**
+   * Adds a new material to the inventory
+   */
+  function handleAddMaterial() {
+    if (!newMaterial.name || !newMaterial.category) return
+    
+    const id = Math.max(...materials.map(m => m.id)) + 1
     const status = 
       newMaterial.inStock === 0 ? 'Out of Stock' :
       newMaterial.inStock <= newMaterial.minStock ? 'Low Stock' : 
-      'In Stock';
+      'In Stock'
     
-    const newMaterialItem = {
+    const newMaterialItem: Material = {
       ...newMaterial,
       id,
       onOrder: 0,
       lastOrdered: '',
-      status
-    };
+      status: status as Material['status']
+    }
     
-    setMaterials([...materials, newMaterialItem]);
+    setMaterials([...materials, newMaterialItem])
     setNewMaterial({
       name: '',
       category: '',
@@ -383,12 +149,14 @@ const Materials = () => {
       minStock: 0,
       supplier: '',
       project: ''
-    });
-    setIsAddMaterialOpen(false);
-  };
+    })
+    setIsAddMaterialOpen(false)
+  }
 
-  // Handle ordering more of a material
-  const handleOrderMaterial = (id, quantity) => {
+  /**
+   * Places an order for a material
+   */
+  function handleOrderMaterial(id: number, quantity: number) {
     setMaterials(materials.map(material => 
       material.id === id ? { 
         ...material, 
@@ -396,104 +164,96 @@ const Materials = () => {
         lastOrdered: new Date().toISOString().split('T')[0],
         status: 'On Order'
       } : material
-    ));
-  };
+    ))
+  }
 
-  // Handle deleting a material
-  const handleDeleteMaterial = (id) => {
-    setMaterials(materials.filter(material => material.id !== id));
-  };
+  /**
+   * Deletes a material from the inventory
+   */
+  function handleDeleteMaterial(id: number) {
+    setMaterials(materials.filter(material => material.id !== id))
+  }
+
+  /**
+   * Handles exporting materials data
+   */
+  function handleExportMaterials() {
+    // In a real application, this would create and download a file
+    // For now, just show an alert
+    alert('Materials data exported successfully')
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50/50 dark:bg-slate-900/50">
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
       <MainNavigation
         title="Materials"
         icon={<Package className="h-6 w-6" />}
       />
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="py-6">
-          <PageHeader
-            title="Materials Management"
-            subtitle="Track and manage construction materials and inventory"
-            icon={<Package className="h-6 w-6" />}
-            gradient={true}
-            animated={true}
-            actions={[
-              {
-                label: "Add Material",
-                icon: <Plus />,
-                variant: "construction",
-                onClick: () => setIsAddMaterialOpen(true)
-              },
-              {
-                label: "Export",
-                icon: <Download />,
-                variant: "construction",
-                onClick: () => {/* Export functionality */}
-              }
-            ]}
-          />
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <PageHeader
+          title="Materials Management"
+          subtitle="Track and manage construction materials and inventory"
+          icon={<Package className="h-6 w-6" />}
+          gradient={true}
+          animated={true}
+          actions={[
+            {
+              label: "Add Material",
+              icon: <Plus />,
+              variant: "construction",
+              onClick: () => setIsAddMaterialOpen(true)
+            },
+            {
+              label: "Export",
+              icon: <Download />,
+              variant: "construction",
+              onClick: handleExportMaterials
+            }
+          ]}
+        />
 
         {/* Materials Statistics */}
-        <div className="mt-6 mb-8">
+        <div className="mt-8 mb-8">
           <Grid cols={4} gap="lg" className="w-full">
-            <Card className="bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="p-4 flex items-center space-x-4">
-                <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full">
-                  <Package className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Materials</p>
-                  <p className="text-xl font-semibold text-gray-900 dark:text-white">{totalMaterials}</p>
-                </div>
-              </CardContent>
-            </Card>
+            <StatCard 
+              icon={<Package className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
+              title="Total Materials"
+              value={totalMaterials}
+              color="blue"
+            />
             
-            <Card className="bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="p-4 flex items-center space-x-4">
-                <div className="bg-amber-100 dark:bg-amber-900/30 p-3 rounded-full">
-                  <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Low Stock</p>
-                  <p className="text-xl font-semibold text-gray-900 dark:text-white">{lowStockCount}</p>
-                  {lowStockCount > 0 && (
-                    <Badge variant="warning" className="mt-1">Needs attention</Badge>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <StatCard 
+              icon={<AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
+              title="Low Stock"
+              value={lowStockCount}
+              color="amber"
+              badge={lowStockCount > 0 ? {
+                text: "Needs attention",
+                variant: "warning"
+              } : undefined}
+            />
             
-            <Card className="bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="p-4 flex items-center space-x-4">
-                <div className="bg-red-100 dark:bg-red-900/30 p-3 rounded-full">
-                  <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Out of Stock</p>
-                  <p className="text-xl font-semibold text-gray-900 dark:text-white">{outOfStockCount}</p>
-                  {outOfStockCount > 0 && (
-                    <Badge variant="destructive" className="mt-1">Action needed</Badge>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <StatCard 
+              icon={<XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />}
+              title="Out of Stock"
+              value={outOfStockCount}
+              color="red"
+              badge={outOfStockCount > 0 ? {
+                text: "Action needed",
+                variant: "destructive"
+              } : undefined}
+            />
             
-            <Card className="bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="p-4 flex items-center space-x-4">
-                <div className="bg-green-100 dark:bg-green-900/30 p-3 rounded-full">
-                  <Truck className="w-5 h-5 text-green-600 dark:text-green-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">On Order</p>
-                  <p className="text-xl font-semibold text-gray-900 dark:text-white">{onOrderCount}</p>
-                  {onOrderCount > 0 && (
-                    <Badge variant="success" className="mt-1">Pending delivery</Badge>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <StatCard 
+              icon={<Truck className="w-5 h-5 text-green-600 dark:text-green-400" />}
+              title="On Order"
+              value={onOrderCount}
+              color="green"
+              badge={onOrderCount > 0 ? {
+                text: "Pending delivery",
+                variant: "success"
+              } : undefined}
+            />
           </Grid>
         </div>
 
@@ -507,7 +267,6 @@ const Materials = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full"
-                  variant="modern"
                   icon={<Search className="h-4 w-4" />}
                 />
               </div>
@@ -517,7 +276,7 @@ const Materials = () => {
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map(category => (
+                    {CATEGORIES.map(category => (
                       <SelectItem key={category} value={category}>{category}</SelectItem>
                     ))}
                   </SelectContent>
@@ -529,7 +288,7 @@ const Materials = () => {
                     <SelectValue placeholder="Project" />
                   </SelectTrigger>
                   <SelectContent>
-                    {projects.map(project => (
+                    {PROJECTS.map(project => (
                       <SelectItem key={project} value={project}>{project}</SelectItem>
                     ))}
                   </SelectContent>
@@ -538,15 +297,15 @@ const Materials = () => {
               <div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-full">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                {statuses.map(status => (
-                  <SelectItem key={status} value={status}>{status}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUSES.map(status => (
+                      <SelectItem key={status} value={status}>{status}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -564,7 +323,7 @@ const Materials = () => {
               </div>
             </div>
           </CardHeader>
-            <div className="overflow-x-auto">
+          <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-gray-50 dark:bg-slate-800">
@@ -597,76 +356,50 @@ const Materials = () => {
                           {material.project}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="bg-gray-50 dark:bg-slate-700/50 text-gray-700 dark:text-gray-200">
-                          {material.category}
-                        </Badge>
-                      </TableCell>
+                      <TableCell>{material.category}</TableCell>
                       <TableCell>{material.supplier}</TableCell>
-                      <TableCell className="text-right font-medium">
-                        ${material.unitPrice.toFixed(2)}/{material.unit}
-                      </TableCell>
+                      <TableCell className="text-right">${material.unitPrice.toFixed(2)}</TableCell>
                       <TableCell className="text-right">
-                        <div className="font-medium">{material.inStock} {material.unit}s</div>
-                        {material.onOrder > 0 && (
-                          <div className="text-sm text-blue-600 dark:text-blue-400">
-                            +{material.onOrder} on order
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col items-center gap-1">
-                          <Badge variant={
-                            material.status === 'In Stock' 
-                              ? 'success' 
-                              : material.status === 'Low Stock'
-                              ? 'warning'
-                              : material.status === 'On Order'
-                              ? 'info'
-                              : 'destructive'
-                          }>
-                            {material.status}
-                          </Badge>
-                        {material.status !== 'Out of Stock' && material.status !== 'On Order' && (
-                            <Progress 
-                              value={(material.inStock / (material.minStock * 2)) * 100} 
-                              className="h-1 w-20" 
-                            />
+                        <div className="flex flex-col items-end">
+                          <div>{material.inStock} {material.unit}s</div>
+                          {material.onOrder > 0 && (
+                            <div className="text-xs text-muted-foreground">
+                              {material.onOrder} on order
+                            </div>
                           )}
-                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <StatusBadge status={material.status} />
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon-sm" className="opacity-0 group-hover:opacity-100">
-                                <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Details
-                              </DropdownMenuItem>
-                            <DropdownMenuItem>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit Material
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleOrderMaterial(material.id, 10)}>
-                                <ShoppingCart className="mr-2 h-4 w-4" />
-                                Order More
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem 
-                                className="text-red-600 dark:text-red-400"
-                              onClick={() => handleDeleteMaterial(material.id)}
-                            >
-                                <Trash className="mr-2 h-4 w-4" />
-                                Delete Material
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                </div>
+                        <div className="flex justify-end items-center">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOrderMaterial(material.id, 10)}
+                            disabled={material.status === 'On Order'}
+                          >
+                            <Truck className="h-4 w-4" />
+                            <span className="sr-only">Order</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {/* Open edit dialog */}}
+                          >
+                            <Edit className="h-4 w-4" />
+                            <span className="sr-only">Edit</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteMaterial(material.id)}
+                          >
+                            <Trash className="h-4 w-4" />
+                            <span className="sr-only">Delete</span>
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -674,157 +407,115 @@ const Materials = () => {
               </TableBody>
             </Table>
           </div>
-          <div className="flex items-center justify-between px-4 py-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="text-sm text-muted-foreground">
-              Showing <span className="font-medium">{filteredMaterials.length}</span> of{" "}
-              <span className="font-medium">{materials.length}</span> materials
+        </Card>
+      </div>
+
+      {/* Add Material Dialog */}
+      <Dialog open={isAddMaterialOpen} onOpenChange={setIsAddMaterialOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add New Material</DialogTitle>
+            <DialogDescription>
+              Add a new material to your inventory. Fill out the details below.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right" htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                value={newMaterial.name}
+                onChange={(e) => setNewMaterial({ ...newMaterial, name: e.target.value })}
+                className="col-span-3"
+              />
             </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={true}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right" htmlFor="category">Category</Label>
+              <Select
+                value={newMaterial.category}
+                onValueChange={(value) => setNewMaterial({ ...newMaterial, category: value })}
               >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="bg-deepblue-light text-white hover:bg-deepblue-dark"
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.filter(c => c !== 'All Categories').map(category => (
+                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right" htmlFor="unit">Unit</Label>
+              <Input
+                id="unit"
+                value={newMaterial.unit}
+                onChange={(e) => setNewMaterial({ ...newMaterial, unit: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right" htmlFor="unitPrice">Unit Price ($)</Label>
+              <Input
+                id="unitPrice"
+                type="number"
+                value={newMaterial.unitPrice || ''}
+                onChange={(e) => setNewMaterial({ ...newMaterial, unitPrice: parseFloat(e.target.value) || 0 })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right" htmlFor="inStock">In Stock</Label>
+              <Input
+                id="inStock"
+                type="number"
+                value={newMaterial.inStock || ''}
+                onChange={(e) => setNewMaterial({ ...newMaterial, inStock: parseInt(e.target.value) || 0 })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right" htmlFor="minStock">Min Stock</Label>
+              <Input
+                id="minStock"
+                type="number"
+                value={newMaterial.minStock || ''}
+                onChange={(e) => setNewMaterial({ ...newMaterial, minStock: parseInt(e.target.value) || 0 })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right" htmlFor="supplier">Supplier</Label>
+              <Input
+                id="supplier"
+                value={newMaterial.supplier}
+                onChange={(e) => setNewMaterial({ ...newMaterial, supplier: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right" htmlFor="project">Project</Label>
+              <Select
+                value={newMaterial.project}
+                onValueChange={(value) => setNewMaterial({ ...newMaterial, project: value })}
               >
-                1
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={true}
-              >
-                Next
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PROJECTS.filter(p => p !== 'All Projects').map(project => (
+                    <SelectItem key={project} value={project}>{project}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
-        </Card>
-
-        {/* Add Material Dialog */}
-        <Dialog open={isAddMaterialOpen} onOpenChange={setIsAddMaterialOpen}>
-          <DialogContent className="max-w-xl">
-            <DialogHeader>
-              <DialogTitle>Add Material</DialogTitle>
-              <DialogDescription>
-                Add a new material to your inventory
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Name</label>
-                  <Input 
-                    value={newMaterial.name}
-                    onChange={(e) => setNewMaterial({...newMaterial, name: e.target.value})}
-                    placeholder="Material name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Category</label>
-                  <Select 
-                    value={newMaterial.category}
-                    onValueChange={(value) => setNewMaterial({...newMaterial, category: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.filter(c => c !== 'All Categories').map(category => (
-                        <SelectItem key={category} value={category}>{category}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Unit</label>
-                  <Input 
-                    value={newMaterial.unit}
-                    onChange={(e) => setNewMaterial({...newMaterial, unit: e.target.value})}
-                    placeholder="e.g., Bag, Ton, Piece"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Unit Price</label>
-                  <Input 
-                    type="number"
-                    value={newMaterial.unitPrice}
-                    onChange={(e) => setNewMaterial({...newMaterial, unitPrice: parseFloat(e.target.value)})}
-                    placeholder="Price per unit"
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Stock Level</label>
-                  <Input 
-                    type="number"
-                    value={newMaterial.inStock}
-                    onChange={(e) => setNewMaterial({...newMaterial, inStock: parseInt(e.target.value)})}
-                    placeholder="Current quantity"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Minimum Stock</label>
-                  <Input 
-                    type="number"
-                    value={newMaterial.minStock}
-                    onChange={(e) => setNewMaterial({...newMaterial, minStock: parseInt(e.target.value)})}
-                    placeholder="Reorder threshold"
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Supplier</label>
-                  <Input 
-                    value={newMaterial.supplier}
-                    onChange={(e) => setNewMaterial({...newMaterial, supplier: e.target.value})}
-                    placeholder="Supplier name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Project</label>
-                  <Select 
-                    value={newMaterial.project}
-                    onValueChange={(value) => setNewMaterial({...newMaterial, project: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Assign to project" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {projects.filter(p => p !== 'All Projects').map(project => (
-                        <SelectItem key={project} value={project}>{project}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-            
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddMaterialOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddMaterial}>Add Material</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddMaterialOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddMaterial}>Add Material</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-  );
-};
-
-export default Materials; 
+  )
+} 

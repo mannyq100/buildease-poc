@@ -1,15 +1,36 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { MainNavigation } from '@/components/navigation/MainNavigation';
-import { Input } from '@/components/ui/input';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue 
-} from '@/components/ui/select';
+/**
+ * Documents.tsx - Document management page
+ * Upload, organize, and manage project documents
+ */
+import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+
+// Icons
+import {
+  CheckCircle2,
+  Clock,
+  Download,
+  Eye,
+  FileText,
+  Filter,
+  Folder,
+  MoreHorizontal,
+  Search,
+  Share2,
+  Star,
+  Trash2,
+  Upload
+} from 'lucide-react'
+
+// UI Components
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -17,328 +38,111 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { usePageActions } from '@/hooks/usePageActions';
-import {
-  Archive,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  Download,
-  Eye,
-  FileText,
-  Filter,
-  Folder,
-  HardDrive,
-  Image,
-  MoreHorizontal,
-  Plus,
-  Search,
-  Share2,
-  Star,
-  Trash2,
-  Upload,
-  FileType
-} from 'lucide-react';
-import { DashboardGrid } from '@/components/dashboard/DashboardGrid';
-import { 
-  MetricCard,
-  PageHeader,
-  StatusBadge
-} from '@/components/shared';
+} from "@/components/ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu"
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-// Mock data for documents
-const initialDocuments = [
-  { 
-    id: 1, 
-    name: 'Villa Construction - Foundation Plans.pdf', 
-    project: 'Villa Construction',
-    type: 'PDF', 
-    category: 'plans',
-    size: '2.4 MB', 
-    uploaded: '15 Feb 2024',
-    uploadedBy: 'John Doe',
-    status: 'approved',
-    starred: true
-  },
-  { 
-    id: 2, 
-    name: 'Building Permit - Final Approval.pdf', 
-    project: 'Villa Construction',
-    type: 'PDF', 
-    category: 'permits',
-    size: '1.8 MB', 
-    uploaded: '10 Feb 2024',
-    uploadedBy: 'Sarah Chen',
-    status: 'approved',
-    starred: false
-  },
-  { 
-    id: 3, 
-    name: 'Site Analysis Report.docx', 
-    project: 'Office Renovation',
-    type: 'DOCX', 
-    category: 'reports',
-    size: '1.2 MB', 
-    uploaded: '05 Feb 2024',
-    uploadedBy: 'James Wilson',
-    status: 'pending',
-    starred: false
-  },
-  { 
-    id: 4, 
-    name: 'Vendor Agreement - Cement Supply.pdf', 
-    project: 'Villa Construction',
-    type: 'PDF', 
-    category: 'contracts',
-    size: '3.1 MB', 
-    uploaded: '03 Feb 2024',
-    uploadedBy: 'Maria Lopez',
-    status: 'approved',
-    starred: true
-  },
-  { 
-    id: 5, 
-    name: 'Progress Photos - Week 4.zip', 
-    project: 'Villa Construction',
-    type: 'ZIP', 
-    category: 'reports',
-    size: '15.7 MB', 
-    uploaded: '01 Feb 2024',
-    uploadedBy: 'John Doe',
-    status: 'pending',
-    starred: false
-  },
-  { 
-    id: 6, 
-    name: 'Architectural Blueprints - Office Layout.dwg', 
-    project: 'Office Renovation',
-    type: 'DWG', 
-    category: 'plans',
-    size: '8.3 MB', 
-    uploaded: '28 Jan 2024',
-    uploadedBy: 'Ahmed Patel',
-    status: 'approved',
-    starred: false
-  }
-];
+// Shared Components
+import { MainNavigation } from '@/components/navigation/MainNavigation'
+import {
+  PageHeader
+} from '@/components/shared'
+import { usePageActions } from '@/hooks/usePageActions'
 
-// Mock document categories
-const categories = [
-  { id: 'all', name: 'All Documents', count: 28 },
-  { id: 'plans', name: 'Plans & Blueprints', count: 8 },
-  { id: 'permits', name: 'Permits & Approvals', count: 5 },
-  { id: 'contracts', name: 'Contracts', count: 6 },
-  { id: 'reports', name: 'Reports', count: 9 }
-];
+// Custom Components
+import { DocumentItem } from '@/components/documents/DocumentItem'
 
-// Define interfaces
-interface DocumentItemProps {
-  document: {
-    id: number;
-    name: string;
-    project: string;
-    type: string;
-    category: string;
-    size: string;
-    uploaded: string;
-    uploadedBy: string;
-    status: string;
-    starred: boolean;
-  };
-  icon: React.ReactNode;
-  onView: () => void;
-  onDelete: () => void;
-  onToggleStar: () => void;
-}
+// Types and Utilities
+import { Document, NewDocument } from '@/types/documents'
+import { filterDocuments, getFileIcon } from '@/utils/documentUtils'
 
-// Document list item component
-const DocumentItem = React.memo(({ document, icon, onView, onDelete, onToggleStar }: DocumentItemProps) => {
-  // Memoize status badge class
-  const statusBadgeClass = React.useMemo(() => {
-    return document.status === 'approved' 
-      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
-      : document.status === 'pending'
-      ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-      : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
-  }, [document.status]);
+// Mock Data
+import {
+  DOCUMENT_CATEGORIES,
+  FILE_TYPE_OPTIONS,
+  INITIAL_DOCUMENTS,
+  PROJECT_OPTIONS,
+  STATUS_OPTIONS
+} from '@/data/mock/documents'
 
-  // Memoize star button click handler
-  const handleStarClick = React.useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onToggleStar();
-  }, [onToggleStar]);
-
-  // Memoize view click handler
-  const handleViewClick = React.useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onView();
-  }, [onView]);
-
-  // Memoize delete click handler
-  const handleDeleteClick = React.useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onDelete();
-  }, [onDelete]);
-
-  return (
-    <div className="group bg-white dark:bg-slate-800 rounded-xl shadow-md border border-gray-200 dark:border-slate-700 overflow-hidden hover:shadow-md transition-all duration-200 hover:scale-[1.01] will-change-transform">
-      <div className="flex items-center p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-900 border-b border-gray-200 dark:border-slate-700">
-        <div className="p-2 mr-3 bg-white dark:bg-slate-700 rounded-lg shadow-sm">
-          {icon}
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-900 dark:text-white truncate pr-6">
-            {document.name}
-          </h3>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-sm text-gray-500 dark:text-gray-400">{document.project}</span>
-            <span className="text-sm text-gray-500 dark:text-gray-400">•</span>
-            <span className="text-sm text-gray-500 dark:text-gray-400">{document.size}</span>
-            <span className="text-sm text-gray-500 dark:text-gray-400">•</span>
-            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${statusBadgeClass}`}>
-              {document.status}
-            </span>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleStarClick}
-            className={document.starred ? 'text-yellow-500' : 'text-gray-400 hover:text-gray-500'}
-          >
-            <Star className="w-4 h-4" fill={document.starred ? 'currentColor' : 'none'} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleViewClick}
-            className="text-gray-600 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700/20"
-          >
-            <Share2 className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleDeleteClick}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-});
-
-DocumentItem.displayName = 'DocumentItem';
-
-const Documents = () => {
-  const navigate = useNavigate();
-  const { getCommonActions } = usePageActions('documents');
-  const [documents, setDocuments] = useState(initialDocuments);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [projectFilter, setProjectFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [selectedDocument, setSelectedDocument] = useState<DocumentItemProps['document'] | null>(null);
-  const [newDocument, setNewDocument] = useState({
+/**
+ * Documents management page component
+ * Provides functionality to upload, manage, and view documents
+ */
+export function Documents() {
+  const navigate = useNavigate()
+  const { getCommonActions } = usePageActions('documents')
+  
+  // State management
+  const [documents, setDocuments] = useState<Document[]>(INITIAL_DOCUMENTS)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [projectFilter, setProjectFilter] = useState('all')
+  const [categoryFilter, setCategoryFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
+  const [viewDialogOpen, setViewDialogOpen] = useState(false)
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null)
+  const [newDocument, setNewDocument] = useState<NewDocument>({
     name: '',
     project: '',
     category: '',
     type: '',
     size: '',
     status: 'pending'
-  });
+  })
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false)
+  const [moveDialogOpen, setMoveDialogOpen] = useState(false)
+  const [actionDocument, setActionDocument] = useState<Document | null>(null)
+  const [newDocumentName, setNewDocumentName] = useState('')
+  const [selectedFolder, setSelectedFolder] = useState('')
 
-  // Get file icon based on type
-  const getFileIcon = (type) => {
-    switch(type.toLowerCase()) {
-      case 'pdf': return <FileType className="w-5 h-5 text-red-500" />;
-      case 'docx': return <FileType className="w-5 h-5 text-blue-500" />;
-      case 'xlsx': return <FileType className="w-5 h-5 text-green-500" />;
-      case 'zip': return <Archive className="w-5 h-5 text-yellow-500" />;
-      case 'jpg':
-      case 'png': return <Image className="w-5 h-5 text-purple-500" />;
-      case 'dwg': return <FileType className="w-5 h-5 text-orange-500" />;
-      default: return <FileType className="w-5 h-5 text-gray-500" />;
+  // Filtered documents - memoized to prevent recalculation on every render
+  const filteredDocuments = useMemo(() => {
+    return filterDocuments(documents, searchQuery, projectFilter, categoryFilter, statusFilter)
+  }, [documents, searchQuery, projectFilter, categoryFilter, statusFilter])
+
+  /**
+   * Handle opening document view dialog
+   */
+  function openViewDialog(document: Document) {
+    setSelectedDocument(document)
+    setViewDialogOpen(true)
+  }
+
+  /**
+   * Handle uploading a new document
+   */
+  function handleUploadDocument() {
+    // Validate required fields
+    if (!newDocument.name || !newDocument.project || !newDocument.category) {
+      return
     }
-  };
-
-  // Filter documents based on search query and filters - memoized to prevent recalculation on every render
-  const filteredDocuments = React.useMemo(() => {
-    return documents.filter(doc => {
-      // Only do the case conversion once per document per filter operation
-      const docNameLower = doc.name.toLowerCase();
-      const docProjectLower = doc.project.toLowerCase();
-      const searchQueryLower = searchQuery.toLowerCase();
-      
-      const matchesSearch = searchQuery === '' || 
-        docNameLower.includes(searchQueryLower) ||
-        docProjectLower.includes(searchQueryLower);
-      
-      const matchesProject = projectFilter === 'all' || 
-        doc.project.includes(projectFilter === 'villa' ? 'Villa' : 'Office');
-        
-      const matchesCategory = categoryFilter === 'all' || 
-        doc.category === categoryFilter;
-        
-      const matchesStatus = statusFilter === 'all' || 
-        doc.status === statusFilter;
-      
-      return matchesSearch && matchesProject && matchesCategory && matchesStatus;
-    });
-  }, [documents, searchQuery, projectFilter, categoryFilter, statusFilter]);
-
-  // Handle opening document view dialog
-  const openViewDialog = (document) => {
-    setSelectedDocument(document);
-    setViewDialogOpen(true);
-  };
-
-  // Handle uploading a new document
-  const handleUploadDocument = () => {
+    
     // In a real app, this would handle the actual file upload
-    const id = Math.max(...documents.map(d => d.id)) + 1;
-    const newDoc = {
+    const id = Math.max(...documents.map(d => d.id)) + 1
+    const newDoc: Document = {
       ...newDocument,
       id,
       uploaded: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
       uploadedBy: 'John Doe', // Would be the current user
       starred: false
-    };
+    } as Document
     
-    setDocuments([newDoc, ...documents]);
+    setDocuments([newDoc, ...documents])
     setNewDocument({
       name: '',
       project: '',
@@ -346,56 +150,147 @@ const Documents = () => {
       type: '',
       size: '',
       status: 'pending'
-    });
-    setUploadDialogOpen(false);
-  };
+    })
+    setUploadDialogOpen(false)
+  }
 
-  // Handle deleting a document
-  const handleDeleteDocument = (id) => {
-    setDocuments(documents.filter(doc => doc.id !== id));
+  /**
+   * Handle deleting a document
+   */
+  function handleDeleteDocument(id: number) {
+    setDocuments(documents.filter(doc => doc.id !== id))
     if (selectedDocument && selectedDocument.id === id) {
-      setViewDialogOpen(false);
+      setViewDialogOpen(false)
     }
-  };
+  }
 
-  // Handle toggling star status
-  const handleToggleStar = (id) => {
+  /**
+   * Handle toggling star status
+   */
+  function handleToggleStar(id: number) {
     setDocuments(documents.map(doc => 
       doc.id === id ? { ...doc, starred: !doc.starred } : doc
-    ));
+    ))
     
     if (selectedDocument && selectedDocument.id === id) {
-      setSelectedDocument({ ...selectedDocument, starred: !selectedDocument.starred });
+      setSelectedDocument({ ...selectedDocument, starred: !selectedDocument.starred })
     }
-  };
+  }
+
+  /**
+   * Reset all filters to default values
+   */
+  function handleResetFilters() {
+    setProjectFilter('all')
+    setCategoryFilter('all')
+    setStatusFilter('all')
+    setSearchQuery('')
+  }
+
+  /**
+   * Opens the rename dialog for a document
+   */
+  function openRenameDialog(document: Document) {
+    setActionDocument(document)
+    setNewDocumentName(document.name)
+    setRenameDialogOpen(true)
+  }
+
+  /**
+   * Handles document rename operation
+   */
+  function handleRenameDocument() {
+    if (!actionDocument || !newDocumentName.trim()) return
+    
+    setDocuments(documents.map(doc => 
+      doc.id === actionDocument.id 
+        ? { ...doc, name: newDocumentName } 
+        : doc
+    ))
+    
+    setRenameDialogOpen(false)
+    setActionDocument(null)
+    setNewDocumentName('')
+  }
+
+  /**
+   * Opens the move dialog for a document
+   */
+  function openMoveDialog(document: Document) {
+    setActionDocument(document)
+    setSelectedFolder('')
+    setMoveDialogOpen(true)
+  }
+
+  /**
+   * Handles moving a document to a different folder
+   */
+  function handleMoveDocument() {
+    if (!actionDocument || !selectedFolder) return
+    
+    // In a real app, this would update the document's folder/category
+    setDocuments(documents.map(doc => 
+      doc.id === actionDocument.id 
+        ? { ...doc, category: selectedFolder } 
+        : doc
+    ))
+    
+    setMoveDialogOpen(false)
+    setActionDocument(null)
+    setSelectedFolder('')
+  }
+
+  /**
+   * Copies a shareable link for the document
+   */
+  function handleCopyLink(document: Document) {
+    // In a real app, this would copy a shareable link to the clipboard
+    const link = `https://buildease-app.com/documents/${document.id}`
+    navigator.clipboard.writeText(link)
+      .then(() => {
+        // Show a toast notification in a real app
+        alert(`Link for "${document.name}" copied to clipboard`)
+      })
+      .catch(err => {
+        console.error('Failed to copy link:', err)
+        alert('Failed to copy link')
+      })
+  }
+
+  /**
+   * Download a document
+   */
+  function handleDownloadDocument(document: Document) {
+    // In a real app, this would trigger a download
+    alert(`Downloading ${document.name}`)
+    console.log(`Downloading document ID: ${document.id}`)
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50/50 dark:bg-slate-900/50">
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
       <MainNavigation
         title="Documents"
         icon={<FileText className="h-6 w-6" />}
       />
-      <div className="max-w-7xl mx-auto px-6 pt-[72px]">
-        <div className="py-0">
-          <PageHeader
-            title="Document Management"
-            subtitle="Upload, organize, and manage project documents"
-            icon={<FileText className="h-6 w-6" />}
-            gradient={true}
-            animated={true}
-            actions={[
-              {
-                label: "Upload Document",
-                icon: <Upload />,
-                variant: "construction",
-                onClick: handleUploadDocument
-              }
-            ]}
-          />
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <PageHeader
+          title="Document Management"
+          subtitle="Upload, organize, and manage project documents"
+          icon={<FileText className="h-6 w-6" />}
+          gradient={true}
+          animated={true}
+          actions={[
+            {
+              label: "Upload Document",
+              icon: <Upload />,
+              variant: "construction",
+              onClick: () => setUploadDialogOpen(true)
+            }
+          ]}
+        />
 
         {/* Metrics Section */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8 mb-8">
           <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 shadow-sm hover:shadow-md transition-all duration-300 border border-blue-200 dark:border-blue-800/30">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -482,7 +377,7 @@ const Documents = () => {
                 </CardHeader>
                 <CardContent className="p-0">
                   <ul className="divide-y divide-gray-200 dark:divide-slate-700">
-                    {categories.map(category => (
+                    {DOCUMENT_CATEGORIES.map(category => (
                       <li key={category.id} className="group">
                         <button
                           onClick={() => setCategoryFilter(category.id)}
@@ -518,9 +413,9 @@ const Documents = () => {
                         <SelectValue placeholder="All Projects" />
                       </SelectTrigger>
                       <SelectContent className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-md">
-                        <SelectItem value="all">All Projects</SelectItem>
-                        <SelectItem value="villa">Villa Construction</SelectItem>
-                        <SelectItem value="office">Office Renovation</SelectItem>
+                        {PROJECT_OPTIONS.map(option => (
+                          <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -532,11 +427,9 @@ const Documents = () => {
                         <SelectValue placeholder="All Types" />
                       </SelectTrigger>
                       <SelectContent className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-md">
-                        <SelectItem value="all">All Types</SelectItem>
-                        <SelectItem value="pdf">PDF</SelectItem>
-                        <SelectItem value="docx">DOCX</SelectItem>
-                        <SelectItem value="dwg">DWG</SelectItem>
-                        <SelectItem value="images">Images</SelectItem>
+                        {FILE_TYPE_OPTIONS.map(option => (
+                          <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -548,9 +441,9 @@ const Documents = () => {
                         <SelectValue placeholder="All Statuses" />
                       </SelectTrigger>
                       <SelectContent className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-md">
-                        <SelectItem value="all">All Statuses</SelectItem>
-                        <SelectItem value="approved">Approved</SelectItem>
-                        <SelectItem value="pending">Pending Approval</SelectItem>
+                        {STATUS_OPTIONS.map(option => (
+                          <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -558,11 +451,7 @@ const Documents = () => {
                   <Button 
                     variant="outline" 
                     className="w-full mt-2"
-                    onClick={() => {
-                      setProjectFilter('all');
-                      setCategoryFilter('all');
-                      setStatusFilter('all');
-                    }}
+                    onClick={handleResetFilters}
                   >
                     <Filter className="w-4 h-4 mr-2" />
                     Reset Filters
@@ -616,25 +505,14 @@ const Documents = () => {
                             onView={() => openViewDialog(doc)}
                             onDelete={() => handleDeleteDocument(doc.id)}
                             onToggleStar={() => handleToggleStar(doc.id)}
+                            onRename={() => openRenameDialog(doc)}
+                            onMove={() => openMoveDialog(doc)}
+                            onCopy={() => handleCopyLink(doc)}
+                            onDownload={() => handleDownloadDocument(doc)}
                           />
                         ))
                       ) : (
-                        <div className="text-center py-12">
-                          <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
-                            <FileText className="w-10 h-10 text-gray-400 dark:text-gray-500" />
-                          </div>
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No documents found</h3>
-                          <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
-                            We couldn't find any documents matching your current filters. Try adjusting your search criteria or upload a new document.
-                          </p>
-                          <Button 
-                            onClick={() => setUploadDialogOpen(true)}
-                            className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white shadow-md"
-                          >
-                            <Upload className="w-4 h-4 mr-2" />
-                            Upload a Document
-                          </Button>
-                        </div>
+                        <EmptyDocumentState onUpload={() => setUploadDialogOpen(true)} />
                       )}
                     </TabsContent>
 
@@ -648,18 +526,14 @@ const Documents = () => {
                             onView={() => openViewDialog(doc)}
                             onDelete={() => handleDeleteDocument(doc.id)}
                             onToggleStar={() => handleToggleStar(doc.id)}
+                            onRename={() => openRenameDialog(doc)}
+                            onMove={() => openMoveDialog(doc)}
+                            onCopy={() => handleCopyLink(doc)}
+                            onDownload={() => handleDownloadDocument(doc)}
                           />
                         ))
                       ) : (
-                        <div className="text-center py-12">
-                          <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
-                            <Star className="w-10 h-10 text-gray-400 dark:text-gray-500" />
-                          </div>
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No starred documents</h3>
-                          <p className="text-gray-500 dark:text-gray-400">
-                            You haven't starred any documents yet. Star important documents to find them quickly.
-                          </p>
-                        </div>
+                        <EmptyStarredState />
                       )}
                     </TabsContent>
 
@@ -672,6 +546,10 @@ const Documents = () => {
                           onView={() => openViewDialog(doc)}
                           onDelete={() => handleDeleteDocument(doc.id)}
                           onToggleStar={() => handleToggleStar(doc.id)}
+                          onRename={() => openRenameDialog(doc)}
+                          onMove={() => openMoveDialog(doc)}
+                          onCopy={() => handleCopyLink(doc)}
+                          onDownload={() => handleDownloadDocument(doc)}
                         />
                       ))}
                     </TabsContent>
@@ -767,56 +645,18 @@ const Documents = () => {
               View the details of the selected document.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Document Name
-              </label>
-              <p className="text-gray-500 dark:text-gray-400">{selectedDocument?.name}</p>
+          {selectedDocument && (
+            <div className="grid gap-4 py-4">
+              <DocumentDetail label="Document Name" value={selectedDocument.name} />
+              <DocumentDetail label="Project" value={selectedDocument.project} />
+              <DocumentDetail label="Category" value={selectedDocument.category} />
+              <DocumentDetail label="File Type" value={selectedDocument.type} />
+              <DocumentDetail label="Size" value={selectedDocument.size} />
+              <DocumentDetail label="Uploaded" value={selectedDocument.uploaded} />
+              <DocumentDetail label="Uploaded By" value={selectedDocument.uploadedBy} />
+              <DocumentDetail label="Status" value={selectedDocument.status} />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Project
-              </label>
-              <p className="text-gray-500 dark:text-gray-400">{selectedDocument?.project}</p>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Category
-              </label>
-              <p className="text-gray-500 dark:text-gray-400">{selectedDocument?.category}</p>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                File Type
-              </label>
-              <p className="text-gray-500 dark:text-gray-400">{selectedDocument?.type}</p>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Size
-              </label>
-              <p className="text-gray-500 dark:text-gray-400">{selectedDocument?.size}</p>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Uploaded
-              </label>
-              <p className="text-gray-500 dark:text-gray-400">{selectedDocument?.uploaded}</p>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Uploaded By
-              </label>
-              <p className="text-gray-500 dark:text-gray-400">{selectedDocument?.uploadedBy}</p>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Status
-              </label>
-              <p className="text-gray-500 dark:text-gray-400">{selectedDocument?.status}</p>
-            </div>
-          </div>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setViewDialogOpen(false)}>Close</Button>
             <DropdownMenu>
@@ -839,7 +679,14 @@ const Documents = () => {
                   <span>Share</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-red-600 dark:text-red-400">
+                <DropdownMenuItem 
+                  className="text-red-600 dark:text-red-400"
+                  onClick={() => {
+                    if (selectedDocument) {
+                      handleDeleteDocument(selectedDocument.id)
+                    }
+                  }}
+                >
                   <Trash2 className="mr-2 h-4 w-4" />
                   <span>Delete</span>
                 </DropdownMenuItem>
@@ -848,8 +695,138 @@ const Documents = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-};
 
-export default Documents;
+      {/* Rename Document Dialog */}
+      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Rename Document</DialogTitle>
+            <DialogDescription>
+              Enter a new name for the document.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Document Name
+              </label>
+              <Input
+                id="name"
+                value={newDocumentName}
+                onChange={(e) => setNewDocumentName(e.target.value)}
+                className="w-full"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleRenameDocument}>
+              Rename
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Move Document Dialog */}
+      <Dialog open={moveDialogOpen} onOpenChange={setMoveDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Move Document</DialogTitle>
+            <DialogDescription>
+              Select a folder to move the document to.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="folder" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Destination Folder
+              </label>
+              <Select value={selectedFolder} onValueChange={setSelectedFolder}>
+                <SelectTrigger className="w-full border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800">
+                  <SelectValue placeholder="Select a folder" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-md">
+                  {DOCUMENT_CATEGORIES.filter(c => c.id !== 'all').map(category => (
+                    <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMoveDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleMoveDocument} disabled={!selectedFolder}>
+              Move
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+/**
+ * Component to display a field in the document detail view
+ */
+interface DocumentDetailProps {
+  label: string
+  value: string
+}
+
+function DocumentDetail({ label, value }: DocumentDetailProps) {
+  return (
+    <div className="space-y-2">
+      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+        {label}
+      </label>
+      <p className="text-gray-500 dark:text-gray-400">{value}</p>
+    </div>
+  )
+}
+
+/**
+ * Empty state for document list
+ */
+interface EmptyDocumentStateProps {
+  onUpload: () => void
+}
+
+function EmptyDocumentState({ onUpload }: EmptyDocumentStateProps) {
+  return (
+    <div className="text-center py-12">
+      <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
+        <FileText className="w-10 h-10 text-gray-400 dark:text-gray-500" />
+      </div>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No documents found</h3>
+      <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
+        We couldn't find any documents matching your current filters. Try adjusting your search criteria or upload a new document.
+      </p>
+      <Button 
+        onClick={onUpload}
+        className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white shadow-md"
+      >
+        <Upload className="w-4 h-4 mr-2" />
+        Upload a Document
+      </Button>
+    </div>
+  )
+}
+
+/**
+ * Empty state for starred documents
+ */
+function EmptyStarredState() {
+  return (
+    <div className="text-center py-12">
+      <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
+        <Star className="w-10 h-10 text-gray-400 dark:text-gray-500" />
+      </div>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No starred documents</h3>
+      <p className="text-gray-500 dark:text-gray-400">
+        You haven't starred any documents yet. Star important documents to find them quickly.
+      </p>
+    </div>
+  )
+}
+
+export default Documents

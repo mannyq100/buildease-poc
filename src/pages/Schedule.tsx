@@ -1,3 +1,7 @@
+/**
+ * Schedule.tsx - Task scheduling and management page
+ * Allows users to create, view, and manage project tasks with different views
+ */
 import { useState, useEffect } from 'react';
 import { Task, NewTaskForm, ViewMode, TeamMember, TaskViewLayout } from '@/types/schedule';
 import { initialTasks, teamMembers } from '@/data/scheduleData';
@@ -18,10 +22,17 @@ import {
   BarChart2, 
   List,
   LayoutGrid,
-  RefreshCw
+  RefreshCw,
+  Clock
 } from 'lucide-react';
 
-export default function Schedule() {
+// Shared Components
+import { PageHeader } from '@/components/shared';
+
+/**
+ * Schedule page component for task management
+ */
+export function Schedule() {
   // State
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>(initialTasks);
@@ -52,7 +63,7 @@ export default function Schedule() {
     setFilteredTasks(result);
   }, [tasks, searchQuery, filters]);
   
-  // Handlers
+  // Task handlers
   const handleTaskClick = (task: Task) => {
     setSelectedTask(task);
     setIsTaskDetailOpen(true);
@@ -144,6 +155,7 @@ export default function Schedule() {
     setIsTaskFormOpen(false);
   };
   
+  // Filter handlers
   const handleFilterChange = (newFilters: TaskFiltersType) => {
     setFilters(newFilters);
   };
@@ -165,135 +177,154 @@ export default function Schedule() {
     setTaskViewLayout(prev => prev === 'grid' ? 'list' : 'grid');
   };
   
+  // Calculate metrics for header
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter(task => task.status === 'Completed').length;
+  const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  const upcomingDeadlines = tasks.filter(task => 
+    task.status !== 'Completed' && 
+    new Date(task.dueDate) > new Date() && 
+    new Date(task.dueDate) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+  ).length;
+  
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Schedule</h1>
-          <p className="text-gray-500">Manage and track project tasks</p>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <Button onClick={handleRefresh} variant="outline" size="sm" disabled={isLoading}>
-            <RefreshCw className={`h-4 w-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-          <Button onClick={handleCreateTask}>
-            <Plus className="h-4 w-4 mr-1" />
-            New Task
-          </Button>
-        </div>
-      </div>
-      
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="w-full md:w-2/3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <Input
-              placeholder="Search tasks..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
-        
-        <div className="w-full md:w-1/3">
-          <TaskFilters 
-            onFilterChange={handleFilterChange}
-            onReset={handleResetFilters}
-          />
-        </div>
-      </div>
-      
-      <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)}>
-        <div className="flex justify-between items-center">
-          <TabsList>
-            <TabsTrigger value="tasks" className="flex items-center">
-              <List className="h-4 w-4 mr-1" />
-              Tasks
-            </TabsTrigger>
-            <TabsTrigger value="calendar" className="flex items-center">
-              <Calendar className="h-4 w-4 mr-1" />
-              Calendar
-            </TabsTrigger>
-            <TabsTrigger value="metrics" className="flex items-center">
-              <BarChart2 className="h-4 w-4 mr-1" />
-              Metrics
-            </TabsTrigger>
-          </TabsList>
-          
-          {viewMode === 'tasks' && (
-            <div className="flex gap-2">
-              <Button
-                variant={taskViewLayout === 'grid' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setTaskViewLayout('grid')}
-                className="flex items-center"
-              >
-                <LayoutGrid className="h-4 w-4 mr-1" />
-                Grid
-              </Button>
-              <Button
-                variant={taskViewLayout === 'list' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setTaskViewLayout('list')}
-                className="flex items-center"
-              >
-                <List className="h-4 w-4 mr-1" />
-                List
-              </Button>
-            </div>
-          )}
-        </div>
-        
-        <TabsContent value="tasks" className="mt-4">
-          <TaskList 
-            tasks={filteredTasks}
-            onTaskClick={handleTaskClick}
-            sortBy="dueDate"
-            viewLayout={taskViewLayout}
-            emptyStateMessage={
-              searchQuery || Object.values(filters).some(Boolean)
-                ? "No tasks match your search or filters"
-                : "No tasks found. Create your first task to get started."
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <PageHeader
+          title="Schedule"
+          subtitle="Manage and track project tasks and timelines"
+          icon={<Clock className="h-6 w-6" />}
+          gradient={true}
+          animated={true}
+          theme="blue"
+          actions={[
+            {
+              label: "Refresh",
+              icon: <RefreshCw className={isLoading ? 'animate-spin' : ''} />,
+              variant: "blueprint",
+              onClick: handleRefresh
+            },
+            {
+              label: "New Task",
+              icon: <Plus />,
+              variant: "construction",
+              onClick: handleCreateTask
             }
-          />
-        </TabsContent>
-        
-        <TabsContent value="calendar" className="mt-4">
-          <TaskCalendar 
-            tasks={filteredTasks}
-            onTaskClick={handleTaskClick}
-          />
-        </TabsContent>
-        
-        <TabsContent value="metrics" className="mt-4">
-          <TaskMetrics tasks={filteredTasks} />
-        </TabsContent>
-      </Tabs>
-      
-      {/* Task Detail Dialog */}
-      {selectedTask && (
-        <TaskDetail
-          task={selectedTask}
-          allTasks={tasks}
-          isOpen={isTaskDetailOpen}
-          onClose={handleCloseTaskDetail}
-          onEdit={handleEditTask}
-          onDelete={handleDeleteTask}
-          onStatusChange={handleStatusChange}
+          ]}
         />
-      )}
-      
-      {/* Task Form Dialog */}
-      <TaskForm
-        isOpen={isTaskFormOpen}
-        onClose={() => setIsTaskFormOpen(false)}
-        onSubmit={handleTaskSubmit}
-        task={editingTask}
-        allTasks={tasks}
-      />
+        
+        <div className="mt-8">
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="w-full md:w-2/3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <Input
+                  placeholder="Search tasks..."
+                  className="pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+            
+            <div className="w-full md:w-1/3">
+              <TaskFilters 
+                onFilterChange={handleFilterChange}
+                onReset={handleResetFilters}
+              />
+            </div>
+          </div>
+          
+          <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)}>
+            <div className="flex justify-between items-center">
+              <TabsList>
+                <TabsTrigger value="tasks" className="flex items-center">
+                  <List className="h-4 w-4 mr-1" />
+                  Tasks
+                </TabsTrigger>
+                <TabsTrigger value="calendar" className="flex items-center">
+                  <Calendar className="h-4 w-4 mr-1" />
+                  Calendar
+                </TabsTrigger>
+                <TabsTrigger value="metrics" className="flex items-center">
+                  <BarChart2 className="h-4 w-4 mr-1" />
+                  Metrics
+                </TabsTrigger>
+              </TabsList>
+              
+              {viewMode === 'tasks' && (
+                <div className="flex gap-2">
+                  <Button
+                    variant={taskViewLayout === 'grid' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setTaskViewLayout('grid')}
+                    className="flex items-center"
+                  >
+                    <LayoutGrid className="h-4 w-4 mr-1" />
+                    Grid
+                  </Button>
+                  <Button
+                    variant={taskViewLayout === 'list' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setTaskViewLayout('list')}
+                    className="flex items-center"
+                  >
+                    <List className="h-4 w-4 mr-1" />
+                    List
+                  </Button>
+                </div>
+              )}
+            </div>
+            
+            <TabsContent value="tasks" className="mt-4">
+              <TaskList 
+                tasks={filteredTasks}
+                onTaskClick={handleTaskClick}
+                sortBy="dueDate"
+                viewLayout={taskViewLayout}
+                emptyStateMessage={
+                  searchQuery || Object.values(filters).some(Boolean)
+                    ? "No tasks match your search or filters"
+                    : "No tasks found. Create your first task to get started."
+                }
+              />
+            </TabsContent>
+            
+            <TabsContent value="calendar" className="mt-4">
+              <TaskCalendar 
+                tasks={filteredTasks}
+                onTaskClick={handleTaskClick}
+              />
+            </TabsContent>
+            
+            <TabsContent value="metrics" className="mt-4">
+              <TaskMetrics tasks={filteredTasks} />
+            </TabsContent>
+          </Tabs>
+        </div>
+        
+        {/* Task Detail Dialog */}
+        {selectedTask && (
+          <TaskDetail
+            task={selectedTask}
+            allTasks={tasks}
+            isOpen={isTaskDetailOpen}
+            onClose={handleCloseTaskDetail}
+            onEdit={handleEditTask}
+            onDelete={handleDeleteTask}
+            onStatusChange={handleStatusChange}
+          />
+        )}
+        
+        {/* Task Form Dialog */}
+        <TaskForm
+          isOpen={isTaskFormOpen}
+          onClose={() => setIsTaskFormOpen(false)}
+          onSubmit={handleTaskSubmit}
+          task={editingTask}
+          allTasks={tasks}
+        />
+      </div>
     </div>
   );
 } 
