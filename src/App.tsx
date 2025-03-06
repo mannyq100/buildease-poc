@@ -7,7 +7,7 @@ import { ToastContextProvider } from "@/components/ui/toast-context";
 import { LazyMotion, domAnimation } from "framer-motion";
 import AppLayout from "@/components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
-import ProjectDetails from "./pages/ProjectDetails";
+import { ProjectDetails } from "./pages/ProjectDetails";
 import PhaseDetails from "./pages/PhaseDetails";
 import ProjectInputs from "./pages/ProjectInputs";
 import GeneratedPlan from "./pages/GeneratedPlan";
@@ -18,7 +18,7 @@ import Schedule from "./pages/Schedule";
 import Materials from "./pages/Materials";
 import Documents from "./pages/Documents";
 import Expenses from "./pages/Expenses";
-import Projects from "./pages/Projects";
+import { Projects } from "./pages/Projects";
 
 // Set up default query client options with better user feedback
 const queryClient = new QueryClient({

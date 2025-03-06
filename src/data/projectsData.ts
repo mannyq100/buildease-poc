@@ -14,7 +14,7 @@ export const projectsData: Project[] = [
     status: 'active',
     startDate: '2023-03-15',
     endDate: '2024-11-30',
-    imageUrl: '/images/projects/residential-complex.jpg',
+    imageUrl: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1000&auto=format&fit=crop',
     teamMembers: ['user1', 'user2', 'user3', 'user5'],
     tags: ['residential', 'large-scale', 'urban']
   },
@@ -31,7 +31,7 @@ export const projectsData: Project[] = [
     status: 'active',
     startDate: '2023-02-01',
     endDate: '2025-01-15',
-    imageUrl: '/images/projects/office-tower.jpg',
+    imageUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1000&auto=format&fit=crop',
     teamMembers: ['user1', 'user4', 'user5', 'user7'],
     tags: ['commercial', 'high-rise', 'leed']
   },
@@ -48,7 +48,7 @@ export const projectsData: Project[] = [
     status: 'completed',
     startDate: '2022-05-10',
     endDate: '2023-08-15',
-    imageUrl: '/images/projects/elementary-school.jpg',
+    imageUrl: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=1000&auto=format&fit=crop',
     teamMembers: ['user2', 'user3', 'user6'],
     tags: ['educational', 'public', 'completed']
   },
@@ -65,7 +65,7 @@ export const projectsData: Project[] = [
     status: 'active',
     startDate: '2023-01-20',
     endDate: '2025-06-30',
-    imageUrl: '/images/projects/hospital.jpg',
+    imageUrl: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=1000&auto=format&fit=crop',
     teamMembers: ['user1', 'user4', 'user7', 'user8'],
     tags: ['healthcare', 'large-scale', 'specialized']
   },
@@ -82,7 +82,7 @@ export const projectsData: Project[] = [
     status: 'planning',
     startDate: '2024-03-01',
     endDate: '2025-09-30',
-    imageUrl: '/images/projects/shopping-center.jpg',
+    imageUrl: 'https://images.unsplash.com/photo-1567449303078-57ad995a9a2b?q=80&w=1000&auto=format&fit=crop',
     teamMembers: ['user3', 'user5', 'user6'],
     tags: ['retail', 'commercial', 'planning']
   },
@@ -99,7 +99,7 @@ export const projectsData: Project[] = [
     status: 'upcoming',
     startDate: '2024-05-15',
     endDate: '2026-11-30',
-    imageUrl: '/images/projects/resort.jpg',
+    imageUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1000&auto=format&fit=crop',
     teamMembers: ['user2', 'user7', 'user8'],
     tags: ['hospitality', 'luxury', 'upcoming']
   },
@@ -116,7 +116,7 @@ export const projectsData: Project[] = [
     status: 'completed',
     startDate: '2022-09-10',
     endDate: '2023-06-20',
-    imageUrl: '/images/projects/pedestrian-bridge.jpg',
+    imageUrl: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=1000&auto=format&fit=crop',
     teamMembers: ['user1', 'user6'],
     tags: ['infrastructure', 'public', 'completed']
   },
@@ -133,7 +133,7 @@ export const projectsData: Project[] = [
     status: 'planning',
     startDate: '2024-01-10',
     endDate: '2026-08-30',
-    imageUrl: '/images/projects/tech-campus.jpg',
+    imageUrl: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?q=80&w=1000&auto=format&fit=crop',
     teamMembers: ['user2', 'user4', 'user5', 'user8'],
     tags: ['mixed-use', 'technology', 'large-scale']
   }

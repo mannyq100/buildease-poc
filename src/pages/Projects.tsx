@@ -58,127 +58,24 @@ import { cn } from '@/lib/utils';
 import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
 import { PageHeader } from '@/components/shared';
 import { usePageActions } from '@/hooks/usePageActions';
+import { Project, ProjectStatus, ViewMode } from '@/types/project';
+import { projectsData } from '@/data/projectsData';
 
-// Sample project data
-const projectsData = [
-  {
-    id: 1,
-    name: 'Residential Renovation',
-    client: 'Johnson Family',
-    location: 'Austin, TX',
-    type: 'Residential',
-    budget: 120000,
-    spent: 42500,
-    status: 'active',
-    progress: 75,
-    startDate: '2023-12-15',
-    endDate: '2024-08-30',
-    team: ['JD', 'MB', 'TS'],
-    description: 'Complete renovation of a 2-story family home including kitchen, bathrooms, and outdoor deck.',
-    tasks: { total: 42, completed: 28 },
-    imageUrl: 'https://images.unsplash.com/photo-1613545325278-f24b0cae1224?w=800&auto=format&fit=crop&q=60'
-  },
-  {
-    id: 2,
-    name: 'Commercial Office Space',
-    client: 'TechStart Inc.',
-    location: 'Dallas, TX',
-    type: 'Commercial',
-    budget: 450000,
-    spent: 112000,
-    status: 'planning',
-    progress: 25,
-    startDate: '2024-02-01',
-    endDate: '2024-12-10',
-    team: ['AW', 'RL'],
-    description: 'Development of a new 5-floor office building with modern amenities and eco-friendly design.',
-    tasks: { total: 64, completed: 12 },
-    imageUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=60'
-  },
-  {
-    id: 3,
-    name: 'Lakeside Apartment Complex',
-    client: 'Urban Dwellings LLC',
-    location: 'Houston, TX',
-    type: 'Residential',
-    budget: 3500000,
-    spent: 420000,
-    status: 'active',
-    progress: 12,
-    startDate: '2024-03-01',
-    endDate: '2025-06-30',
-    team: ['JD', 'KL', 'MB', 'TS'],
-    description: 'Construction of a luxury apartment complex with 24 units, swimming pool, and fitness center.',
-    tasks: { total: 108, completed: 14 },
-    imageUrl: 'https://images.unsplash.com/photo-1574958269340-fa927503f3dd?w=800&auto=format&fit=crop&q=60'
-  },
-  {
-    id: 4,
-    name: 'Historic Building Restoration',
-    client: 'City of San Antonio',
-    location: 'San Antonio, TX',
-    type: 'Restoration',
-    budget: 750000,
-    spent: 215000,
-    status: 'active',
-    progress: 28,
-    startDate: '2024-01-20',
-    endDate: '2025-01-15',
-    team: ['AW', 'KL', 'RL'],
-    description: 'Careful restoration of a 19th century building while preserving its historical architecture and features.',
-    tasks: { total: 86, completed: 24 },
-    imageUrl: 'https://images.unsplash.com/photo-1516156008625-3a9d6067fab5?w=800&auto=format&fit=crop&q=60'
-  },
-  {
-    id: 5,
-    name: 'Shopping Mall Extension',
-    client: 'Retail Properties Group',
-    location: 'Fort Worth, TX',
-    type: 'Commercial',
-    budget: 2800000,
-    spent: 0,
-    status: 'upcoming',
-    progress: 0,
-    startDate: '2024-08-01',
-    endDate: '2025-12-15',
-    team: [],
-    description: 'Addition of a new wing to an existing shopping mall, including 15 retail spaces and a food court.',
-    tasks: { total: 94, completed: 0 },
-    imageUrl: 'https://images.unsplash.com/photo-1581281658135-64230e4909f1?w=800&auto=format&fit=crop&q=60'
-  },
-  {
-    id: 6,
-    name: 'Public Library Remodel',
-    client: 'Austin Public Library',
-    location: 'Austin, TX',
-    type: 'Public',
-    budget: 1200000,
-    spent: 1190000,
-    status: 'completed',
-    progress: 100,
-    startDate: '2023-05-10',
-    endDate: '2024-01-20',
-    team: ['JD', 'TS'],
-    description: 'Complete remodeling of the central public library with modern technologies and accessibility features.',
-    tasks: { total: 72, completed: 72 },
-    imageUrl: 'https://images.unsplash.com/photo-1568667256549-094345857637?w=800&auto=format&fit=crop&q=60'
-  }
-];
-
-const Projects = () => {
+// Main component
+export function Projects() {
   const navigate = useNavigate();
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [currentTab, setCurrentTab] = useState('all');
+  const [currentTab, setCurrentTab] = useState<'all' | ProjectStatus>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredProjects, setFilteredProjects] = useState(projectsData);
-  const [view, setView] = useState('grid');
+  const [view, setView] = useState<ViewMode>('grid');
   
   // Check dark mode on component mount and whenever it might change
   useEffect(() => {
-    const checkDarkMode = () => {
+    function checkDarkMode() {
       setIsDarkMode(document.documentElement.classList.contains('dark'));
-    };
+    }
     
     // Check on mount
     checkDarkMode();
@@ -217,72 +114,6 @@ const Projects = () => {
     setFilteredProjects(filtered);
   }, [currentTab, searchTerm]);
   
-  // Navigation items
-  const navItems: NavItem[] = [
-    { 
-      label: 'Dashboard', 
-      path: '/dashboard', 
-      icon: <LayoutDashboard className="w-5 h-5" /> 
-    },
-    { 
-      label: 'Projects', 
-      path: '/projects', 
-      icon: <Briefcase className="w-5 h-5" />,
-      badge: {
-        text: '4',
-        color: 'blue'
-      }
-    },
-    { 
-      label: 'Schedule', 
-      path: '/schedule', 
-      icon: <Calendar className="w-5 h-5" /> 
-    },
-    { 
-      label: 'Materials', 
-      path: '/materials', 
-      icon: <Package className="w-5 h-5" /> 
-    },
-    { 
-      label: 'Expenses', 
-      path: '/expenses', 
-      icon: <DollarSign className="w-5 h-5" /> 
-    }
-  ];
-
-  // Get status badge based on project status
-  const getStatusBadge = (status) => {
-    switch(status) {
-      case 'active':
-        return <Badge className="bg-[#1E3A8A] text-white">Active</Badge>;
-      case 'planning':
-        return <Badge className="bg-[#D97706] text-white">Planning</Badge>;
-      case 'completed':
-        return <Badge className="bg-green-600 text-white">Completed</Badge>;
-      case 'upcoming':
-        return <Badge className="bg-purple-600 text-white">Upcoming</Badge>;
-      case 'on-hold':
-        return <Badge className="bg-red-600 text-white">On Hold</Badge>;
-      default:
-        return <Badge className="bg-gray-500 text-white">{status}</Badge>;
-    }
-  };
-
-  // Format currency
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
-
-  // Format date
-  const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: 'short', day: 'numeric' } as Intl.DateTimeFormatOptions;
-    return new Date(dateString).toLocaleDateString('en-US', options);
-  };
-
   // Calculate total budget and spent amounts
   const totalBudget = projectsData.reduce((acc, project) => acc + project.budget, 0);
   const totalSpent = projectsData.reduce((acc, project) => acc + project.spent, 0);
@@ -341,8 +172,40 @@ const Projects = () => {
       </div>
     </div>
   );
-};
+}
 
+// Helper functions
+function getStatusBadge(status: ProjectStatus) {
+  switch(status) {
+    case 'active':
+      return <Badge className="bg-[#1E3A8A] text-white">Active</Badge>;
+    case 'planning':
+      return <Badge className="bg-[#D97706] text-white">Planning</Badge>;
+    case 'completed':
+      return <Badge className="bg-green-600 text-white">Completed</Badge>;
+    case 'upcoming':
+      return <Badge className="bg-purple-600 text-white">Upcoming</Badge>;
+    case 'on-hold':
+      return <Badge className="bg-red-600 text-white">On Hold</Badge>;
+    default:
+      return <Badge className="bg-gray-500 text-white">{status}</Badge>;
+  }
+}
+
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0
+  }).format(amount);
+}
+
+function formatDate(dateString: string) {
+  const options = { year: 'numeric', month: 'short', day: 'numeric' } as Intl.DateTimeFormatOptions;
+  return new Date(dateString).toLocaleDateString('en-US', options);
+}
+
+// Component interfaces
 interface ProjectSummaryStatsProps {
   projectsCount: number
   completedCount: number
@@ -353,6 +216,31 @@ interface ProjectSummaryStatsProps {
   isDarkMode: boolean
 }
 
+interface SummaryCardProps {
+  title: string
+  value: number
+  valueLabel?: string
+  icon: React.ReactNode
+  color: 'blue' | 'green' | 'amber' | 'purple' | 'red'
+  isDarkMode: boolean
+  footer: React.ReactNode
+}
+
+interface ProjectFiltersProps {
+  currentTab: 'all' | ProjectStatus
+  setCurrentTab: (tab: 'all' | ProjectStatus) => void
+  searchTerm: string
+  setSearchTerm: (term: string) => void
+}
+
+interface ProjectsListProps {
+  filteredProjects: Project[]
+  view: ViewMode
+  setView: (view: ViewMode) => void
+  navigate: ReturnType<typeof useNavigate>
+}
+
+// Subcomponents
 function ProjectSummaryStats({
   projectsCount,
   completedCount,
@@ -455,16 +343,6 @@ function ProjectSummaryStats({
   )
 }
 
-interface SummaryCardProps {
-  title: string
-  value: number
-  valueLabel?: string
-  icon: React.ReactNode
-  color: 'blue' | 'green' | 'amber' | 'purple' | 'red'
-  isDarkMode: boolean
-  footer: React.ReactNode
-}
-
 function SummaryCard({
   title,
   value,
@@ -529,13 +407,6 @@ function SummaryCard({
   )
 }
 
-interface ProjectFiltersProps {
-  currentTab: 'all' | ProjectStatus
-  setCurrentTab: (tab: 'all' | ProjectStatus) => void
-  searchTerm: string
-  setSearchTerm: (term: string) => void
-}
-
 function ProjectFilters({
   currentTab,
   setCurrentTab,
@@ -592,13 +463,6 @@ function ProjectFilters({
       </Card>
     </m.div>
   )
-}
-
-interface ProjectsListProps {
-  filteredProjects: typeof projectsData
-  view: ViewMode
-  setView: (view: ViewMode) => void
-  navigate: ReturnType<typeof useNavigate>
 }
 
 function ProjectsList({
@@ -672,7 +536,7 @@ function ProjectsGridView({
   projects, 
   navigate 
 }: { 
-  projects: typeof projectsData
+  projects: Project[]
   navigate: ReturnType<typeof useNavigate>
 }) {
   return (
@@ -692,7 +556,7 @@ function ProjectCard({
   project, 
   navigate 
 }: {
-  project: typeof projectsData[0]
+  project: Project
   navigate: ReturnType<typeof useNavigate>
 }) {
   return (
@@ -762,7 +626,7 @@ function ProjectsListView({
   projects, 
   navigate 
 }: { 
-  projects: typeof projectsData
+  projects: Project[]
   navigate: ReturnType<typeof useNavigate>
 }) {
   return (
@@ -877,37 +741,4 @@ function ProjectsListView({
       </div>
     </div>
   )
-}
-
-// Helper Functions
-function getStatusBadge(status: ProjectStatus) {
-  switch(status) {
-    case 'active':
-      return <Badge className="bg-[#1E3A8A] text-white">Active</Badge>
-    case 'planning':
-      return <Badge className="bg-[#D97706] text-white">Planning</Badge>
-    case 'completed':
-      return <Badge className="bg-green-600 text-white">Completed</Badge>
-    case 'upcoming':
-      return <Badge className="bg-purple-600 text-white">Upcoming</Badge>
-    case 'on-hold':
-      return <Badge className="bg-red-600 text-white">On Hold</Badge>
-    default:
-      return <Badge className="bg-gray-500 text-white">{status}</Badge>
-  }
-}
-
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0
-  }).format(amount)
-}
-
-function formatDate(dateString: string) {
-  const options = { year: 'numeric', month: 'short', day: 'numeric' } as Intl.DateTimeFormatOptions
-  return new Date(dateString).toLocaleDateString('en-US', options)
-}
-
-export default Projects 
+} 
