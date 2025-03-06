@@ -111,9 +111,9 @@ import {
 } from 'lucide-react';
 import { DashboardLayout, DashboardSection, Grid } from '@/components/layout/test';
 import { PageHeader } from '@/components/shared';
-import MainNavigation from '@/components/layout/MainNavigation';
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
+import { MainNavigation } from '@/components/navigation/MainNavigation';
 
 // Define the TeamMember interface
 interface TeamMember {
@@ -269,7 +269,6 @@ const initialTeamMembers: TeamMember[] = [
   }
 ];
 
-
 // Define interface for new team members
 interface NewTeamMember {
   name: string;
@@ -384,35 +383,28 @@ const Team = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
-      <MainNavigation />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <PageHeader
-          title="Team Management"
-          subtitle="Manage your construction project team members"
-          icon={<Users className="h-6 w-6" />}
-          // theme="blue"
-          gradient={true}
-          animated={true}
-          actions={[
-            {
-              label: "Add Team Member",
-              icon: <UserPlus />,
-              variant: "construction",
-              onClick: () => setIsAddMemberOpen(true)
-            },
-            {
-              label: "Export",
-              icon: <Download />,
-              variant: "construction",
-              onClick: () => {/* Export functionality */}
-            }
-          ]}
-        />
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="py-0">
+          <PageHeader
+            title="Team Management"
+            subtitle="Manage your team members, roles, and assignments"
+            icon={<Users className="h-6 w-6" />}
+            gradient={true}
+            animated={true}
+            actions={[
+              {
+                label: "Add Team Member",
+                icon: <Plus />,
+                variant: "construction",
+                onClick: () => setIsAddMemberOpen(true)
+              }
+            ]}
+          />
+        </div>
 
         {/* Team Statistics */}
-        <div className="mt-8 mb-6">
+        <div className="mt-6 mb-8">
           <Grid cols={4} className="w-full gap-6">
             <Card className="bg-white dark:bg-slate-800 border dark:border-slate-700 shadow-sm hover:shadow-md transition-all duration-300">
               <CardContent className="p-4 flex items-center space-x-4">

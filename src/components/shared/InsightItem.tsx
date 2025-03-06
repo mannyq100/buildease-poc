@@ -1,7 +1,7 @@
 import React from 'react';
 import { Sparkles, Lightbulb, AlertTriangle, TrendingUp, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import { LazyMotion, domAnimation, m } from 'framer-motion';
 
 interface InsightItemProps {
   title: string;
@@ -79,24 +79,26 @@ export const InsightItem: React.FC<InsightItemProps> = ({
   };
 
   return (
-    <motion.div 
-      whileHover={{ scale: 1.02 }}
-      className={cn(
-        "flex items-start space-x-4 p-4 rounded-lg transition-all duration-300 shadow-sm hover:shadow-md", 
-        style.container,
-        className
-      )}
-    >
-      <div className={cn(
-        "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0", 
-        style.iconBg
-      )}>
-        {getIcon()}
-      </div>
-      <div>
-        <h4 className={cn("font-semibold", style.heading)}>{title}</h4>
-        <p className={cn("text-sm mt-1.5 leading-relaxed", style.text)}>{description}</p>
-      </div>
-    </motion.div>
+    <LazyMotion features={domAnimation}>
+      <m.div 
+        whileHover={{ scale: 1.02 }}
+        className={cn(
+          "flex items-start space-x-4 p-4 rounded-lg transition-all duration-300 shadow-sm hover:shadow-md", 
+          style.container,
+          className
+        )}
+      >
+        <div className={cn(
+          "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0", 
+          style.iconBg
+        )}>
+          {getIcon()}
+        </div>
+        <div>
+          <h4 className={cn("font-semibold", style.heading)}>{title}</h4>
+          <p className={cn("text-sm mt-1.5 leading-relaxed", style.text)}>{description}</p>
+        </div>
+      </m.div>
+    </LazyMotion>
   );
 }; 

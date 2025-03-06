@@ -116,7 +116,6 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
-import MainNavigation from '@/components/layout/MainNavigation';
 
 // Define expense type
 interface Expense {
@@ -769,10 +768,8 @@ const Expenses = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
-      <MainNavigation />
-      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <PageHeader
+      <PageHeader 
           title="Expenses"
           subtitle="Track, analyze and manage project expenses"
           icon={<DollarSign className="h-6 w-6" />}
@@ -834,12 +831,12 @@ const Expenses = () => {
               <CardContent>
                 <div className="flex flex-col">
                   <span className="text-3xl font-bold">${budget.total.toLocaleString()}</span>
-                  <div className="mt-2">
-                    <div className="flex justify-between text-sm mb-1">
+                <div className="mt-2">
+                  <div className="flex justify-between text-sm mb-1">
                       <span>Budget spent</span>
                       <span className="font-medium">{budgetProgress.toFixed(1)}%</span>
-                    </div>
-                    <Progress value={budgetProgress} className="h-2" />
+                  </div>
+                  <Progress value={budgetProgress} className="h-2" />
                   </div>
                 </div>
               </CardContent>
@@ -875,7 +872,7 @@ const Expenses = () => {
                 <div className="flex justify-between items-start">
                   <CardTitle className="text-lg text-deepblue dark:text-blue-300">Pending Review</CardTitle>
                   <AlertCircle className="h-5 w-5 text-burntorange" />
-                </div>
+          </div>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col">
@@ -900,73 +897,73 @@ const Expenses = () => {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="text-sm font-medium mb-1 block">Date Range</label>
-                  <Select 
+            <Select 
                     value={dateFilter}
                     onValueChange={setDateFilter}
-                  >
+            >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select date range" />
-                    </SelectTrigger>
-                    <SelectContent>
+              </SelectTrigger>
+              <SelectContent>
                       <SelectItem value="all">All Time</SelectItem>
                       <SelectItem value="thisMonth">This Month</SelectItem>
                       <SelectItem value="lastMonth">Last Month</SelectItem>
                       <SelectItem value="thisQuarter">This Quarter</SelectItem>
                       <SelectItem value="thisYear">This Year</SelectItem>
-                    </SelectContent>
-                  </Select>
+              </SelectContent>
+            </Select>
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-1 block">Project</label>
-                  <Select 
-                    value={projectFilter} 
-                    onValueChange={setProjectFilter}
-                  >
+            <Select 
+              value={projectFilter} 
+              onValueChange={setProjectFilter}
+            >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select project" />
-                    </SelectTrigger>
-                    <SelectContent>
+              </SelectTrigger>
+              <SelectContent>
                       <SelectItem value="all">All Projects</SelectItem>
-                      {projects.map(project => (
-                        <SelectItem key={project} value={project}>{project}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                {projects.map(project => (
+                  <SelectItem key={project} value={project}>{project}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-1 block">Category</label>
-                  <Select 
+            <Select 
                     value={categoryFilter}
                     onValueChange={setCategoryFilter}
-                  >
+            >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
+              </SelectTrigger>
+              <SelectContent>
                       <SelectItem value="all">All Categories</SelectItem>
                       {categories.map(category => (
                         <SelectItem key={category} value={category}>{category}</SelectItem>
                       ))}
-                    </SelectContent>
-                  </Select>
+              </SelectContent>
+            </Select>
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-1 block">Status</label>
-                  <Select 
-                    value={statusFilter} 
-                    onValueChange={setStatusFilter}
-                  >
+            <Select 
+              value={statusFilter} 
+              onValueChange={setStatusFilter}
+            >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
+              </SelectTrigger>
+              <SelectContent>
                       <SelectItem value="all">All Statuses</SelectItem>
                       <SelectItem value="approved">Approved</SelectItem>
                       <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="rejected">Rejected</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              </SelectContent>
+            </Select>
+          </div>
               </div>
             </CardContent>
           </Card>
@@ -1001,7 +998,7 @@ const Expenses = () => {
                         />
                       </AreaChart>
                     </ResponsiveContainer>
-                  </div>
+                </div>
                 ) : (
                   <div className="h-64 flex items-center justify-center">
                     <p className="text-muted-foreground">No data available for the selected filters</p>
@@ -1047,11 +1044,11 @@ const Expenses = () => {
                         <RechartsTooltip formatter={(value) => [`$${value}`, 'Amount']} />
                       </RechartsWPieChart>
                     </ResponsiveContainer>
-                  </div>
+                </div>
                 ) : (
                   <div className="h-64 flex items-center justify-center">
                     <p className="text-muted-foreground">No data available for the selected filters</p>
-                  </div>
+              </div>
                 )}
               </CardContent>
             </Card>
@@ -1099,12 +1096,12 @@ const Expenses = () => {
               </div>
             </div>
           </CardHeader>
-          <div className="overflow-x-auto">
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50 dark:bg-muted/20">
                   <TableHead className="w-[40px]">
-                    <Checkbox
+                      <Checkbox 
                       checked={
                         filteredExpenses.length > 0 &&
                         selectedExpenses.length === filteredExpenses.length
@@ -1142,7 +1139,7 @@ const Expenses = () => {
                   paginatedExpenses.map((expense) => (
                     <TableRow key={expense.id} className="group hover:bg-muted/30 dark:hover:bg-muted/10">
                       <TableCell>
-                        <Checkbox
+                        <Checkbox 
                           checked={selectedExpenses.includes(expense.id)}
                           onCheckedChange={(checked) => {
                             toggleExpenseSelection(expense.id, !!checked);
@@ -1179,7 +1176,7 @@ const Expenses = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge 
+                          <Badge 
                           variant={
                             expense.status === 'approved'
                               ? 'success'
@@ -1194,50 +1191,50 @@ const Expenses = () => {
                             : expense.status === 'rejected'
                             ? 'Rejected'
                             : 'Pending'}
-                        </Badge>
+                          </Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon-sm" className="opacity-0 group-hover:opacity-100">
                                 <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => viewExpenseDetails(expense)}>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => viewExpenseDetails(expense)}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleUpdateExpenseStatus(expense.id, 'approved')}>
+                            </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleUpdateExpenseStatus(expense.id, 'approved')}>
                                 <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
                                 Approve
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleUpdateExpenseStatus(expense.id, 'rejected')}>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleUpdateExpenseStatus(expense.id, 'rejected')}>
                                 <XCircle className="mr-2 h-4 w-4 text-red-500" />
                                 Reject
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
+                                </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => handleDeleteExpense(expense.id)}>
                                 <Trash2 className="mr-2 h-4 w-4 text-red-500" />
                                 Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                </div>
                       </TableCell>
                     </TableRow>
                   ))
-                )}
+              )}
               </TableBody>
             </Table>
-          </div>
+            </div>
           <div className="flex items-center justify-between px-4 py-4 border-t">
             <div className="text-sm text-muted-foreground">
               Showing <span className="font-medium">{paginatedExpenses.length}</span> of{" "}
               <span className="font-medium">{filteredExpenses.length}</span> expenses
-            </div>
+                </div>
             <div className="flex items-center space-x-2">
               <Button 
                 variant="outline"
@@ -1248,7 +1245,7 @@ const Expenses = () => {
                 <ChevronLeft className="h-4 w-4 mr-1" />
                 Previous
               </Button>
-              <Button
+                  <Button 
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
@@ -1256,11 +1253,11 @@ const Expenses = () => {
               >
                 Next
                 <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
-          </div>
-        </Card>
-      </div>
+                  </Button>
+                  </div>
+                  </div>
+            </Card>
+                  </div>
 
       {/* Add Expense Dialog */}
       <Dialog open={isAddExpenseOpen} onOpenChange={setIsAddExpenseOpen}>
@@ -1278,9 +1275,9 @@ const Expenses = () => {
               <label htmlFor="description" className="text-sm font-medium">
                 Description
               </label>
-              <Input 
-                id="description" 
-                value={newExpense.description} 
+              <Input
+                id="description"
+                value={newExpense.description}
                 onChange={(e) => setNewExpense({...newExpense, description: e.target.value})}
                 placeholder="Enter expense description"
                 required
@@ -1292,41 +1289,41 @@ const Expenses = () => {
               <div className="grid gap-3">
                 <label htmlFor="amount" className="text-sm font-medium">
                   Amount
-                </label>
+              </label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                  <Input 
-                    id="amount" 
-                    type="number"
+              <Input
+                id="amount"
+                type="number"
                     min="0"
                     step="0.01"
-                    value={newExpense.amount} 
-                    onChange={(e) => setNewExpense({...newExpense, amount: e.target.value})}
+                value={newExpense.amount}
+                onChange={(e) => setNewExpense({...newExpense, amount: e.target.value})}
                     placeholder="0.00"
                     className="pl-10"
-                  />
+              />
                 </div>
-              </div>
-              
+            </div>
+            
               <div className="grid gap-3">
                 <label htmlFor="category" className="text-sm font-medium">
-                  Category
-                </label>
-                <Select 
-                  value={newExpense.category} 
+                Category
+              </label>
+              <Select 
+                value={newExpense.category}
                   onValueChange={(value) => setNewExpense({...newExpense, category: value})}
-                >
+              >
                   <SelectTrigger id="category">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.filter(c => c !== 'All Categories').map(category => (
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.filter(c => c !== 'All Categories').map(category => (
                       <SelectItem key={category} value={category}>
                         {category}
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  ))}
+                </SelectContent>
+              </Select>
               </div>
             </div>
             
@@ -1337,13 +1334,13 @@ const Expenses = () => {
               </label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                <Input 
-                  id="date" 
-                  type="date" 
-                  value={newExpense.date}
-                  onChange={(e) => setNewExpense({...newExpense, date: e.target.value})}
+              <Input
+                id="date"
+                type="date"
+                value={newExpense.date}
+                onChange={(e) => setNewExpense({...newExpense, date: e.target.value})}
                   className="pl-10"
-                />
+              />
               </div>
             </div>
             
@@ -1351,83 +1348,83 @@ const Expenses = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="grid gap-3">
                 <label htmlFor="project" className="text-sm font-medium">
-                  Project
-                </label>
-                <Select 
-                  value={newExpense.project} 
+                Project
+              </label>
+              <Select 
+                value={newExpense.project}
                   onValueChange={(value) => setNewExpense({...newExpense, project: value})}
-                >
+              >
                   <SelectTrigger id="project">
-                    <SelectValue placeholder="Select project" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projects.filter(p => p !== 'All Projects').map(project => (
+                  <SelectValue placeholder="Select project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.filter(p => p !== 'All Projects').map(project => (
                       <SelectItem key={project} value={project}>
                         {project}
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
               <div className="grid gap-3">
                 <label htmlFor="phase" className="text-sm font-medium">
-                  Phase
-                </label>
-                <Select 
-                  value={newExpense.phase} 
+                Phase
+              </label>
+              <Select 
+                value={newExpense.phase}
                   onValueChange={(value) => setNewExpense({...newExpense, phase: value})}
-                >
+              >
                   <SelectTrigger id="phase">
-                    <SelectValue placeholder="Select phase" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {phases.filter(p => p !== 'All Phases').map(phase => (
+                  <SelectValue placeholder="Select phase" />
+                </SelectTrigger>
+                <SelectContent>
+                  {phases.filter(p => p !== 'All Phases').map(phase => (
                       <SelectItem key={phase} value={phase}>
                         {phase}
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             </div>
             
             {/* Payment Method and Vendor */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="grid gap-3">
                 <label htmlFor="paymentMethod" className="text-sm font-medium">
-                  Payment Method
-                </label>
-                <Select 
-                  value={newExpense.paymentMethod} 
+                Payment Method
+              </label>
+              <Select 
+                value={newExpense.paymentMethod}
                   onValueChange={(value) => setNewExpense({...newExpense, paymentMethod: value})}
-                >
+              >
                   <SelectTrigger id="paymentMethod">
                     <SelectValue placeholder="Select method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Cash">Cash</SelectItem>
-                    <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                    <SelectItem value="Credit Card">Credit Card</SelectItem>
-                    <SelectItem value="Mobile Money">Mobile Money</SelectItem>
-                    <SelectItem value="Check">Check</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Cash">Cash</SelectItem>
+                  <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                  <SelectItem value="Credit Card">Credit Card</SelectItem>
+                  <SelectItem value="Mobile Money">Mobile Money</SelectItem>
+                  <SelectItem value="Check">Check</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
               <div className="grid gap-3">
                 <label htmlFor="vendor" className="text-sm font-medium">
                   Vendor/Supplier
-                </label>
+              </label>
                 <Input 
                   id="vendor" 
                   value={newExpense.vendor} 
                   onChange={(e) => setNewExpense({...newExpense, vendor: e.target.value})}
                   placeholder="Enter vendor name"
                 />
-              </div>
             </div>
-            
+          </div>
+          
             {/* Receipt Toggle */}
             <div className="flex items-center space-x-2 mt-2">
               <Checkbox 
@@ -1443,29 +1440,29 @@ const Expenses = () => {
               </label>
               
               {newExpense.receiptUploaded && (
-                <Button 
+                        <Button
                   variant="outline" 
-                  size="sm" 
+                          size="sm"
                   className="ml-auto"
-                  onClick={() => {
+                          onClick={() => {
                     // In a real application, this would trigger a file upload dialog
                     alert("This would open a file selection dialog in a real application");
-                  }}
-                >
+                          }}
+                        >
                   <Upload className="h-4 w-4 mr-2" />
                   Upload Receipt
-                </Button>
+                        </Button>
               )}
+                  </div>
             </div>
-          </div>
-          
-          <DialogFooter>
+            
+            <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddExpenseOpen(false)}>Cancel</Button>
             <Button onClick={handleAddExpense}>Add Expense</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+          </div>
   );
 };
 

@@ -100,15 +100,11 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
-import { 
-  DashboardLayout, 
-  DashboardSection, 
-  Grid 
-} from '@/components/layout/test';
-import { 
-  PageHeader
-} from '@/components/shared';
-import MainNavigation from '@/components/layout/MainNavigation';
+import { Grid } from '@/components/layout/Grid';
+import { MainNavigation } from '@/components/navigation/MainNavigation';
+import { PageHeader } from '@/components/shared';
+import { usePageActions } from '@/hooks/usePageActions';
+import { cn } from '@/lib/utils';
 
 // Mock data for materials
 const initialMaterials = [
@@ -315,6 +311,7 @@ const statuses = [
 
 const Materials = () => {
   const navigate = useNavigate();
+  const { getCommonActions } = usePageActions('materials');
   const [materials, setMaterials] = useState(initialMaterials);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All Categories');
@@ -408,35 +405,39 @@ const Materials = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
-      <MainNavigation />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <PageHeader
-          title="Materials"
-          subtitle="Track and manage construction materials inventory"
-          icon={<Package className="h-6 w-6" />}
-          gradient={true}
-          animated={true}
-          actions={[
-            {
-              label: "Add Material",
-              icon: <Plus />,
-              variant: "construction",
-              onClick: () => setIsAddMaterialOpen(true)
-            },
-            {
-              label: "Export",
-              icon: <Download />,
-              variant: "construction",
-              onClick: () => {/* Export functionality */}
-            }
-          ]}
-        />
+    <div className="min-h-screen bg-gray-50/50 dark:bg-slate-900/50">
+      <MainNavigation
+        title="Materials"
+        icon={<Package className="h-6 w-6" />}
+      />
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="py-6">
+          <PageHeader
+            title="Materials Management"
+            subtitle="Track and manage construction materials and inventory"
+            icon={<Package className="h-6 w-6" />}
+            gradient={true}
+            animated={true}
+            actions={[
+              {
+                label: "Add Material",
+                icon: <Plus />,
+                variant: "construction",
+                onClick: () => setIsAddMaterialOpen(true)
+              },
+              {
+                label: "Export",
+                icon: <Download />,
+                variant: "construction",
+                onClick: () => {/* Export functionality */}
+              }
+            ]}
+          />
+        </div>
 
         {/* Materials Statistics */}
-        <div className="mt-8 mb-6">
-          <Grid cols={4} className="w-full gap-6">
+        <div className="mt-6 mb-8">
+          <Grid cols={4} gap="lg" className="w-full">
             <Card className="bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-shadow">
               <CardContent className="p-4 flex items-center space-x-4">
                 <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full">
@@ -537,15 +538,15 @@ const Materials = () => {
               <div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statuses.map(status => (
-                      <SelectItem key={status} value={status}>{status}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                {statuses.map(status => (
+                  <SelectItem key={status} value={status}>{status}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
             </div>
           </CardContent>
         </Card>
@@ -563,7 +564,7 @@ const Materials = () => {
               </div>
             </div>
           </CardHeader>
-          <div className="overflow-x-auto">
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-gray-50 dark:bg-slate-800">
@@ -626,46 +627,46 @@ const Materials = () => {
                           }>
                             {material.status}
                           </Badge>
-                          {material.status !== 'Out of Stock' && material.status !== 'On Order' && (
+                        {material.status !== 'Out of Stock' && material.status !== 'On Order' && (
                             <Progress 
                               value={(material.inStock / (material.minStock * 2)) * 100} 
                               className="h-1 w-20" 
                             />
                           )}
-                        </div>
+                          </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon-sm" className="opacity-0 group-hover:opacity-100">
                                 <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
                               <DropdownMenuItem>
                                 <Eye className="mr-2 h-4 w-4" />
                                 View Details
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                            <DropdownMenuItem>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit Material
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleOrderMaterial(material.id, 10)}>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleOrderMaterial(material.id, 10)}>
                                 <ShoppingCart className="mr-2 h-4 w-4" />
                                 Order More
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
                                 className="text-red-600 dark:text-red-400"
-                                onClick={() => handleDeleteMaterial(material.id)}
-                              >
+                              onClick={() => handleDeleteMaterial(material.id)}
+                            >
                                 <Trash className="mr-2 h-4 w-4" />
                                 Delete Material
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                </div>
                       </TableCell>
                     </TableRow>
                   ))

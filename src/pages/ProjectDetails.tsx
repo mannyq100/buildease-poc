@@ -35,7 +35,6 @@ import {
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { DashboardSection } from '@/components/layout/DashboardSection';
 import { HorizontalNav, type NavItem } from '@/components/navigation/HorizontalNav';
-import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -55,7 +54,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import MainNavigation from '@/components/layout/MainNavigation';
 
 interface DatePickerProps {
   mode: 'single';
@@ -197,31 +195,37 @@ const ProjectDetails = () => {
     {
       label: "Overview",
       value: "overview",
+      path: `/projects/${id}/overview`,
       icon: <Home className="h-4 w-4" />
     },
     {
       label: "Schedule",
       value: "schedule",
+      path: `/projects/${id}/schedule`,
       icon: <Calendar className="h-4 w-4" />
     },
     {
       label: "Budget",
       value: "budget",
+      path: `/projects/${id}/budget`,
       icon: <DollarSign className="h-4 w-4" />
     },
     {
       label: "Team",
       value: "team",
+      path: `/projects/${id}/team`,
       icon: <Users className="h-4 w-4" />
     },
     {
       label: "Materials",
       value: "materials",
+      path: `/projects/${id}/materials`,
       icon: <Package className="h-4 w-4" />
     },
     {
       label: "Documents",
       value: "documents",
+      path: `/projects/${id}/documents`,
       icon: <FileText className="h-4 w-4" />,
       badge: {
         text: "3",
@@ -231,6 +235,7 @@ const ProjectDetails = () => {
     {
       label: "Photos",
       value: "photos",
+      path: `/projects/${id}/photos`,
       icon: <Image className="h-4 w-4" />
     }
   ];
@@ -328,13 +333,11 @@ const ProjectDetails = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
-      <MainNavigation />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <PageHeader
-          title={`Residential Renovation #${id}`}
-          subtitle="Modern home renovation project with eco-friendly materials"
-          // breadcrumbs={breadcrumbItems}
+      <PageHeader
+        title={`Residential Renovation #${id}`}
+        subtitle="Modern home renovation project with eco-friendly materials"
+        // breadcrumbs={breadcrumbItems}
           gradient={true}
           animated={true}
           actions={[
@@ -355,13 +358,13 @@ const ProjectDetails = () => {
                 <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg shadow-sm">
                   <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 </div>
-                <div>
+          <div>
                   <p className="text-sm text-gray-600 dark:text-gray-300">Timeline</p>
                   <div className="flex items-baseline gap-2">
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">7 months</p>
                   </div>
                 </div>
-              </div>
+          </div>
             </CardContent>
           </Card>
           
@@ -370,14 +373,14 @@ const ProjectDetails = () => {
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg shadow-sm">
                   <DollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                </div>
+            </div>
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-300">Budget</p>
                   <div className="flex items-baseline gap-2">
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">$120,000</p>
-                  </div>
-                </div>
-              </div>
+            </div>
+          </div>
+        </div>
             </CardContent>
           </Card>
           
@@ -403,18 +406,18 @@ const ProjectDetails = () => {
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-lg shadow-sm">
                   <CheckSquare className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                </div>
+                    </div>
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-300">Progress</p>
                   <div className="flex items-baseline gap-2">
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">75%</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">complete</p>
-                  </div>
-                </div>
-              </div>
+                      </div>
+                      </div>
+                    </div>
             </CardContent>
           </Card>
-        </div>
+                    </div>
 
         {/* Project Navigation */}
         <div className="border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 sticky top-16 z-30 mt-8">
@@ -423,8 +426,8 @@ const ProjectDetails = () => {
             variant="underlined"
             showIcons={true}
             className="py-2"
-          />
-        </div>
+                      />
+                    </div>
 
         {/* Tab Content */}
         <div className="mt-8">
@@ -438,17 +441,17 @@ const ProjectDetails = () => {
                     <CardTitle className="text-xl text-[#1E1E1E] dark:text-white">Project Phases</CardTitle>
                     <CardDescription>Construction timeline breakdown</CardDescription>
                   </div>
-                  <Button 
+                    <Button 
                     size="sm"
                     className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white"
                     onClick={() => setShowPhaseDialog(true)}
-                  >
+                    >
                     <Plus className="h-4 w-4 mr-1" /> Add Phase
-                  </Button>
+                    </Button>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {phases.map((phase) => (
+            <div className="space-y-4">
+              {phases.map((phase) => (
                       <PhaseCard
                         key={phase.id}
                         name={phase.name}
@@ -464,104 +467,104 @@ const ProjectDetails = () => {
                 </CardContent>
               </Card>
 
-              {/* Recent Activity */}
+          {/* Recent Activity */}
               <Card className="bg-white dark:bg-slate-800 shadow-sm">
                 <CardHeader>
                   <CardTitle className="text-xl text-[#1E1E1E] dark:text-white">Recent Activity</CardTitle>
                   <CardDescription>Latest updates and changes</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <ActivityItem
-                      icon={<FileText className="h-5 w-5" />}
-                      title="Permit Approval"
-                      description="Building permit has been approved by the city."
-                      time="2 days ago"
-                      iconColor="blue"
-                    />
-                    <ActivityItem
-                      icon={<DollarSign className="h-5 w-5" />}
-                      title="Payment Made"
-                      description="$15,450 paid to contractor for foundation work."
-                      time="5 days ago"
-                      iconColor="green"
-                    />
-                    <ActivityItem
-                      icon={<Users className="h-5 w-5" />}
-                      title="Team Updated"
-                      description="2 new contractors added to the team."
-                      time="1 week ago"
-                      iconColor="indigo"
-                    />
-                  </div>
+            <div className="space-y-4">
+              <ActivityItem
+                icon={<FileText className="h-5 w-5" />}
+                title="Permit Approval"
+                description="Building permit has been approved by the city."
+                time="2 days ago"
+                iconColor="blue"
+              />
+              <ActivityItem
+                icon={<DollarSign className="h-5 w-5" />}
+                title="Payment Made"
+                description="$15,450 paid to contractor for foundation work."
+                time="5 days ago"
+                iconColor="green"
+              />
+              <ActivityItem
+                icon={<Users className="h-5 w-5" />}
+                title="Team Updated"
+                description="2 new contractors added to the team."
+                time="1 week ago"
+                iconColor="indigo"
+              />
+            </div>
                 </CardContent>
               </Card>
             </div>
-
+        
             {/* Sidebar */}
             <div className="space-y-6">
-              {/* Project Insights */}
+          {/* Project Insights */}
               <Card className={cn(
                 "border shadow-sm",
-                isDarkMode 
-                  ? "bg-indigo-950/30 border-indigo-900/50" 
-                  : "bg-gradient-to-br from-blue-50/80 to-indigo-50/80 border-blue-100"
+              isDarkMode 
+                ? "bg-indigo-950/30 border-indigo-900/50" 
+                : "bg-gradient-to-br from-blue-50/80 to-indigo-50/80 border-blue-100"
               )}>
                 <CardHeader>
                   <CardTitle className="text-xl text-[#1E1E1E] dark:text-white">Project Insights</CardTitle>
                   <CardDescription>AI-powered analysis</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    <InsightItem
-                      title="Budget Forecast"
-                      description="Project is currently 5% under budget. Most savings from efficient material sourcing."
-                      type="success"
-                    />
-                    <InsightItem
-                      title="Schedule Analysis"
-                      description="Current pace suggests completion 2 weeks ahead of schedule if weather permits."
-                      type="default"
-                    />
-                    <InsightItem
-                      title="Risk Detection"
-                      description="Material delivery delays possible in May due to supplier capacity constraints."
-                      type="warning"
-                    />
-                  </div>
+            <div className="space-y-3">
+              <InsightItem
+                title="Budget Forecast"
+                description="Project is currently 5% under budget. Most savings from efficient material sourcing."
+                type="success"
+              />
+              <InsightItem
+                title="Schedule Analysis"
+                description="Current pace suggests completion 2 weeks ahead of schedule if weather permits."
+                type="default"
+              />
+              <InsightItem
+                title="Risk Detection"
+                description="Material delivery delays possible in May due to supplier capacity constraints."
+                type="warning"
+              />
+            </div>
                 </CardContent>
               </Card>
-
-              {/* Quick Actions */}
+        
+          {/* Quick Actions */}
               <Card className="bg-white dark:bg-slate-800 shadow-sm">
                 <CardHeader>
                   <CardTitle className="text-xl text-[#1E1E1E] dark:text-white">Quick Actions</CardTitle>
                   <CardDescription>Frequent operations</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2">
                     <Button variant="outline" className="justify-start hover:bg-[#1E3A8A]/10 hover:text-[#1E3A8A]">
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Message Team
-                    </Button>
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Message Team
+              </Button>
                     <Button variant="outline" className="justify-start hover:bg-[#D97706]/10 hover:text-[#D97706]">
-                      <FileText className="h-4 w-4 mr-2" />
-                      Add Document
-                    </Button>
+                <FileText className="h-4 w-4 mr-2" />
+                Add Document
+              </Button>
                     <Button variant="outline" className="justify-start hover:bg-[#1E3A8A]/10 hover:text-[#1E3A8A]">
-                      <Users className="h-4 w-4 mr-2" />
-                      Update Team
-                    </Button>
+                <Users className="h-4 w-4 mr-2" />
+                Update Team
+              </Button>
                     <Button variant="outline" className="justify-start hover:bg-[#D97706]/10 hover:text-[#D97706]">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Schedule Meeting
-                    </Button>
-                  </div>
+                <Calendar className="h-4 w-4 mr-2" />
+                Schedule Meeting
+              </Button>
+            </div>
                 </CardContent>
               </Card>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
       </div>
     </div>
   );

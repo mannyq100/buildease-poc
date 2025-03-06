@@ -1,180 +1,61 @@
+/* Import fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Open+Sans:wght@400;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* Construction theme color palette */
-    --deepblue: 210 100% 20%;
-    --deepblue-light: 210 90% 30%;
-    --deepblue-dark: 210 100% 15%;
-    
-    --darkgreen: 160 100% 20%;
-    --darkgreen-light: 160 90% 25%;
-    --darkgreen-dark: 160 100% 15%;
-    
-    --burntorange: 25 100% 40%;
-    --burntorange-light: 25 90% 50%;
-    --burntorange-dark: 25 100% 35%;
-    
-    --lightgray: 220 20% 95%;
-    --lightgray-dark: 220 20% 90%;
-    --lightgray-darker: 220 20% 85%;
-
     /* Base colors */
     --background: 0 0% 100%;
-    --foreground: 210 100% 10%;
+    --foreground: 222.2 84% 4.9%;
 
-    /* Card styles */
-    --card: 0 0% 100%;
-    --card-foreground: 210 100% 15%;
-    --card-border: 210 20% 90%;
-    --card-shadow: 0 4px 10px -1px rgba(0, 0, 0, 0.15), 0 2px 6px -1px rgba(0, 0, 0, 0.1);
-    --card-shadow-hover: 0 10px 20px -3px rgba(0, 0, 0, 0.15), 0 4px 8px -2px rgba(0, 0, 0, 0.1);
-
-    /* Popover styles */
-    --popover: 0 0% 100%;
-    --popover-foreground: 210 100% 10%;
-
-    /* Primary brand colors - Deep Blue */
-    --primary: 210 100% 20%;
-    --primary-foreground: 210 20% 98%;
-    --primary-lighter: 210 90% 30%;
-    --primary-darker: 210 100% 15%;
-
-    /* Secondary colors - Dark Green */
-    --secondary: 160 100% 20%;
-    --secondary-foreground: 210 20% 98%;
-    --secondary-lighter: 160 90% 25%;
-    --secondary-darker: 160 100% 15%;
-
-    /* Muted elements - Light Gray */
-    --muted: 220 20% 95%;
-    --muted-foreground: 220 10% 40%;
-
-    /* Accent colors - Burnt Orange */
-    --accent: 25 100% 40%;
-    --accent-foreground: 210 20% 98%;
-    --accent-lighter: 25 90% 50%;
-    --accent-darker: 25 100% 35%;
-
-    /* Destructive colors */
-    --destructive: 0 85% 50%;
-    --destructive-foreground: 210 20% 98%;
-    --destructive-lighter: 5 90% 60%;
-    --destructive-darker: 355 80% 40%;
-
-    /* Success colors - Dark Green */
-    --success: 160 100% 25%;
-    --success-foreground: 210 20% 98%;
-    --success-lighter: 160 90% 30%;
-    --success-darker: 160 100% 20%;
+    /* New warm, construction-themed palette */
+    --primary: 210 70% 43%;  /* Warm blue */
+    --primary-foreground: 210 40% 98%;
+    --primary-lighter: 210 70% 53%;
+    --primary-darker: 210 70% 33%;
     
-    /* Warning colors - Burnt Orange */
-    --warning: 25 100% 45%;
-    --warning-foreground: 210 20% 98%;
-    --warning-lighter: 25 90% 55%;
-    --warning-darker: 25 100% 40%;
+    --secondary: 30 20% 50%;  /* Warm gray */
+    --secondary-foreground: 30 10% 98%;
+    
+    --accent: 25 90% 58%;  /* Warm orange */
+    --accent-foreground: 25 10% 98%;
+    
+    /* Status colors */
+    --success: 142 72% 29%;
+    --success-foreground: 144 70% 98%;
+    --warning: 45 93% 47%;
+    --warning-foreground: 46 92% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
 
-    /* Information colors - Deep Blue */
-    --info: 210 100% 30%;
-    --info-foreground: 210 20% 98%;
-    --info-lighter: 210 90% 40%; 
-    --info-darker: 210 100% 25%;
-
-    /* Border and input styles */
-    --border: 210 20% 85%;
-    --input: 210 20% 85%;
-    --ring: 210 100% 20%;
-
-    /* Radius for rounded corners */
-    --radius: 0.375rem;
-
-    /* Glow effects */
-    --glow-primary: 0 0 20px rgba(10, 34, 80, 0.5);
-    --glow-secondary: 0 0 20px rgba(0, 77, 38, 0.5);
-    --glow-accent: 0 0 20px rgba(204, 85, 0, 0.5);
-    --glow-success: 0 0 20px rgba(0, 77, 38, 0.5);
-    --glow-warning: 0 0 20px rgba(204, 85, 0, 0.5);
-    --glow-error: 0 0 20px rgba(204, 0, 0, 0.5);
-    --glow-info: 0 0 20px rgba(10, 34, 80, 0.5);
+    /* Neutral colors */
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    
+    /* Improved shadows for depth */
+    --card-shadow: 0 2px 8px -2px rgba(0,0,0,0.1), 0 4px 16px -4px rgba(0,0,0,0.1);
+    --card-shadow-hover: 0 4px 12px -2px rgba(0,0,0,0.12), 0 8px 24px -4px rgba(0,0,0,0.12);
+    
+    /* Improved border radius */
+    --radius: 0.75rem;
   }
 
   .dark {
-    /* Dark mode base colors */
-    --background: 210 50% 10%;
-    --foreground: 210 20% 98%;
-
-    /* Card styles */
-    --card: 210 50% 12%;
-    --card-foreground: 210 20% 98%;
-    --card-border: 210 50% 18%;
-    --card-shadow: 0 4px 10px 0 rgba(0, 0, 0, 0.45);
-    --card-shadow-hover: 0 10px 20px 0 rgba(0, 0, 0, 0.55);
-
-    /* Popover styles */
-    --popover: 210 50% 12%;
-    --popover-foreground: 210 20% 98%;
-
-    /* Primary brand colors - Deep Blue */
-    --primary: 210 90% 40%;
-    --primary-foreground: 210 20% 98%;
-    --primary-lighter: 210 80% 50%;
-    --primary-darker: 210 90% 30%;
-
-    /* Secondary colors - Dark Green */
-    --secondary: 160 80% 30%;
-    --secondary-foreground: 210 20% 98%;
-    --secondary-lighter: 160 70% 40%;
-    --secondary-darker: 160 80% 25%;
-
-    /* Muted elements */
-    --muted: 210 40% 20%;
-    --muted-foreground: 210 20% 75%;
-
-    /* Accent colors - Burnt Orange */
-    --accent: 25 90% 50%;
-    --accent-foreground: 210 20% 98%;
-    --accent-lighter: 25 80% 60%;
-    --accent-darker: 25 90% 40%;
-
-    /* Destructive colors */
-    --destructive: 0 80% 60%;
-    --destructive-foreground: 210 20% 98%;
-    --destructive-lighter: 5 75% 70%;
-    --destructive-darker: 355 80% 50%;
-
-    /* Success colors - Dark Green */
-    --success: 160 80% 30%;
-    --success-foreground: 210 20% 98%;
-    --success-lighter: 160 70% 40%;
-    --success-darker: 160 80% 25%;
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
     
-    /* Warning colors - Burnt Orange */
-    --warning: 25 85% 55%;
-    --warning-foreground: 210 20% 98%;
-    --warning-lighter: 25 75% 65%;
-    --warning-darker: 25 85% 45%;
-
-    /* Information colors - Deep Blue */
-    --info: 210 80% 40%;
-    --info-foreground: 210 20% 98%;
-    --info-lighter: 210 70% 50%;
-    --info-darker: 210 80% 30%;
-
-    /* Border and input styles */
-    --border: 210 50% 18%;
-    --input: 210 50% 18%;
-    --ring: 210 90% 40%;
-
-    /* Glow effects in dark mode */
-    --glow-primary: 0 0 25px rgba(30, 64, 140, 0.6);
-    --glow-secondary: 0 0 25px rgba(10, 107, 68, 0.6);
-    --glow-accent: 0 0 25px rgba(255, 115, 30, 0.6);
-    --glow-success: 0 0 25px rgba(10, 107, 68, 0.6);
-    --glow-warning: 0 0 25px rgba(255, 115, 30, 0.6);
-    --glow-error: 0 0 25px rgba(255, 30, 30, 0.6);
-    --glow-info: 0 0 25px rgba(30, 64, 140, 0.6);
+    /* Dark mode adjustments */
+    --primary: 210 70% 50%;
+    --primary-foreground: 0 0% 100%;
+    --primary-lighter: 210 70% 60%;
+    --primary-darker: 210 70% 40%;
+    
+    /* ... other dark mode colors ... */
   }
 }
 
@@ -182,56 +63,62 @@
   * {
     @apply border-border;
   }
-
   body {
-    @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', 'Montserrat', 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: 'Open Sans', sans-serif;
   }
-  
   h1, h2, h3, h4, h5, h6 {
-    @apply font-bold tracking-tight;
-    font-family: 'Montserrat', 'Inter', 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
-  }
-
-  h1 {
-    @apply text-3xl sm:text-4xl;
-  }
-
-  h2 {
-    @apply text-2xl sm:text-3xl;
-  }
-
-  h3 {
-    @apply text-xl sm:text-2xl;
-  }
-
-  /* Smooth scrolling and better tap highlights */
-  html {
-    scroll-behavior: smooth;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  /* Better focus styles */
-  :focus-visible {
-    @apply outline-none ring-2 ring-primary/70 ring-offset-2;
-  }
-
-  /* Custom scrollbar - Enhanced for dark mode */
-  ::-webkit-scrollbar {
-    @apply w-2;
-  }
-
-  ::-webkit-scrollbar-track {
-    @apply bg-muted dark:bg-muted;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    @apply bg-primary/30 dark:bg-primary/50 rounded-full hover:bg-primary/50 dark:hover:bg-primary/70 transition-colors;
+    font-family: 'Inter', sans-serif;
   }
 }
 
-/* Custom component styles - Enhanced with modern effects */
+/* Improved spacing and typography */
+.content-container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+.section-title {
+  @apply text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-6;
+}
+
+.card-container {
+  @apply grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3;
+}
+
+.action-card {
+  @apply p-6 rounded-lg border border-gray-200 dark:border-gray-800 
+         shadow-card hover:shadow-card-hover transition-shadow duration-200
+         bg-white dark:bg-gray-800;
+}
+
+/* Improved form styles */
+.form-group {
+  @apply space-y-2 mb-6;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
+}
+
+.form-input {
+  @apply w-full rounded-md border-gray-300 dark:border-gray-700 
+         shadow-sm focus:border-primary focus:ring-primary;
+}
+
+/* Improved button styles */
+.btn-primary {
+  @apply bg-primary hover:bg-primary-lighter active:bg-primary-darker
+         text-white font-semibold py-2 px-4 rounded-md
+         transition-colors duration-200;
+}
+
+.btn-secondary {
+  @apply bg-secondary hover:bg-secondary/90 text-secondary-foreground
+         font-semibold py-2 px-4 rounded-md
+         transition-colors duration-200;
+}
+
 @layer components {
   .card-hover {
     @apply transition-all duration-300 hover:shadow-lg dark:shadow-none dark:hover:shadow-md dark:hover:shadow-black/20 hover:-translate-y-1;
@@ -455,6 +342,3 @@
     box-shadow: 0 0 20px rgba(var(--primary), 0.8);
   }
 }
-
-/* Import fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');

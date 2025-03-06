@@ -19,7 +19,7 @@ import {
   Shield,
   Clock3
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -176,264 +176,263 @@ const PhaseCard: React.FC<PhaseCardProps> = ({
   };
 
   return (
-    <motion.div
-      layout
-      transition={{ layout: { duration: 0.3, type: "spring" } }}
-      className={`rounded-lg overflow-hidden transition-all duration-300 border ${
-        isDarkMode 
-          ? isEditingPhase 
-            ? "bg-slate-800/90 border-blue-800/50" 
-            : "bg-slate-800/50 border-slate-700 hover:border-slate-600" 
-          : isEditingPhase 
-            ? "bg-blue-50/50 border-blue-200" 
-            : "bg-white border-gray-200 hover:border-gray-300"
-      } ${isExpanded ? "shadow-md" : "shadow-sm hover:shadow"}`}
-    >
-      {/* Phase Header - Enhanced with better spacing and visual details */}
-      <div className="overflow-hidden">
-        <motion.div 
-          layout="position"
-          className={`relative p-5 ${isExpanded && !isDarkMode ? "bg-gray-50/80" : ""}`}
-        >
-          {/* Background decorative elements */}
-          {status === "optimized" && (
-            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-green-500/5 to-blue-500/5 rounded-full blur-3xl -z-10"></div>
-          )}
-          {status === "warning" && (
-            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-amber-500/5 to-red-500/5 rounded-full blur-3xl -z-10"></div>
-          )}
-          
-          <div className="flex justify-between">
-            <div className="flex-1">
-              {isEditingPhase ? (
-                <motion.div 
-                  initial={{ opacity: 0 }} 
-                  animate={{ opacity: 1 }} 
-                  exit={{ opacity: 0 }}
-                  className="mb-2"
-                >
-                  <Input
-                    value={phaseName}
-                    onChange={(e) => setPhaseName(e.target.value)}
-                    className={`text-lg font-medium ${
-                      isDarkMode 
-                        ? "bg-slate-900 border-slate-700 text-white" 
-                        : "bg-white"
-                    }`}
-                    placeholder="Phase name"
-                  />
-                </motion.div>
-              ) : (
-                <motion.h3 
-                  layout="position"
-                  className={`text-lg font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}
-                >
-                  {name}
-                </motion.h3>
-              )}
-              
-              <div className="flex flex-wrap items-center gap-4 mt-3">
-                {/* Duration */}
-                <div className="flex items-center">
-                  {isEditingPhase ? (
+    <LazyMotion features={domAnimation}>
+      <m.div
+        layout
+        transition={{ layout: { duration: 0.3, type: "spring" } }}
+        className={`rounded-lg overflow-hidden transition-all duration-300 border ${
+          isDarkMode 
+            ? isEditingPhase 
+              ? "bg-slate-800/90 border-blue-800/50" 
+              : "bg-slate-800/50 border-slate-700 hover:border-slate-600" 
+            : isEditingPhase 
+              ? "bg-blue-50/50 border-blue-200" 
+              : "bg-white border-gray-200 hover:border-gray-300"
+        } ${isExpanded ? "shadow-md" : "shadow-sm hover:shadow"}`}
+      >
+        {/* Phase Header - Enhanced with better spacing and visual details */}
+        <div className="overflow-hidden">
+          <m.div 
+            layout="position"
+            className={`relative p-5 ${isExpanded && !isDarkMode ? "bg-gray-50/80" : ""}`}
+          >
+            {/* Background decorative elements */}
+            {status === "optimized" && (
+              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-green-500/5 to-blue-500/5 rounded-full blur-3xl -z-10"></div>
+            )}
+            {status === "warning" && (
+              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-amber-500/5 to-red-500/5 rounded-full blur-3xl -z-10"></div>
+            )}
+            
+            <div className="flex justify-between">
+              <div className="flex-1">
+                {isEditingPhase ? (
+                  <m.div 
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }} 
+                    exit={{ opacity: 0 }}
+                    className="mb-2"
+                  >
                     <Input
-                      value={phaseDuration}
-                      onChange={(e) => setPhaseDuration(e.target.value)}
-                      className={`w-24 h-8 text-sm ${
+                      value={phaseName}
+                      onChange={(e) => setPhaseName(e.target.value)}
+                      className={`text-lg font-medium ${
                         isDarkMode 
                           ? "bg-slate-900 border-slate-700 text-white" 
                           : "bg-white"
                       }`}
-                      placeholder="Duration"
+                      placeholder="Phase name"
                     />
-                  ) : (
-                    <motion.div 
-                      layout="position"
-                      className="flex items-center"
-                      whileHover={{ scale: 1.05 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                    >
-                      <div className={`p-1.5 rounded-full mr-1.5 ${
-                        isDarkMode 
-                          ? "bg-blue-900/30 text-blue-400" 
-                          : "bg-blue-50 text-blue-500"
-                      }`}>
-                        <Clock3 className="w-3.5 h-3.5" />
-                      </div>
-                      <span className={isDarkMode ? "text-slate-300" : "text-gray-700"}>
-                        {duration}
+                  </m.div>
+                ) : (
+                  <m.h3 
+                    layout="position"
+                    className={`text-lg font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}
+                  >
+                    {name}
+                  </m.h3>
+                )}
+                
+                <div className="flex flex-wrap items-center gap-4 mt-3">
+                  {/* Duration */}
+                  <div className="flex items-center">
+                    {isEditingPhase ? (
+                      <Input
+                        value={phaseDuration}
+                        onChange={(e) => setPhaseDuration(e.target.value)}
+                        className={`w-24 h-8 text-sm ${
+                          isDarkMode 
+                            ? "bg-slate-900 border-slate-700 text-white" 
+                            : "bg-white"
+                        }`}
+                        placeholder="Duration"
+                      />
+                    ) : (
+                      <m.div 
+                        layout="position"
+                        className="flex items-center"
+                        whileHover={{ scale: 1.05 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                      >
+                        <div className={`p-1.5 rounded-full mr-1.5 ${
+                          isDarkMode 
+                            ? "bg-blue-900/30 text-blue-400" 
+                            : "bg-blue-50 text-blue-500"
+                        }`}>
+                          <Clock3 className="w-3.5 h-3.5" />
+                        </div>
+                        <span className={isDarkMode ? "text-slate-300" : "text-gray-700"}>
+                          {duration}
+                        </span>
+                      </m.div>
+                    )}
+                  </div>
+                  
+                  {/* Budget */}
+                  <m.div 
+                    layout="position"
+                    className="flex items-center"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                  >
+                    <div className={`p-1.5 rounded-full mr-1.5 ${
+                      isDarkMode 
+                        ? "bg-green-900/30 text-green-400" 
+                        : "bg-green-50 text-green-500"
+                    }`}>
+                      <DollarSign className="w-3.5 h-3.5" />
+                    </div>
+                    <span className={isDarkMode ? "text-slate-300" : "text-gray-700"}>
+                      {budget}
+                    </span>
+                  </m.div>
+                  
+                  {/* Team */}
+                  <m.div 
+                    layout="position"
+                    className="flex items-center"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                  >
+                    <div className={`p-1.5 rounded-full mr-1.5 ${
+                      isDarkMode 
+                        ? "bg-purple-900/30 text-purple-400" 
+                        : "bg-purple-50 text-purple-500"
+                    }`}>
+                      <Users className="w-3.5 h-3.5" />
+                    </div>
+                    <span className={isDarkMode ? "text-slate-300" : "text-gray-700"}>
+                      {team} {team === 1 ? 'person' : 'people'}
+                    </span>
+                  </m.div>
+                  
+                  {/* Tasks */}
+                  <m.div 
+                    layout="position"
+                    className="flex items-center"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                  >
+                    <div className={`p-1.5 rounded-full mr-1.5 ${
+                      isDarkMode 
+                        ? "bg-amber-900/30 text-amber-400" 
+                        : "bg-amber-50 text-amber-500"
+                    }`}>
+                      <ListTodo className="w-3.5 h-3.5" />
+                    </div>
+                    <span className={isDarkMode ? "text-slate-300" : "text-gray-700"}>
+                      {tasks} {tasks === 1 ? 'task' : 'tasks'}
+                    </span>
+                  </m.div>
+                  
+                  {/* Status Badge */}
+                  <m.div 
+                    layout="position"
+                    className="flex items-center"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                  >
+                    <Badge className={`flex items-center gap-1 ${statusStyles[status].bg} ${statusStyles[status].text} border ${statusStyles[status].border}`}>
+                      {statusStyles[status].icon}
+                      <span className="capitalize">
+                        {status === 'optimized' ? 'Optimized' : 'Needs Attention'}
                       </span>
-                    </motion.div>
-                  )}
+                    </Badge>
+                  </m.div>
                 </div>
                 
-                {/* Budget */}
-                <motion.div 
-                  layout="position"
-                  className="flex items-center"
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                >
-                  <div className={`p-1.5 rounded-full mr-1.5 ${
-                    isDarkMode 
-                      ? "bg-green-900/30 text-green-400" 
-                      : "bg-green-50 text-green-500"
-                  }`}>
-                    <DollarSign className="w-3.5 h-3.5" />
-                  </div>
-                  <span className={isDarkMode ? "text-slate-300" : "text-gray-700"}>
-                    {budget}
-                  </span>
-                </motion.div>
-                
-                {/* Team */}
-                <motion.div 
-                  layout="position"
-                  className="flex items-center"
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                >
-                  <div className={`p-1.5 rounded-full mr-1.5 ${
-                    isDarkMode 
-                      ? "bg-purple-900/30 text-purple-400" 
-                      : "bg-purple-50 text-purple-500"
-                  }`}>
-                    <Users className="w-3.5 h-3.5" />
-                  </div>
-                  <span className={isDarkMode ? "text-slate-300" : "text-gray-700"}>
-                    {team} {team === 1 ? 'person' : 'people'}
-                  </span>
-                </motion.div>
-                
-                {/* Tasks */}
-                <motion.div 
-                  layout="position"
-                  className="flex items-center"
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                >
-                  <div className={`p-1.5 rounded-full mr-1.5 ${
-                    isDarkMode 
-                      ? "bg-amber-900/30 text-amber-400" 
-                      : "bg-amber-50 text-amber-500"
-                  }`}>
-                    <ListTodo className="w-3.5 h-3.5" />
-                  </div>
-                  <span className={isDarkMode ? "text-slate-300" : "text-gray-700"}>
-                    {tasks} {tasks === 1 ? 'task' : 'tasks'}
-                  </span>
-                </motion.div>
-                
-                {/* Status Badge */}
-                <motion.div 
-                  layout="position"
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  className="ml-auto"
-                >
-                  <Badge 
-                    className={`${statusStyles[status].bg} ${statusStyles[status].text} ${statusStyles[status].border} border px-2.5 py-0.5`}
-                    variant="outline"
+                {warning && (
+                  <m.div 
+                    layout="position"
+                    initial={{ opacity: 0, y: -10 }} 
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`mt-3 p-2 rounded-md flex items-start ${
+                      isDarkMode ? "bg-amber-900/20 border border-amber-800/30" : "bg-amber-50 border border-amber-100"
+                    }`}
                   >
-                    {statusStyles[status].icon}
-                    {status === 'optimized' ? 'Optimized' : 'Needs Attention'}
-                  </Badge>
-                </motion.div>
+                    <AlertCircle className={`w-4 h-4 mr-2 mt-0.5 flex-shrink-0 ${
+                      isDarkMode ? "text-amber-400" : "text-amber-500"
+                    }`} />
+                    <p className={`text-sm ${isDarkMode ? "text-amber-300" : "text-amber-700"}`}>
+                      {warning}
+                    </p>
+                  </m.div>
+                )}
               </div>
-              
-              {/* Warning message */}
-              {warning && (
-                <motion.div 
-                  layout="position"
-                  initial={{ opacity: 0, y: -10 }} 
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`mt-3 p-2 rounded-md flex items-start ${
-                    isDarkMode ? "bg-amber-900/20 border border-amber-800/30" : "bg-amber-50 border border-amber-100"
-                  }`}
-                >
-                  <AlertCircle className={`w-4 h-4 mr-2 mt-0.5 flex-shrink-0 ${
-                    isDarkMode ? "text-amber-400" : "text-amber-500"
-                  }`} />
-                  <p className={`text-sm ${isDarkMode ? "text-amber-300" : "text-amber-700"}`}>
-                    {warning}
-                  </p>
-                </motion.div>
-              )}
-            </div>
 
-            {/* Edit/Save buttons */}
-            <div className="ml-4 flex flex-col space-y-2">
-              {isEditingPhase ? (
-                <div className="flex flex-col space-y-2">
-                  <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                    <Button 
-                      size="icon" 
-                      variant="outline"
-                      onClick={() => setIsEditingPhase(false)}
-                      className={`h-8 w-8 rounded-full ${
-                        isDarkMode 
-                          ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" 
-                          : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
-                      }`}
-                    >
-                      <Save className="h-4 w-4" />
-                    </Button>
-                  </motion.div>
-                  <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                    <Button 
-                      size="icon" 
-                      variant="outline"
-                      onClick={() => setIsEditingPhase(false)}
-                      className={`h-8 w-8 rounded-full ${
-                        isDarkMode 
-                          ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" 
-                          : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
-                      }`}
-                    >
-                      <XCircle className="h-4 w-4" />
-                    </Button>
-                  </motion.div>
+              {/* Edit/Save buttons */}
+              <div className="ml-4 flex flex-col space-y-2">
+                {isEditingPhase ? (
+                  <div className="flex flex-col space-y-2">
+                    <m.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                      <Button 
+                        size="icon" 
+                        variant="outline"
+                        onClick={() => setIsEditingPhase(false)}
+                        className={`h-8 w-8 rounded-full ${
+                          isDarkMode 
+                            ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" 
+                            : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
+                        }`}
+                      >
+                        <Save className="h-4 w-4" />
+                      </Button>
+                    </m.div>
+                    <m.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                      <Button 
+                        size="icon" 
+                        variant="outline"
+                        onClick={() => setIsEditingPhase(false)}
+                        className={`h-8 w-8 rounded-full ${
+                          isDarkMode 
+                            ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" 
+                            : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
+                        }`}
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </Button>
+                    </m.div>
           </div>
-              ) : (
-                <>
-                  <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                    <Button 
-                      size="icon" 
-                      variant="outline"
-                      onClick={() => setIsEditingPhase(true)}
-                      className={`h-8 w-8 rounded-full ${
-                        isDarkMode 
-                          ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" 
-                          : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
-                      }`}
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                  </motion.div>
-                  <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                    <Button 
-                      size="icon" 
-                      variant="outline"
-                      onClick={() => setIsExpanded(!isExpanded)}
-                      className={`h-8 w-8 rounded-full ${
-                        isDarkMode 
-                          ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" 
-                          : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
-                      }`}
-                    >
-                      {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    </Button>
-                  </motion.div>
-                </>
-              )}
+                ) : (
+                  <>
+                    <m.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                      <Button 
+                        size="icon" 
+                        variant="outline"
+                        onClick={() => setIsEditingPhase(true)}
+                        className={`h-8 w-8 rounded-full ${
+                          isDarkMode 
+                            ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" 
+                            : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
+                        }`}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                    </m.div>
+                    <m.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                      <Button 
+                        size="icon" 
+                        variant="outline"
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className={`h-8 w-8 rounded-full ${
+                          isDarkMode 
+                            ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" 
+                            : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
+                        }`}
+                      >
+                        {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </Button>
+                    </m.div>
+                  </>
+                )}
           </div>
           </div>
-        </motion.div>
-      </div>
+          </m.div>
+        </div>
 
-      {/* Expanded Content */}
-      <AnimatePresence>
+        {/* Expanded Content */}
         {isExpanded && (
-          <motion.div
+          <m.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
@@ -475,261 +474,236 @@ const PhaseCard: React.FC<PhaseCardProps> = ({
               
               {/* Tab Content */}
               <div className="mt-4">
-                <AnimatePresence mode="wait">
-                  {activeTab === 'tasks' ? (
-                    <motion.div
-                      key="tasks"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.2 }}
-                      className="space-y-3"
-                    >
-                      {phaseTaskItems.length === 0 ? (
-                        <p className={`text-center py-6 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                          No tasks added yet
-                        </p>
-                      ) : (
-                        phaseTaskItems.map((task) => (
-                          <motion.div 
-                            key={task.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            layout
-                            className={`p-3 rounded-md border ${
-                              isDarkMode 
-                                ? "bg-slate-800/60 border-slate-700 hover:border-slate-600" 
-                                : "bg-white border-gray-200 hover:border-gray-300"
-                            } transition-all duration-200 shadow-sm hover:shadow group`}
-                            whileHover={{ y: -2 }}
-                          >
-                            {editingTaskId === task.id ? (
-                              // Edit mode
-                              <div className="space-y-3">
+                {activeTab === 'tasks' ? (
+                  <m.div
+                    key="tasks"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="space-y-3"
+                  >
+                    {phaseTaskItems.length === 0 ? (
+                      <p className={`text-center py-6 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                        No tasks added yet
+                      </p>
+                    ) : (
+                      phaseTaskItems.map((task) => (
+                        <m.div 
+                          key={task.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          layout
+                          className={`p-3 rounded-md border ${
+                            isDarkMode 
+                              ? "bg-slate-800/60 border-slate-700 hover:border-slate-600" 
+                              : "bg-white border-gray-200 hover:border-gray-300"
+                          } transition-all duration-200 shadow-sm hover:shadow group`}
+                          whileHover={{ y: -2 }}
+                        >
+                          {editingTaskId === task.id ? (
+                            // Edit mode
+                            <div className="space-y-2">
+                              <Input
+                                value={task.name}
+                                onChange={(e) => handleUpdateTask(task.id, { name: e.target.value })}
+                                className={`text-sm ${
+                                  isDarkMode 
+                                    ? "bg-slate-900 border-slate-700 text-white" 
+                                    : "bg-white"
+                                }`}
+                                placeholder="Task name"
+                              />
+                              <div className="flex gap-2">
                                 <Input
-                                  value={task.name}
-                                  onChange={(e) => handleUpdateTask(task.id, { name: e.target.value })}
-                                  className={isDarkMode ? "bg-slate-900 border-slate-700 text-white" : ""}
-                                  placeholder="Task name"
+                                  value={task.duration}
+                                  onChange={(e) => handleUpdateTask(task.id, { duration: e.target.value })}
+                                  className={`text-sm ${
+                                    isDarkMode 
+                                      ? "bg-slate-900 border-slate-700 text-white" 
+                                      : "bg-white"
+                                  }`}
+                                  placeholder="Duration"
                                 />
-                                <div className="flex gap-2">
-                                  <Input
-                                    value={task.duration}
-                                    onChange={(e) => handleUpdateTask(task.id, { duration: e.target.value })}
-                                    className={isDarkMode ? "bg-slate-900 border-slate-700 text-white" : ""}
-                                    placeholder="Duration"
-                                  />
-                                  <Select
-                                    value={task.status}
-                                    onValueChange={(value) => handleUpdateTask(task.id, { status: value as any })}
-                                  >
-                                    <SelectTrigger className={isDarkMode ? "bg-slate-900 border-slate-700 text-white" : ""}>
-                                      <SelectValue placeholder="Status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="pending">Pending</SelectItem>
-                                      <SelectItem value="in-progress">In Progress</SelectItem>
-                                      <SelectItem value="completed">Completed</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div className="flex justify-end space-x-2">
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline" 
-                                    onClick={() => setEditingTaskId(null)}
-                                    className={isDarkMode ? "border-slate-700 text-slate-300 hover:bg-slate-700" : ""}
-                                  >
-                                    Cancel
-                                  </Button>
-                                  <Button 
-                                    size="sm"
-                                    onClick={() => setEditingTaskId(null)}
-                                  >
-                                    Save
-                                  </Button>
-                                </div>
+                                <Select 
+                                  value={task.status}
+                                  onValueChange={(value) => handleUpdateTask(task.id, { status: value as any })}
+                                >
+                                  <SelectTrigger className={isDarkMode ? "bg-slate-900 border-slate-700 text-white" : ""}>
+                                    <SelectValue placeholder="Status" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="pending">Pending</SelectItem>
+                                    <SelectItem value="in-progress">In Progress</SelectItem>
+                                    <SelectItem value="completed">Completed</SelectItem>
+                                  </SelectContent>
+                                </Select>
                               </div>
-                            ) : (
-                              // View mode
-                              <div className="flex justify-between items-start">
-                                <div className="space-y-2">
-                                  <div className="flex items-center gap-2">
-                                    <h4 className={`font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}>
-                                      {task.name}
-                                    </h4>
-                                    <Badge className={`${taskStatusBadgeStyles[task.status].bg} ${taskStatusBadgeStyles[task.status].text} text-xs font-normal`}>
-                                      {task.status === 'pending' ? 'Pending' : 
-                                       task.status === 'in-progress' ? 'In Progress' : 'Completed'}
+                              <div className="flex justify-end gap-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => setEditingTaskId(null)}
+                                  className={isDarkMode ? "border-slate-700 text-slate-300 hover:bg-slate-700" : ""}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button 
+                                  size="sm"
+                                  onClick={() => setEditingTaskId(null)}
+                                >
+                                  Save Changes
+                                </Button>
+        </div>
+      </div>
+                          ) : (
+                            // View mode
+                            <div className="flex justify-between items-start">
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <h4 className={`font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                                    {task.name}
+                                  </h4>
+                                  <Badge className={`${taskStatusBadgeStyles[task.status].bg} ${taskStatusBadgeStyles[task.status].text} text-xs font-normal`}>
+                                    {task.status === 'pending' ? 'Pending' : 
+                                     task.status === 'in-progress' ? 'In Progress' : 'Completed'}
       </Badge>
     </div>
-                                  <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-4">
+                                  <div className="flex items-center text-sm">
+                                    <Clock className={`w-3.5 h-3.5 mr-1 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`} />
+                                    <span className={isDarkMode ? "text-slate-400" : "text-gray-600"}>
+                                      {task.duration}
+                                    </span>
+                                  </div>
+                                  {task.assignedTo && (
                                     <div className="flex items-center text-sm">
-                                      <Clock className={`w-3.5 h-3.5 mr-1 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`} />
+                                      <User className={`w-3.5 h-3.5 mr-1 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`} />
                                       <span className={isDarkMode ? "text-slate-400" : "text-gray-600"}>
-                                        {task.duration}
+                                        {getTeamMember(task.assignedTo)?.name || 'Unknown'}
                                       </span>
-                                    </div>
-                                    {task.assignedTo && (
-                                      <div className="flex items-center text-sm">
-                                        <User className={`w-3.5 h-3.5 mr-1 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`} />
-                                        <span className={isDarkMode ? "text-slate-400" : "text-gray-600"}>
-                                          {getTeamMember(task.assignedTo)?.name || 'Unknown'}
-                                        </span>
       </div>
     )}
   </div>
-                                </div>
-                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Popover>
-                                    <PopoverTrigger asChild>
-                                      <Button 
-                                        size="icon" 
-                                        variant="outline" 
-                                        className={`h-7 w-7 rounded-full ${
-                                          isDarkMode 
-                                            ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" 
-                                            : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
-                                        }`}
-                                      >
-                                        <User className="h-3.5 w-3.5" />
-                                      </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent 
-                                      className={`w-60 p-2 ${
+                              </div>
+                              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button 
+                                      size="icon" 
+                                      variant="outline" 
+                                      className={`h-7 w-7 rounded-full ${
                                         isDarkMode 
-                                          ? "bg-slate-800 border-slate-700" 
-                                          : "bg-white"
+                                          ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" 
+                                          : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
                                       }`}
-                                      side="right"
                                     >
-                                      <div className="space-y-2">
-                                        <h4 className={`text-sm font-medium mb-2 ${isDarkMode ? "text-white" : ""}`}>
-                                          Assign Team Member
-                                        </h4>
-                                        <div className="grid grid-cols-1 gap-1.5">
-                                          {teamMembers.map(member => (
-                                            <motion.div 
-                                              key={member.id}
-                                              whileHover={{ backgroundColor: isDarkMode ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.05)' }}
-                                              className={`flex items-center gap-2 p-1.5 rounded-md cursor-pointer ${
-                                                task.assignedTo === member.id
-                                                  ? (isDarkMode ? 'bg-blue-900/20 text-blue-400' : 'bg-blue-50 text-blue-600')
-                                                  : ''
-                                              }`}
-                                              onClick={() => handleAssignTeamMember(task.id, member.id)}
-                                            >
-                                              <Avatar className="h-7 w-7">
-                                                <AvatarImage src={member.avatar} alt={member.name} />
-                                                <AvatarFallback className={isDarkMode ? "bg-slate-700 text-slate-300" : ""}>
-                                                  {member.name.charAt(0)}
-                                                </AvatarFallback>
-                                              </Avatar>
-                                              <div>
-                                                <p className={`text-sm font-medium leading-none ${
-                                                  isDarkMode ? "text-slate-200" : ""
-                                                }`}>{member.name}</p>
-                                                <p className={`text-xs ${
-                                                  isDarkMode ? "text-slate-400" : "text-gray-500"
-                                                }`}>{member.role}</p>
-                                              </div>
-                                              {task.assignedTo === member.id && (
-                                                <CheckSquare className="w-4 h-4 ml-auto text-blue-500" />
-                                              )}
-                                            </motion.div>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    </PopoverContent>
-                                  </Popover>
-                                  <Button 
-                                    size="icon" 
-                                    variant="outline" 
-                                    onClick={() => handleEditTask(task.id)}
-                                    className={`h-7 w-7 rounded-full ${
-                                      isDarkMode 
-                                        ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" 
-                                        : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
+                                      <User className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent 
+                                    className={`w-48 p-2 ${
+                                      isDarkMode ? "bg-slate-800 border-slate-700" : ""
                                     }`}
                                   >
-                                    <Edit2 className="h-3.5 w-3.5" />
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
-                          </motion.div>
-                        ))
-                      )}
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="materials"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.2 }}
-                      className="space-y-3"
-                    >
-                      {phaseMaterialItems.length === 0 ? (
-                        <p className={`text-center py-6 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                          No materials added yet
-                        </p>
-                      ) : (
-                        phaseMaterialItems.map((material) => (
-                          <motion.div 
-                            key={material.id}
-                            layout
-                            className={`p-3 rounded-md border ${
-                              isDarkMode 
-                                ? "bg-slate-800/60 border-slate-700 hover:border-slate-600" 
-                                : "bg-white border-gray-200 hover:border-gray-300"
-                            } transition-all duration-200 shadow-sm hover:shadow`}
-                            whileHover={{ y: -2 }}
-                          >
-                            <div className="flex justify-between items-start">
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <h4 className={`font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}>
-                                    {material.name}
-                                  </h4>
-                                  <Badge className={`${materialStatusBadgeStyles[material.status].bg} ${materialStatusBadgeStyles[material.status].text} text-xs font-normal`}>
-                                    {material.status === 'not-ordered' ? 'Not Ordered' : 
-                                     material.status === 'ordered' ? 'Ordered' : 'Delivered'}
-                                  </Badge>
-                                </div>
-                                <div className="flex items-center text-sm">
-                                  <span className={`mr-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>
-                                    {material.quantity} {material.unit}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
+                                    <div className="space-y-1">
+                                      {teamMembers.map((member) => (
+                                        <Button
+                                          key={member.id}
+                                          variant="ghost"
+                                          size="sm"
+                                          className={`w-full justify-start ${
+                                            isDarkMode ? "hover:bg-slate-700 text-slate-300" : ""
+                                          } ${task.assignedTo === member.id ? (isDarkMode ? "bg-slate-700" : "bg-gray-100") : ""}`}
+                                          onClick={() => handleAssignTeamMember(task.id, member.id)}
+                                        >
+                                          <Avatar className="h-6 w-6 mr-2">
+                                            <AvatarImage src={member.avatar} />
+                                            <AvatarFallback>{member.name[0]}</AvatarFallback>
+                                          </Avatar>
+                                          {member.name}
+                                          {task.assignedTo === member.id && (
+                                            <CheckSquare className="h-4 w-4 ml-auto" />
+                                          )}
+                                        </Button>
+                                      ))}
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
                                 <Button 
                                   size="icon" 
-                                  variant="outline" 
-                                  className={`h-6 w-6 rounded-full ${
+                                  variant="outline"
+                                  onClick={() => handleEditTask(task.id)}
+                                  className={`h-7 w-7 rounded-full ${
                                     isDarkMode 
                                       ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" 
                                       : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
                                   }`}
                                 >
-                                  <Edit2 className="h-3 w-3" />
+                                  <Edit2 className="h-3.5 w-3.5" />
                                 </Button>
                               </div>
                             </div>
-                          </motion.div>
-                        ))
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                          )}
+                        </m.div>
+                      ))
+                    )}
+                  </m.div>
+                ) : (
+                  <m.div
+                    key="materials"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="space-y-3"
+                  >
+                    {phaseMaterialItems.length === 0 ? (
+                      <p className={`text-center py-6 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                        No materials added yet
+                      </p>
+                    ) : (
+                      phaseMaterialItems.map((material) => (
+                        <m.div 
+                          key={material.id}
+                          layout
+                          className={`p-3 rounded-md border ${
+                            isDarkMode 
+                              ? "bg-slate-800/60 border-slate-700 hover:border-slate-600" 
+                              : "bg-white border-gray-200 hover:border-gray-300"
+                          } transition-all duration-200 shadow-sm hover:shadow`}
+                          whileHover={{ y: -2 }}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <h4 className={`font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                                  {material.name}
+                                </h4>
+                                <Badge className={`${materialStatusBadgeStyles[material.status].bg} ${materialStatusBadgeStyles[material.status].text} text-xs font-normal`}>
+                                  {material.status === 'not-ordered' ? 'Not Ordered' : 
+                                   material.status === 'ordered' ? 'Ordered' : 'Delivered'}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center text-sm">
+                                <span className={isDarkMode ? "text-slate-400" : "text-gray-600"}>
+                                  {material.quantity} {material.unit}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </m.div>
+                      ))
+                    )}
+                  </m.div>
+                )}
               </div>
             </div>
-          </motion.div>
+          </m.div>
         )}
-      </AnimatePresence>
-    </motion.div>
+      </m.div>
+    </LazyMotion>
   );
 };
 

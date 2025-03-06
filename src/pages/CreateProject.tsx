@@ -18,7 +18,7 @@ import {
   Building,
   HomeIcon,
   Factory,
-  Tools,
+  Construction,
   MapPin,
   DollarSign,
   Calendar,
@@ -42,8 +42,7 @@ import {
   Layers,
   X
 } from 'lucide-react';
-import { motion } from 'framer-motion';
-import MainNavigation from '@/components/layout/MainNavigation';
+import { LazyMotion, domAnimation, m } from 'framer-motion';
 
 interface FormData {
   name: string;
@@ -109,7 +108,8 @@ const CreateProject = () => {
   const totalSteps = 3;
   const progress = (currentStep / totalSteps) * 100;
 
-  const handleInputChange = (field: keyof FormData, value: any) => {
+  type FormValue = string | number | boolean | string[];
+  const handleInputChange = (field: keyof FormData, value: FormValue) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -167,30 +167,27 @@ const CreateProject = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6] dark:bg-slate-900">
-      <MainNavigation />
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-800 dark:to-slate-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        {/* Step Title */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-[#1E1E1E] dark:text-white">
+            {currentStep === 1 ? 'Project Details' :
+             currentStep === 2 ? 'Timeline & Resources' :
+             'Additional Information'}
+          </h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
+            {currentStep === 1 ? 'Provide basic information about your construction project' :
+             currentStep === 2 ? 'Define project timeline and resource requirements' :
+             'Add any additional details and preferences'}
+          </p>
+        </div>
 
-      {/* Main Content */}
-      <main className="pt-24 pb-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          {/* Step Title */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-[#1E1E1E] dark:text-white">
-              {currentStep === 1 ? 'Project Details' :
-               currentStep === 2 ? 'Timeline & Resources' :
-               'Additional Information'}
-            </h1>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">
-              {currentStep === 1 ? 'Provide basic information about your construction project' :
-               currentStep === 2 ? 'Define project timeline and resource requirements' :
-               'Add any additional details and preferences'}
-            </p>
-          </div>
-
-          {/* Form Content */}
-          <div className="space-y-6">
+        {/* Form Content */}
+        <div className="space-y-6">
+          <LazyMotion features={domAnimation}>
             {currentStep === 1 && (
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
@@ -341,7 +338,7 @@ const CreateProject = () => {
                             </SelectItem>
                             <SelectItem value="renovation">
                               <div className="flex items-center">
-                                <Tools className="h-4 w-4 mr-2 text-green-600" />
+                                <Construction className="h-4 w-4 mr-2 text-green-600" />
                                 Renovation
                               </div>
                             </SelectItem>
@@ -390,11 +387,11 @@ const CreateProject = () => {
                     </div>
                   </CardContent>
                 </Card>
-              </motion.div>
+              </m.div>
             )}
 
             {currentStep === 2 && (
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
@@ -465,11 +462,11 @@ const CreateProject = () => {
                     </div>
                   </CardContent>
                 </Card>
-              </motion.div>
+              </m.div>
             )}
 
             {currentStep === 3 && (
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
@@ -534,30 +531,30 @@ const CreateProject = () => {
                     </div>
                   </CardContent>
                 </Card>
-              </motion.div>
+              </m.div>
             )}
-          </div>
-
-          {/* Navigation Buttons (Mobile) */}
-          <div className="mt-8 flex justify-between md:hidden">
-            <Button
-              variant="outline"
-              onClick={handleBack}
-              disabled={currentStep === 1}
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Back
-            </Button>
-            <Button
-              onClick={handleNext}
-              className="bg-[#1E3A8A]"
-            >
-              {currentStep === totalSteps ? 'Create Project' : 'Next'}
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          </div>
+          </LazyMotion>
         </div>
-      </main>
+
+        {/* Navigation Buttons (Mobile) */}
+        <div className="mt-8 flex justify-between md:hidden">
+          <Button
+            variant="outline"
+            onClick={handleBack}
+            disabled={currentStep === 1}
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Back
+          </Button>
+          <Button
+            onClick={handleNext}
+            className="bg-[#1E3A8A]"
+          >
+            {currentStep === totalSteps ? 'Create Project' : 'Next'}
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };

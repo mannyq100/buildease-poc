@@ -5,7 +5,7 @@ import { Clock, Calendar, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ChevronRight } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface PhaseCardProps {
@@ -127,103 +127,105 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
   }
 
   return (
-    <motion.div 
-      whileHover={{ y: -2 }}
-      className={cn(
-        "border rounded-lg p-4 hover:shadow-md transition-all duration-300", 
-        className,
-        statusConfig[status].border,
-        statusConfig[status].darkBorder
-      )}
-    >
-      <div className="flex justify-between items-start">
-        <div>
-          <h3 className="font-medium flex items-center">
-            <span className={cn(
-              "w-5 h-5 rounded-full flex items-center justify-center mr-2 text-xs font-bold",
-              statusConfig[status].bg,
-              statusConfig[status].text,
-              statusConfig[status].darkBg,
-              statusConfig[status].darkText
-            )}>
-              {statusConfig[status].icon}
-            </span>
-            {name}
-          </h3>
-          <div className="flex items-center flex-wrap gap-4 mt-1 text-sm text-gray-600 dark:text-gray-400">
-            {duration && (
-              <div className="flex items-center space-x-1">
-                <Clock className="w-4 h-4" />
-                <span>{duration}</span>
-              </div>
-            )}
-            {(startDate && endDate) && (
-              <div className="flex items-center space-x-1">
-                <Calendar className="w-4 h-4" />
-                <span>{startDate} - {endDate}</span>
-              </div>
-            )}
-          </div>
-        </div>
-        <Badge className={cn(
-          statusConfig[status].bg, 
-          statusConfig[status].text,
-          statusConfig[status].darkBg,
-          statusConfig[status].darkText
-        )}>
-          {statusConfig[status].label}
-        </Badge>
-      </div>
-      <div className="mt-4 space-y-3">
-        <div>
-          <div className="flex justify-between text-sm mb-1">
-            <span>Progress</span>
-            <span>{progress}%</span>
-          </div>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div 
-                    className={cn("h-full rounded-full", getProgressColor())} 
-                    style={{ width: `${progress}%` }}
-                  ></div>
+    <LazyMotion features={domAnimation}>
+      <m.div 
+        whileHover={{ y: -2 }}
+        className={cn(
+          "border rounded-lg p-4 hover:shadow-md transition-all duration-300", 
+          className,
+          statusConfig[status].border,
+          statusConfig[status].darkBorder
+        )}
+      >
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="font-medium flex items-center">
+              <span className={cn(
+                "w-5 h-5 rounded-full flex items-center justify-center mr-2 text-xs font-bold",
+                statusConfig[status].bg,
+                statusConfig[status].text,
+                statusConfig[status].darkBg,
+                statusConfig[status].darkText
+              )}>
+                {statusConfig[status].icon}
+              </span>
+              {name}
+            </h3>
+            <div className="flex items-center flex-wrap gap-4 mt-1 text-sm text-gray-600 dark:text-gray-400">
+              {duration && (
+                <div className="flex items-center space-x-1">
+                  <Clock className="w-4 h-4" />
+                  <span>{duration}</span>
                 </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{progress}% Complete</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+              )}
+              {(startDate && endDate) && (
+                <div className="flex items-center space-x-1">
+                  <Calendar className="w-4 h-4" />
+                  <span>{startDate} - {endDate}</span>
+                </div>
+              )}
+            </div>
+          </div>
+          <Badge className={cn(
+            statusConfig[status].bg, 
+            statusConfig[status].text,
+            statusConfig[status].darkBg,
+            statusConfig[status].darkText
+          )}>
+            {statusConfig[status].label}
+          </Badge>
         </div>
-        {(budget && spent) && (
-          <div className="bg-gray-50 dark:bg-gray-800/50 p-2 rounded-md">
-            <div className="flex justify-between items-center text-sm">
-              <div className="flex items-center">
-                <DollarSign className="w-4 h-4 mr-1 text-green-600 dark:text-green-400" />
-                <span className="text-gray-700 dark:text-gray-300">Budget</span>
+        <div className="mt-4 space-y-3">
+          <div>
+            <div className="flex justify-between text-sm mb-1">
+              <span>Progress</span>
+              <span>{progress}%</span>
+            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div 
+                      className={cn("h-full rounded-full", getProgressColor())} 
+                      style={{ width: `${progress}%` }}
+                    ></div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{progress}% Complete</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          {(budget && spent) && (
+            <div className="bg-gray-50 dark:bg-gray-800/50 p-2 rounded-md">
+              <div className="flex justify-between items-center text-sm">
+                <div className="flex items-center">
+                  <DollarSign className="w-4 h-4 mr-1 text-green-600 dark:text-green-400" />
+                  <span className="text-gray-700 dark:text-gray-300">Budget</span>
+                </div>
+                <span className="font-medium">{budget}</span>
               </div>
-              <span className="font-medium">{budget}</span>
+              <div className="flex justify-between items-center text-sm mt-1">
+                <span className="text-gray-600 dark:text-gray-400 ml-5">Spent</span>
+                <span className="text-gray-600 dark:text-gray-400">{spent}</span>
+              </div>
             </div>
-            <div className="flex justify-between items-center text-sm mt-1">
-              <span className="text-gray-600 dark:text-gray-400 ml-5">Spent</span>
-              <span className="text-gray-600 dark:text-gray-400">{spent}</span>
-            </div>
+          )}
+        </div>
+        {onClick && (
+          <div className="mt-4 flex justify-end">
+            <Button 
+              variant="ghost" 
+              className="text-primary hover:bg-primary/10 transition-colors" 
+              onClick={onClick}
+            >
+              View Details
+              <ChevronRight className="w-4 h-4 ml-2" />
+            </Button>
           </div>
         )}
-      </div>
-      {onClick && (
-        <div className="mt-4 flex justify-end">
-          <Button 
-            variant="ghost" 
-            className="text-primary hover:bg-primary/10 transition-colors" 
-            onClick={onClick}
-          >
-            View Details
-            <ChevronRight className="w-4 h-4 ml-2" />
-          </Button>
-        </div>
-      )}
-    </motion.div>
+      </m.div>
+    </LazyMotion>
   );
 }; 

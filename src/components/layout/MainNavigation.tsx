@@ -1,22 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { 
-  HardHat,
-  LayoutDashboard,
-  Briefcase,
-  Calendar,
-  Package,
-  DollarSign,
-  FileText,
-  Settings,
+  Bell, 
   User,
-  Bell,
+  Settings,
   LogOut,
-  Menu,
-  X,
-  Users
+  Search,
+  X
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -26,152 +17,78 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-
-export interface NavItemType {
-  label: string;
-  path: string;
-  icon: React.ReactNode;
-  badge?: {
-    text: string;
-    color: string;
-  };
-  notificationCount?: number;
-}
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 
 interface MainNavigationProps {
   className?: string;
 }
 
-export const MainNavigation: React.FC<MainNavigationProps> = ({ className }) => {
+const MainNavigation: React.FC<MainNavigationProps> = ({ className }) => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
-
-  // Check dark mode on component mount and whenever it might change
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
+  
+  // Check dark mode
   useEffect(() => {
     const checkDarkMode = () => {
       setIsDarkMode(document.documentElement.classList.contains('dark'));
     };
     
-    // Check on mount
     checkDarkMode();
-    
-    // Set up a mutation observer to watch for dark mode changes
     const observer = new MutationObserver(checkDarkMode);
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['class']
     });
     
-    // Clean up observer on unmount
     return () => observer.disconnect();
   }, []);
 
-  // Navigation items
-  const navItems: NavItemType[] = [
-    { 
-      label: 'Dashboard', 
-      path: '/dashboard', 
-      icon: <LayoutDashboard className="w-5 h-5" />
-    },
-    { 
-      label: 'Projects', 
-      path: '/projects', 
-      icon: <Briefcase className="w-5 h-5" />,
-      badge: {
-        text: '4',
-        color: 'blue'
-      }
-    },
-    { 
-      label: 'Schedule', 
-      path: '/schedule', 
-      icon: <Calendar className="w-5 h-5" /> 
-    },
-    { 
-      label: 'Materials', 
-      path: '/materials', 
-      icon: <Package className="w-5 h-5" /> 
-    },
-    { 
-      label: 'Expenses', 
-      path: '/expenses', 
-      icon: <DollarSign className="w-5 h-5" /> 
-    },
-    { 
-      label: 'Team', 
-      path: '/team', 
-      icon: <Users className="w-5 h-5" /> 
-    },
-    { 
-      label: 'Documents', 
-      path: '/documents', 
-      icon: <FileText className="w-5 h-5" />,
-      notificationCount: 3
-    }
-  ];
-
-  // Check if a path is active
-  const isActive = (path: string) => {
-    if (path === '/' && location.pathname === '/') return true;
-    if (path !== '/' && location.pathname.startsWith(path)) return true;
-    return false;
-  };
-
   return (
     <header className={cn(
-      "sticky top-0 z-50 w-full bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 shadow-sm transition-all duration-300",
+      "w-full bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 shadow-sm transition-all duration-300",
       className
     )}>
       <div className="flex h-16 items-center justify-between px-4 md:px-6">
-        {/* Logo and mobile menu button */}
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="md:hidden" 
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </Button>
-          <div 
-            className="flex items-center gap-2 cursor-pointer" 
-            onClick={() => navigate('/dashboard')}
-          >
-            <HardHat className="h-6 w-6 text-[#1E3A8A]" />
-            <span className="font-bold text-lg text-[#1E3A8A] hidden sm:inline-block transition-colors">BuildEase</span>
-          </div>
+        {/* Search Bar - Desktop */}
+        <div className="hidden md:flex items-center flex-1 max-w-md relative">
+          <Search className="absolute left-3 text-gray-400 dark:text-gray-500 h-4 w-4" />
+          <Input 
+            placeholder="Search..." 
+            className="pl-9 bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700"
+          />
         </div>
-
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-1">
-          {navItems.map((item) => (
-            <Button
-              key={item.path}
-              variant="ghost"
-              size="sm"
-              className={cn(
-                "flex items-center gap-2 relative",
-                isActive(item.path) && "bg-[#1E3A8A]/10 text-[#1E3A8A] dark:bg-[#1E3A8A]/20 dark:text-blue-400"
-              )}
-              onClick={() => navigate(item.path)}
+        
+        {/* Mobile Section */}
+        <div className="flex md:hidden items-center flex-1">
+          {showMobileSearch ? (
+            <div className="w-full flex items-center">
+              <Input 
+                placeholder="Search..." 
+                className="w-full bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700"
+                autoFocus
+              />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="ml-2"
+                onClick={() => setShowMobileSearch(false)}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+          ) : (
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => setShowMobileSearch(true)}
             >
-              {item.icon}
-              <span>{item.label}</span>
-              {item.badge && (
-                <Badge className="ml-1 bg-[#1E3A8A] text-white">{item.badge.text}</Badge>
-              )}
-              {item.notificationCount && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-                  {item.notificationCount}
-                </span>
-              )}
+              <Search className="h-5 w-5" />
             </Button>
-          ))}
-        </nav>
+          )}
+        </div>
 
         {/* User Menu & Actions */}
         <div className="flex items-center gap-3">
@@ -181,6 +98,7 @@ export const MainNavigation: React.FC<MainNavigationProps> = ({ className }) => 
               2
             </span>
           </Button>
+          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -190,12 +108,24 @@ export const MainNavigation: React.FC<MainNavigationProps> = ({ className }) => 
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>
+            <DropdownMenuContent align="end" className="w-56">
+              <div className="flex items-center justify-start gap-2 p-2">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src="/avatar.png" alt="User" />
+                  <AvatarFallback className="bg-[#1E3A8A] text-white">JD</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col space-y-0.5">
+                  <p className="text-sm font-medium">John Doe</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Project Manager</p>
+                </div>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate('/profile')}>
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
+                <Badge className="ml-auto bg-blue-100 text-blue-800 dark:bg-blue-800/30 dark:text-blue-400">New</Badge>
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/settings')}>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </DropdownMenuItem>
@@ -208,47 +138,6 @@ export const MainNavigation: React.FC<MainNavigationProps> = ({ className }) => 
           </DropdownMenu>
         </div>
       </div>
-
-      {/* Mobile Navigation Menu */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden border-t border-gray-200 dark:border-slate-800"
-          >
-            <div className="flex flex-col space-y-1 p-2">
-              {navItems.map((item) => (
-                <Button
-                  key={item.path}
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "justify-start relative",
-                    isActive(item.path) && "bg-[#1E3A8A]/10 text-[#1E3A8A] dark:bg-[#1E3A8A]/20 dark:text-blue-400"
-                  )}
-                  onClick={() => {
-                    navigate(item.path);
-                    setIsMobileMenuOpen(false);
-                  }}
-                >
-                  {item.icon}
-                  <span className="ml-2">{item.label}</span>
-                  {item.badge && (
-                    <Badge className="ml-auto bg-[#1E3A8A] text-white">{item.badge.text}</Badge>
-                  )}
-                  {item.notificationCount && (
-                    <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-                      {item.notificationCount}
-                    </span>
-                  )}
-                </Button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </header>
   );
 };

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import { motion, m, useMotionValue } from 'framer-motion';
 import { 
   Tooltip, 
   TooltipContent, 
@@ -187,7 +187,7 @@ export const HorizontalNav: React.FC<HorizontalNavProps> = ({
 
   return (
     <TooltipProvider>
-      <motion.nav 
+      <m.nav 
         className={cn(
           "flex items-center overflow-x-auto scrollbar-none relative",
           variants[variant].nav,
@@ -199,17 +199,19 @@ export const HorizontalNav: React.FC<HorizontalNavProps> = ({
       >
         {items.map((item, index) => {
           const active = isActive(item.path);
+          // Generate a unique key, using path, value, or index as fallbacks
+          const itemKey = item.path || item.value || `nav-item-${index}`;
           
           return (
-            <Tooltip key={item.path} delayDuration={300}>
+            <Tooltip key={itemKey} delayDuration={300}>
               <TooltipTrigger asChild>
-                <motion.div
+                <m.div
                   initial={{ opacity: 0, x: -5 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
                 >
                   <Link
-                    to={item.path}
+                    to={item.path || "#"}
                     className={cn(
                       variants[variant].item(active),
                       itemClassName,
@@ -217,7 +219,7 @@ export const HorizontalNav: React.FC<HorizontalNavProps> = ({
                     )}
                   >
                     {showIcons && item.icon && (
-                      <motion.span 
+                      <m.span 
                         className={cn(
                           "flex items-center justify-center",
                           "transition-all duration-300 group-hover:scale-110",
@@ -229,7 +231,7 @@ export const HorizontalNav: React.FC<HorizontalNavProps> = ({
                         transition={{ duration: 0.5 }}
                       >
                         {item.icon}
-                      </motion.span>
+                      </m.span>
                     )}
                     
                     <span>{item.label}</span>
@@ -246,14 +248,14 @@ export const HorizontalNav: React.FC<HorizontalNavProps> = ({
                     )}
                     
                     {variant === 'underlined' && active && animated && (
-                      <motion.div
+                      <m.div
                         className="absolute bottom-0 left-0 h-0.5 bg-blue-600 dark:bg-blue-500"
                         layoutId="activeTab"
                         style={{ width: '100%' }}
                       />
                     )}
                   </Link>
-                </motion.div>
+                </m.div>
               </TooltipTrigger>
               {showTooltips && (
                 <TooltipContent 
@@ -266,7 +268,7 @@ export const HorizontalNav: React.FC<HorizontalNavProps> = ({
             </Tooltip>
           );
         })}
-      </motion.nav>
+      </m.nav>
     </TooltipProvider>
   );
 }; 

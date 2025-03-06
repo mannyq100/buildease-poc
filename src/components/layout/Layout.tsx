@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
+import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
 import {
   Tooltip,
   TooltipContent,
@@ -212,7 +212,7 @@ const Layout = () => {
             <AnimatePresence>
               {showNotifications && (
                 <>
-                  <motion.div
+                  <m.div
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -282,7 +282,7 @@ const Layout = () => {
                         View all notifications
                       </button>
                     </div>
-                  </motion.div>
+                  </m.div>
                   <div 
                     className="fixed inset-0 z-40"
                     onClick={() => setShowNotifications(false)}
@@ -395,71 +395,80 @@ const Layout = () => {
                   {!sidebarCompact ? "Main" : ""}
                 </p>
                 
-                <nav className="space-y-1">
-                  {mainNavItems.map((item) => (
-                    <Tooltip key={item.label} delayDuration={300}>
-                      <TooltipTrigger asChild>
-                        <button
-                          className={cn(
-                            "w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all group",
-                            isActive(item.path) 
-                              ? isDarkMode
-                                ? "bg-gradient-to-r from-blue-700 to-indigo-700 text-white shadow-md"
-                                : "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md"
-                              : isDarkMode
-                                ? "text-gray-300 hover:bg-slate-800"
-                                : "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
-                            sidebarCompact && "lg:justify-center lg:px-0"
-                          )}
-                          onClick={() => {
-                            navigate(item.path);
-                            closeSidebar();
-                          }}
-                        >
-                          <span className={cn(
-                            "flex items-center justify-center transition-transform group-hover:scale-110",
-                            isActive(item.path) 
-                              ? "text-white" 
-                              : isDarkMode ? "text-gray-400" : "text-gray-500"
-                          )}>
-                            {item.icon}
-                          </span>
-                          {(!sidebarCompact || window.innerWidth < 1024) && (
-                            <span>{item.label}</span>
-                          )}
-                          
-                          {/* Badge for some navigation items */}
-                          {item.badge && !sidebarCompact && (
-                            <Badge 
+                <nav className="space-y-6">
+                  <div className="space-y-1.5">
+                    {mainNavItems.map((item, index) => (
+                      <m.div
+                        key={index}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                      >
+                        <Tooltip key={item.label} delayDuration={300}>
+                          <TooltipTrigger asChild>
+                            <button
                               className={cn(
-                                "ml-auto text-xs",
-                                `bg-${item.badge.color}-500 hover:bg-${item.badge.color}-600`
+                                "w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all group",
+                                isActive(item.path) 
+                                  ? isDarkMode
+                                    ? "bg-gradient-to-r from-blue-700 to-indigo-700 text-white shadow-md"
+                                    : "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md"
+                                  : isDarkMode
+                                    ? "text-gray-300 hover:bg-slate-800"
+                                    : "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
+                                sidebarCompact && "lg:justify-center lg:px-0"
                               )}
+                              onClick={() => {
+                                navigate(item.path);
+                                closeSidebar();
+                              }}
                             >
-                              {item.badge.text}
-                            </Badge>
-                          )}
-                        </button>
-                      </TooltipTrigger>
-                      {sidebarCompact && (
-                        <TooltipContent side="right" className={isDarkMode ? "bg-slate-800 text-white border-slate-700" : ""}>
-                          <div className="flex items-center">
-                            {item.label}
-                            {item.badge && (
-                              <Badge 
-                                className={cn(
-                                  "ml-2 text-xs",
-                                  `bg-${item.badge.color}-500`
+                              <span className={cn(
+                                "flex items-center justify-center transition-transform group-hover:scale-110",
+                                isActive(item.path) 
+                                  ? "text-white" 
+                                  : isDarkMode ? "text-gray-400" : "text-gray-500"
+                              )}>
+                                {item.icon}
+                              </span>
+                              {(!sidebarCompact || window.innerWidth < 1024) && (
+                                <span>{item.label}</span>
+                              )}
+                              
+                              {/* Badge for some navigation items */}
+                              {item.badge && !sidebarCompact && (
+                                <Badge 
+                                  className={cn(
+                                    "ml-auto text-xs",
+                                    `bg-${item.badge.color}-500 hover:bg-${item.badge.color}-600`
+                                  )}
+                                >
+                                  {item.badge.text}
+                                </Badge>
+                              )}
+                            </button>
+                          </TooltipTrigger>
+                          {sidebarCompact && (
+                            <TooltipContent side="right" className={isDarkMode ? "bg-slate-800 text-white border-slate-700" : ""}>
+                              <div className="flex items-center">
+                                {item.label}
+                                {item.badge && (
+                                  <Badge 
+                                    className={cn(
+                                      "ml-2 text-xs",
+                                      `bg-${item.badge.color}-500`
+                                    )}
+                                  >
+                                    {item.badge.text}
+                                  </Badge>
                                 )}
-                              >
-                                {item.badge.text}
-                              </Badge>
-                            )}
-                          </div>
-                        </TooltipContent>
-                      )}
-                    </Tooltip>
-                  ))}
+                              </div>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </m.div>
+                    ))}
+                  </div>
                 </nav>
               </div>
 
@@ -517,95 +526,110 @@ const Layout = () => {
                   )}>
                     {!sidebarCompact ? "Settings" : ""}
                   </p>
-                  <nav className="space-y-1">
-                    {bottomNavItems.map((item) => (
-                      <Tooltip key={item.label} delayDuration={300}>
+                  <nav className="space-y-6">
+                    <div className="space-y-1.5">
+                      {bottomNavItems.map((item, index) => (
+                        <m.div
+                          key={index}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.3, delay: index * 0.05 }}
+                        >
+                          <Tooltip key={item.label} delayDuration={300}>
+                            <TooltipTrigger asChild>
+                              <button
+                                className={cn(
+                                  "w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all group",
+                                  isActive(item.path) 
+                                    ? isDarkMode
+                                      ? "bg-gradient-to-r from-blue-700 to-indigo-700 text-white shadow-md"
+                                      : "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md"
+                                    : isDarkMode
+                                      ? "text-gray-300 hover:bg-slate-800"
+                                      : "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
+                                  sidebarCompact && "lg:justify-center lg:px-0"
+                                )}
+                                onClick={() => {
+                                  navigate(item.path);
+                                  closeSidebar();
+                                }}
+                              >
+                                <span className={cn(
+                                  "flex items-center justify-center transition-transform group-hover:scale-110",
+                                  isActive(item.path) 
+                                    ? "text-white" 
+                                    : isDarkMode ? "text-gray-400" : "text-gray-500"
+                                )}>
+                                  {item.icon}
+                                </span>
+                                {(!sidebarCompact || window.innerWidth < 1024) && (
+                                  <span>{item.label}</span>
+                                )}
+                                
+                                {/* Badge for some navigation items */}
+                                {item.badge && !sidebarCompact && (
+                                  <Badge 
+                                    className={cn(
+                                      "ml-auto text-xs",
+                                      `bg-${item.badge.color}-500 hover:bg-${item.badge.color}-600`
+                                    )}
+                                  >
+                                    {item.badge.text}
+                                  </Badge>
+                                )}
+                              </button>
+                            </TooltipTrigger>
+                            {sidebarCompact && (
+                              <TooltipContent side="right" className={isDarkMode ? "bg-slate-800 text-white border-slate-700" : ""}>
+                                <div className="flex items-center">
+                                  {item.label}
+                                  {item.badge && (
+                                    <Badge 
+                                      className={cn(
+                                        "ml-2 text-xs",
+                                        `bg-${item.badge.color}-500`
+                                      )}
+                                    >
+                                      {item.badge.text}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
+                        </m.div>
+                      ))}
+                    </div>
+
+                    <m.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: 0.1 }}
+                    >
+                      <Tooltip delayDuration={300}>
                         <TooltipTrigger asChild>
                           <button
                             className={cn(
-                              "w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all group",
-                              isActive(item.path) 
-                                ? isDarkMode
-                                  ? "bg-gradient-to-r from-blue-700 to-indigo-700 text-white shadow-md"
-                                  : "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md"
-                                : isDarkMode
-                                  ? "text-gray-300 hover:bg-slate-800"
-                                  : "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
+                              "w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all hover:bg-red-50 text-red-500 group",
+                              isDarkMode && "text-red-400 hover:bg-slate-800",
                               sidebarCompact && "lg:justify-center lg:px-0"
                             )}
-                            onClick={() => {
-                              navigate(item.path);
-                              closeSidebar();
-                            }}
                           >
-                            <span className={cn(
-                              "flex items-center justify-center transition-transform group-hover:scale-110",
-                              isActive(item.path) 
-                                ? "text-white" 
-                                : isDarkMode ? "text-gray-400" : "text-gray-500"
-                            )}>
-                              {item.icon}
+                            <span className="flex items-center justify-center transition-transform group-hover:scale-110 group-hover:rotate-12">
+                              <LogOut className="w-5 h-5" />
                             </span>
                             {(!sidebarCompact || window.innerWidth < 1024) && (
-                              <span>{item.label}</span>
-                            )}
-                            
-                            {/* Badge for some navigation items */}
-                            {item.badge && !sidebarCompact && (
-                              <Badge 
-                                className={cn(
-                                  "ml-auto text-xs",
-                                  `bg-${item.badge.color}-500 hover:bg-${item.badge.color}-600`
-                                )}
-                              >
-                                {item.badge.text}
-                              </Badge>
+                              <span>Log out</span>
                             )}
                           </button>
                         </TooltipTrigger>
                         {sidebarCompact && (
                           <TooltipContent side="right" className={isDarkMode ? "bg-slate-800 text-white border-slate-700" : ""}>
-                            <div className="flex items-center">
-                              {item.label}
-                              {item.badge && (
-                                <Badge 
-                                  className={cn(
-                                    "ml-2 text-xs",
-                                    `bg-${item.badge.color}-500`
-                                  )}
-                                >
-                                  {item.badge.text}
-                                </Badge>
-                              )}
-                            </div>
+                            Log out
                           </TooltipContent>
                         )}
                       </Tooltip>
-                    ))}
-
-                    <Tooltip delayDuration={300}>
-                      <TooltipTrigger asChild>
-                        <button
-                          className={cn(
-                            "w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all hover:bg-red-50 text-red-500 group",
-                            isDarkMode && "text-red-400 hover:bg-slate-800",
-                            sidebarCompact && "lg:justify-center lg:px-0"
-                          )}
-                        >
-                          <span className="flex items-center justify-center transition-transform group-hover:scale-110 group-hover:rotate-12">
-                            <LogOut className="w-5 h-5" />
-                          </span>
-                          {(!sidebarCompact || window.innerWidth < 1024) && (
-                            <span>Log out</span>
-                          )}
-                        </button>
-                      </TooltipTrigger>
-                      {sidebarCompact && (
-                        <TooltipContent side="right" className={isDarkMode ? "bg-slate-800 text-white border-slate-700" : ""}>
-                          Log out
-                        </TooltipContent>
-                      )}
-                    </Tooltip>
+                    </m.div>
                   </nav>
                 </div>
               </div>
@@ -615,23 +639,31 @@ const Layout = () => {
 
         {/* Main content */}
         <main className={cn(
-          "flex-1 overflow-auto transition-colors relative",
+          "flex-1 overflow-auto transition-colors relative flex flex-col",
           isDarkMode && "bg-slate-900 text-white"
         )}>
-          <Outlet />
+          <m.div 
+            className="flex-1"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Outlet />
+          </m.div>
+          <Footer variant="minimal" />
         </main>
       </div>
 
       {/* Overlay for mobile sidebar */}
       <AnimatePresence>
         {sidebarOpen && (
-          <motion.div 
+          <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden"
-            onClick={toggleSidebar}
+            className="fixed inset-0 z-40 bg-black/50 md:hidden"
+            onClick={() => setSidebarOpen(false)}
           />
         )}
       </AnimatePresence>

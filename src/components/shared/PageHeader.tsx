@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useMemo, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronRight } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { LazyMotion, domAnimation, m } from 'framer-motion';
+import { cn, darkModeDetector } from '@/lib/utils';
 
 interface Breadcrumb {
   label: string;
@@ -28,7 +28,74 @@ interface PageHeaderProps {
   animated?: boolean;
 }
 
-export const PageHeader: React.FC<PageHeaderProps> = ({
+// Memoize gradient options to avoid recalculation
+const themeGradients = {
+  blue: {
+    light: 'from-[#1E3A8A] to-[#2B6CB0]',
+    dark: 'from-blue-900 to-blue-700/90'
+  },
+  purple: {
+    light: 'from-purple-900 to-purple-700',
+    dark: 'from-purple-900 to-purple-800/90'
+  },
+  green: {
+    light: 'from-green-900 to-green-700',
+    dark: 'from-green-900 to-green-800/90'
+  },
+  amber: {
+    light: 'from-amber-800 to-[#ED8936]',
+    dark: 'from-amber-900 to-amber-700/90'
+  }
+};
+
+// Memoize action button for performance
+const ActionButton = memo(({ action }: { action: PageHeaderAction }) => {
+  return (
+    <Button
+      variant={action.variant || 'construction'}
+      onClick={action.onClick}
+      className={cn(
+        "transition-all duration-300 font-medium",
+        action.variant === 'construction' 
+          ? "bg-white/20 hover:bg-white/30 text-white border border-white/30 hover:border-white/40" 
+          : action.variant === 'blueprint'
+          ? "bg-white/10 hover:bg-white/20 text-white border border-white/20 hover:border-white/30"
+          : action.variant === 'glow'
+          ? "bg-[#ED8936] hover:bg-[#DD7926] text-white shadow-lg shadow-black/20"
+          : "bg-white/10 hover:bg-white/20 text-white border border-white/20"
+      )}
+    >
+      {action.icon && (
+        <span className="mr-2 opacity-90">
+          {action.icon}
+        </span>
+      )}
+      <span className="whitespace-nowrap">{action.label}</span>
+    </Button>
+  );
+});
+
+ActionButton.displayName = 'ActionButton';
+
+// Optimized breadcrumb item component
+const BreadcrumbItem = memo(({ item, isLast }: { item: Breadcrumb, isLast: boolean }) => {
+  return (
+    <>
+      {!isLast && <ChevronRight className="h-4 w-4 text-white/70" />}
+      {item.href ? (
+        <a href={item.href} className="text-white/70 hover:text-white transition-colors">
+          {item.label}
+        </a>
+      ) : (
+        <span className="text-white/90">{item.label}</span>
+      )}
+    </>
+  );
+});
+
+BreadcrumbItem.displayName = 'BreadcrumbItem';
+
+export const PageHeader = memo(({
   title,
   subtitle,
   icon,
@@ -38,160 +105,137 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   action,
   theme = 'blue',
   animated = true
-}) => {
-  // Determine if we're in dark mode
-  const isDarkMode = typeof document !== 'undefined' ? 
-    document.documentElement.classList.contains('dark') : false;
+}: PageHeaderProps) => {
+  // Use centralized dark mode detection
+  const isDarkMode = darkModeDetector.isDarkMode();
   
-  // Theme-specific gradient colors
-  const themeGradients = {
-    blue: {
-      light: 'from-[#1E3A8A] to-[#3B82F6]',
-      dark: 'from-blue-900/90 to-blue-700/50'
-    },
-    purple: {
-      light: 'from-purple-900 to-purple-600',
-      dark: 'from-purple-900/90 to-purple-700/50'
-    },
-    green: {
-      light: 'from-green-900 to-green-600',
-      dark: 'from-green-900/90 to-green-700/50'
-    },
-    amber: {
-      light: 'from-amber-800 to-amber-600',
-      dark: 'from-amber-900/90 to-amber-700/50'
+  // Memoize gradient classes
+  const gradientClasses = useMemo(() => {
+    if (gradient) {
+      return `bg-gradient-to-r ${isDarkMode ? themeGradients[theme].dark : themeGradients[theme].light}`;
+    } else {
+      return `bg-[#2B6CB0] dark:bg-slate-800/95`;
     }
-  };
+  }, [gradient, theme, isDarkMode]);
   
-  // Get the appropriate gradient based on theme and mode
-  const gradientClasses = gradient 
-    ? `bg-gradient-to-r ${isDarkMode ? themeGradients[theme].dark : themeGradients[theme].light}`
-    : `bg-[#1E3A8A] dark:bg-slate-800`;
+  // Memoize background decorative elements JSX
+  const backgroundElements = useMemo(() => {
+    return (
+      <>
+        <div className="absolute inset-0 bg-black/5"></div>
+        <div className="absolute -top-18 -right-24 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-12 -left-12 w-36 h-36 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/10"></div>
+      </>
+    );
+  }, []);
   
-  return (
-    <motion.div 
-      className={cn(
-        `rounded-lg shadow-lg p-6 text-white relative overflow-hidden
-        dark:shadow-lg dark:shadow-slate-900/30 transition-all duration-300`,
-        gradientClasses
-      )}
-      initial={animated ? { opacity: 0, y: -20 } : false}
-      animate={animated ? { opacity: 1, y: 0 } : false}
-      transition={{ duration: 0.3 }}
-    >
-      {/* Background decorative elements - only visible in dark mode */}
-      {isDarkMode && (
-        <>
-          <div className="absolute top-0 left-0 w-full h-full bg-slate-900/10 backdrop-blur-[1px] -z-10"></div>
-          <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-600/10 rounded-full blur-3xl -z-10"></div>
-          <div className="absolute -bottom-12 -left-12 w-36 h-36 bg-blue-600/10 rounded-full blur-3xl -z-10"></div>
-        </>
-      )}
-      
-      <div className="flex flex-col space-y-4 relative z-10">
-        {breadcrumbs && (
-          <motion.div 
-            initial={animated ? { opacity: 0, x: -10 } : false}
-            animate={animated ? { opacity: 1, x: 0 } : false}
-            transition={{ duration: 0.3, delay: 0.1 }}
-            className="flex items-center space-x-2 text-sm text-blue-100"
-          >
-            {breadcrumbs.map((item, index) => (
-              <React.Fragment key={index}>
-                {index > 0 && <ChevronRight className="h-4 w-4" />}
-                {item.href ? (
-                  <a href={item.href} className="hover:text-white transition-colors">
-                    {item.label}
-                  </a>
-                ) : (
-                  <span>{item.label}</span>
-                )}
-              </React.Fragment>
-            ))}
-          </motion.div>
+  // Skip animations for better performance if needed
+  if (!animated) {
+    return (
+      <div 
+        className={cn(
+          "rounded-lg shadow-lg p-6 text-white relative overflow-hidden mt-0",
+          "shadow-black/10 dark:shadow-black/30",
+          gradientClasses
         )}
+      >
+        {backgroundElements}
         
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <motion.div
-            initial={animated ? { opacity: 0, x: -10 } : false}
-            animate={animated ? { opacity: 1, x: 0 } : false}
-            transition={{ duration: 0.3, delay: 0.2 }}
-          >
-            <h1 className="text-3xl font-bold flex items-center text-white">
-              {icon && (
-                <motion.span 
-                  className="mr-2"
-                  initial={animated ? { rotate: -10, scale: 0.9 } : false}
-                  animate={animated ? { rotate: 0, scale: 1 } : false}
-                  transition={{ duration: 0.3, delay: 0.3, type: "spring" }}
-                >
-                  {icon}
-                </motion.span>
-              )}
-              {title}
-            </h1>
-            {subtitle && (
-              <motion.p 
-                initial={animated ? { opacity: 0, y: 5 } : false}
-                animate={animated ? { opacity: 1, y: 0 } : false}
-                transition={{ duration: 0.3, delay: 0.4 }}
-                className="mt-1 text-blue-100 dark:text-gray-300"
-              >
-                {subtitle}
-              </motion.p>
-            )}
-          </motion.div>
-          
-          {(actions || action) && (
-            <motion.div 
-              className="flex flex-wrap items-center gap-2"
-              initial={animated ? { opacity: 0, x: 10 } : false}
-              animate={animated ? { opacity: 1, x: 0 } : false}
-              transition={{ duration: 0.3, delay: 0.3 }}
-            >
-              {action}
-              {actions?.map((action, index) => (
-                <motion.div
-                  key={index}
-                  initial={animated ? { opacity: 0, y: 5 } : false}
-                  animate={animated ? { opacity: 1, y: 0 } : false}
-                  transition={{ duration: 0.3, delay: 0.4 + index * 0.1 }}
-                  whileHover={{ y: -2 }}
-                  whileTap={{ y: 0 }}
-                >
-                  <Button
-                    variant={action.variant || 'construction'}
-                    onClick={action.onClick}
-                    className={cn(
-                      action.variant === 'construction' 
-                        ? "bg-white text-white hover:bg-blue-50 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600 font-semibold shadow-sm" 
-                        : action.variant === 'blueprint'
-                        ? "bg-white/10 text-white hover:bg-white/20 dark:bg-slate-700/80 dark:border-slate-600/80 dark:hover:bg-slate-600/80 dark:text-white border-white/20 font-medium"
-                        : action.variant === 'glow'
-                        ? "bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 dark:shadow-blue-900/20 dark:shadow-lg font-medium"
-                        : "dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600 font-medium",
-                      "transition-all duration-300"
-                    )}
-                  >
-                    {action.icon && (
-                      <motion.span 
-                        className="mr-2"
-                        whileHover={{ rotate: [0, -10, 10, -5, 0] }}
-                        transition={{ duration: 0.5 }}
-                      >
-                        {action.icon}
-                      </motion.span>
-                    )}
-                    <span className="whitespace-nowrap">{action.label}</span>
-                  </Button>
-                </motion.div>
+        <div className="flex flex-col space-y-4 relative z-10">
+          {breadcrumbs && (
+            <div className="flex items-center space-x-2 text-sm">
+              {breadcrumbs.map((item, index) => (
+                <BreadcrumbItem key={index} item={item} isLast={index === 0} />
               ))}
-            </motion.div>
+            </div>
           )}
+          
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold flex items-center text-white">
+                {icon && <span className="mr-2 opacity-90">{icon}</span>}
+                {title}
+              </h1>
+              {subtitle && <p className="mt-1 text-white/80">{subtitle}</p>}
+            </div>
+            
+            {(actions || action) && (
+              <div className="flex flex-wrap items-center gap-2">
+                {action}
+                {actions?.map((action, index) => (
+                  <ActionButton key={index} action={action} />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </motion.div>
+    );
+  }
+  
+  // With animations, use lighter motion animations
+  return (
+    <LazyMotion features={domAnimation} strict>
+      <m.div
+        className={cn(
+          "rounded-lg shadow-lg p-6 text-white relative overflow-hidden mt-0",
+          "shadow-black/10 dark:shadow-black/30",
+          gradientClasses
+        )}
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
+      >
+        {backgroundElements}
+        
+        <div className="flex flex-col space-y-4 relative z-10">
+          {breadcrumbs && (
+            <m.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2, delay: 0.1 }}
+              className="flex items-center space-x-2 text-sm"
+            >
+              {breadcrumbs.map((item, index) => (
+                <BreadcrumbItem key={index} item={item} isLast={index === 0} />
+              ))}
+            </m.div>
+          )}
+          
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <m.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2, delay: 0.1 }}
+            >
+              <h1 className="text-3xl font-bold flex items-center text-white">
+                {icon && <span className="mr-2 opacity-90">{icon}</span>}
+                {title}
+              </h1>
+              {subtitle && <p className="mt-1 text-white/80">{subtitle}</p>}
+            </m.div>
+            
+            {(actions || action) && (
+              <m.div
+                className="flex flex-wrap items-center gap-2"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2, delay: 0.15 }}
+              >
+                {action}
+                {actions?.map((action, index) => (
+                  <ActionButton key={index} action={action} />
+                ))}
+              </m.div>
+            )}
+          </div>
+        </div>
+      </m.div>
+    </LazyMotion>
   );
-};
+});
+
+PageHeader.displayName = 'PageHeader';
 
 export default PageHeader; 
