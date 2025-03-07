@@ -49,10 +49,10 @@ import {
   PenLine,
   ArrowUpRight,
 } from 'lucide-react';
-import ProgressHeader from "@/components/generated-plan/ProgressHeader";
-import ProjectOverview from "@/components/generated-plan/ProjectOverview";
-import ProjectPhases from "@/components/generated-plan/ProjectPhases";
-import AIRecommendations from "@/components/generated-plan/AIRecommendations";
+import ProgressHeader from "@/components/ProjectPlan/ProgressHeader";
+import ProjectOverview from "@/components/ProjectPlan/ProjectOverview";
+import ProjectPhases from "@/components/ProjectPlan/ProjectPhases";
+import AIRecommendations from "@/components/ProjectPlan/AIRecommendations";
 import { useNavigate } from 'react-router-dom';
 import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';

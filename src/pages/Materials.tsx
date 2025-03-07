@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 // Icons
-import {
+import { 
   AlertTriangle,
   Download,
   Edit,
@@ -16,7 +16,10 @@ import {
   Settings,
   Trash,
   Truck,
-  XCircle
+  XCircle,
+  AlertCircle,
+  DollarSign,
+  Layers
 } from 'lucide-react'
 
 // UI Components
@@ -55,7 +58,7 @@ import { PageHeader } from '@/components/shared'
 import { usePageActions } from '@/hooks/usePageActions'
 
 // Custom Components
-import { StatCard } from '@/components/materials/StatCard'
+import { StatCard } from '@/components/shared/StatCard'
 import { StatusBadge } from '@/components/materials/StatusBadge'
 
 // Types and Data
@@ -118,6 +121,8 @@ export function Materials() {
   const lowStockCount = materials.filter(m => m.status === 'Low Stock').length
   const outOfStockCount = materials.filter(m => m.status === 'Out of Stock').length
   const onOrderCount = materials.filter(m => m.onOrder > 0).length
+  const totalValue = materials.reduce((total, material) => total + material.unitPrice * material.inStock, 0)
+  const uniqueCategories = [...new Set(materials.map(material => material.category))]
 
   /**
    * Adds a new material to the inventory
@@ -192,69 +197,58 @@ export function Materials() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <PageHeader
           title="Materials Management"
-          subtitle="Track and manage construction materials and inventory"
-          icon={<Package className="h-6 w-6" />}
-          gradient={true}
-          animated={true}
-          actions={[
-            {
-              label: "Add Material",
-              icon: <Plus />,
-              variant: "construction",
-              onClick: () => setIsAddMaterialOpen(true)
-            },
-            {
-              label: "Export",
-              icon: <Download />,
-              variant: "construction",
-              onClick: handleExportMaterials
-            }
-          ]}
+          description="Track and manage construction materials and inventory"
+          icon={<Package className="h-8 w-8" />}
+          actions={
+            <div className="flex items-center gap-2">
+              <Button
+                variant="default"
+                className="bg-white hover:bg-gray-100 text-blue-700 border border-white/20"
+                onClick={() => setIsAddMaterialOpen(true)}
+              >
+                <Plus className="mr-2 h-4 w-4" /> Add Material
+              </Button>
+              <Button
+                variant="outline"
+                className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
+                onClick={handleExportMaterials}
+              >
+                <Download className="mr-2 h-4 w-4" /> Export
+              </Button>
+            </div>
+          }
         />
 
         {/* Materials Statistics */}
-        <div className="mt-8 mb-8">
-          <Grid cols={4} gap="lg" className="w-full">
-            <StatCard 
-              icon={<Package className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
-              title="Total Materials"
-              value={totalMaterials}
-              color="blue"
-            />
-            
-            <StatCard 
-              icon={<AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
-              title="Low Stock"
-              value={lowStockCount}
-              color="amber"
-              badge={lowStockCount > 0 ? {
-                text: "Needs attention",
-                variant: "warning"
-              } : undefined}
-            />
-            
-            <StatCard 
-              icon={<XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />}
-              title="Out of Stock"
-              value={outOfStockCount}
-              color="red"
-              badge={outOfStockCount > 0 ? {
-                text: "Action needed",
-                variant: "destructive"
-              } : undefined}
-            />
-            
-            <StatCard 
-              icon={<Truck className="w-5 h-5 text-green-600 dark:text-green-400" />}
-              title="On Order"
-              value={onOrderCount}
-              color="green"
-              badge={onOrderCount > 0 ? {
-                text: "Pending delivery",
-                variant: "success"
-              } : undefined}
-            />
-          </Grid>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <StatCard
+            title="Total Materials"
+            value={materials.length}
+            icon={<Package className="h-6 w-6" />}
+            color="blue"
+            subtitle="items"
+          />
+          <StatCard
+            title="Low Stock Items"
+            value={materials.filter(m => m.status === 'Low Stock').length}
+            icon={<AlertCircle className="h-6 w-6" />}
+            color="red"
+            subtitle="need ordering"
+          />
+          <StatCard
+            title="Value in Stock"
+            value={`$${totalValue.toLocaleString()}`}
+            icon={<DollarSign className="h-6 w-6" />}
+            color="green"
+            subtitle="total inventory"
+          />
+          <StatCard
+            title="Categories"
+            value={uniqueCategories.length}
+            icon={<Layers className="h-6 w-6" />}
+            color="purple"
+            subtitle="material types"
+          />
         </div>
 
         {/* Filters and Controls */}
@@ -297,15 +291,15 @@ export function Materials() {
               <div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
                     {STATUSES.map(status => (
-                      <SelectItem key={status} value={status}>{status}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <SelectItem key={status} value={status}>{status}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
             </div>
           </CardContent>
         </Card>
@@ -323,7 +317,7 @@ export function Materials() {
               </div>
             </div>
           </CardHeader>
-          <div className="overflow-x-auto">
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-gray-50 dark:bg-slate-800">
@@ -362,12 +356,12 @@ export function Materials() {
                       <TableCell className="text-right">
                         <div className="flex flex-col items-end">
                           <div>{material.inStock} {material.unit}s</div>
-                          {material.onOrder > 0 && (
+                        {material.onOrder > 0 && (
                             <div className="text-xs text-muted-foreground">
                               {material.onOrder} on order
-                            </div>
+                          </div>
                           )}
-                        </div>
+                          </div>
                       </TableCell>
                       <TableCell className="text-center">
                         <StatusBadge status={material.status} />
@@ -390,16 +384,16 @@ export function Materials() {
                           >
                             <Edit className="h-4 w-4" />
                             <span className="sr-only">Edit</span>
-                          </Button>
+                            </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDeleteMaterial(material.id)}
-                          >
+                              onClick={() => handleDeleteMaterial(material.id)}
+                            >
                             <Trash className="h-4 w-4" />
                             <span className="sr-only">Delete</span>
                           </Button>
-                        </div>
+                </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -410,112 +404,112 @@ export function Materials() {
         </Card>
       </div>
 
-      {/* Add Material Dialog */}
-      <Dialog open={isAddMaterialOpen} onOpenChange={setIsAddMaterialOpen}>
+        {/* Add Material Dialog */}
+        <Dialog open={isAddMaterialOpen} onOpenChange={setIsAddMaterialOpen}>
         <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
+            <DialogHeader>
             <DialogTitle>Add New Material</DialogTitle>
-            <DialogDescription>
+              <DialogDescription>
               Add a new material to your inventory. Fill out the details below.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right" htmlFor="name">Name</Label>
-              <Input
+                  <Input 
                 id="name"
-                value={newMaterial.name}
+                    value={newMaterial.name}
                 onChange={(e) => setNewMaterial({ ...newMaterial, name: e.target.value })}
                 className="col-span-3"
-              />
-            </div>
+                  />
+                </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right" htmlFor="category">Category</Label>
-              <Select
-                value={newMaterial.category}
+                  <Select 
+                    value={newMaterial.category}
                 onValueChange={(value) => setNewMaterial({ ...newMaterial, category: value })}
-              >
+                  >
                 <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
                   {CATEGORIES.filter(c => c !== 'All Categories').map(category => (
-                    <SelectItem key={category} value={category}>{category}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right" htmlFor="unit">Unit</Label>
-              <Input
+                  <Input 
                 id="unit"
-                value={newMaterial.unit}
+                    value={newMaterial.unit}
                 onChange={(e) => setNewMaterial({ ...newMaterial, unit: e.target.value })}
                 className="col-span-3"
-              />
-            </div>
+                  />
+                </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right" htmlFor="unitPrice">Unit Price ($)</Label>
-              <Input
+                  <Input 
                 id="unitPrice"
-                type="number"
+                    type="number"
                 value={newMaterial.unitPrice || ''}
                 onChange={(e) => setNewMaterial({ ...newMaterial, unitPrice: parseFloat(e.target.value) || 0 })}
                 className="col-span-3"
-              />
-            </div>
+                  />
+                </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right" htmlFor="inStock">In Stock</Label>
-              <Input
+                  <Input 
                 id="inStock"
-                type="number"
+                    type="number"
                 value={newMaterial.inStock || ''}
                 onChange={(e) => setNewMaterial({ ...newMaterial, inStock: parseInt(e.target.value) || 0 })}
                 className="col-span-3"
-              />
-            </div>
+                  />
+                </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right" htmlFor="minStock">Min Stock</Label>
-              <Input
+                  <Input 
                 id="minStock"
-                type="number"
+                    type="number"
                 value={newMaterial.minStock || ''}
                 onChange={(e) => setNewMaterial({ ...newMaterial, minStock: parseInt(e.target.value) || 0 })}
                 className="col-span-3"
-              />
-            </div>
+                  />
+                </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right" htmlFor="supplier">Supplier</Label>
-              <Input
+                  <Input 
                 id="supplier"
-                value={newMaterial.supplier}
+                    value={newMaterial.supplier}
                 onChange={(e) => setNewMaterial({ ...newMaterial, supplier: e.target.value })}
                 className="col-span-3"
-              />
-            </div>
+                  />
+                </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right" htmlFor="project">Project</Label>
-              <Select
-                value={newMaterial.project}
+                  <Select 
+                    value={newMaterial.project}
                 onValueChange={(value) => setNewMaterial({ ...newMaterial, project: value })}
-              >
+                  >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select project" />
-                </SelectTrigger>
-                <SelectContent>
+                    </SelectTrigger>
+                    <SelectContent>
                   {PROJECTS.filter(p => p !== 'All Projects').map(project => (
-                    <SelectItem key={project} value={project}>{project}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
+                        <SelectItem key={project} value={project}>{project}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddMaterialOpen(false)}>Cancel</Button>
-            <Button onClick={handleAddMaterial}>Add Material</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+              <Button onClick={handleAddMaterial}>Add Material</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
   )
 } 

@@ -2,10 +2,10 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
-import ProgressHeader from './generated-plan/ProgressHeader';
-import ProjectOverview from './generated-plan/ProjectOverview';
-import ProjectPhases from './generated-plan/ProjectPhases';
-import AIRecommendations from './generated-plan/AIRecommendations';
+import ProgressHeader from './ProjectPlan/ProgressHeader';
+import ProjectOverview from './ProjectPlan/ProjectOverview';
+import ProjectPhases from './ProjectPlan/ProjectPhases';
+import AIRecommendations from './ProjectPlan/AIRecommendations';
 
 const AIGenerationResultsMockup = () => {
   return (

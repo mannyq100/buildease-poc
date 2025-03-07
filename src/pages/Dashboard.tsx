@@ -1,121 +1,109 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { darkModeDetector } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
+/**
+ * Dashboard.tsx - Main dashboard page
+ * Overview of construction project metrics, tasks, and quick actions
+ */
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { LazyMotion, domAnimation, m } from 'framer-motion'
+
+// Icons
 import { 
-  Home, 
-  Plus, 
-  Package, 
-  TrendingUp, 
-  Users, 
-  FileText, 
-  ChevronRight,
+  Plus,
   LayoutDashboard,
-  Clock,
-  AlertTriangle,
+  RefreshCw,
+  Briefcase, 
+  DollarSign, 
+  ListTodo, 
+  Users,
   BarChart3,
-  Building,
-  Construction,
-  Sparkles,
-  Search,
-  ArrowRight,
-  Calendar,
-  CheckCircle,
-  Settings,
-  Bell,
-  LogOut,
-  Menu,
-  User,
-  Briefcase,
-  Hammer,
-  Headphones,
-  HardHat,
-  Clipboard,
-  DollarSign,
+  LineChart,
   PieChart,
-  ListTodo,
-  X,
-  RefreshCcw,
-  Trash,
-  Info,
-  AlertCircle
-} from 'lucide-react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+  Calendar,
+  Package,
+  ChevronRight,
+  ArrowUpRight
+} from 'lucide-react'
+
+// UI Components
+import { Button } from '@/components/ui/button'
 import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { HorizontalNav, type NavItem } from '@/components/navigation/HorizontalNav';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
-import { PageHeader } from '@/components/shared';
-import DashboardCard from '@/components/dashboard/DashboardCard';
-import DataVisualization from '@/components/dashboard/DataVisualization';
-import { DashboardGrid, DashboardRow, DashboardSection } from '@/components/dashboard/DashboardGrid';
-import { useToast } from '@/components/ui/toast-context';
-import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
-import { DashboardSkeleton } from '@/components/ui/skeleton';
-import FormField from '@/components/ui/form-field';
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle,
+  CardFooter
+} from '@/components/ui/card'
+import { cn } from '@/lib/utils'
+import { useToast } from '@/components/ui/toast-context'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 
-const Dashboard = () => {
-  const navigate = useNavigate();
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const { toast } = useToast();
-  
-  useEffect(() => {
-    const unsubscribe = darkModeDetector.subscribe(setIsDarkMode);
-    return unsubscribe;
-  }, []);
+// Custom Components
+import { PageHeader } from '@/components/shared'
+import { StatCard } from '@/components/shared/StatCard'
+import DataVisualization from '@/components/dashboard/DataVisualization'
 
-  // Navigation items - memoized to prevent recreation on each render
-  const navItems = React.useMemo<NavItem[]>(() => [
-    { 
-      label: 'Dashboard', 
-      path: '/dashboard', 
-      icon: <LayoutDashboard className="w-5 h-5" /> 
-    },
-    { 
-      label: 'Projects', 
-      path: '/projects', 
-      icon: <Briefcase className="w-5 h-5" />,
-      badge: {
-        text: '4',
-        color: 'blue'
-      }
-    },
-    { 
-      label: 'Schedule', 
-      path: '/schedule', 
-      icon: <Calendar className="w-5 h-5" /> 
-    },
-    { 
-      label: 'Materials', 
-      path: '/materials', 
-      icon: <Package className="w-5 h-5" /> 
-    },
-    { 
-      label: 'Expenses', 
-      path: '/expenses', 
-      icon: <DollarSign className="w-5 h-5" /> 
+// Utilities
+import { darkModeDetector } from '@/lib/utils'
+
+// Data
+import {
+  PROJECT_PROGRESS_DATA,
+  BUDGET_DATA,
+  MATERIAL_USAGE_DATA,
+  TASK_STATUS_DATA,
+  QUICK_STATS,
+  QUICK_ACTIONS
+} from '@/data/mock/dashboardData'
+
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
     }
-  ], []);
+  }
+}
 
-  // Memoized callback handlers to prevent recreating functions on every render
-  const handleRefresh = React.useCallback(() => {
-    setIsRefreshing(true);
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0, 
+    opacity: 1
+  }
+}
+
+/**
+ * Dashboard component
+ * Main dashboard for the construction management application
+ */
+export function Dashboard() {
+  const navigate = useNavigate()
+  const { toast } = useToast()
+  
+  // State
+  const [isDarkMode, setIsDarkMode] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [activeChartTab, setActiveChartTab] = useState("progress")
+  
+  // Set up dark mode detection
+  useEffect(() => {
+    const unsubscribe = darkModeDetector.subscribe(setIsDarkMode)
+    return unsubscribe
+  }, [])
+
+  /**
+   * Handles refreshing dashboard data
+   */
+  function handleRefresh() {
+    setIsRefreshing(true)
     
     // Simulate data fetching
     setTimeout(() => {
-      setIsRefreshing(false);
+      setIsRefreshing(false)
       
       // Show success toast
       toast({
@@ -123,249 +111,286 @@ const Dashboard = () => {
         description: "All data has been updated with the latest information",
         variant: "success",
         duration: 3000,
-      });
-    }, 1500);
-  }, [toast]);
+      })
+    }, 1500)
+  }
 
-  // Sample data for visualizations
-  const projectProgressData = [
-    { name: 'Foundation', completed: 100, total: 100 },
-    { name: 'Framing', completed: 75, total: 100 },
-    { name: 'Electrical', completed: 30, total: 100 },
-    { name: 'Plumbing', completed: 25, total: 100 },
-    { name: 'Interior', completed: 0, total: 100 }
-  ];
-
-  const budgetData = [
-    { name: 'Jan', Planned: 8000, Actual: 7200 },
-    { name: 'Feb', Planned: 12000, Actual: 13100 },
-    { name: 'Mar', Planned: 15000, Actual: 14800 },
-    { name: 'Apr', Planned: 14000, Actual: 16500 },
-    { name: 'May', Planned: 18000, Actual: 17300 },
-    { name: 'Jun', Planned: 9000, Actual: 9200 }
-  ];
-
-  const materialUsageData = [
-    { name: 'Concrete', value: 32 },
-    { name: 'Steel', value: 24 },
-    { name: 'Wood', value: 18 },
-    { name: 'Glass', value: 12 },
-    { name: 'Other', value: 14 }
-  ];
-
-  const taskStatusData = [
-    { name: 'Completed', value: 42 },
-    { name: 'In Progress', value: 18 },
-    { name: 'Pending', value: 34 },
-    { name: 'Delayed', value: 6 }
+  // Recent activity data
+  const activityItems = [
+    { text: "Budget for Main St. project updated", time: "1h ago", icon: <DollarSign className="h-4 w-4 text-green-500" /> },
+    { text: "3 new tasks assigned to team", time: "3h ago", icon: <ListTodo className="h-4 w-4 text-amber-500" /> },
+    { text: "Meeting scheduled with contractors", time: "5h ago", icon: <Calendar className="h-4 w-4 text-blue-500" /> },
+    { text: "New material order placed", time: "Yesterday", icon: <Package className="h-4 w-4 text-purple-500" /> }
   ];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {/* Header Section */}
-        <div className={cn(
-          "relative overflow-hidden rounded-xl border shadow-lg mb-8 p-6",
-            isDarkMode 
-            ? "bg-gradient-to-r from-slate-800 to-slate-900 border-slate-700" 
-            : "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100"
-        )}>
-          <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,transparent,black)] dark:bg-grid-slate-700/25"></div>
-          <div className="relative">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome back, John!</h1>
-                <p className="mt-2 text-gray-600 dark:text-gray-300">Here's what's happening with your projects today.</p>
-              </div>
-              <Button 
-                onClick={() => navigate('/create-project')}
-                className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+        {/* PageHeader */}
+        <PageHeader
+          title="Dashboard"
+          description="Overview of your construction projects and tasks"
+          icon={<LayoutDashboard className="h-8 w-8" />}
+          actions={
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                className="mr-2 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300"
+                disabled={isRefreshing}
               >
-                <Plus className="w-5 h-5 mr-2" />
-                New Project
+                <RefreshCw className={cn("h-4 w-4 mr-2", isRefreshing && "animate-spin")} />
+                Refresh
               </Button>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
-              <Card className="bg-white/10 backdrop-blur-sm border-white/20 dark:border-white/10">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-500/10 rounded-lg">
-                      <Briefcase className="h-5 w-5 text-blue-500" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">Active Projects</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">4</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white/10 backdrop-blur-sm border-white/20 dark:border-white/10">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-green-500/10 rounded-lg">
-                      <DollarSign className="h-5 w-5 text-green-500" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">Total Budget</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">$120K</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white/10 backdrop-blur-sm border-white/20 dark:border-white/10">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-amber-500/10 rounded-lg">
-                      <ListTodo className="h-5 w-5 text-amber-500" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">Open Tasks</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">28</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white/10 backdrop-blur-sm border-white/20 dark:border-white/10">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-purple-500/10 rounded-lg">
-                      <Users className="h-5 w-5 text-purple-500" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">Team Members</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">12</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+              <Button 
+                variant="default" 
+                className="bg-white hover:bg-gray-100 text-blue-700 border border-white/20"
+                onClick={() => navigate('/create-project')}
+              >
+                <Plus className="mr-2 h-4 w-4" /> Create Project
+              </Button>
+            </>
+          }
+        />
+        
+        {/* Welcome Banner */}
+        <m.div 
+          className="mt-8 mb-8 bg-gradient-to-r from-blue-600 to-indigo-700 p-6 rounded-xl shadow-md"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="relative z-10">
+            <h2 className="text-xl font-semibold text-white">Welcome back, John!</h2>
+            <p className="mt-1 text-white/80">Here's what's happening with your projects today.</p>
           </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Column */}
-          <div className="lg:col-span-8 space-y-6">
-            {/* Project Progress */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader>
-                <CardTitle>Project Progress</CardTitle>
-                <CardDescription>Overview of all active project phases</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <DataVisualization
-                  data={projectProgressData}
-                  title="Progress by Phase"
-                  xAxisKey="name"
-                  yAxisKeys={["completed"]}
-                  showToggle={true}
-                  defaultChartType="bar"
-                />
-              </CardContent>
-            </Card>
-
-            {/* Budget Overview */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader>
-                <CardTitle>Budget Overview</CardTitle>
-                <CardDescription>Monthly planned vs actual spending</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <DataVisualization
-                  data={budgetData}
-                  title="Budget Overview"
-                  xAxisKey="name"
-                  yAxisKeys={["Planned", "Actual"]}
-                  defaultChartType="line"
-                />
-              </CardContent>
-            </Card>
+          
+          {/* Abstract background pattern */}
+          <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,transparent,rgba(255,255,255,0.8))]"></div>
+          
+          {/* Quick Actions Row */}
+          <div className="flex flex-wrap gap-2 mt-4">
+            {QUICK_ACTIONS.map((action, index) => (
+              <Button
+                key={index}
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(action.route)}
+                className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
+              >
+                {action.icon}
+                <span className="ml-2">{action.title}</span>
+              </Button>
+            ))}
+          </div>
+        </m.div>
+        
+        {/* Metrics Overview */}
+        <m.div 
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <m.div variants={itemVariants} className="h-full">
+            <StatCard
+              title="Active Projects"
+              value="4"
+              icon={<Briefcase className="h-6 w-6" />}
+              color="blue"
+              subtitle="in progress"
+            />
+          </m.div>
+          <m.div variants={itemVariants} className="h-full">
+            <StatCard
+              title="Budget"
+              value="$120K"
+              icon={<DollarSign className="h-6 w-6" />}
+              color="green"
+              subtitle="$80K spent"
+            />
+          </m.div>
+          <m.div variants={itemVariants} className="h-full">
+            <StatCard
+              title="Open Tasks"
+              value="28"
+              icon={<ListTodo className="h-6 w-6" />}
+              color="amber"
+              subtitle="8 due today"
+            />
+          </m.div>
+          <m.div variants={itemVariants} className="h-full">
+            <StatCard
+              title="Team Members"
+              value="12"
+              icon={<Users className="h-6 w-6" />}
+              color="purple"
+              subtitle="8 active today"
+            />
+          </m.div>
+        </m.div>
+        
+        {/* Charts Section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Project Analytics</h2>
+            <Tabs defaultValue="progress" value={activeChartTab} onValueChange={setActiveChartTab}>
+              <TabsList className="bg-gray-100/80 dark:bg-slate-800/50">
+                <TabsTrigger value="progress" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800">
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Progress
+                </TabsTrigger>
+                <TabsTrigger value="budget" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800">
+                  <LineChart className="h-4 w-4 mr-2" />
+                  Budget
+                </TabsTrigger>
+                <TabsTrigger value="tasks" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800">
+                  <PieChart className="h-4 w-4 mr-2" />
+                  Tasks
+                </TabsTrigger>
+              </TabsList>
+            
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                <div className="lg:col-span-2">
+                  <TabsContent value="progress" className="m-0">
+                    <Card className="h-full overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+                      <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-900 border-b border-gray-200 dark:border-slate-700">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle>Project Progress</CardTitle>
+                            <CardDescription>Overview of all active project phases</CardDescription>
+                          </div>
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800/30">
+                            <Calendar className="h-3 w-3 mr-1" />
+                            Updated Today
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-6 pt-8">
+                        <DataVisualization
+                          data={PROJECT_PROGRESS_DATA}
+                          title="Progress by Phase"
+                          xAxisKey="name"
+                          yAxisKeys={["completed"]}
+                          defaultChartType="bar"
+                          height={300}
+                        />
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                  
+                  <TabsContent value="budget" className="m-0">
+                    <Card className="h-full overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+                      <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-900 border-b border-gray-200 dark:border-slate-700">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle>Budget Overview</CardTitle>
+                            <CardDescription>Monthly planned vs actual spending</CardDescription>
+                          </div>
+                          <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300 border-green-200 dark:border-green-800/30">
+                            <DollarSign className="h-3 w-3 mr-1" />
+                            Budget
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-6 pt-8">
+                        <DataVisualization
+                          data={BUDGET_DATA}
+                          title="Budget Overview"
+                          xAxisKey="name"
+                          yAxisKeys={["Planned", "Actual"]}
+                          defaultChartType="line"
+                          height={300}
+                        />
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                  
+                  <TabsContent value="tasks" className="m-0">
+                    <Card className="h-full overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+                      <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-900 border-b border-gray-200 dark:border-slate-700">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle>Task Status</CardTitle>
+                            <CardDescription>Distribution of tasks by status</CardDescription>
+                          </div>
+                          <Badge variant="outline" className="bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-800/30">
+                            <ListTodo className="h-3 w-3 mr-1" />
+                            Tasks
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-6 pt-8">
+                        <DataVisualization
+                          data={TASK_STATUS_DATA}
+                          title="Task Status"
+                          pieKey="name"
+                          pieValueKey="value"
+                          defaultChartType="pie"
+                          height={300}
+                        />
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                </div>
+                
+                <div className="lg:col-span-1">
+                  <div className="grid gap-6">
+                    <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+                      <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-900 border-b border-gray-200 dark:border-slate-700 pb-3">
+                        <CardTitle className="text-base">Material Usage</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-6">
+                        <DataVisualization
+                          data={MATERIAL_USAGE_DATA}
+                          title="Material Usage"
+                          pieKey="name"
+                          pieValueKey="value"
+                          defaultChartType="pie"
+                          height={200}
+                          showToggle={false}
+                        />
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+                      <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-900 border-b border-gray-200 dark:border-slate-700 pb-3">
+                        <CardTitle className="text-base">Recent Activity</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-0">
+                        <div className="divide-y divide-gray-200 dark:divide-slate-700">
+                          {activityItems.map((item, i) => (
+                            <div key={i} className="flex items-start p-4 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors duration-150">
+                              <div className="mr-4 mt-0.5 flex-shrink-0">{item.icon}</div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{item.text}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">{item.time}</p>
+                              </div>
+                              <div className="ml-2">
+                                <ChevronRight className="h-4 w-4 text-gray-400" />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                      <CardFooter className="p-4 border-t border-gray-200 dark:border-slate-700 flex justify-center">
+                        <Button variant="ghost" size="sm" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 w-full">
+                          View All Activity
+                          <ArrowUpRight className="ml-2 h-3 w-3" />
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  </div>
+                </div>
               </div>
-
-          {/* Right Column */}
-          <div className="lg:col-span-4 space-y-6">
-            {/* Task Distribution */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader>
-                <CardTitle>Task Status</CardTitle>
-                <CardDescription>Distribution of tasks by status</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <DataVisualization
-                  data={taskStatusData}
-                  title="Task Status"
-                  pieKey="name"
-                  pieValueKey="value"
-                  defaultChartType="pie"
-                />
-              </CardContent>
-            </Card>
-
-            {/* Material Usage */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader>
-                <CardTitle>Material Usage</CardTitle>
-                <CardDescription>Current material distribution</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <DataVisualization
-                  data={materialUsageData}
-                  title="Material Usage"
-                  pieKey="name"
-                  pieValueKey="value"
-                  defaultChartType="pie"
-                />
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="mt-8">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Button
-              variant="outline"
-              className="h-auto p-4 flex flex-col items-center justify-center gap-2 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-              onClick={() => navigate('/schedule')}
-            >
-              <Calendar className="h-6 w-6 text-blue-600" />
-              <span>Schedule Meeting</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-auto p-4 flex flex-col items-center justify-center gap-2 hover:bg-green-50 dark:hover:bg-green-900/20"
-              onClick={() => navigate('/materials')}
-            >
-              <Package className="h-6 w-6 text-green-600" />
-              <span>Order Materials</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-auto p-4 flex flex-col items-center justify-center gap-2 hover:bg-purple-50 dark:hover:bg-purple-900/20"
-              onClick={() => navigate('/expenses')}
-            >
-              <DollarSign className="h-6 w-6 text-purple-600" />
-              <span>Review Budget</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-auto p-4 flex flex-col items-center justify-center gap-2 hover:bg-amber-50 dark:hover:bg-amber-900/20"
-              onClick={() => navigate('/team')}
-            >
-              <Users className="h-6 w-6 text-amber-600" />
-              <span>Team Management</span>
-            </Button>
+            </Tabs>
           </div>
         </div>
       </div>
-      </div>
-  );
-};
+    </div>
+  )
+}
 
-export default Dashboard; 
+// Only use default export to avoid duplicate exports
+export default Dashboard 

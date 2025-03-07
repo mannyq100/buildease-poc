@@ -1,60 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Switch } from "@/components/ui/switch";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { 
-  AlertCircle,
-  Sparkles,
-  ChevronRight,
-  Mic,
-  Lightbulb,
-  Save,
-  ArrowRight,
-  Rocket,
-  MessageSquare,
-  Clock,
-  DollarSign,
-  Home,
-  Hexagon,
-  Upload,
-  AlertTriangle,
-  Image as ImageIcon,
-  Phone, 
-  HelpCircle,
-  MapPin,
-  Trees,
-  Building,
-  ParkingCircle,
-  Ruler,
-  Sun,
-  Landmark,
-  Loader2,
-  Zap,
-  Languages,
-  Pen,
-  Users,
-  BookOpen,
-  Camera,
-  FileDown,
-  FileUp,
-  Settings,
-  User,
-  Paintbrush,
-  Check,
-  Heart,
-  X,
-  FileText
-} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from '@/components/ui/input';
+import { Label } from "@/components/ui/label";
+import { Progress } from '@/components/ui/progress';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -62,39 +19,98 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import {
   Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
+  TabsContent
 } from "@/components/ui/tabs";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger
 } from '@/components/ui/tooltip';
-import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, LazyMotion, domAnimation, m } from 'framer-motion';
+import {
+  ArrowRight,
+  BookOpen,
+  Building,
+  Camera,
+  Check,
+  ChevronRight,
+  DollarSign,
+  FileText,
+  FileUp,
+  Heart,
+  Home,
+  Landmark,
+  Languages,
+  Lightbulb,
+  Loader2,
+  MapPin,
+  Mic,
+  Pen,
+  Phone,
+  Rocket,
+  Ruler,
+  Save,
+  Settings,
+  Sparkles,
+  Sun,
+  Trees,
+  User,
+  X,
+  Zap
+} from 'lucide-react';
+import { useEffect, useState, Fragment } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-interface InsightItemProps {
-  title: string;
-  description: string;
-  icon?: React.ReactNode;
-  type?: 'default' | 'warning' | 'success';
-}
+// Import the InsightItem component
+import { InsightItem } from '@/components/project/InsightItem';
+
+// Import types
+import { ProjectFormData, ProjectInputTab, FormFieldValue } from '@/types/projectInputs';
+
+// Import form options
+import {
+  REGIONS,
+  PROJECT_TYPES,
+  ROOF_TYPES,
+  FOUNDATION_TYPES,
+  BUILDING_STRUCTURES,
+  WALL_MATERIALS,
+  FLOOR_MATERIALS,
+  CEILING_MATERIALS,
+  MODERN_AMENITIES,
+  SPECIAL_FEATURES,
+  WINDOW_TYPES,
+  CURRENCIES,
+  SIZE_UNITS,
+  LANGUAGES,
+  BUILDING_STYLES
+} from '@/data/mock/projectInputs/formOptions';
+
+// Import example images
+import { 
+  getRandomImage, 
+  PROJECT_TYPE_IMAGES,
+  BUILDING_STYLE_IMAGES,
+  CONSTRUCTION_PHASE_IMAGES,
+  FEATURE_IMAGES,
+  MATERIAL_IMAGES
+} from '@/data/mock/projectInputs/exampleImages';
+
+// Import utility functions
+import { calculateCostEstimate, getTabProgress, isFormComplete } from '@/utils/projectUtils';
 
 const ProjectInputs = () => {
   // State management
+  const navigate = useNavigate();
   const [progress, setProgress] = useState(0);
-  const [activeTab, setActiveTab] = useState("intro");
+  const [activeTab, setActiveTab] = useState<ProjectInputTab>("intro");
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ProjectFormData>({
     language: "english",
     projectName: "",
     projectType: "",
@@ -134,212 +150,104 @@ const ProjectInputs = () => {
     windowType: "",
     images: []
   });
-  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Partial<Record<keyof ProjectFormData, string>>>({});
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [showProgress, setShowProgress] = useState(false);
   const [showTips, setShowTips] = useState(true);
   const [costEstimate, setCostEstimate] = useState({
     min: 0,
     max: 0
   });
-  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
 
   // Options for the form
-  const regions = [
-    { value: "greater-accra", label: "Greater Accra" },
-    { value: "ashanti", label: "Ashanti" },
-    { value: "eastern", label: "Eastern" },
-    { value: "western", label: "Western" },
-    { value: "central", label: "Central" },
-    { value: "volta", label: "Volta" },
-    { value: "northern", label: "Northern" },
-    { value: "upper-east", label: "Upper East" },
-    { value: "upper-west", label: "Upper West" },
-    { value: "bono", label: "Bono" },
-    { value: "bono-east", label: "Bono East" },
-    { value: "ahafo", label: "Ahafo" },
-    { value: "savannah", label: "Savannah" },
-    { value: "north-east", label: "North East" },
-    { value: "oti", label: "Oti" },
-    { value: "western-north", label: "Western North" }
-  ];
+  const regions = REGIONS;
+  const projectTypes = PROJECT_TYPES;
+  const roofTypes = ROOF_TYPES;
+  const foundationTypes = FOUNDATION_TYPES;
+  const buildingStructures = BUILDING_STRUCTURES;
+  const wallMaterials = WALL_MATERIALS;
+  const floorMaterials = FLOOR_MATERIALS;
+  const ceilingMaterials = CEILING_MATERIALS;
+  const windowTypes = WINDOW_TYPES;
 
-  const projectTypes = [
-    { value: "residential-single", label: "Residential (Single Family)" },
-    { value: "residential-multi", label: "Residential (Multi-Family)" },
-    { value: "commercial-small", label: "Commercial (Small)" },
-    { value: "commercial-large", label: "Commercial (Large)" },
-    { value: "mixed-use", label: "Mixed-Use Building" },
-    { value: "renovation", label: "Renovation Project" },
-    { value: "community", label: "Community Building" },
-    { value: "religious", label: "Religious Building" },
-    { value: "educational", label: "Educational Facility" }
-  ];
+  // Modern amenities with icons
+  const modernAmenities = MODERN_AMENITIES;
 
-  const roofTypes = [
-    { value: "gable", label: "Gable Roof" },
-    { value: "hip", label: "Hip Roof" },
-    { value: "flat", label: "Flat Roof" },
-    { value: "shed", label: "Shed Roof" },
-    { value: "metal-sheet", label: "Metal Sheet Roof" },
-    { value: "aluminum", label: "Aluminum Roof" },
-    { value: "clay-tiles", label: "Clay Tiles" },
-    { value: "concrete-tiles", label: "Concrete Tiles" },
-    { value: "thatch", label: "Traditional Thatch" }
-  ];
+  // Special features with icons
+  const specialFeatures = SPECIAL_FEATURES;
 
-  const foundationTypes = [
-    { value: "strip", label: "Strip Foundation" },
-    { value: "raft", label: "Raft Foundation" },
-    { value: "pad", label: "Pad Foundation" },
-    { value: "pile", label: "Pile Foundation" },
-    { value: "raised-pile", label: "Raised Pile Foundation" }
-  ];
+  // Example images state
+  const [exampleImages, setExampleImages] = useState<string[]>([
+    getRandomImage('construction', 'foundation'),
+    getRandomImage('feature', 'kitchen'),
+    getRandomImage('building', 'modern')
+  ]);
 
-  const wallMaterials = [
-    { value: "concrete-blocks", label: "Concrete Blocks" },
-    { value: "brick", label: "Brick" },
-    { value: "wood", label: "Wood" },
-    { value: "stone", label: "Stone" },
-    { value: "clay", label: "Clay/Earth Blocks" },
-    { value: "compressed-earth", label: "Compressed Earth Blocks" },
-    { value: "glass", label: "Glass Walls" },
-    { value: "bamboo", label: "Bamboo" },
-    { value: "rammed-earth", label: "Rammed Earth" }
-  ];
-
-  const floorMaterials = [
-    { value: "concrete", label: "Concrete" },
-    { value: "ceramic-tiles", label: "Ceramic Tiles" },
-    { value: "porcelain-tiles", label: "Porcelain Tiles" },
-    { value: "terrazzo", label: "Terrazzo" },
-    { value: "wood", label: "Wood" },
-    { value: "vinyl", label: "Vinyl" },
-    { value: "stone", label: "Stone" },
-    { value: "earth", label: "Polished Earth" },
-    { value: "granite", label: "Granite" },
-    { value: "marble", label: "Marble" }
-  ];
-
-  const modernAmenities = [
-    { value: "air-conditioning", label: "Air Conditioning" },
-    { value: "ceiling-fans", label: "Ceiling Fans" },
-    { value: "solar-power", label: "Solar Power System" },
-    { value: "water-storage", label: "Water Storage System" },
-    { value: "internet", label: "High-Speed Internet" },
-    { value: "smart-home", label: "Smart Home Features" },
-    { value: "backup-generator", label: "Backup Generator" },
-    { value: "security-system", label: "Security System" },
-    { value: "borehole", label: "Borehole Water System" },
-    { value: "water-heating", label: "Water Heating System" }
-  ];
-
-  const specialFeatures = [
-    { value: "balcony", label: "Balcony" },
-    { value: "porch", label: "Porch" },
-    { value: "courtyard", label: "Inner Courtyard" },
-    { value: "rooftop-terrace", label: "Rooftop Terrace" },
-    { value: "swimming-pool", label: "Swimming Pool" },
-    { value: "outdoor-kitchen", label: "Outdoor Kitchen" },
-    { value: "gazebo", label: "Gazebo" },
-    { value: "fence-wall", label: "Fence/Security Wall" },
-    { value: "landscaping", label: "Landscaped Garden" },
-    { value: "boys-quarters", label: "Boys Quarters/Staff Housing" },
-    { value: "accessibility", label: "Accessibility Features" },
-    { value: "rainwater-harvesting", label: "Rainwater Harvesting" }
-  ];
-
-  // Check for dark mode
+  // Calculate cost estimate based on building size and type
   useEffect(() => {
-    const isDark = document.documentElement.classList.contains('dark');
-    setIsDarkMode(isDark);
-
-    // Set up a mutation observer to detect changes to the class list
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.attributeName === 'class') {
-          const isDark = document.documentElement.classList.contains('dark');
-          setIsDarkMode(isDark);
-        }
-      });
-    });
-
-    observer.observe(document.documentElement, { attributes: true });
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
-
-  // Calculate cost estimate
-  useEffect(() => {
-    // Very simplified cost estimation - in a real app this would be more sophisticated
-    if (formData.buildingSize && formData.buildingStructure) {
-      let baseRate = 0;
-      
-      // Base rates in Ghana Cedis per square meter (approximate 2023 values)
-      switch (formData.buildingStructure) {
-        case 'single':
-          baseRate = 3000; // Low-end single story
-          break;
-        case 'double':
-          baseRate = 3500; // Low-end two story
-          break;
-        case 'multi':
-          baseRate = 4000; // Low-end multi story
-          break;
-        default:
-          baseRate = 3000;
-      }
-      
-      // Calculate min and max estimates
-      const size = parseFloat(formData.buildingSize);
-      if (!isNaN(size)) {
-        setCostEstimate({
-          min: Math.round(size * baseRate * 0.8),
-          max: Math.round(size * baseRate * 1.2)
-        });
-      }
+    if (formData.buildingSize && formData.projectType) {
+      setCostEstimate(calculateCostEstimate(formData));
     }
   }, [formData.buildingSize, formData.buildingStructure]);
 
-  // Handle tab changes and update progress
-  const handleTabChange = (value) => {
-    setActiveTab(value);
-    
-    // Update progress based on active tab
-    switch(value) {
-      case "intro":
-        setProgress(0);
-        break;
-      case "basic":
-        setProgress(20);
-        break;
-      case "building":
-        setProgress(40);
-        break;
-      case "materials":
-        setProgress(60);
-        break;
-      case "features":
-        setProgress(80);
-        break;
-      case "final":
-        setProgress(95);
-        break;
-      default:
-        setProgress(0);
+  // Check dark mode on component mount and whenever it might change
+  useEffect(() => {
+    function checkDarkMode() {
+      setIsDarkMode(document.documentElement.classList.contains('dark'));
     }
+    
+    // Check on mount
+    checkDarkMode();
+    
+    // Set up a mutation observer to watch for dark mode changes
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+    
+    // Clean up observer on unmount
+    return () => observer.disconnect();
+  }, []);
+
+  // Handle tab changes and update progress
+  const handleTabChange = (value: ProjectInputTab) => {
+    setActiveTab(value);
+    setProgress(getTabProgress(value));
   };
 
   // Handle form input changes
-  const handleInputChange = (field, value) => {
+  const handleInputChange = (field: keyof ProjectFormData, value: FormFieldValue) => {
+    // Clear any error for this field
+    if (errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+
+    // Update our form data
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+
+    // Special case: If project type changes, update example images
+    if (field === 'projectType' && typeof value === 'string' && PROJECT_TYPE_IMAGES[value]) {
+      setExampleImages([
+        PROJECT_TYPE_IMAGES[value],
+        getRandomImage('construction', 'foundation'),
+        getRandomImage('feature', 'kitchen')
+      ]);
+    }
   };
 
   // Toggle modern amenities
-  const toggleModernAmenity = (value) => {
+  const toggleModernAmenity = (value: string) => {
     setFormData(prev => {
       const amenities = [...prev.modernAmenities];
       if (amenities.includes(value)) {
@@ -357,7 +265,7 @@ const ProjectInputs = () => {
   };
 
   // Toggle special features
-  const toggleSpecialFeature = (value) => {
+  const toggleSpecialFeature = (value: string) => {
     setFormData(prev => {
       const features = [...prev.specialFeatures];
       if (features.includes(value)) {
@@ -386,17 +294,13 @@ const ProjectInputs = () => {
   };
 
   // Check if the form is complete enough to generate a plan
-  const isFormComplete = () => {
-    return formData.projectName && 
-           formData.projectType && 
-           formData.location && 
-           formData.budget &&
-           formData.buildingSize;
+  const checkFormComplete = () => {
+    return isFormComplete(formData);
   };
 
   // Continue to next tab
   const handleContinue = () => {
-    const tabs = ["intro", "basic", "building", "materials", "features", "final"];
+    const tabs: ProjectInputTab[] = ["intro", "basic", "building", "materials", "features", "final"];
     const currentIndex = tabs.indexOf(activeTab);
     if (currentIndex < tabs.length - 1) {
       handleTabChange(tabs[currentIndex + 1]);
@@ -405,7 +309,7 @@ const ProjectInputs = () => {
 
   // Go back to previous tab
   const handleBack = () => {
-    const tabs = ["intro", "basic", "building", "materials", "features", "final"];
+    const tabs: ProjectInputTab[] = ["intro", "basic", "building", "materials", "features", "final"];
     const currentIndex = tabs.indexOf(activeTab);
     if (currentIndex > 0) {
       handleTabChange(tabs[currentIndex - 1]);
@@ -754,7 +658,7 @@ const ProjectInputs = () => {
                           >
                             <div className="aspect-video bg-gray-200 relative overflow-hidden">
                               <img 
-                                src="/api/placeholder/320/180" 
+                                src={PROJECT_TYPE_IMAGES['residential-single']} 
                                 alt="Single Family Home"
                                 className="w-full h-full object-cover"
                               />
@@ -790,7 +694,7 @@ const ProjectInputs = () => {
                           >
                             <div className="aspect-video bg-gray-200 relative overflow-hidden">
                               <img 
-                                src="/api/placeholder/320/180" 
+                                src={PROJECT_TYPE_IMAGES['residential-multi']} 
                                 alt="Apartment Building"
                                 className="w-full h-full object-cover"
                               />
@@ -826,7 +730,7 @@ const ProjectInputs = () => {
                           >
                             <div className="aspect-video bg-gray-200 relative overflow-hidden">
                               <img 
-                                src="/api/placeholder/320/180" 
+                                src={PROJECT_TYPE_IMAGES['commercial-small']} 
                                 alt="Commercial Building"
                                 className="w-full h-full object-cover"
                               />
@@ -875,19 +779,27 @@ const ProjectInputs = () => {
                             </Button>
                           </m.div>
                           
-                          <m.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                            <Button 
-                              onClick={handleContinue}
-                              className={`transition-all duration-300 shadow-md hover:shadow-lg ${
-                                isDarkMode 
-                                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white" 
-                                  : "bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white"
-                              }`}
-                            >
-                              Continue
-                              <ChevronRight className="w-4 h-4 ml-2" />
+                          {activeTab !== 'final' ? (
+                            <Button onClick={handleContinue} className="gap-2">
+                              Continue <ChevronRight className="h-4 w-4" />
                             </Button>
-                          </m.div>
+                          ) : (
+                            <Button 
+                              onClick={handleGeneratePlan} 
+                              disabled={!checkFormComplete() || isLoading} 
+                              className="gap-2"
+                            >
+                              {isLoading ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 animate-spin" /> Generating...
+                                </>
+                              ) : (
+                                <>
+                                  <Rocket className="h-4 w-4" /> Generate Construction Plan
+                                </>
+                              )}
+                            </Button>
+                          )}
                         </div>
                       </CardFooter>
                     </Card>
@@ -1997,6 +1909,30 @@ const ProjectInputs = () => {
                           }`}>
                             Supports: JPEG, PNG, WebP. Max file size: 10MB each
                           </p>
+                          
+                          {/* Example Images Preview */}
+                          <div className="mt-4">
+                            <p className={`text-sm mb-2 ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>
+                              Example images for inspiration:
+                            </p>
+                            <div className="grid grid-cols-3 gap-3">
+                              {exampleImages.map((imgUrl, idx) => (
+                                <div 
+                                  key={`example-img-${idx}`}
+                                  className={`rounded-md overflow-hidden border ${
+                                    isDarkMode ? "border-slate-700" : "border-gray-200"
+                                  }`}
+                                >
+                                  <img 
+                                    src={imgUrl} 
+                                    alt={`Construction example ${idx+1}`}
+                                    className="w-full h-32 object-cover"
+                                    loading="lazy"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       </CardContent>
                       <CardFooter className={`flex justify-between border-t ${
@@ -2432,49 +2368,6 @@ const ProjectInputs = () => {
       </div>
     </div>
     </>
-  );
-};
-
-const InsightItem = ({ title, description, icon, type = 'default' }) => {
-  const styles = {
-    default: {
-      container: 'bg-blue-50/50 border border-blue-100/50 hover:border-blue-200 dark:bg-blue-900/20 dark:border-blue-800/50 dark:hover:border-blue-700',
-      icon: 'text-blue-500 dark:text-blue-400',
-      heading: 'text-blue-900 dark:text-blue-300',
-      text: 'text-blue-800 dark:text-blue-400',
-    },
-    warning: {
-      container: 'bg-amber-50/50 border border-amber-100/50 hover:border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/50 dark:hover:border-amber-700',
-      icon: 'text-amber-500 dark:text-amber-400',
-      heading: 'text-amber-900 dark:text-amber-300',
-      text: 'text-amber-800 dark:text-amber-400',
-    },
-    success: {
-      container: 'bg-green-50/50 border border-green-100/50 hover:border-green-200 dark:bg-green-900/20 dark:border-green-800/50 dark:hover:border-green-700',
-      icon: 'text-green-500 dark:text-green-400',
-      heading: 'text-green-900 dark:text-green-300',
-      text: 'text-green-800 dark:text-green-400',
-    }
-  };
-
-  const style = styles[type];
-
-  return (
-    <LazyMotion features={domAnimation} strict>
-      <m.div 
-        whileHover={{ x: 5 }}
-        transition={{ type: "spring", stiffness: 300 }}
-        className={`flex items-start space-x-4 p-4 rounded-lg transition-all duration-300 shadow-sm hover:shadow-md ${style.container}`}
-      >
-        <div className={`rounded-full p-2 bg-current bg-opacity-10 ${style.icon}`}>
-          {icon || <Sparkles className={`w-5 h-5 ${style.icon}`} />}
-        </div>
-        <div>
-          <h4 className={`font-medium ${style.heading}`}>{title}</h4>
-          <p className={`text-sm mt-1 leading-relaxed ${style.text}`}>{description}</p>
-        </div>
-      </m.div>
-    </LazyMotion>
   );
 };
 

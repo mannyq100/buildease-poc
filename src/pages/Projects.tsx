@@ -51,7 +51,7 @@ import {
   Activity,
   LayoutGrid,
   List,
-  MoreHorizontal
+  CheckSquare
 } from 'lucide-react';
 import { HorizontalNav, type NavItem } from '@/components/navigation/HorizontalNav';
 import { cn } from '@/lib/utils';
@@ -60,6 +60,26 @@ import { PageHeader } from '@/components/shared';
 import { usePageActions } from '@/hooks/usePageActions';
 import { Project, ProjectStatus, ViewMode } from '@/types/project';
 import { projectsData } from '@/data/projectsData';
+import { StatCard } from '@/components/shared/StatCard'
+
+// Animation variants for metrics cards
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+}
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0, 
+    opacity: 1
+  }
+}
 
 // Main component
 export function Projects() {
@@ -122,53 +142,147 @@ export function Projects() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-0">
+        {/* Quick Actions */}
+        <div className="flex justify-end gap-2 mb-6">
+          <Button 
+            variant="outline"
+            size="sm"
+            onClick={() => setSearchTerm('')}
+            className="bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300"
+          >
+            <Filter className="h-4 w-4 mr-2" />
+            Reset Filters
+          </Button>
+        </div>
+        
         <PageHeader
           title="Projects"
-          subtitle="Manage and monitor all your construction projects"
-          icon={<Briefcase className="h-6 w-6" />}
-          gradient={true}
-          animated={true}
-          actions={[
-            {
-              label: "Create Project",
-              icon: <Plus />,
-              variant: "construction",
-              onClick: () => navigate('/create-project')
-            }
-          ]}
+          description="Manage and monitor all your construction projects"
+          icon={<Briefcase className="h-8 w-8" />}
+          actions={
+            <Button 
+              variant="default" 
+              className="bg-white hover:bg-gray-100 text-blue-700 border border-white/20"
+              onClick={() => navigate('/create-project')}
+            >
+              <Plus className="mr-2 h-4 w-4" /> Create Project
+            </Button>
+          }
         />
 
-        <LazyMotion features={domAnimation}>
-          <m.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-          >
-            <ProjectSummaryStats 
-              projectsCount={projectsData.length}
-              completedCount={projectsData.filter(p => p.status === 'completed').length}
-              inProgressCount={projectsData.filter(p => p.status === 'active' || p.status === 'planning').length}
-              totalBudget={totalBudget}
-              totalSpent={totalSpent}
-              spentPercentage={spentPercentage}
-              isDarkMode={isDarkMode}
-            />
-
-            <ProjectFilters 
-              currentTab={currentTab} 
-              setCurrentTab={setCurrentTab}
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
-            />
-
-            <ProjectsList 
-              filteredProjects={filteredProjects}
-              view={view}
-              setView={setView}
-              navigate={navigate}
+        {/* Project Statistics */}
+        <m.div 
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <m.div variants={itemVariants} className="h-full">
+            <StatCard
+              title="Total Projects"
+              value={projectsData.length}
+              icon={<Briefcase className="h-6 w-6" />}
+              color="blue"
+              subtitle="projects"
             />
           </m.div>
-        </LazyMotion>
+          
+          <m.div variants={itemVariants} className="h-full">
+            <StatCard
+              title="Completed Projects"
+              value={projectsData.filter(p => p.status === 'completed').length}
+              icon={<CheckSquare className="h-6 w-6" />}
+              color="green"
+              subtitle="100% complete"
+            />
+          </m.div>
+          
+          <m.div variants={itemVariants} className="h-full">
+            <StatCard
+              title="Budget"
+              value={formatNumberWithCommas(`$${Math.round(totalBudget / 1000)}K`)}
+              icon={<DollarSign className="h-6 w-6" />}
+              color="amber"
+              subtitle={`$${formatNumberWithCommas(Math.round(totalSpent / 1000))}K spent`}
+            />
+          </m.div>
+          
+          <m.div variants={itemVariants} className="h-full">
+            <StatCard
+              title="Progress"
+              value={`${Math.round(spentPercentage)}%`}
+              icon={<PieChart className="h-6 w-6" />}
+              color="purple"
+              subtitle={`${projectsData.filter(p => p.status === 'active').length} active projects`}
+            />
+          </m.div>
+        </m.div>
+
+        {/* Filters and Controls */}
+        <Card className="mb-6 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700">
+          <CardContent className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input 
+                  placeholder="Search projects..." 
+                  className="pl-10 bg-white/80 dark:bg-slate-700/50 border-gray-200 dark:border-slate-600"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              
+              <div className="md:col-span-2">
+                <Tabs value={currentTab} onValueChange={(value: string) => setCurrentTab(value as 'all' | ProjectStatus)} className="w-full">
+                  <TabsList className="grid grid-cols-5 w-full bg-gray-100/70 dark:bg-slate-700/50 p-1">
+                    <TabsTrigger value="all" className="text-sm">All Projects</TabsTrigger>
+                    <TabsTrigger value="active" className="text-sm">Active</TabsTrigger>
+                    <TabsTrigger value="planning" className="text-sm">Planning</TabsTrigger>
+                    <TabsTrigger value="completed" className="text-sm">Completed</TabsTrigger>
+                    <TabsTrigger value="upcoming" className="text-sm">Upcoming</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+              
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSearchTerm('')}
+                  className="bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300"
+                >
+                  <Filter className="h-4 w-4 mr-2" />
+                  Reset
+                </Button>
+                <Button
+                  variant={view === 'grid' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setView('grid')}
+                  className="flex items-center"
+                >
+                  <LayoutGrid className="h-4 w-4 mr-1" />
+                  Grid
+                </Button>
+                <Button
+                  variant={view === 'list' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setView('list')}
+                  className="flex items-center"
+                >
+                  <List className="h-4 w-4 mr-1" />
+                  List
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <ProjectsList
+          filteredProjects={filteredProjects}
+          view={view}
+          setView={setView}
+          navigate={navigate}
+        />
       </div>
     </div>
   );
@@ -203,6 +317,11 @@ function formatCurrency(amount: number) {
 function formatDate(dateString: string) {
   const options = { year: 'numeric', month: 'short', day: 'numeric' } as Intl.DateTimeFormatOptions;
   return new Date(dateString).toLocaleDateString('en-US', options);
+}
+
+// Helper function to format numbers with commas
+function formatNumberWithCommas(number: string | number): string {
+  return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
 // Component interfaces
@@ -241,172 +360,6 @@ interface ProjectsListProps {
 }
 
 // Subcomponents
-function ProjectSummaryStats({
-  projectsCount,
-  completedCount,
-  inProgressCount,
-  totalBudget,
-  totalSpent,
-  spentPercentage,
-  isDarkMode
-}: ProjectSummaryStatsProps) {
-  return (
-    <m.div 
-      className="mt-8"
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.1 }}
-    >
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <SummaryCard 
-          title="Total Projects"
-          value={projectsCount}
-          icon={<Briefcase className="h-6 w-6 text-blue-600 dark:text-blue-400" />}
-          color="blue"
-          isDarkMode={isDarkMode}
-          footer={
-            <div className="flex justify-between text-xs font-medium">
-              <span className="text-blue-600 dark:text-blue-400">View all projects</span>
-              <ChevronRight className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            </div>
-          }
-        />
-
-        <SummaryCard 
-          title="Completed Projects"
-          value={completedCount}
-          valueLabel={`/${projectsCount}`}
-          icon={<CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />}
-          color="green"
-          isDarkMode={isDarkMode}
-          footer={
-            <>
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-medium text-green-600 dark:text-green-400">Completion rate</span>
-                <span className="text-xs font-bold text-green-600 dark:text-green-400">
-                  {Math.round((completedCount / projectsCount) * 100)}%
-                </span>
-              </div>
-              <Progress 
-                value={(completedCount / projectsCount) * 100} 
-                className="h-1.5 mt-2 bg-green-100 dark:bg-green-900/30"
-              >
-                <div className="h-full bg-green-500 dark:bg-green-400" />
-              </Progress>
-            </>
-          }
-        />
-
-        <SummaryCard 
-          title="In Progress"
-          value={inProgressCount}
-          valueLabel="projects"
-          icon={<Activity className="h-6 w-6 text-amber-600 dark:text-amber-400" />}
-          color="amber"
-          isDarkMode={isDarkMode}
-          footer={
-            <div className="flex items-center gap-2 text-xs font-medium text-amber-600 dark:text-amber-400">
-              <Clock className="h-3.5 w-3.5" />
-              <span>
-                {projectsData.filter(p => p.status === 'active').length} active,&nbsp;
-                {projectsData.filter(p => p.status === 'planning').length} planning
-              </span>
-            </div>
-          }
-        />
-
-        <SummaryCard 
-          title="Budget Utilization"
-          value={Math.round(spentPercentage)}
-          valueLabel="%"
-          icon={<DollarSign className="h-6 w-6 text-purple-600 dark:text-purple-400" />}
-          color="purple"
-          isDarkMode={isDarkMode}
-          footer={
-            <>
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-medium text-purple-600 dark:text-purple-400">
-                  {formatCurrency(totalSpent)} of {formatCurrency(totalBudget)}
-                </span>
-              </div>
-              <Progress 
-                value={spentPercentage} 
-                className="h-1.5 mt-2 bg-purple-100 dark:bg-purple-900/30"
-              >
-                <div className="h-full bg-purple-500 dark:bg-purple-400" />
-              </Progress>
-            </>
-          }
-        />
-      </div>
-    </m.div>
-  )
-}
-
-function SummaryCard({
-  title,
-  value,
-  valueLabel,
-  icon,
-  color,
-  isDarkMode,
-  footer
-}: SummaryCardProps) {
-  return (
-    <m.div 
-      whileHover={{ y: -5, transition: { duration: 0.2 } }}
-      className="col-span-1"
-    >
-      <Card className={cn(
-        "overflow-hidden border-none shadow-lg hover:shadow-xl transition-all duration-300",
-        `bg-gradient-to-br from-${color}-50 to-${color === 'blue' ? 'indigo' : color}-50`,
-        `dark:from-${color}-900/20 dark:to-${color === 'blue' ? 'indigo' : color}-900/20`
-      )}>
-        <CardContent className="p-6">
-          <div className="flex items-center gap-4">
-            <div className={cn(
-              "rounded-full p-3 shadow-inner",
-              `bg-${color}-100 dark:bg-${color}-900/30`
-            )}>
-              {icon}
-            </div>
-            <div>
-              <p className={cn(
-                "text-sm font-medium",
-                `text-${color}-700 dark:text-${color}-300`
-              )}>
-                {title}
-              </p>
-              <div className="flex items-end gap-1">
-                <p className={cn(
-                  "text-3xl font-bold",
-                  `text-${color}-900 dark:text-white`
-                )}>
-                  {value}
-                </p>
-                {valueLabel && (
-                  <p className={cn(
-                    "text-sm pb-1", 
-                    `text-${color}-600 dark:text-${color}-400`
-                  )}>
-                    {valueLabel}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className={cn(
-            "mt-4 pt-4 border-t",
-            `border-${color}-100 dark:border-${color}-900/30`
-          )}>
-            {footer}
-          </div>
-        </CardContent>
-      </Card>
-    </m.div>
-  )
-}
-
 function ProjectFilters({
   currentTab,
   setCurrentTab,
@@ -478,29 +431,6 @@ function ProjectsList({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.3 }}
     >
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex gap-2">
-          <Button
-            variant={view === 'grid' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setView('grid')}
-            className="flex items-center"
-          >
-            <LayoutGrid className="h-4 w-4 mr-1" />
-            Grid
-          </Button>
-          <Button
-            variant={view === 'list' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setView('list')}
-            className="flex items-center"
-          >
-            <List className="h-4 w-4 mr-1" />
-            List
-          </Button>
-        </div>
-      </div>
-
       {filteredProjects.length === 0 ? (
         <EmptyProjectsState navigate={navigate} />
       ) : (
@@ -608,7 +538,7 @@ function ProjectCard({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreHorizontal className="h-4 w-4" />
+              <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -723,7 +653,7 @@ function ProjectsListView({
                           className="h-8 w-8"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <MoreHorizontal className="h-4 w-4" />
+                          <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">

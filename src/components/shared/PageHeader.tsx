@@ -1,3 +1,6 @@
+/**
+ * PageHeader component for consistent page headers across the application
+ */
 import React, { useMemo, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronRight } from 'lucide-react';
@@ -16,16 +19,31 @@ interface PageHeaderAction {
   onClick: () => void;
 }
 
-interface PageHeaderProps {
+export interface PageHeaderProps {
+  /**
+   * The title of the page
+   */
   title: string;
-  subtitle?: string;
+  
+  /**
+   * Optional subtitle or description
+   */
+  description?: string;
+  
+  /**
+   * Optional icon to display with title
+   */
   icon?: React.ReactNode;
-  actions?: PageHeaderAction[];
-  breadcrumbs?: Breadcrumb[];
-  gradient?: boolean;
-  action?: React.ReactNode;
-  theme?: 'blue' | 'purple' | 'green' | 'amber';
-  animated?: boolean;
+  
+  /**
+   * Optional actions to display in the header
+   */
+  actions?: React.ReactNode;
+  
+  /**
+   * Optional class name for custom styling
+   */
+  className?: string;
 }
 
 // Memoize gradient options to avoid recalculation
@@ -95,147 +113,46 @@ const BreadcrumbItem = memo(({ item, isLast }: { item: Breadcrumb, isLast: boole
 
 BreadcrumbItem.displayName = 'BreadcrumbItem';
 
-export const PageHeader = memo(({
+export function PageHeader({
   title,
-  subtitle,
+  description,
   icon,
   actions,
-  breadcrumbs,
-  gradient = false,
-  action,
-  theme = 'blue',
-  animated = true
-}: PageHeaderProps) => {
-  // Use centralized dark mode detection
-  const isDarkMode = darkModeDetector.isDarkMode();
-  
-  // Memoize gradient classes
-  const gradientClasses = useMemo(() => {
-    if (gradient) {
-      return `bg-gradient-to-r ${isDarkMode ? themeGradients[theme].dark : themeGradients[theme].light}`;
-    } else {
-      return `bg-[#2B6CB0] dark:bg-slate-800/95`;
-    }
-  }, [gradient, theme, isDarkMode]);
-  
-  // Memoize background decorative elements JSX
-  const backgroundElements = useMemo(() => {
-    return (
-      <>
-        <div className="absolute inset-0 bg-black/5"></div>
-        <div className="absolute -top-18 -right-24 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-12 -left-12 w-36 h-36 bg-white/10 rounded-full blur-3xl"></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/10"></div>
-      </>
-    );
-  }, []);
-  
-  // Skip animations for better performance if needed
-  if (!animated) {
-    return (
-      <div 
-        className={cn(
-          "rounded-lg shadow-lg p-6 text-white relative overflow-hidden mt-0",
-          "shadow-black/10 dark:shadow-black/30",
-          gradientClasses
-        )}
-      >
-        {backgroundElements}
-        
-        <div className="flex flex-col space-y-4 relative z-10">
-          {breadcrumbs && (
-            <div className="flex items-center space-x-2 text-sm">
-              {breadcrumbs.map((item, index) => (
-                <BreadcrumbItem key={index} item={item} isLast={index === 0} />
-              ))}
-            </div>
-          )}
-          
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold flex items-center text-white">
-                {icon && <span className="mr-2 opacity-90">{icon}</span>}
-                {title}
-              </h1>
-              {subtitle && <p className="mt-1 text-white/80">{subtitle}</p>}
-            </div>
-            
-            {(actions || action) && (
-              <div className="flex flex-wrap items-center gap-2">
-                {action}
-                {actions?.map((action, index) => (
-                  <ActionButton key={index} action={action} />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  // With animations, use lighter motion animations
+  className
+}: PageHeaderProps) {
   return (
-    <LazyMotion features={domAnimation} strict>
-      <m.div
-        className={cn(
-          "rounded-lg shadow-lg p-6 text-white relative overflow-hidden mt-0",
-          "shadow-black/10 dark:shadow-black/30",
-          gradientClasses
-        )}
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.2 }}
-      >
-        {backgroundElements}
-        
-        <div className="flex flex-col space-y-4 relative z-10">
-          {breadcrumbs && (
-            <m.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.2, delay: 0.1 }}
-              className="flex items-center space-x-2 text-sm"
-            >
-              {breadcrumbs.map((item, index) => (
-                <BreadcrumbItem key={index} item={item} isLast={index === 0} />
-              ))}
-            </m.div>
+    <div className={cn(
+      'relative rounded-xl bg-gradient-to-r from-blue-700 to-blue-600 text-white p-6 mb-8',
+      'shadow-md border border-blue-800/20',
+      className
+    )}>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-3">
+          {icon && (
+            <div className="w-10 h-10 flex items-center justify-center text-white">
+              {icon}
+            </div>
           )}
-          
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <m.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.2, delay: 0.1 }}
-            >
-              <h1 className="text-3xl font-bold flex items-center text-white">
-                {icon && <span className="mr-2 opacity-90">{icon}</span>}
-                {title}
-              </h1>
-              {subtitle && <p className="mt-1 text-white/80">{subtitle}</p>}
-            </m.div>
-            
-            {(actions || action) && (
-              <m.div
-                className="flex flex-wrap items-center gap-2"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.2, delay: 0.15 }}
-              >
-                {action}
-                {actions?.map((action, index) => (
-                  <ActionButton key={index} action={action} />
-                ))}
-              </m.div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-white">
+              {title}
+            </h1>
+            {description && (
+              <p className="text-sm text-white/80 mt-1">
+                {description}
+              </p>
             )}
           </div>
         </div>
-      </m.div>
-    </LazyMotion>
-  );
-});
-
-PageHeader.displayName = 'PageHeader';
+        
+        {actions && (
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+            {actions}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
 export default PageHeader; 

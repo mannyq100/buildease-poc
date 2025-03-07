@@ -4,6 +4,7 @@
  */
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { toast } from '@/components/ui/use-toast'
 
 // Icons
 import {
@@ -19,7 +20,13 @@ import {
   Share2,
   Star,
   Trash2,
-  Upload
+  Upload,
+  Files,
+  CheckCircle,
+  FolderOpen,
+  Plus,
+  RefreshCw,
+  Pencil
 } from 'lucide-react'
 
 // UI Components
@@ -31,7 +38,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
+import { 
   Dialog,
   DialogContent,
   DialogDescription,
@@ -62,9 +69,13 @@ import {
   PageHeader
 } from '@/components/shared'
 import { usePageActions } from '@/hooks/usePageActions'
+import { StatCard } from '@/components/shared/StatCard'
 
 // Custom Components
 import { DocumentItem } from '@/components/documents/DocumentItem'
+import { DocumentStatCard } from '@/components/documents/DocumentStatCard'
+import { DocumentQuickAction } from '@/components/documents/DocumentQuickAction'
+import { EmptyDocumentState } from '@/components/documents/EmptyDocumentState'
 
 // Types and Utilities
 import { Document, NewDocument } from '@/types/documents'
@@ -110,10 +121,56 @@ export function Documents() {
   const [newDocumentName, setNewDocumentName] = useState('')
   const [selectedFolder, setSelectedFolder] = useState('')
 
-  // Filtered documents - memoized to prevent recalculation on every render
+  // Memoized filtered documents based on search query and filters
   const filteredDocuments = useMemo(() => {
-    return filterDocuments(documents, searchQuery, projectFilter, categoryFilter, statusFilter)
-  }, [documents, searchQuery, projectFilter, categoryFilter, statusFilter])
+    return documents.filter(doc => {
+      // Check search query
+      if (searchQuery && !doc.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+        return false;
+      }
+
+      // Check project filter
+      if (projectFilter !== 'all' && doc.project !== projectFilter) {
+        return false;
+      }
+
+      // Check category filter
+      if (categoryFilter !== 'all' && doc.category !== categoryFilter) {
+        return false;
+      }
+
+      // Check status filter
+      if (statusFilter !== 'all' && doc.status !== statusFilter) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [documents, searchQuery, projectFilter, categoryFilter, statusFilter]);
+
+  // Calculate document counts for stats
+  const approvedCount = useMemo(() => 
+    documents.filter(d => d.status === 'approved').length, 
+    [documents]
+  );
+  
+  const starredCount = useMemo(() => 
+    documents.filter(d => d.starred).length, 
+    [documents]
+  );
+  
+  const recentCount = useMemo(() => 
+    documents.filter(d => new Date(d.uploaded) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length, 
+    [documents]
+  );
+  
+  // Get recent documents from the last 7 days
+  const recentDocuments = useMemo(() => 
+    filteredDocuments
+      .filter(d => new Date(d.uploaded) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
+      .sort((a, b) => new Date(b.uploaded).getTime() - new Date(a.uploaded).getTime()),
+    [filteredDocuments]
+  );
 
   /**
    * Handle opening document view dialog
@@ -274,96 +331,59 @@ export function Documents() {
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <PageHeader
-          title="Document Management"
-          subtitle="Upload, organize, and manage project documents"
-          icon={<FileText className="h-6 w-6" />}
-          gradient={true}
-          animated={true}
-          actions={[
-            {
-              label: "Upload Document",
-              icon: <Upload />,
-              variant: "construction",
-              onClick: () => setUploadDialogOpen(true)
-            }
-          ]}
+          title="Documents"
+          description="Manage and organize your project documents"
+          icon={<FileText className="h-8 w-8" />}
+          actions={
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="default" 
+                className="bg-white hover:bg-gray-100 text-blue-700 border border-white/20"
+                onClick={() => setUploadDialogOpen(true)}
+              >
+                <Upload className="mr-2 h-4 w-4" /> Upload Document
+              </Button>
+              <Button 
+                variant="outline" 
+                className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
+                onClick={() => handleResetFilters()}
+              >
+                <Filter className="mr-2 h-4 w-4" /> Export
+              </Button>
+            </div>
+          }
         />
 
         {/* Metrics Section */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8 mb-8">
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 shadow-sm hover:shadow-md transition-all duration-300 border border-blue-200 dark:border-blue-800/30">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg shadow-sm">
-                  <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Total Documents</p>
-                  <div className="flex items-baseline gap-2">
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{documents.length}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">items</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/20 shadow-sm hover:shadow-md transition-all duration-300 border border-green-200 dark:border-green-800/30">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-lg shadow-sm">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Approved</p>
-                  <div className="flex items-baseline gap-2">
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {documents.filter(d => d.status === 'approved').length}
-                    </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">documents</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-800/20 shadow-sm hover:shadow-md transition-all duration-300 border border-amber-200 dark:border-amber-800/30">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-lg shadow-sm">
-                  <Star className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Starred</p>
-                  <div className="flex items-baseline gap-2">
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {documents.filter(d => d.starred).length}
-                    </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">favorites</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/20 shadow-sm hover:shadow-md transition-all duration-300 border border-purple-200 dark:border-purple-800/30">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded-lg shadow-sm">
-                  <Clock className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Recent Uploads</p>
-                  <div className="flex items-baseline gap-2">
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {documents.filter(d => new Date(d.uploaded) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length}
-                    </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">this week</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <StatCard
+            title="Total Documents"
+            value={documents.length}
+            icon={<Files className="h-6 w-6" />}
+            color="blue"
+            subtitle="items"
+          />
+          <StatCard
+            title="Approved"
+            value={approvedCount}
+            icon={<CheckCircle className="h-6 w-6" />}
+            color="green"
+            subtitle="documents"
+          />
+          <StatCard
+            title="Starred"
+            value={starredCount}
+            icon={<Star className="h-6 w-6" />}
+            color="amber"
+            subtitle="favorites"
+          />
+          <StatCard
+            title="Recent Uploads"
+            value={recentCount}
+            icon={<Clock className="h-6 w-6" />}
+            color="purple"
+            subtitle="this week"
+          />
         </div>
 
         {/* Main Content */}
@@ -474,6 +494,22 @@ export function Documents() {
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
                     </div>
+                    <div className="flex items-center gap-2">
+                      <DocumentQuickAction
+                        icon={<Plus className="h-4 w-4" />}
+                        label="Add Document"
+                        variant="default"
+                        onClick={() => setUploadDialogOpen(true)}
+                      />
+                      <DocumentQuickAction
+                        icon={<RefreshCw className="h-4 w-4" />}
+                        label="Refresh"
+                        variant="outline"
+                        onClick={() => toast({
+                          title: "Refreshed",
+                          description: "Document list has been refreshed",
+                        })}
+                      />
                     <Select defaultValue="newest">
                       <SelectTrigger className="w-40">
                         <SelectValue />
@@ -485,6 +521,7 @@ export function Documents() {
                         <SelectItem value="size">Size</SelectItem>
                       </SelectContent>
                     </Select>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="p-6">
@@ -512,7 +549,7 @@ export function Documents() {
                           />
                         ))
                       ) : (
-                        <EmptyDocumentState onUpload={() => setUploadDialogOpen(true)} />
+                        <EmptyDocumentState type="all" onUpload={() => setUploadDialogOpen(true)} />
                       )}
                     </TabsContent>
 
@@ -533,12 +570,12 @@ export function Documents() {
                           />
                         ))
                       ) : (
-                        <EmptyStarredState />
+                        <EmptyDocumentState type="starred" onUpload={() => navigate('/documents')} />
                       )}
                     </TabsContent>
 
                     <TabsContent value="recent" className="space-y-4">
-                      {filteredDocuments.slice(0, 3).map(doc => (
+                      {recentDocuments.map(doc => (
                         <DocumentItem 
                           key={doc.id} 
                           document={doc} 
@@ -564,12 +601,11 @@ export function Documents() {
       {/* Upload Document Dialog */}
       <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Upload New Document</DialogTitle>
-            <DialogDescription>
-              Add a new document to your project. Fill in the document details below.
-            </DialogDescription>
-          </DialogHeader>
+          <PageHeader
+            title="Upload New Document"
+            description="Add a new document to your project. Fill in the document details below."
+            icon={<Upload className="h-6 w-6" />}
+          />
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <label htmlFor="file" className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -639,14 +675,13 @@ export function Documents() {
       {/* View Document Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>View Document</DialogTitle>
-            <DialogDescription>
-              View the details of the selected document.
-            </DialogDescription>
-          </DialogHeader>
+          <PageHeader
+            title="View Document"
+            description="View the details of the selected document."
+            icon={<FileText className="h-6 w-6" />}
+          />
           {selectedDocument && (
-            <div className="grid gap-4 py-4">
+          <div className="grid gap-4 py-4">
               <DocumentDetail label="Document Name" value={selectedDocument.name} />
               <DocumentDetail label="Project" value={selectedDocument.project} />
               <DocumentDetail label="Category" value={selectedDocument.category} />
@@ -699,12 +734,11 @@ export function Documents() {
       {/* Rename Document Dialog */}
       <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Rename Document</DialogTitle>
-            <DialogDescription>
-              Enter a new name for the document.
-            </DialogDescription>
-          </DialogHeader>
+          <PageHeader
+            title="Rename Document"
+            description="Enter a new name for the document."
+            icon={<Pencil className="h-6 w-6" />}
+          />
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -730,12 +764,11 @@ export function Documents() {
       {/* Move Document Dialog */}
       <Dialog open={moveDialogOpen} onOpenChange={setMoveDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Move Document</DialogTitle>
-            <DialogDescription>
-              Select a folder to move the document to.
-            </DialogDescription>
-          </DialogHeader>
+          <PageHeader
+            title="Move Document"
+            description="Select a new location for this document"
+            icon={<FolderOpen className="h-6 w-6" />}
+          />
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <label htmlFor="folder" className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -780,51 +813,6 @@ function DocumentDetail({ label, value }: DocumentDetailProps) {
         {label}
       </label>
       <p className="text-gray-500 dark:text-gray-400">{value}</p>
-    </div>
-  )
-}
-
-/**
- * Empty state for document list
- */
-interface EmptyDocumentStateProps {
-  onUpload: () => void
-}
-
-function EmptyDocumentState({ onUpload }: EmptyDocumentStateProps) {
-  return (
-    <div className="text-center py-12">
-      <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
-        <FileText className="w-10 h-10 text-gray-400 dark:text-gray-500" />
-      </div>
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No documents found</h3>
-      <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
-        We couldn't find any documents matching your current filters. Try adjusting your search criteria or upload a new document.
-      </p>
-      <Button 
-        onClick={onUpload}
-        className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white shadow-md"
-      >
-        <Upload className="w-4 h-4 mr-2" />
-        Upload a Document
-      </Button>
-    </div>
-  )
-}
-
-/**
- * Empty state for starred documents
- */
-function EmptyStarredState() {
-  return (
-    <div className="text-center py-12">
-      <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
-        <Star className="w-10 h-10 text-gray-400 dark:text-gray-500" />
-      </div>
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No starred documents</h3>
-      <p className="text-gray-500 dark:text-gray-400">
-        You haven't starred any documents yet. Star important documents to find them quickly.
-      </p>
     </div>
   )
 }

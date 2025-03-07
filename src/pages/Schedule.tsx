@@ -18,16 +18,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Plus, 
   Search, 
-  Calendar, 
+  Calendar,
   BarChart2, 
   List,
   LayoutGrid,
   RefreshCw,
-  Clock
+  Clock,
+  Clipboard,
+  CheckSquare,
+  Users
 } from 'lucide-react';
 
 // Shared Components
 import { PageHeader } from '@/components/shared';
+import { StatCard } from '@/components/shared/StatCard'
+import { Card, CardContent } from '@/components/ui/card';
 
 /**
  * Schedule page component for task management
@@ -94,10 +99,10 @@ export function Schedule() {
       prevTasks.map(task => 
         task.id === taskId 
           ? { 
-              ...task, 
+        ...task, 
               status: newStatus as Task['status'],
               // If marked as completed, set completion to 100%
-              completion: newStatus === 'Completed' ? 100 : task.completion
+        completion: newStatus === 'Completed' ? 100 : task.completion
             } 
           : task
       )
@@ -112,11 +117,11 @@ export function Schedule() {
   const handleTaskSubmit = (data: NewTaskForm) => {
     // Check if we're editing an existing task
     if (data.id) {
-      setTasks(prevTasks => 
-        prevTasks.map(task => 
+    setTasks(prevTasks =>
+      prevTasks.map(task =>
           task.id === data.id 
-            ? { 
-                ...task,
+          ? {
+              ...task,
                 title: data.title,
                 description: data.description,
                 project: data.project,
@@ -128,10 +133,10 @@ export function Schedule() {
                 completion: data.completion ?? task.completion,
                 assignedTo: getTeamMembersFromIds(data.assignedTo),
                 dependencies: data.dependencies ?? task.dependencies
-              } 
-            : task
-        )
-      );
+            }
+          : task
+      )
+    );
     } else {
       // Create a new task
       const newTask: Task = {
@@ -186,55 +191,114 @@ export function Schedule() {
     new Date(task.dueDate) > new Date() && 
     new Date(task.dueDate) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
   ).length;
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <PageHeader
+          <PageHeader
           title="Schedule"
-          subtitle="Manage and track project tasks and timelines"
-          icon={<Clock className="h-6 w-6" />}
-          gradient={true}
-          animated={true}
-          theme="blue"
-          actions={[
-            {
-              label: "Refresh",
-              icon: <RefreshCw className={isLoading ? 'animate-spin' : ''} />,
-              variant: "blueprint",
-              onClick: handleRefresh
-            },
-            {
-              label: "New Task",
-              icon: <Plus />,
-              variant: "construction",
-              onClick: handleCreateTask
-            }
-          ]}
-        />
-        
-        <div className="mt-8">
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="w-full md:w-2/3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <Input
-                  placeholder="Search tasks..."
-                  className="pl-10"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
+          description="Manage and track project tasks and timelines"
+          icon={<Clock className="h-8 w-8" />}
+          actions={
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="default"
+                className="bg-white hover:bg-gray-100 text-blue-700 border border-white/20"
+                onClick={() => setIsTaskFormOpen(true)}
+              >
+                <Plus className="mr-2 h-4 w-4" /> New Task
+              </Button>
+              <Button 
+                variant="outline"
+                className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
+                onClick={handleRefresh}
+              >
+                <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} /> Refresh
+              </Button>
             </div>
-            
-            <div className="w-full md:w-1/3">
-              <TaskFilters 
-                onFilterChange={handleFilterChange}
-                onReset={handleResetFilters}
+          }
+        />
+
+        {/* Task Statistics */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <StatCard
+            title="Total Tasks"
+            value={totalTasks}
+            icon={<Clipboard className="h-6 w-6" />}
+            color="blue"
+            subtitle="tasks"
+          />
+          <StatCard
+            title="Completion Rate"
+            value={`${completionRate}%`}
+            icon={<CheckSquare className="h-6 w-6" />}
+            color="green"
+            subtitle={`${completedTasks} of ${totalTasks} tasks`}
+          />
+          <StatCard
+            title="Upcoming Deadlines"
+            value={upcomingDeadlines}
+            icon={<Calendar className="h-6 w-6" />}
+            color="amber"
+            subtitle="this week"
+          />
+          <StatCard
+            title="Assigned Tasks"
+            value={tasks.filter(task => task.assignees && task.assignees.length > 0).length}
+            icon={<Users className="h-6 w-6" />}
+            color="purple"
+            subtitle="with team members"
+          />
+                  </div>
+
+        <div className="mt-8">
+          {/* Filters and Controls */}
+          <Card className="mb-6 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700">
+            <CardContent className="p-4">
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+                <div className="relative lg:col-span-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Input 
+                placeholder="Search tasks..." 
+                    className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-          </div>
-          
+                
+                <div className="lg:col-span-3">
+                  <TaskFilters 
+                    onFilterChange={handleFilterChange}
+                    onReset={handleResetFilters}
+                  />
+                          </div>
+                
+                {viewMode === 'tasks' && (
+                  <div className="flex items-center justify-end lg:col-span-1 gap-2">
+                  <Button
+                      variant={taskViewLayout === 'grid' ? 'default' : 'outline'}
+                    size="sm"
+                      onClick={() => setTaskViewLayout('grid')}
+                      className="flex items-center"
+                  >
+                      <LayoutGrid className="h-4 w-4 mr-1" />
+                      Grid
+                  </Button>
+                  <Button 
+                      variant={taskViewLayout === 'list' ? 'default' : 'outline'}
+                    size="sm"
+                      onClick={() => setTaskViewLayout('list')}
+                      className="flex items-center"
+                    >
+                      <List className="h-4 w-4 mr-1" />
+                      List
+                  </Button>
+                </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)}>
             <div className="flex justify-between items-center">
               <TabsList>
@@ -251,31 +315,8 @@ export function Schedule() {
                   Metrics
                 </TabsTrigger>
               </TabsList>
-              
-              {viewMode === 'tasks' && (
-                <div className="flex gap-2">
-                  <Button
-                    variant={taskViewLayout === 'grid' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setTaskViewLayout('grid')}
-                    className="flex items-center"
-                  >
-                    <LayoutGrid className="h-4 w-4 mr-1" />
-                    Grid
-                  </Button>
-                  <Button
-                    variant={taskViewLayout === 'list' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setTaskViewLayout('list')}
-                    className="flex items-center"
-                  >
-                    <List className="h-4 w-4 mr-1" />
-                    List
-                  </Button>
                 </div>
-              )}
-            </div>
-            
+                
             <TabsContent value="tasks" className="mt-4">
               <TaskList 
                 tasks={filteredTasks}
@@ -301,8 +342,8 @@ export function Schedule() {
               <TaskMetrics tasks={filteredTasks} />
             </TabsContent>
           </Tabs>
-        </div>
-        
+                </div>
+                
         {/* Task Detail Dialog */}
         {selectedTask && (
           <TaskDetail
