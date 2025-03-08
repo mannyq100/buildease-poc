@@ -296,7 +296,7 @@ Please include:
       console.log("Sending to LLM:", prompt);
       
       // Simulate API call with timeout
-      setTimeout(() => {
+    setTimeout(() => {
         // Store the prompt in localStorage to simulate passing data between pages
         localStorage.setItem('projectPlanPrompt', prompt);
         localStorage.setItem('projectData', JSON.stringify(formData));
@@ -362,7 +362,7 @@ Please include:
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
-        return (
+  return (
           <Card className="border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800 border-b border-gray-200 dark:border-gray-800">
               <CardTitle className="flex items-center text-blue-700 dark:text-blue-400">
@@ -370,17 +370,17 @@ Please include:
                 {getStepInfo().title}
               </CardTitle>
               <CardDescription>{getStepInfo().subtitle}</CardDescription>
-            </CardHeader>
+                  </CardHeader>
             <CardContent className="space-y-6 pt-6 px-6">
-              <div className="space-y-2">
+                    <div className="space-y-2">
                 <Label htmlFor="name" className={isDarkMode ? "text-slate-300" : "text-gray-900"}>
                   Project Name
                 </Label>
-                <Input
-                  id="name"
-                  placeholder="Enter project name"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
+                      <Input
+                        id="name"
+                        placeholder="Enter project name"
+                        value={formData.name}
+                        onChange={(e) => handleInputChange('name', e.target.value)}
                   className={`transition-all duration-300 ${
                     isDarkMode 
                       ? "bg-slate-900 border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 text-white" 
@@ -417,10 +417,10 @@ Please include:
                         ? "bg-slate-900 border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 text-white" 
                         : "border-gray-200 focus:ring-2 focus:ring-blue-500/20 hover:border-blue-300"
                     }`}
-                  />
-                </div>
-                
-                <div className="space-y-2">
+                      />
+                    </div>
+
+                    <div className="space-y-2">
                   <Label htmlFor="phoneNumber" className={isDarkMode ? "text-slate-300" : "text-gray-900"}>
                     Contact Phone Number
                   </Label>
@@ -436,8 +436,8 @@ Please include:
                         : "border-gray-200 focus:ring-2 focus:ring-blue-500/20 hover:border-blue-300"
                     }`}
                   />
-                </div>
-              </div>
+                        </div>
+                      </div>
               
               <div className="space-y-2">
                 <Label htmlFor="email" className={isDarkMode ? "text-slate-300" : "text-gray-900"}>
@@ -454,8 +454,8 @@ Please include:
                       ? "bg-slate-900 border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 text-white" 
                       : "border-gray-200 focus:ring-2 focus:ring-blue-500/20 hover:border-blue-300"
                   }`}
-                />
-              </div>
+                        />
+                      </div>
             </CardContent>
           </Card>
         );
@@ -512,10 +512,10 @@ Please include:
                         <SelectItem value="hectares">Hectares</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
                   <Label htmlFor="terrain" className={isDarkMode ? "text-slate-300" : "text-gray-900"}>
                     Terrain Type
                   </Label>
@@ -536,7 +536,7 @@ Please include:
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
+                          </div>
               
               <div className="space-y-2 mt-4">
                 <Label htmlFor="nearbyLandmarks" className={isDarkMode ? "text-slate-300" : "text-gray-900"}>
@@ -553,7 +553,7 @@ Please include:
                       : "border-gray-200 focus:ring-2 focus:ring-blue-500/20 hover:border-blue-300"
                   }`}
                 />
-              </div>
+                          </div>
             </CardContent>
           </Card>
         );
@@ -597,21 +597,21 @@ Please include:
                         <SelectItem value="sqft">Square Feet (ft²)</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
+                      </div>
+                    </div>
+
+                      <div className="space-y-2">
                   <Label htmlFor="storeys" className={isDarkMode ? "text-slate-300" : "text-gray-900"}>
                     Number of Storeys
                   </Label>
-                  <Select
+                        <Select
                     value={formData.storeys}
                     onValueChange={(value) => handleInputChange('storeys', value)}
-                  >
-                    <SelectTrigger>
+                        >
+                          <SelectTrigger>
                       <SelectValue placeholder="Select number of storeys" />
-                    </SelectTrigger>
-                    <SelectContent>
+                          </SelectTrigger>
+                          <SelectContent>
                       <SelectItem value="1">1 Storey (Single-level)</SelectItem>
                       <SelectItem value="2">2 Storeys</SelectItem>
                       <SelectItem value="3">3 Storeys</SelectItem>
@@ -619,8 +619,8 @@ Please include:
                       <SelectItem value="5+">5+ Storeys</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-              </div>
+                              </div>
+                              </div>
               
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
@@ -638,11 +638,11 @@ Please include:
                       {[0, 1, 2, 3, 4, 5, 6, 7, 8, '9+'].map(num => (
                         <SelectItem key={num} value={String(num)}>{num}</SelectItem>
                       ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
                   <Label htmlFor="bathrooms" className={isDarkMode ? "text-slate-300" : "text-gray-900"}>
                     Bathrooms
                   </Label>
@@ -659,9 +659,9 @@ Please include:
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-                
-                <div className="space-y-2">
+                      </div>
+
+                      <div className="space-y-2">
                   <Label htmlFor="kitchens" className={isDarkMode ? "text-slate-300" : "text-gray-900"}>
                     Kitchens
                   </Label>
@@ -678,9 +678,9 @@ Please include:
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-                
-                <div className="space-y-2">
+                      </div>
+
+                      <div className="space-y-2">
                   <Label htmlFor="livingAreas" className={isDarkMode ? "text-slate-300" : "text-gray-900"}>
                     Living Areas
                   </Label>
@@ -697,9 +697,9 @@ Please include:
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-              </div>
-              
+                        </div>
+                      </div>
+
               <div className="space-y-2 mt-4">
                 <Label htmlFor="buildingStyle" className={isDarkMode ? "text-slate-300" : "text-gray-900"}>
                   Building Style
@@ -722,9 +722,9 @@ Please include:
                     <SelectItem value="fusion">African Fusion</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-            </CardContent>
-          </Card>
+                    </div>
+                  </CardContent>
+                </Card>
         );
       case 4:
         return (
@@ -858,8 +858,8 @@ Please include:
         <p className={`text-lg ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
           Tell us about your project to generate a comprehensive construction plan
         </p>
-      </div>
-    
+                    </div>
+
       {/* Enhanced Step Indicator */}
       <div className="mb-8 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm bg-white dark:bg-slate-950 p-5">
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4 md:gap-0">
@@ -891,7 +891,7 @@ Please include:
                   }`}>
                   {step.title}
                 </p>
-              </div>
+                      </div>
             );
           })}
         </div>
@@ -913,20 +913,20 @@ Please include:
           {renderStepContent()}
           
           <div className="flex justify-between mt-8">
-            <Button
-              variant="outline"
-              onClick={handleBack}
-              disabled={currentStep === 1}
+          <Button
+            variant="outline"
+            onClick={handleBack}
+            disabled={currentStep === 1}
               className={`transition-all duration-300 ${
                 isDarkMode ? 'hover:bg-slate-800' : ''
               }`}
-            >
+          >
               <ChevronLeft className="mr-2 h-4 w-4" />
-              Back
-            </Button>
+            Back
+          </Button>
             
-            <Button
-              onClick={handleNext}
+          <Button
+            onClick={handleNext}
               className={`transition-all duration-300 ${
                 currentStep === totalSteps
                   ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700'
@@ -949,8 +949,8 @@ Please include:
                   </>
                 )
               )}
-            </Button>
-          </div>
+          </Button>
+        </div>
         </m.div>
       </LazyMotion>
     </div>
