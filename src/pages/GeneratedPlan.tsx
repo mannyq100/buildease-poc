@@ -396,7 +396,7 @@ This plan can be refined based on further information and specific requirements.
   };
 
   const navigateToProjectInput = () => {
-    navigate('/create-project-new');
+    navigate('/create-project');
   };
 
   const handleSave = async () => {

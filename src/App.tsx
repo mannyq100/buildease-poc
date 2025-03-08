@@ -9,7 +9,6 @@ import AppLayout from "@/components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import { ProjectDetails } from "./pages/ProjectDetails";
 import PhaseDetails from "./pages/PhaseDetails";
-import ProjectInputs from "./pages/ProjectInputs";
 import GeneratedPlan from "./pages/GeneratedPlan";
 import TaskPlanningSetup from "./pages/TaskPlanningSetup";
 import NotFound from "./pages/NotFound";
@@ -20,6 +19,7 @@ import Documents from "./pages/Documents";
 import Expenses from "./pages/Expenses";
 import { Projects } from "./pages/Projects";
 import CreateProject from "./pages/CreateProject";
+import Settings from './pages/Settings';
 
 // Set up default query client options with better user feedback
 const queryClient = new QueryClient({
@@ -60,7 +60,7 @@ const App = () => (
               <Route path="/materials" element={<Materials />} />
               <Route path="/expenses" element={<Expenses />} />
               <Route path="/documents" element={<Documents />} />
-              <Route path="/settings" element={<Dashboard />} />
+              <Route path="/settings" element={<Settings />} />
               
               {/* 404 route */}
               <Route path="*" element={<NotFound />} />
