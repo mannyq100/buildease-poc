@@ -19,6 +19,7 @@ import { Materials } from "./pages/Materials";
 import Documents from "./pages/Documents";
 import Expenses from "./pages/Expenses";
 import { Projects } from "./pages/Projects";
+import CreateProject from "./pages/CreateProject";
 
 // Set up default query client options with better user feedback
 const queryClient = new QueryClient({
@@ -44,7 +45,7 @@ const App = () => (
               {/* Main routes */}
               <Route path="/" element={<Dashboard />} />
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/create-project" element={<ProjectInputs />} />
+              <Route path="/create-project" element={<CreateProject />} />
               <Route path="/generated-plan" element={<GeneratedPlan />} />
               <Route path="/project-details" element={<ProjectDetails />} />
               <Route path="/project/:id" element={<ProjectDetails />} />

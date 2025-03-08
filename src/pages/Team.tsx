@@ -23,7 +23,8 @@ import {
   Calendar, 
   Clock, 
   User,
-  Activity
+  Activity,
+  ChevronRight
 } from 'lucide-react'
 
 // UI Components
@@ -77,6 +78,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 // Shared Components
 import { MainNavigation } from '@/components/navigation/MainNavigation'
@@ -89,6 +92,81 @@ import { TeamMember, NewTeamMember, ViewMode } from '@/types/team'
 
 // Mock Data
 import { INITIAL_TEAM_MEMBERS, DEPARTMENTS, STATUS_OPTIONS, PROJECTS } from '@/data/mock/teamMembers'
+
+/**
+ * MultiSelect component
+ */
+interface MultiSelectProps {
+  values: string[]
+  onChange: (values: string[]) => void
+  options: { value: string; label: string }[]
+  placeholder?: string
+  className?: string
+}
+
+const MultiSelect = ({ values, onChange, options, placeholder, className }: MultiSelectProps) => {
+  const [open, setOpen] = useState(false)
+
+  const toggleOption = (value: string) => {
+    if (values.includes(value)) {
+      onChange(values.filter(v => v !== value))
+    } else {
+      onChange([...values, value])
+    }
+  }
+
+  return (
+    <div className={className}>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between font-normal"
+          >
+            {values.length > 0 
+              ? `${values.length} selected` 
+              : placeholder || "Select options"}
+            <ChevronRight className={`ml-2 h-4 w-4 shrink-0 opacity-50 ${open ? "rotate-90" : ""}`} />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-full p-0 dark:bg-slate-800 dark:border-slate-700">
+          <div className="border-b border-gray-200 dark:border-gray-700 px-3 py-2">
+            <div className="text-sm font-medium">Select Projects</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">Choose the projects to assign</div>
+          </div>
+          <div className="max-h-[200px] overflow-y-auto p-2">
+            {options.map((option) => (
+              <div 
+                key={option.value}
+                className="flex items-center space-x-2 rounded-md px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-slate-700"
+              >
+                <Checkbox
+                  id={`option-${option.value}`}
+                  checked={values.includes(option.value)}
+                  onCheckedChange={() => toggleOption(option.value)}
+                  className="h-4 w-4"
+                />
+                <label 
+                  htmlFor={`option-${option.value}`}
+                  className="flex-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-white"
+                >
+                  {option.label}
+                </label>
+              </div>
+            ))}
+          </div>
+          {options.length === 0 && (
+            <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+              No options available
+            </div>
+          )}
+        </PopoverContent>
+      </Popover>
+    </div>
+  )
+}
 
 /**
  * Team management page component
@@ -254,6 +332,16 @@ export function Team() {
     return 'var(--blue-500)'
   }
 
+  /**
+   * Handle multi-project selection for a new team member
+   */
+  function handleMultiProjectChange(values: string[]) {
+    setNewMember({
+      ...newMember,
+      projects: values
+    })
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
       <MainNavigation
@@ -261,8 +349,8 @@ export function Team() {
         icon={<Users className="h-6 w-6" />}
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <PageHeader
-          title="Team Management"
+          <PageHeader
+            title="Team Management"
           description="Manage your team members, roles, and assignments"
           icon={<Users className="h-8 w-8" />}
           actions={
@@ -445,110 +533,210 @@ export function Team() {
 
       {/* Add Team Member Dialog */}
       <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>
-        <DialogContent className="sm:max-w-[550px] dark:bg-slate-800 dark:border-slate-700">
-          <DialogHeader>
-            <DialogTitle className="dark:text-white">Add Team Member</DialogTitle>
-            <DialogDescription className="dark:text-gray-400">
-              Add a new member to your construction team
+        <DialogContent className="sm:max-w-[650px] dark:bg-slate-800 dark:border-slate-700 p-0">
+          <DialogHeader className="p-6 pb-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-t-lg">
+            <DialogTitle className="text-xl text-blue-950 dark:text-blue-100 flex items-center gap-2">
+              <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              Add Team Member
+            </DialogTitle>
+            <DialogDescription className="text-blue-700/70 dark:text-blue-400/70">
+              Add a new member to your construction team. All fields marked with * are required.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
-                <div className="space-y-2">
-              <Label className="dark:text-gray-300" htmlFor="name">Full Name</Label>
+          <div className="p-6 overflow-y-auto max-h-[calc(85vh-200px)]">
+            <div className="flex flex-col sm:flex-row gap-6 mb-6">
+              <div className="w-full sm:w-1/3 flex flex-col items-center justify-start">
+                <div className="relative w-32 h-32 mb-3 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden border-4 border-white dark:border-slate-600 shadow-md mx-auto">
+                  {newMember.name ? (
+                    <img 
+                      src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(newMember.name)}`} 
+                      alt="Preview avatar" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
+                      <User size={48} />
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-4">
+                  Profile preview updates as you type the name
+                </p>
+                </div>
+                
+              <div className="w-full sm:w-2/3 space-y-5">
+                <div className="space-y-1.5">
+                  <Label className="dark:text-gray-300" htmlFor="name">
+                    Full Name <span className="text-red-500">*</span>
+                  </Label>
                   <Input 
                     id="name" 
                     value={newMember.name}
-                onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
-                className="dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                    onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
+                    className="dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                    placeholder="John Doe"
                   />
+                  {!newMember.name && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 pl-1 h-4">
+                      Name is required
+                    </p>
+                  )}
                 </div>
                 
-                <div className="space-y-2">
-              <Label className="dark:text-gray-300" htmlFor="role">Role / Position</Label>
+                <div className="space-y-1.5">
+                  <Label className="dark:text-gray-300" htmlFor="role">
+                    Role / Position <span className="text-red-500">*</span>
+                  </Label>
                   <Input 
-                id="role"
-                value={newMember.role}
-                onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
-                className="dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                    id="role"
+                    value={newMember.role}
+                    onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
+                    className="dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                    placeholder="Site Engineer"
                   />
+                  {!newMember.role && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 pl-1 h-4">
+                      Role is required
+                    </p>
+                  )}
                 </div>
                 
-                <div className="space-y-2">
-              <Label className="dark:text-gray-300" htmlFor="email">Email</Label>
+                <div className="space-y-1.5">
+                  <Label className="dark:text-gray-300" htmlFor="email">
+                    Email <span className="text-red-500">*</span>
+                  </Label>
                   <Input 
                     id="email" 
                     type="email"
                     value={newMember.email}
-                onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
-                className="dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                    onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
+                    className="dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                    placeholder="john.doe@example.com"
                   />
+                  {!newMember.email ? (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 pl-1 h-4">
+                      Email is required
+                    </p>
+                  ) : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newMember.email) && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 pl-1 h-4">
+                      Please enter a valid email address
+                    </p>
+                  )}
+                </div>
+              </div>
                 </div>
                 
-                <div className="space-y-2">
-              <Label className="dark:text-gray-300" htmlFor="phone">Phone</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="space-y-1.5">
+                <Label className="dark:text-gray-300" htmlFor="phone">Phone</Label>
                   <Input 
                     id="phone" 
                     value={newMember.phone}
-                onChange={(e) => setNewMember({ ...newMember, phone: e.target.value })}
-                className="dark:bg-slate-900 dark:border-slate-700 dark:text-white"
-                  />
+                  onChange={(e) => setNewMember({ ...newMember, phone: e.target.value })}
+                  className="dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                  placeholder="+233 20 123 4567"
+                />
             </div>
             
-                <div className="space-y-2">
-              <Label className="dark:text-gray-300" htmlFor="department">Department</Label>
+              <div className="space-y-1.5">
+                <Label className="dark:text-gray-300" htmlFor="department">
+                  Department <span className="text-red-500">*</span>
+                  </Label>
                   <Select 
                     value={newMember.department} 
-                onValueChange={(value) => setNewMember({ ...newMember, department: value })}
+                  onValueChange={(value) => setNewMember({ ...newMember, department: value })}
                   >
-                <SelectTrigger 
-                  id="department"
-                  className="dark:bg-slate-900 dark:border-slate-700 dark:text-white"
-                >
+                  <SelectTrigger 
+                    id="department"
+                    className="dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                  >
                       <SelectValue placeholder="Select department" />
                     </SelectTrigger>
                     <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
-                  {DEPARTMENTS.filter(dept => dept !== 'All').map((department) => (
-                    <SelectItem 
-                      key={department} 
-                      value={department}
-                      className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-white"
-                    >
-                      {department}
-                    </SelectItem>
-                  ))}
+                    {DEPARTMENTS.filter(dept => dept !== 'All').map((department) => (
+                      <SelectItem 
+                        key={department} 
+                        value={department}
+                        className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-white"
+                      >
+                        {department}
+                      </SelectItem>
+                    ))}
+                    </SelectContent>
+                  </Select>
+                {!newMember.department && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 pl-1 h-4">
+                    Department is required
+                  </p>
+                )}
+                </div>
+                
+              <div className="space-y-1.5">
+                <Label className="dark:text-gray-300" htmlFor="projects">Assigned Projects</Label>
+                <MultiSelect 
+                  values={newMember.projects}
+                  onChange={handleMultiProjectChange}
+                  options={PROJECTS.map(p => ({ value: p, label: p }))}
+                  placeholder="Select projects"
+                  className="dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                />
+              </div>
+              
+              <div className="space-y-1.5">
+                <Label className="dark:text-gray-300" htmlFor="location">Location</Label>
+                    <Input 
+                  id="location" 
+                  value={newMember.location || ''}
+                  onChange={(e) => setNewMember({ ...newMember, location: e.target.value })}
+                  className="dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                  placeholder="Accra, Ghana"
+                />
+                </div>
+                
+              <div className="space-y-1.5">
+                <Label className="dark:text-gray-300" htmlFor="availability">Availability</Label>
+                <Select 
+                  value={newMember.availability || 'Full-time'} 
+                  onValueChange={(value) => setNewMember({ ...newMember, availability: value })}
+                >
+                  <SelectTrigger 
+                    id="availability"
+                    className="dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                  >
+                      <SelectValue placeholder="Select availability" />
+                    </SelectTrigger>
+                    <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
+                    {['Full-time', 'Part-time', 'Contract', 'Temporary'].map((item) => (
+                      <SelectItem 
+                        key={item} 
+                        value={item}
+                        className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-white"
+                      >
+                        {item}
+                      </SelectItem>
+                    ))}
                     </SelectContent>
                   </Select>
                 </div>
                 
-                <div className="space-y-2">
-              <Label className="dark:text-gray-300" htmlFor="projects">Assigned Projects</Label>
-              <Select 
-                value={newMember.projects[0]}
-                onValueChange={handleProjectChange}
-              >
-                <SelectTrigger 
-                  id="projects"
+              <div className="space-y-1.5">
+                <Label className="dark:text-gray-300" htmlFor="skills">Skills</Label>
+                  <Input 
+                    id="skills" 
+                  value={(newMember.skills || []).join(', ')}
+                  onChange={(e) => setNewMember({ 
+                    ...newMember, 
+                    skills: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                  })}
                   className="dark:bg-slate-900 dark:border-slate-700 dark:text-white"
-                >
-                  <SelectValue placeholder="Select project" />
-                    </SelectTrigger>
-                    <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
-                  {PROJECTS.map((project) => (
-                    <SelectItem 
-                      key={project} 
-                      value={project}
-                      className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-white"
-                    >
-                      {project}
-                    </SelectItem>
-                  ))}
-                    </SelectContent>
-                  </Select>
-              </div>
+                  placeholder="Concrete, Electrical, Planning (comma-separated)"
+                  />
+                </div>
             </div>
-            
-          <DialogFooter>
+          </div>
+          
+          <DialogFooter className="p-4 bg-gray-50 dark:bg-slate-900/50 border-t border-gray-100 dark:border-slate-700 rounded-b-lg">
               <Button 
                 variant="outline" 
                 onClick={() => setIsAddMemberOpen(false)}
@@ -558,9 +746,10 @@ export function Team() {
               </Button>
               <Button 
                 onClick={handleAddMember}
-              disabled={!newMember.name || !newMember.role || !newMember.email}
-              className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
+              disabled={!newMember.name || !newMember.role || !newMember.email || !newMember.department || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newMember.email)}
+              className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-700 dark:hover:bg-blue-600"
               >
+              <Plus className="mr-2 h-4 w-4" />
                 Add Member
               </Button>
           </DialogFooter>

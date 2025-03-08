@@ -330,7 +330,7 @@ export function Documents() {
         icon={<FileText className="h-6 w-6" />}
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <PageHeader
+          <PageHeader
           title="Documents"
           description="Manage and organize your project documents"
           icon={<FileText className="h-8 w-8" />}

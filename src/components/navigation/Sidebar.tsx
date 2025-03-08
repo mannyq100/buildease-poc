@@ -15,7 +15,7 @@ import {
   Settings,
   Building,
   ListTodo,
-  HardHat
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
@@ -162,11 +162,13 @@ const NavItem: React.FC<NavItemProps> = ({
 interface SidebarProps {
   className?: string;
   defaultCollapsed?: boolean;
+  orientation?: 'vertical' | 'horizontal';
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
   className,
-  defaultCollapsed = false
+  defaultCollapsed = false,
+  orientation = 'vertical'
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -184,6 +186,12 @@ const Sidebar: React.FC<SidebarProps> = ({
       setIsMobileOpen(false);
     }
     
+    // On mobile, when the page changes, close the sidebar
+    // On desktop, we can leave it open
+    if (isMobile) {
+      setIsMobileOpen(false);
+    }
+    
     // Check dark mode
     const checkDarkMode = () => {
       setIsDarkMode(document.documentElement.classList.contains('dark'));
@@ -198,6 +206,14 @@ const Sidebar: React.FC<SidebarProps> = ({
     
     return () => observer.disconnect();
   }, [location.pathname, isMobileOpen]);
+  
+  // Listen for the sidebar collapsed state to control mobile menu
+  useEffect(() => {
+    if (!isCollapsed) {
+      // When sidebar is expanded via the toggle in AppLayout, open mobile sidebar
+      setIsMobileOpen(true);
+    }
+  }, [isCollapsed]);
   
   // Check screen size on initial render and window resize
   useEffect(() => {
@@ -336,7 +352,65 @@ const Sidebar: React.FC<SidebarProps> = ({
   
   const sidebarWidth = isCollapsed ? 'w-16' : 'w-64';
   
-  // Sidebar for desktop
+  // Check if sidebar should be rendered horizontally
+  const isHorizontal = orientation === 'horizontal';
+
+  // Render the sidebar as a horizontal navbar when orientation is horizontal
+  if (isHorizontal) {
+    return (
+      <div className={cn(
+        "py-2 px-4 transition-all duration-300 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700",
+        className
+      )}>
+        <div className="container mx-auto">
+          <div className="flex items-center overflow-x-auto scrollbar-none gap-1">
+            {navigationGroups.map((group) => (
+              <React.Fragment key={group.title}>
+                {group.items.map((item) => (
+                  <Button
+                    key={item.path}
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "flex items-center h-9 px-3 rounded-md gap-2 flex-shrink-0",
+                      isActive(item.path) 
+                        ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" 
+                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                    )}
+                    onClick={() => navigate(item.path)}
+                  >
+                    <div className="flex-shrink-0">
+                      {item.icon}
+                    </div>
+                    <span className="text-sm font-medium whitespace-nowrap">
+                      {item.label}
+                    </span>
+                    {item.badge && (
+                      <Badge 
+                        variant="outline" 
+                        className="ml-1 text-xs"
+                        style={{
+                          backgroundColor: `var(--${item.badge.color}-50)`,
+                          color: `var(--${item.badge.color}-700)`,
+                          borderColor: `var(--${item.badge.color}-200)`
+                        }}
+                      >
+                        {item.badge.text}
+                      </Badge>
+                    )}
+                  </Button>
+                ))}
+                {/* Add a subtle separator between groups */}
+                <Separator orientation="vertical" className="h-6 mx-1 bg-gray-200 dark:bg-slate-700" />
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Original vertical sidebar for desktop
   const DesktopSidebar = (
     <m.aside
       className={cn(
@@ -356,17 +430,34 @@ const Sidebar: React.FC<SidebarProps> = ({
         
         {/* Sidebar Header */}
         <div className="p-4 flex items-center justify-between h-16 border-b border-gray-200 dark:border-gray-700">
-          {!isCollapsed && (
-            <div className="flex items-center space-x-2">
-              <HardHat className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-              <span className="font-bold text-lg text-gray-900 dark:text-white">Buildese</span>
+          {!isCollapsed ? (
+            <div className="flex items-center">
+              <img 
+                src="/buildease-logo-2.svg" 
+                alt="BuildEase"
+                className="h-8 w-auto"
+              />
+            </div>
+          ) : (
+            <div className="flex items-center justify-center w-full">
+              <div className="bg-white dark:bg-slate-800 rounded-md p-1 flex items-center justify-center">
+                <img 
+                  src="/buildease-logo-2.svg" 
+                  alt="BuildEase"
+                  className="h-6 w-auto"
+                  style={{ clipPath: 'inset(0 60% 0 0)' }} // Show only the icon part
+                />
+              </div>
             </div>
           )}
           
           <Button
             variant="ghost"
             size="sm"
-            className="ml-auto p-0 h-8 w-8 rounded-full"
+            className={cn(
+              "p-0 h-8 w-8 rounded-full",
+              isCollapsed ? "ml-auto" : ""
+            )}
             onClick={() => setIsCollapsed(!isCollapsed)}
           >
             {isCollapsed ? (
@@ -399,8 +490,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                   <NavItem
                     key={itemIndex}
                     {...item}
+                    isActive={isActive(item.path)}
                     isCollapsed={isCollapsed}
-                    onClick={item.onClick}
+                    onClick={() => navigate(item.path)}
                   />
                 ))}
               </div>
@@ -415,104 +507,164 @@ const Sidebar: React.FC<SidebarProps> = ({
   const MobileSidebar = (
     <AnimatePresence>
       {isMobileOpen && (
-        <m.div
-          className="fixed inset-0 bg-black/50 z-30"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={() => setIsMobileOpen(false)}
-        />
+        <>
+          {/* Backdrop overlay */}
+          <m.div
+            className="fixed inset-0 bg-black/50 z-[49] md:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsMobileOpen(false)}
+          />
+          
+          {/* Slide-in drawer */}
+          <m.div
+            className="fixed inset-y-0 left-0 z-50 w-[280px] bg-white dark:bg-slate-800 shadow-xl md:hidden"
+            initial={{ x: -280 }}
+            animate={{ x: 0 }}
+            exit={{ x: -280 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          >
+            {/* Mobile sidebar header */}
+            <div className="p-4 flex items-center justify-between h-16 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center">
+                <img 
+                  src="/buildease-logo-2.svg" 
+                  alt="BuildEase"
+                  className="h-8 w-auto"
+                />
+              </div>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                className="p-0 h-8 w-8 rounded-full"
+                onClick={() => setIsMobileOpen(false)}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            
+            {/* Mobile navigation items */}
+            <ScrollArea className="h-[calc(100vh-4rem)] pb-4">
+              <div className="p-4 space-y-6">
+                {navigationGroups.map((group) => (
+                  <div key={group.title} className="space-y-2">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 px-2">
+                      {group.title}
+                    </h4>
+                    
+                    <div className="space-y-1">
+                      {group.items.map((item) => (
+                        <Button
+                          key={item.path}
+                          variant="ghost"
+                          className={cn(
+                            "w-full justify-start items-center font-normal px-2 py-1.5 h-auto",
+                            isActive(item.path) 
+                              ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" 
+                              : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                          )}
+                          onClick={() => {
+                            navigate(item.path);
+                            setIsMobileOpen(false);
+                          }}
+                        >
+                          <div className="flex items-center w-full">
+                            <span className="mr-3">{item.icon}</span>
+                            <span className="flex-1">{item.label}</span>
+                            {item.badge && (
+                              <Badge 
+                                variant="outline" 
+                                className="ml-1 text-xs"
+                                style={{
+                                  backgroundColor: `var(--${item.badge.color}-50)`,
+                                  color: `var(--${item.badge.color}-700)`,
+                                  borderColor: `var(--${item.badge.color}-200)`
+                                }}
+                              >
+                                {item.badge.text}
+                              </Badge>
+                            )}
+                          </div>
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </m.div>
+        </>
       )}
     </AnimatePresence>
   );
   
   return (
     <LazyMotion features={domAnimation}>
-      <AnimatePresence>
-        {/* Desktop Sidebar */}
-        <m.aside
-          className={cn(
-            "fixed top-0 left-0 z-40 h-screen transition-all duration-300",
-            isCollapsed ? "w-[70px]" : "w-[240px]",
-            className
-          )}
-          initial={{ x: -240 }}
-          animate={{ x: 0 }}
-          exit={{ x: -240 }}
-          transition={{ duration: 0.2 }}
-        >
-          <div className={cn(
-            "h-full bg-white dark:bg-slate-800 shadow-md flex flex-col",
-            "border-r border-gray-200 dark:border-gray-700"
-          )}>
-            
-            {/* Sidebar Header */}
-            <div className="p-4 flex items-center justify-between h-16 border-b border-gray-200 dark:border-gray-700">
-              {!isCollapsed && (
-                <div className="flex items-center space-x-2">
-                  <HardHat className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                  <span className="font-bold text-lg text-gray-900 dark:text-white">Buildese</span>
-                </div>
-              )}
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                className="ml-auto p-0 h-8 w-8 rounded-full"
-                onClick={() => setIsCollapsed(!isCollapsed)}
-              >
-                {isCollapsed ? (
-                  <ChevronRight className="h-5 w-5" />
-                ) : (
-                  <ChevronLeft className="h-5 w-5" />
-                )}
-              </Button>
-            </div>
-            
-            {/* Sidebar Content */}
-            <ScrollArea className="flex-1 overflow-auto">
-              <div className="px-3 py-4">
-                {navigationGroups.map((group, groupIndex) => (
-                  <div key={groupIndex} className="mb-4">
-                    {!isCollapsed && (
-                      <div className="px-3 mb-1">
-                        <h3 className="text-xs uppercase font-semibold text-gray-500 dark:text-gray-400">
-                          {group.title}
-                        </h3>
-                        <Separator className="my-1 bg-gray-200 dark:bg-slate-700" />
+      {/* Horizontal sidebar for desktop when orientation is horizontal */}
+      {isHorizontal && (
+        <div className={cn(
+          "py-2 px-4 transition-all duration-300 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700",
+          className
+        )}>
+          <div className="container mx-auto">
+            <div className="flex items-center overflow-x-auto scrollbar-none gap-1">
+              {navigationGroups.map((group) => (
+                <React.Fragment key={group.title}>
+                  {group.items.map((item) => (
+                    <Button
+                      key={item.path}
+                      variant="ghost"
+                      size="sm"
+                      className={cn(
+                        "flex items-center h-9 px-3 rounded-md gap-2 flex-shrink-0",
+                        isActive(item.path) 
+                          ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" 
+                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                      )}
+                      onClick={() => navigate(item.path)}
+                    >
+                      <div className="flex-shrink-0">
+                        {item.icon}
                       </div>
-                    )}
-                    
-                    {isCollapsed && groupIndex > 0 && (
-                      <Separator className="my-2 bg-gray-200 dark:bg-slate-700" />
-                    )}
-                    
-                    {group.items.map((item, itemIndex) => (
-                      <NavItem
-                        key={itemIndex}
-                        {...item}
-                        isCollapsed={isCollapsed}
-                        onClick={item.onClick}
-                      />
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
+                      <span className="text-sm font-medium whitespace-nowrap">
+                        {item.label}
+                      </span>
+                      {item.badge && (
+                        <Badge 
+                          variant="outline" 
+                          className="ml-1 text-xs"
+                          style={{
+                            backgroundColor: `var(--${item.badge.color}-50)`,
+                            color: `var(--${item.badge.color}-700)`,
+                            borderColor: `var(--${item.badge.color}-200)`
+                          }}
+                        >
+                          {item.badge.text}
+                        </Badge>
+                      )}
+                    </Button>
+                  ))}
+                  {/* Add a subtle separator between groups */}
+                  <Separator orientation="vertical" className="h-6 mx-1 bg-gray-200 dark:bg-slate-700" />
+                </React.Fragment>
+              ))}
+            </div>
           </div>
-        </m.aside>
-        
-        {/* Mobile Overlay */}
-        {isMobileOpen && (
-          <m.div
-            className="fixed inset-0 bg-black/50 z-30"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setIsMobileOpen(false)}
-          />
-        )}
-      </AnimatePresence>
+        </div>
+      )}
+      
+      {/* Vertical sidebar with mobile overlay */}
+      {!isHorizontal && (
+        <AnimatePresence>
+          {/* Desktop Sidebar */}
+          {DesktopSidebar}
+          
+          {/* Mobile sidebar overlay */}
+          {MobileSidebar}
+        </AnimatePresence>
+      )}
     </LazyMotion>
   );
 };

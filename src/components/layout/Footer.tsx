@@ -11,12 +11,13 @@ import {
   Mail,
   Heart,
   ArrowUpRight,
-  MessageSquare
+  MessageSquare,
+  ChevronRight
 } from 'lucide-react';
 
 interface FooterProps {
   className?: string;
-  variant?: 'default' | 'minimal' | 'centered' | 'expanded';
+  variant?: 'default' | 'minimal' | 'centered' | 'expanded' | 'minimal-modern';
   showSocial?: boolean;
   showContact?: boolean;
   showCopyright?: boolean;
@@ -27,7 +28,7 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({
   className,
-  variant = 'default',
+  variant = 'minimal-modern',
   showSocial = true,
   showContact = true,
   showCopyright = true,
@@ -91,6 +92,90 @@ export const Footer: React.FC<FooterProps> = ({
   // Render different variants of the footer
   const renderFooterContent = () => {
     switch(variant) {
+      case 'minimal-modern':
+        return (
+          <div className={cn(
+            "border-t py-6 transition-all duration-300 backdrop-blur-sm",
+            isDarkMode ? "border-slate-800/80 bg-slate-900/60" : "border-gray-100/80 bg-gray-50/60"
+          )}>
+            <div className="container mx-auto px-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center space-x-2 group">
+                  {logoSrc && (
+                    <img 
+                      src="/buildease-logo-1.svg" 
+                      alt={companyName} 
+                      className="h-7 w-auto transition-transform duration-300 group-hover:scale-105" 
+                    />
+                  )}
+                </div>
+                
+                {showLegal && (
+                  <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
+                    <Link to="/terms" className={cn(
+                      "transition-all duration-200 hover:underline relative",
+                      "after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-0 hover:after:w-full after:transition-all",
+                      isDarkMode 
+                        ? "text-slate-400 hover:text-slate-300 after:bg-slate-300" 
+                        : "text-gray-500 hover:text-gray-700 after:bg-gray-700"
+                    )}>
+                      Terms
+                    </Link>
+                    <Link to="/privacy" className={cn(
+                      "transition-all duration-200 hover:underline relative",
+                      "after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-0 hover:after:w-full after:transition-all",
+                      isDarkMode 
+                        ? "text-slate-400 hover:text-slate-300 after:bg-slate-300" 
+                        : "text-gray-500 hover:text-gray-700 after:bg-gray-700"
+                    )}>
+                      Privacy
+                    </Link>
+                    <Link to="/cookies" className={cn(
+                      "transition-all duration-200 hover:underline relative",
+                      "after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-0 hover:after:w-full after:transition-all",
+                      isDarkMode 
+                        ? "text-slate-400 hover:text-slate-300 after:bg-slate-300" 
+                        : "text-gray-500 hover:text-gray-700 after:bg-gray-700"
+                    )}>
+                      Cookies
+                    </Link>
+                  </div>
+                )}
+                
+                {showSocial && (
+                  <div className="flex items-center space-x-3">
+                    {socialLinks.map((link, index) => (
+                      <a 
+                        key={index} 
+                        href={link.href} 
+                        className={cn(
+                          "rounded-full p-1.5 transition-all duration-200",
+                          "hover:scale-110 hover:shadow-sm",
+                          isDarkMode 
+                            ? "text-slate-400 hover:text-slate-50 hover:bg-slate-800/80" 
+                            : "text-gray-400 hover:text-gray-900 hover:bg-gray-100/80"
+                        )}
+                        aria-label={link.label}
+                      >
+                        {link.icon}
+                      </a>
+                    ))}
+                  </div>
+                )}
+                
+                {showCopyright && (
+                  <div className={cn(
+                    "text-xs opacity-75 transition-opacity duration-300 hover:opacity-100",
+                    isDarkMode ? "text-slate-500" : "text-gray-500"
+                  )}>
+                    © {currentYear} {companyName}. All rights reserved.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+        
       case 'minimal':
         return (
           <div className="container mx-auto px-4 py-6">
@@ -98,7 +183,7 @@ export const Footer: React.FC<FooterProps> = ({
               <div className="flex items-center mb-4 md:mb-0">
                 {logoSrc && (
                   <img 
-                    src={isDarkMode ? "/buildease-logo-dark.svg" : "/buildease-logo-2.svg"} 
+                    src="/buildease-logo-1.svg" 
                     alt={companyName} 
                     className="h-8 w-auto mr-3" 
                   />
@@ -140,7 +225,7 @@ export const Footer: React.FC<FooterProps> = ({
             <div className="mb-6">
               {logoSrc && (
                 <img 
-                  src={isDarkMode ? "/buildease-logo-dark.svg" : "/buildease-logo-2.svg"} 
+                  src="/buildease-logo-1.svg" 
                   alt={companyName} 
                   className="h-12 w-auto mx-auto mb-4" 
                 />
@@ -212,7 +297,7 @@ export const Footer: React.FC<FooterProps> = ({
                 <div className="mb-4">
                   {logoSrc && (
                     <img 
-                      src={isDarkMode ? "/buildease-logo-dark.svg" : "/buildease-logo-2.svg"} 
+                      src="/buildease-logo-1.svg" 
                       alt={companyName} 
                       className="h-10 w-auto mb-4" 
                     />
@@ -363,7 +448,7 @@ export const Footer: React.FC<FooterProps> = ({
                 <div className="mb-4">
                   {logoSrc && (
                     <img 
-                      src={isDarkMode ? "/buildease-logo-dark.svg" : "/buildease-logo-2.svg"} 
+                      src="/buildease-logo-1.svg" 
                       alt={companyName} 
                       className="h-8 w-auto mb-4" 
                     />

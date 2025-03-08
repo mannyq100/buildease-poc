@@ -3,9 +3,11 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from '@/components/navigation/Sidebar';
 import MainNavigation from '@/components/layout/MainNavigation';
 import Breadcrumb from '@/components/navigation/Breadcrumb';
+import { Footer } from '@/components/layout/Footer';
 import { cn, debounce } from '@/lib/utils';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface AppLayoutProps {
   showBreadcrumbs?: boolean;
@@ -47,42 +49,61 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   }, [checkMobile, debouncedCheckMobile]);
   
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
-      {/* Sidebar */}
-      <Sidebar defaultCollapsed={isSidebarCollapsed} />
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex flex-col">
+      {/* Top Navigation - Fixed at the top with integrated nav links */}
+      <MainNavigation className="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-800" />
       
       {/* Main Content Area */}
-      <div className={cn(
-        "flex flex-col min-h-screen transition-all duration-300",
-        isSidebarCollapsed ? "lg:pl-[70px]" : "lg:pl-[240px]"
-      )}>
-        {/* Top Navigation */}
-        <MainNavigation className="sticky top-0 z-40 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-800" />
-        
-        {/* Content - Using LazyMotion for performance */}
-        <LazyMotion features={domAnimation} strict>
-          <m.main 
-            className="flex-1 py-0 px-4 sm:px-6 lg:px-8"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.2 }}
-          >
-            {/* Breadcrumbs */}
-            {showBreadcrumbs && (
-              <div className="mb-4 mt-4">
-                <Breadcrumb 
-                  autoGenerate 
-                  className="text-sm" 
-                />
+      <div className="flex flex-col flex-grow">        
+        {/* Content Container with Centered Alignment */}
+        <div className="flex justify-center flex-grow">
+          {/* Content - Using LazyMotion for performance */}
+          <LazyMotion features={domAnimation} strict>
+            <m.main 
+              className="py-4 w-full transition-all duration-300 mt-2"
+              style={{
+                // More padding on larger screens, less on mobile
+                paddingLeft: 'max(1rem, env(safe-area-inset-left))',
+                paddingRight: 'max(1rem, env(safe-area-inset-right))'
+              }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2 }}
+            >
+              {/* Page Content - Rendered by React Router */}
+              <div className={cn(
+                "bg-white dark:bg-slate-800 rounded-lg shadow-card max-w-6xl mx-auto",
+                // Add responsive padding - less on mobile, more on desktop
+                "p-3 sm:p-4 md:p-6",
+                className
+              )}>
+                {/* Breadcrumbs - Moved inside content container */}
+                {showBreadcrumbs && (
+                  <div className="mb-4 hidden md:block">
+                    <Breadcrumb 
+                      autoGenerate 
+                      className="text-sm text-gray-500 dark:text-gray-400"
+                    />
+                  </div>
+                )}
+                
+                {/* Main outlet content */}
+                <Outlet />
               </div>
-            )}
-            
-            {/* Page Content - Rendered by React Router */}
-            <div className={cn("bg-white dark:bg-slate-800 rounded-lg shadow-card", className)}>
-              <Outlet />
-            </div>
-          </m.main>
-        </LazyMotion>
+            </m.main>
+          </LazyMotion>
+        </div>
+        
+        {/* Footer */}
+        <Footer 
+          variant="minimal-modern" 
+          showSocial={true}
+          showLegal={true}
+          showContact={false}
+          showCopyright={true}
+          companyName="BuildEase"
+          logoSrc="/buildease-logo-1.svg"
+        />
       </div>
     </div>
   );

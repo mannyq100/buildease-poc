@@ -25,9 +25,10 @@ export const MainNavigation: FC<MainNavigationProps> = ({
     )}>
       <div className="flex items-center gap-6">
         <img 
-          src="/images/buildease-logo-1.svg" 
+          src="/buildease-logo-1.svg" 
           alt="BuildEase" 
-          className="h-8 w-32"
+          className="h-10 w-auto"
+          style={{ maxWidth: '180px'}}
         />
         {(icon || title) && (
           <div className="flex items-center gap-3 pl-6 border-l border-gray-200 dark:border-slate-700">

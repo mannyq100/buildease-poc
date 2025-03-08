@@ -114,7 +114,7 @@ const Layout = () => {
             </button>
             <Link to="/" className="flex items-center transition-all duration-300 hover:scale-105 group relative">
               <img 
-                src={isDarkMode ? "/buildease-logo-1.svg" : "/buildease-logo-1.svg"} 
+                src="/buildease-logo-1.svg" 
                 alt="BuildEase" 
                 className="h-14 w-auto" 
               />
@@ -202,7 +202,7 @@ const Layout = () => {
                 <div className="flex items-center justify-between mb-8 md:hidden">
                   <Link to="/" className="flex items-center">
                     <img 
-                      src={isDarkMode ? "/buildease-logo-1.svg" : "/buildease-logo-1.svg"} 
+                      src="/buildease-logo-1.svg" 
                       alt="BuildEase" 
                       className="h-12 w-auto" 
                     />

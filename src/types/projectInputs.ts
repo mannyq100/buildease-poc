@@ -14,7 +14,7 @@ export interface InsightItemProps {
 }
 
 /**
- * Type representing possible values for form fields
+ * Type for form field values to replace the use of 'any'
  */
 export type FormFieldValue = string | boolean | string[] | number | undefined;
 

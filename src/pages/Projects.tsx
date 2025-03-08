@@ -290,33 +290,33 @@ export function Projects() {
 
 // Helper functions
 function getStatusBadge(status: ProjectStatus) {
-  switch(status) {
-    case 'active':
-      return <Badge className="bg-[#1E3A8A] text-white">Active</Badge>;
-    case 'planning':
-      return <Badge className="bg-[#D97706] text-white">Planning</Badge>;
-    case 'completed':
-      return <Badge className="bg-green-600 text-white">Completed</Badge>;
-    case 'upcoming':
-      return <Badge className="bg-purple-600 text-white">Upcoming</Badge>;
-    case 'on-hold':
-      return <Badge className="bg-red-600 text-white">On Hold</Badge>;
-    default:
-      return <Badge className="bg-gray-500 text-white">{status}</Badge>;
-  }
+    switch(status) {
+      case 'active':
+        return <Badge className="bg-[#1E3A8A] text-white">Active</Badge>;
+      case 'planning':
+        return <Badge className="bg-[#D97706] text-white">Planning</Badge>;
+      case 'completed':
+        return <Badge className="bg-green-600 text-white">Completed</Badge>;
+      case 'upcoming':
+        return <Badge className="bg-purple-600 text-white">Upcoming</Badge>;
+      case 'on-hold':
+        return <Badge className="bg-red-600 text-white">On Hold</Badge>;
+      default:
+        return <Badge className="bg-gray-500 text-white">{status}</Badge>;
+    }
 }
 
 function formatCurrency(amount: number) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0
-  }).format(amount);
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0
+    }).format(amount);
 }
 
 function formatDate(dateString: string) {
-  const options = { year: 'numeric', month: 'short', day: 'numeric' } as Intl.DateTimeFormatOptions;
-  return new Date(dateString).toLocaleDateString('en-US', options);
+    const options = { year: 'numeric', month: 'short', day: 'numeric' } as Intl.DateTimeFormatOptions;
+    return new Date(dateString).toLocaleDateString('en-US', options);
 }
 
 // Helper function to format numbers with commas
@@ -367,54 +367,54 @@ function ProjectFilters({
   setSearchTerm
 }: ProjectFiltersProps) {
   return (
-    <m.div 
-      className="mt-8"
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.2 }}
-    >
-      <Card className="bg-white/80 dark:bg-slate-800/80 shadow-xl backdrop-blur-sm border-0 overflow-hidden">
-        <CardContent className="p-4">
-          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-            <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full lg:w-auto">
-              <TabsList className="grid grid-cols-5 w-full lg:w-auto bg-gray-100/70 dark:bg-slate-700/50 p-1">
-                <TabsTrigger value="all" className="text-sm">All Projects</TabsTrigger>
-                <TabsTrigger value="active" className="text-sm">Active</TabsTrigger>
-                <TabsTrigger value="planning" className="text-sm">Planning</TabsTrigger>
-                <TabsTrigger value="completed" className="text-sm">Completed</TabsTrigger>
-                <TabsTrigger value="upcoming" className="text-sm">Upcoming</TabsTrigger>
-              </TabsList>
-            </Tabs>
-            
-            <div className="flex w-full lg:w-auto items-center gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input 
-                  placeholder="Search projects..." 
-                  className="pl-9 w-full bg-white/80 dark:bg-slate-700/50 border-gray-200 dark:border-slate-600 rounded-full"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="rounded-full bg-white/80 dark:bg-slate-700/50 border-gray-200 dark:border-slate-600">
-                    <Filter className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem>Filter by Client</DropdownMenuItem>
-                  <DropdownMenuItem>Filter by Location</DropdownMenuItem>
-                  <DropdownMenuItem>Filter by Type</DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>Clear Filters</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </m.div>
+            <m.div 
+              className="mt-8"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <Card className="bg-white/80 dark:bg-slate-800/80 shadow-xl backdrop-blur-sm border-0 overflow-hidden">
+                <CardContent className="p-4">
+                  <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+                    <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full lg:w-auto">
+                      <TabsList className="grid grid-cols-5 w-full lg:w-auto bg-gray-100/70 dark:bg-slate-700/50 p-1">
+                        <TabsTrigger value="all" className="text-sm">All Projects</TabsTrigger>
+                        <TabsTrigger value="active" className="text-sm">Active</TabsTrigger>
+                        <TabsTrigger value="planning" className="text-sm">Planning</TabsTrigger>
+                        <TabsTrigger value="completed" className="text-sm">Completed</TabsTrigger>
+                        <TabsTrigger value="upcoming" className="text-sm">Upcoming</TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                    
+                    <div className="flex w-full lg:w-auto items-center gap-2">
+                      <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input 
+            placeholder="Search projects..." 
+                          className="pl-9 w-full bg-white/80 dark:bg-slate-700/50 border-gray-200 dark:border-slate-600 rounded-full"
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="icon" className="rounded-full bg-white/80 dark:bg-slate-700/50 border-gray-200 dark:border-slate-600">
+                            <Filter className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>Filter by Client</DropdownMenuItem>
+                          <DropdownMenuItem>Filter by Location</DropdownMenuItem>
+                          <DropdownMenuItem>Filter by Type</DropdownMenuItem>
+              <DropdownMenuSeparator />
+                          <DropdownMenuItem>Clear Filters</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+                </div>
+                </div>
+                </CardContent>
+              </Card>
+            </m.div>
   )
 }
 
@@ -425,13 +425,13 @@ function ProjectsList({
   navigate
 }: ProjectsListProps) {
   return (
-    <m.div 
-      className="mt-8 mb-8"
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.3 }}
-    >
-      {filteredProjects.length === 0 ? (
+            <m.div 
+              className="mt-8 mb-8"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+      >
+              {filteredProjects.length === 0 ? (
         <EmptyProjectsState navigate={navigate} />
       ) : (
         view === 'grid' ? (
@@ -446,19 +446,19 @@ function ProjectsList({
 
 function EmptyProjectsState({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 text-center">
-      <div className="flex flex-col items-center justify-center py-12">
-        <Briefcase className="h-12 w-12 text-gray-400 mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No projects found</h3>
-        <p className="text-gray-500 dark:text-gray-400 max-w-md mb-6">
-          We couldn't find any projects matching your search criteria. Try adjusting your filters or create a new project.
-        </p>
-        <Button onClick={() => navigate('/create-project')}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create New Project
+                <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 text-center">
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <Briefcase className="h-12 w-12 text-gray-400 mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No projects found</h3>
+                    <p className="text-gray-500 dark:text-gray-400 max-w-md mb-6">
+                      We couldn't find any projects matching your search criteria. Try adjusting your filters or create a new project.
+                    </p>
+                    <Button onClick={() => navigate('/create-project')}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create New Project
         </Button>
-      </div>
-    </div>
+                  </div>
+                </div>
   )
 }
 
@@ -470,7 +470,7 @@ function ProjectsGridView({
   navigate: ReturnType<typeof useNavigate>
 }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {projects.map((project) => (
         <ProjectCard 
           key={project.id} 
@@ -490,65 +490,65 @@ function ProjectCard({
   navigate: ReturnType<typeof useNavigate>
 }) {
   return (
-    <Card key={project.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-      <div 
-        className="h-40 bg-cover bg-center" 
-        style={{ backgroundImage: `url(${project.imageUrl})` }}
-      >
-        <div className="h-full w-full bg-gradient-to-b from-transparent to-black/60 p-4 flex flex-col justify-end">
-          <div className="flex justify-between items-center">
-            <Badge variant="outline" className="bg-white/20 backdrop-blur-sm text-white border-white/10">
-              {project.type}
-            </Badge>
-            {getStatusBadge(project.status)}
-          </div>
-        </div>
-      </div>
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <div>
-            <CardTitle>{project.name}</CardTitle>
-            <CardDescription>{project.client}</CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="pb-2">
-        <div className="grid grid-cols-2 gap-y-2 text-sm mb-2">
-          <div>
-            <span className="text-gray-500 dark:text-gray-400">Budget:</span>
-            <div className="font-medium">{formatCurrency(project.budget)}</div>
-          </div>
-          <div>
-            <span className="text-gray-500 dark:text-gray-400">Timeline:</span>
-            <div className="font-medium">{formatDate(project.startDate)} - {formatDate(project.endDate)}</div>
-          </div>
-        </div>
-        <div className="mt-2">
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-gray-500 dark:text-gray-400">Progress</span>
-            <span>{project.progress}%</span>
-          </div>
-          <Progress value={project.progress} className="h-2" />
-        </div>
-      </CardContent>
-      <CardFooter className="pt-2 flex justify-between border-t">
-        <Button variant="ghost" size="sm" onClick={() => navigate(`/project/${project.id}`)}>
-          View Details
+                      <Card key={project.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                        <div 
+                          className="h-40 bg-cover bg-center" 
+                          style={{ backgroundImage: `url(${project.imageUrl})` }}
+                        >
+                          <div className="h-full w-full bg-gradient-to-b from-transparent to-black/60 p-4 flex flex-col justify-end">
+                            <div className="flex justify-between items-center">
+                              <Badge variant="outline" className="bg-white/20 backdrop-blur-sm text-white border-white/10">
+                                {project.type}
+                              </Badge>
+                              {getStatusBadge(project.status)}
+                            </div>
+                          </div>
+                        </div>
+                        <CardHeader className="pb-2">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <CardTitle>{project.name}</CardTitle>
+                              <CardDescription>{project.client}</CardDescription>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pb-2">
+                          <div className="grid grid-cols-2 gap-y-2 text-sm mb-2">
+                            <div>
+                              <span className="text-gray-500 dark:text-gray-400">Budget:</span>
+                              <div className="font-medium">{formatCurrency(project.budget)}</div>
+                            </div>
+                            <div>
+                              <span className="text-gray-500 dark:text-gray-400">Timeline:</span>
+                              <div className="font-medium">{formatDate(project.startDate)} - {formatDate(project.endDate)}</div>
+                            </div>
+                          </div>
+                          <div className="mt-2">
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-gray-500 dark:text-gray-400">Progress</span>
+                              <span>{project.progress}%</span>
+                            </div>
+                            <Progress value={project.progress} className="h-2" />
+                          </div>
+                        </CardContent>
+                        <CardFooter className="pt-2 flex justify-between border-t">
+                          <Button variant="ghost" size="sm" onClick={() => navigate(`/project/${project.id}`)}>
+                            View Details
         </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
               <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>Edit</DropdownMenuItem>
-            <DropdownMenuItem>Duplicate</DropdownMenuItem>
-            <DropdownMenuItem>Archive</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </CardFooter>
-    </Card>
+        </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem>Edit</DropdownMenuItem>
+                              <DropdownMenuItem>Duplicate</DropdownMenuItem>
+                              <DropdownMenuItem>Archive</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </CardFooter>
+                      </Card>
   )
 }
 
@@ -560,115 +560,115 @@ function ProjectsListView({
   navigate: ReturnType<typeof useNavigate>
 }) {
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead className="bg-gray-50 dark:bg-slate-700">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Project
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Status
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Budget
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Timeline
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Progress
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
+                <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead className="bg-gray-50 dark:bg-slate-700">
+                          <tr>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                              Project
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                              Status
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                              Budget
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                              Timeline
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                              Progress
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                              Actions
+                            </th>
+                      </tr>
+                    </thead>
+                        <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
             {projects.map((project) => (
-              <tr 
-                key={project.id} 
-                className="hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer"
-                onClick={() => navigate(`/project/${project.id}`)}
-              >
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div className="h-10 w-10 flex-shrink-0 mr-3">
-                      <img 
-                        className="h-10 w-10 rounded-md object-cover" 
-                        src={project.imageUrl} 
-                        alt={project.name} 
-                      />
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">
-                        {project.name}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {project.client}
-                      </div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {getStatusBadge(project.status)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900 dark:text-white">{formatCurrency(project.budget)}</div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    {formatCurrency(project.spent)} spent
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                  {formatDate(project.startDate)} - {formatDate(project.endDate)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div className="mr-2 text-sm font-medium text-gray-900 dark:text-white">
-                      {project.progress}%
-                    </div>
-                    <div className="w-24">
-                      <Progress value={project.progress} className="h-2" />
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div className="flex items-center">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
+                            <tr 
+                            key={project.id} 
+                              className="hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer"
+                              onClick={() => navigate(`/project/${project.id}`)}
+                            >
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <div className="h-10 w-10 flex-shrink-0 mr-3">
+                                    <img 
+                                      className="h-10 w-10 rounded-md object-cover" 
+                                      src={project.imageUrl} 
+                                      alt={project.name} 
+                                    />
+                                  </div>
+                                  <div>
+                                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                      {project.name}
+                                    </div>
+                                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                                      {project.client}
+                                    </div>
+                                  </div>
+                              </div>
+                            </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {getStatusBadge(project.status)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-900 dark:text-white">{formatCurrency(project.budget)}</div>
+                                <div className="text-sm text-gray-500 dark:text-gray-400">
+                                  {formatCurrency(project.spent)} spent
+                              </div>
+                            </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                {formatDate(project.startDate)} - {formatDate(project.endDate)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <div className="mr-2 text-sm font-medium text-gray-900 dark:text-white">
+                                    {project.progress}%
+                                  </div>
+                                  <div className="w-24">
+                                    <Progress value={project.progress} className="h-2" />
+                                  </div>
+                              </div>
+                            </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div className="flex items-center">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                    onClick={(e) => {
                         e.stopPropagation()
                         navigate(`/project/${project.id}`)
-                      }}
-                    >
-                      Details
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8"
-                          onClick={(e) => e.stopPropagation()}
-                        >
+                                    }}
+                                  >
+                                    Details
+                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="h-8 w-8"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
                           <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>Duplicate</DropdownMenuItem>
-                        <DropdownMenuItem>Archive</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem>Edit</DropdownMenuItem>
+                                    <DropdownMenuItem>Duplicate</DropdownMenuItem>
+                                      <DropdownMenuItem>Archive</DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </td>
+                            </tr>
+                          ))}
+                    </tbody>
+                  </table>
+                </div>
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
+                )
 } 

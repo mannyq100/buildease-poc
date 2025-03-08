@@ -101,7 +101,7 @@
     </text>
     
     <!-- Tagline in Pascal Case -->
-    <text 
+    <!-- <text 
       x="3" 
       y="18" 
       font-family="'Montserrat', 'Segoe UI', sans-serif" 
@@ -110,7 +110,7 @@
       letter-spacing="0.5"
       fill="#3b82f6">
       Construction Management
-    </text>
+    </text> -->
   </g>
   
   <!-- Dynamic Decorative Elements -->

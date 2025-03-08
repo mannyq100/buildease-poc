@@ -148,7 +148,7 @@ const Layout = () => {
             </button>
             <Link to="/" className="flex items-center transition-transform hover:scale-102">
               <img 
-                src={isDarkMode ? "/buildease-logo-dark.svg" : "/buildease-logo-2.svg"} 
+                src="/buildease-logo-1.svg" 
                 alt="BuildEase" 
                 className="h-10 w-auto" 
               />
