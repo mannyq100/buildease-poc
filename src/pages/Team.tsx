@@ -90,8 +90,13 @@ import { StatCard } from '@/components/shared/StatCard'
 // Types
 import { TeamMember, NewTeamMember, ViewMode } from '@/types/team'
 
-// Mock Data
-import { INITIAL_TEAM_MEMBERS, DEPARTMENTS, STATUS_OPTIONS, PROJECTS } from '@/data/mock/teamMembers'
+// Data Services
+import {
+  getTeamMembers,
+  getDepartments,
+  getStatusOptions,
+  getProjects
+} from '@/data/teamService'
 
 /**
  * MultiSelect component
@@ -183,7 +188,12 @@ export function Team() {
   const [isViewProfileOpen, setIsViewProfileOpen] = useState(false)
   const [isConfirmRemoveOpen, setIsConfirmRemoveOpen] = useState(false)
   const [currentMember, setCurrentMember] = useState<TeamMember | null>(null)
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(INITIAL_TEAM_MEMBERS)
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(getTeamMembers())
+  
+  // Load data from service
+  const departments = getDepartments()
+  const statusOptions = getStatusOptions()
+  const projects = getProjects()
   const [newMember, setNewMember] = useState<NewTeamMember>({
     name: '',
     role: '',
@@ -418,7 +428,7 @@ export function Team() {
                     <SelectValue placeholder="Department" />
                   </SelectTrigger>
                   <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
-                    {DEPARTMENTS.map((department) => (
+                    {departments.map((department) => (
                       <SelectItem 
                         key={department} 
                         value={department}
@@ -436,7 +446,7 @@ export function Team() {
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
-                    {STATUS_OPTIONS.map((status) => (
+                    {statusOptions.map((status) => (
                       <SelectItem 
                         key={status} 
                         value={status}
@@ -654,7 +664,7 @@ export function Team() {
                       <SelectValue placeholder="Select department" />
                     </SelectTrigger>
                     <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
-                    {DEPARTMENTS.filter(dept => dept !== 'All').map((department) => (
+                    {departments.filter(dept => dept !== 'All').map((department) => (
                       <SelectItem 
                         key={department} 
                         value={department}
@@ -677,7 +687,7 @@ export function Team() {
                 <MultiSelect 
                   values={newMember.projects}
                   onChange={handleMultiProjectChange}
-                  options={PROJECTS.map(p => ({ value: p, label: p }))}
+                  options={projects.map(p => ({ value: p, label: p }))}
                   placeholder="Select projects"
                   className="dark:bg-slate-900 dark:border-slate-700 dark:text-white"
                 />

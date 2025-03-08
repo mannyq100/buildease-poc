@@ -47,15 +47,15 @@ import DataVisualization from '@/components/dashboard/DataVisualization'
 // Utilities
 import { darkModeDetector } from '@/lib/utils'
 
-// Data
+// Data Services
 import {
-  PROJECT_PROGRESS_DATA,
-  BUDGET_DATA,
-  MATERIAL_USAGE_DATA,
-  TASK_STATUS_DATA,
-  QUICK_STATS,
-  QUICK_ACTIONS
-} from '@/data/mock/dashboardData'
+  getProjectProgressData,
+  getBudgetData,
+  getMaterialUsageData,
+  getTaskStatusData,
+  getQuickStats,
+  getQuickActions
+} from '@/data/dashboardService'
 
 // Animation variants
 const containerVariants = {
@@ -88,6 +88,14 @@ export function Dashboard() {
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [activeChartTab, setActiveChartTab] = useState("progress")
+  
+  // Load data from service
+  const projectProgressData = getProjectProgressData()
+  const budgetData = getBudgetData()
+  const materialUsageData = getMaterialUsageData()
+  const taskStatusData = getTaskStatusData()
+  const quickStats = getQuickStats()
+  const quickActions = getQuickActions()
   
   // Set up dark mode detection
   useEffect(() => {
@@ -164,7 +172,7 @@ export function Dashboard() {
           <div className="relative z-10">
             {/* Quick Actions Row */}
             <div className="flex flex-wrap gap-2">
-              {QUICK_ACTIONS.map((action, index) => (
+              {quickActions.map((action, index) => (
                 <Button
                   key={index}
                   variant="outline"
@@ -273,7 +281,7 @@ export function Dashboard() {
                       </CardHeader>
                       <CardContent className="p-6 pt-8">
                         <DataVisualization
-                          data={PROJECT_PROGRESS_DATA}
+                          data={projectProgressData}
                           title="Progress by Phase"
                           xAxisKey="name"
                           yAxisKeys={["completed"]}
@@ -308,7 +316,7 @@ export function Dashboard() {
                       </CardHeader>
                       <CardContent className="p-6 pt-8">
                         <DataVisualization
-                          data={BUDGET_DATA}
+                          data={budgetData}
                           title="Monthly Budget Analysis"
                           xAxisKey="name"
                           yAxisKeys={["Planned", "Actual"]}
@@ -343,7 +351,7 @@ export function Dashboard() {
                       </CardHeader>
                       <CardContent className="p-6 pt-8">
                         <DataVisualization
-                          data={TASK_STATUS_DATA}
+                          data={taskStatusData}
                           title="Tasks by Status"
                           pieKey="name"
                           pieValueKey="value"
@@ -375,7 +383,7 @@ export function Dashboard() {
                     <CardContent className="p-6 pt-8 flex-grow flex flex-col">
                       <div className="flex-grow">
                         <DataVisualization
-                          data={MATERIAL_USAGE_DATA}
+                          data={materialUsageData}
                           title="Material Distribution"
                           pieKey="name"
                           pieValueKey="value"

@@ -1,35 +1,23 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
 import { Outlet } from 'react-router-dom';
-import Sidebar from '@/components/navigation/Sidebar';
 import MainNavigation from '@/components/layout/MainNavigation';
 import Breadcrumb from '@/components/navigation/Breadcrumb';
 import { Footer } from '@/components/layout/Footer';
 import { cn, debounce } from '@/lib/utils';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
-import { Search } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 interface AppLayoutProps {
   showBreadcrumbs?: boolean;
   className?: string;
 }
 
-const AppLayout: React.FC<AppLayoutProps> = ({
-  showBreadcrumbs = true,
-  className
-}) => {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+function AppLayout({ showBreadcrumbs = true, className }: AppLayoutProps) {
   const [isMobile, setIsMobile] = useState(false);
   
   // Create stable, memoized handler for resize
   const checkMobile = useCallback(() => {
     const isMobileView = window.innerWidth < 768;
     setIsMobile(isMobileView);
-    
-    // Only update sidebar collapsed state when needed
-    if (isMobileView) {
-      setIsSidebarCollapsed(true);
-    }
   }, []);
   
   // Debounced version of checkMobile to reduce updates during resize

@@ -11,6 +11,7 @@ export interface InsightItemProps {
   description: string;
   icon?: ReactNode;
   type?: 'default' | 'warning' | 'success';
+  animationDelay?: number;
 }
 
 /**
@@ -117,4 +118,38 @@ export interface CostEstimate {
 /**
  * Tab names type
  */
-export type ProjectInputTab = 'intro' | 'basic' | 'building' | 'materials' | 'features' | 'final'; 
+export type ProjectInputTab = 'intro' | 'basic' | 'building' | 'materials' | 'features' | 'final';
+
+/**
+ * Task interface for project phases
+ */
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  completed: boolean;
+}
+
+/**
+ * Material interface for project phases
+ */
+export interface Material {
+  id: string;
+  name: string;
+  quantity: string;
+  unit: string;
+}
+
+/**
+ * Phase interface for construction project
+ */
+export interface Phase {
+  id: string;
+  title: string;
+  duration: string;
+  startDate?: string;
+  endDate?: string;
+  tasks: Task[];
+  materials: Material[];
+  description?: string;
+} 

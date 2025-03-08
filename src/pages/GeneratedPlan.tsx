@@ -2,84 +2,56 @@
  * GeneratedPlan component
  * Displays an AI-generated construction project plan with various views and interactive elements
  */
-import React, { useState, useEffect, useCallback } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PageHeader } from '@/components/shared';
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from '@/components/ui/use-toast';
+import { createDefaultPhase } from '@/data/mock/generatedPlan/defaultPhase';
+import { TIMELINE_INSIGHTS } from '@/data/mock/generatedPlan/insights';
+import { SAMPLE_PROJECT_PLAN } from '@/data/mock/generatedPlan/samplePhases';
+import { InsightItemProps, Phase } from '@/types/projectInputs';
+import { AnimatePresence, m } from 'framer-motion';
 import {
   AlertCircle,
-  AlertTriangle,
-  ArrowRight,
-  ArrowUpDown,
-  ArrowUpRight,
-  BarChart4,
-  Briefcase,
   Building,
   Calendar,
   Check,
   CheckCircle,
-  CheckCircle2,
-  ChevronLeft,
   ChevronRight,
   Clock,
-  DollarSign,
   Download,
   Edit,
   FileEdit,
   FileText,
-  InfoIcon,
-  Landmark,
-  Lightbulb,
   Loader2,
-  MessageSquare,
   Package,
   Pencil,
-  PenLine,
   Plus,
-  PlusCircle,
   Printer,
-  RotateCcw,
   RotateCw,
   Save,
-  Settings,
   Share2,
   Sparkles,
   Sun,
   Trash2,
-  Trees,
-  Undo2,
-  User,
   Users,
-  Wrench,
   X,
-  XCircle,
-  Zap
+  XCircle
 } from 'lucide-react';
-import ProgressHeader from "@/components/ProjectPlan/ProgressHeader";
-import ProjectOverview from "@/components/ProjectPlan/ProjectOverview";
-import AIRecommendations from "@/components/ProjectPlan/AIRecommendations";
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { toast } from '@/components/ui/use-toast';
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // Types
 interface ProjectData {
@@ -95,14 +67,6 @@ interface ProjectData {
   [key: string]: unknown;
 }
 
-interface InsightItemProps {
-  title: string;
-  description: string;
-  icon?: React.ReactNode;
-  type?: 'default' | 'warning' | 'success';
-  animationDelay?: number;
-}
-
 interface TabData {
   id: string;
   label: string;
@@ -111,32 +75,6 @@ interface TabData {
 
 // Add new type for plan status
 type PlanStatus = 'draft' | 'final' | 'none';
-
-// Add new interfaces for phase management
-interface Task {
-  id: string;
-  title: string;
-  description?: string;
-  completed: boolean;
-}
-
-interface Material {
-  id: string;
-  name: string;
-  quantity: string;
-  unit: string;
-}
-
-interface Phase {
-  id: string;
-  title: string;
-  duration: string;
-  startDate?: string;
-  endDate?: string;
-  tasks: Task[];
-  materials: Material[];
-  description?: string;
-}
 
 // Component for insights displayed on the page
 function InsightItem({ 
@@ -353,36 +291,14 @@ function ActionButtons({
 }) {
   return (
     <div className="flex items-center gap-2 md:gap-3">
-      {onAddPhase && (
-        <Button 
-          variant="outline" 
-          size="sm"
-          className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 hover:text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/30"
-          onClick={onAddPhase}
-        >
-          <Plus className="h-4 w-4 mr-1.5" />
-          Add Phase
-        </Button>
-      )}
-      
-      {onSave && (
-        <Button 
-          variant="outline" 
-          size="sm"
-          className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/30"
-          onClick={onSave}
-        >
-          <Save className="h-4 w-4 mr-1.5" />
-          Save Plan
-        </Button>
-      )}
+  
       
       <Button
-        variant="outline"
+        variant="default"
         size="sm"
         onClick={() => handleRegenerate(null)}
         disabled={isGenerating}
-        className="gap-1.5"
+        className="gap-1.5 "
       >
         {isGenerating ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1338,6 +1254,13 @@ const phasesToMarkdown = (phases: Phase[]): string => {
   return markdown;
 };
 
+// Update the function to trigger a hard refresh properly
+const forceRefresh = () => {
+  console.log('Forcing page refresh');
+  // Use a different method to force a cache-bypassing reload
+  window.location.href = window.location.href + '?refresh=' + Date.now();
+};
+
 // Main component
 export default function GeneratedPlan() {
   const navigate = useNavigate();
@@ -1426,7 +1349,7 @@ export default function GeneratedPlan() {
     // No dependencies needed as loadProjectData is defined outside the component
   }, []);
 
-  // Generate sample project plan
+  // Generate sample project plan - updated to use external mock data
   const generateSampleProjectPlan = (data: ProjectData | null) => {
     try {
       setIsGenerating(true);
@@ -1436,156 +1359,8 @@ export default function GeneratedPlan() {
       
       // Simulate API delay
     setTimeout(() => {
-        const generatedPlan = `# Phase 1: Site Preparation and Foundation
-Duration: 3-4 weeks
-
-This phase involves clearing the site, excavation, and laying the foundation for the building.
-
-### Tasks
-
-- Obtain necessary permits and approvals
-- Clear vegetation and debris from the site
-- Conduct soil testing and site survey
-- Set up temporary facilities (site office, toilets)
-- Excavate for foundation according to plans
-- Install formwork and reinforcement for foundation
-- Pour concrete for foundation
-- Allow for proper curing time
-- Waterproof foundation
-- Install drainage systems
-
-### Materials
-
-- 45 bags of cement
-- 15 m³ of concrete
-- 500 kg of steel reinforcement
-- 30 m² of waterproofing membrane
-- 80 m of drainage pipes
-- 12 m³ of gravel for drainage
-
----
-
-# Phase 2: Structural Framework
-Duration: 4-5 weeks
-
-This phase focuses on constructing the main structural elements of the building.
-
-### Tasks
-
-- Erect columns and beams
-- Construct load-bearing walls
-- Install floor and roof supports
-- Build interior walls
-- Create openings for doors and windows
-- Install roof trusses and framework
-- Apply roof decking
-- Conduct structural inspection
-
-### Materials
-
-- 150 bags of cement
-- 25 m³ of concrete
-- 1200 kg of steel reinforcement
-- 2500 concrete blocks
-- 45 sheets of plywood for forms
-- 35 timber pieces for temporary supports
-- 30 roof trusses
-- 50 m² of roof decking
-
----
-
-# Phase 3: Enclosure and Roofing
-Duration: 3-4 weeks
-
-This phase involves completing the building's outer shell and roofing system.
-
-### Tasks
-
-- Install exterior sheathing
-- Apply building wrap/moisture barrier
-- Install roofing materials
-- Set up gutters and downspouts
-- Install exterior doors and windows
-- Apply exterior finishes (siding, stucco, etc.)
-- Seal all exterior penetrations
-
-### Materials
-
-- 40 rolls of building wrap
-- 60 m² of roofing material
-- 35 m of gutters
-- 12 downspouts
-- 8 exterior doors with frames
-- 20 windows with frames
-- 180 m² of exterior finishing material
-- 25 tubes of sealant
-
----
-
-# Phase 4: Interior Mechanical Systems
-Duration: 3-4 weeks
-
-This phase focuses on installing all interior mechanical, electrical, and plumbing systems.
-
-### Tasks
-
-- Rough-in electrical wiring
-- Install plumbing pipes and fixtures
-- Set up HVAC system
-- Install ductwork and vents
-- Rough-in for lighting fixtures
-- Set up water heater and main connections
-- Prepare for internet and communication lines
-- Conduct inspections for all systems
-
-### Materials
-
-- 400 m of electrical wiring
-- 150 m of plumbing pipes
-- 1 HVAC unit
-- 30 m of ductwork
-- 25 electrical outlets
-- 18 light fixture boxes
-- 8 plumbing fixtures
-- 1 water heater
-- 25 vent covers
-- 12 junction boxes
-
----
-
-# Phase 5: Interior Finishes
-Duration: 4-5 weeks
-
-This final phase focuses on completing all interior elements and finishing touches.
-
-### Tasks
-
-- Install insulation
-- Hang and finish drywall
-- Install interior doors and trim
-- Apply primer and paint
-- Install flooring
-- Mount cabinetry and countertops
-- Install light fixtures
-- Complete plumbing fixtures
-- Install appliances
-- Final cleaning
-- Conduct final inspection
-
-### Materials
-
-- 40 packages of insulation
-- 75 sheets of drywall
-- 25 kg of joint compound
-- 40 liters of paint
-- 15 interior doors with hardware
-- 150 m² of flooring material
-- 10 cabinets
-- 8 m² of countertop
-- 15 light fixtures
-- 8 sets of plumbing fixtures
-- 5 major appliances
-- 20 liters of cleaning supplies`;
+        // Use the imported sample plan instead of inline string
+        const generatedPlan = SAMPLE_PROJECT_PLAN;
 
         setGeneratedPlan(generatedPlan);
         setEditablePlan(generatedPlan);
@@ -1606,16 +1381,10 @@ This final phase focuses on completing all interior elements and finishing touch
     }
   };
 
-  // Add a new empty phase
+  // Add a new empty phase - updated to use createDefaultPhase
   const addNewPhase = () => {
-    const newPhase: Phase = {
-      id: `phase-${Date.now()}`,
-      title: `New Phase ${phases.length + 1}`,
-      duration: '2-3 weeks',
-      description: '',
-      tasks: [],
-      materials: []
-    };
+    // Use the imported createDefaultPhase function
+    const newPhase = createDefaultPhase(phases.length + 1);
     
     setPhases([...phases, newPhase]);
     setHasUnsavedChanges(true);
@@ -1706,96 +1475,121 @@ This final phase focuses on completing all interior elements and finishing touch
     generateSampleProjectPlan(null);
   };
 
+  // Add a useEffect to log component rendering
+  useEffect(() => {
+    // Clear previous logs
+    console.clear();
+    console.log('%c GeneratedPlan Component - Updated Version', 'background: #4f46e5; color: white; padding: 4px 8px; border-radius: 4px;');
+    console.log('Project Name:', projectData?.name || 'Not provided');
+    console.log('Plan Status:', planStatus);
+    console.log('Dark Mode:', isDarkMode);
+    console.log('Component mounted with updated UI');
+  }, []);
+
   return (
     <div className="container py-6 max-w-7xl">
-      {/* Page Header with branding and back navigation */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-        <div>
-          <div className="mb-1 flex items-center">
+      {/* Use the shared PageHeader component */}
+      <PageHeader
+        title="Construction Plan"
+        description="AI-generated construction plan with customizable phases, tasks, and materials"
+        icon={<FileText className="h-6 w-6" />}
+        actions={
+          <div className="flex items-center gap-3">
+            {editMode && (
+              <Button
+                variant="default"
+                size="default"
+                onClick={() => setEditMode(false)}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <Check className="h-4 w-4 mr-1.5" />
+                Done Editing
+              </Button>
+            )}
+            
+            <ActionButtons 
+              isGenerating={isGenerating}
+              handleRegenerate={handleRegenerate}
+              navigateToProjectInput={() => navigate('/projects')}
+              setShowCollaborateModal={setShowCollaborateModal}
+            />
+            
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/projects')}
-              className="px-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 -ml-2"
+              onClick={forceRefresh}
+              className="text-white/80 hover:text-white hover:bg-white/10"
+              title="Force refresh page"
             >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              <span>Back to Projects</span>
+              <RotateCw className="h-3.5 w-3.5" />
             </Button>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-            Project Timeline
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
-            Manage your construction project phases, tasks, and materials
-          </p>
-        </div>
-        
-        {/* Prominent Action Buttons */}
-        <div className="flex items-center gap-3">
-          {!editMode && (
-            <>
-              <Button 
-                variant="outline" 
-                size="default"
-                className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 hover:text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/30"
-                onClick={addNewPhase}
-              >
-                <Plus className="h-4 w-4 mr-1.5" />
-                Add Phase
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                size="default"
-                className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/30 relative"
-                onClick={() => setShowActionMenu(!showActionMenu)}
-              >
-                <Save className="h-4 w-4 mr-1.5" />
-                Save Plan
-                {showActionMenu && (
-                  <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 z-10 border border-gray-200 dark:border-gray-700 w-48">
-                    <div className="flex flex-col gap-1">
-                      <Button
-                        onClick={() => {
-                          savePlan('draft');
-                          setShowActionMenu(false);
-                        }}
-                        variant="ghost"
-                        size="sm"
-                        className="justify-start"
-                        disabled={saving}
-                      >
-                        {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
-                        Save as Draft
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          savePlan('final');
-                          setShowActionMenu(false);
-                        }}
-                        variant="ghost"
-                        size="sm"
-                        className="justify-start text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20"
-                        disabled={saving}
-                      >
-                        {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-2" />}
-                        Finalize Plan
-                      </Button>
-                    </div>
+        }
+      />
+      
+      {/* Add Phase and Save buttons moved outside of PageHeader */}
+      {!editMode && (
+        <div className="flex items-center justify-between mb-6 mt-4">
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              size="default"
+              className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 hover:text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/30"
+              onClick={addNewPhase}
+            >
+              <Plus className="h-4 w-4 mr-1.5" />
+              Add Phase
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="default"
+              className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/30 relative"
+              onClick={() => setShowActionMenu(!showActionMenu)}
+            >
+              <Save className="h-4 w-4 mr-1.5" />
+              Save Plan
+              {showActionMenu && (
+                <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 z-10 border border-gray-200 dark:border-gray-700 w-48">
+                  <div className="flex flex-col gap-1">
+                    <Button
+                      onClick={() => {
+                        savePlan('draft');
+                        setShowActionMenu(false);
+                      }}
+                      variant="ghost"
+                      size="sm"
+                      className="justify-start"
+                      disabled={saving}
+                    >
+                      {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
+                      Save as Draft
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        savePlan('final');
+                        setShowActionMenu(false);
+                      }}
+                      variant="ghost"
+                      size="sm"
+                      className="justify-start text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20"
+                      disabled={saving}
+                    >
+                      {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+                      Finalize Plan
+                    </Button>
                   </div>
-                )}
-              </Button>
-            </>
-          )}
+                </div>
+              )}
+            </Button>
+          </div>
           
-          <ActionButtons 
-            isGenerating={isGenerating}
-            handleRegenerate={handleRegenerate}
-            navigateToProjectInput={() => navigate('/create-project')}
-            setShowCollaborateModal={setShowCollaborateModal}
-          />
+          {/* Project name display */}
+          <div className="text-gray-500 dark:text-gray-400 text-sm">
+            Project: <span className="font-medium text-gray-700 dark:text-gray-300">{projectData?.name || 'New Construction Project'}</span>
+          </div>
         </div>
-      </header>
+      )}
       
       {/* Main Content - Timeline focused */}
       <div className="space-y-6">
@@ -1803,22 +1597,22 @@ This final phase focuses on completing all interior elements and finishing touch
           <div className="flex flex-col items-center justify-center py-10">
             <Loader2 className="h-10 w-10 text-blue-500 animate-spin mb-4" />
             <p className="text-gray-500 dark:text-gray-400">Loading your project timeline...</p>
-          </div>
+        </div>
         ) : (
           <>
             {/* Timeline View */}
-            <Card className="border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow transition-shadow duration-300">
-              <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800 border-b border-gray-200 dark:border-gray-800">
+            <Card className="border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow transition-shadow duration-300 plan-card">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800 border-b border-gray-200 dark:border-gray-800 plan-card-header">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="flex items-center text-blue-700 dark:text-blue-400">
+                    <CardTitle className="flex items-center text-blue-700 dark:text-blue-400 plan-card-title">
                       <Calendar className="h-5 w-5 mr-2" />
-                      Project Timeline
+                      Proposed plan for {projectData?.name || 'your construction project'}
                     </CardTitle>
-                    <CardDescription>
-                      Estimated schedule and milestones for your construction project
+                    <CardDescription className="plan-card-description">
+                      Construction phases with timeline, tasks, and material requirements
                     </CardDescription>
-                  </div>
+      </div>
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -1833,7 +1627,7 @@ This final phase focuses on completing all interior elements and finishing touch
                     ) : (
                       <>
                         <Pencil className="h-4 w-4" />
-                        <span>Edit Timeline</span>
+                        <span>Edit Plan</span>
                       </>
                     )}
                   </Button>
@@ -1911,27 +1705,21 @@ This final phase focuses on completing all interior elements and finishing touch
             </Card>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-              <InsightItem
-                title="Construction Schedule"
-                description="The timeline follows local construction best practices with contingency planning for weather delays."
-                icon={<Calendar className="h-5 w-5" />}
-                type="default"
-                animationDelay={0.1}
-              />
-              <InsightItem
-                title="Milestone Planning"
-                description="Critical path analysis shows key dependencies between phases to minimize delays."
-                icon={<CheckCircle className="h-5 w-5" />}
-                type="success"
-                animationDelay={0.2}
-              />
-              <InsightItem
-                title="Seasonal Considerations"
-                description="Foundation work scheduled outside rainy season (April-July) to avoid delays."
-                icon={<Sun className="h-5 w-5" />}
-                type="warning"
-                animationDelay={0.3}
-              />
+              {TIMELINE_INSIGHTS.map((insight, index) => (
+                <InsightItem
+                  key={`insight-${index}`}
+                  title={insight.title}
+                  description={insight.description}
+                  icon={
+                    insight.title === "Construction Schedule" ? <Calendar className="h-5 w-5" /> :
+                    insight.title === "Milestone Planning" ? <CheckCircle className="h-5 w-5" /> :
+                    insight.title === "Seasonal Considerations" ? <Sun className="h-5 w-5" /> : 
+                    undefined
+                  }
+                  type={insight.type as 'default' | 'warning' | 'success'}
+                  animationDelay={insight.animationDelay}
+                />
+              ))}
             </div>
           </>
         )}

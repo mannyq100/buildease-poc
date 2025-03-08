@@ -1,0 +1,117 @@
+{
+  "projectProgress": [
+    { "name": "Foundation", "completed": 100, "total": 100 },
+    { "name": "Framing", "completed": 75, "total": 100 },
+    { "name": "Electrical", "completed": 30, "total": 100 },
+    { "name": "Plumbing", "completed": 25, "total": 100 },
+    { "name": "Interior", "completed": 0, "total": 100 }
+  ],
+  "budgetData": [
+    { "name": "Jan", "Planned": 8000, "Actual": 7200 },
+    { "name": "Feb", "Planned": 12000, "Actual": 13100 },
+    { "name": "Mar", "Planned": 15000, "Actual": 14800 },
+    { "name": "Apr", "Planned": 14000, "Actual": 16500 },
+    { "name": "May", "Planned": 18000, "Actual": 17300 },
+    { "name": "Jun", "Planned": 9000, "Actual": 9200 }
+  ],
+  "materialUsage": [
+    { "name": "Concrete", "value": 32 },
+    { "name": "Steel", "value": 24 },
+    { "name": "Wood", "value": 18 },
+    { "name": "Glass", "value": 12 },
+    { "name": "Other", "value": 14 }
+  ],
+  "taskStatus": [
+    { "name": "Completed", "value": 42 },
+    { "name": "In Progress", "value": 18 },
+    { "name": "Pending", "value": 34 },
+    { "name": "Delayed", "value": 6 }
+  ],
+  "quickStats": [
+    {
+      "title": "Active Projects",
+      "value": 4,
+      "color": "blue",
+      "iconType": "Briefcase"
+    },
+    {
+      "title": "Total Budget",
+      "value": "$120K",
+      "color": "green",
+      "iconType": "DollarSign"
+    },
+    {
+      "title": "Open Tasks",
+      "value": 28,
+      "color": "amber",
+      "iconType": "ListTodo"
+    },
+    {
+      "title": "Team Members",
+      "value": 12,
+      "color": "purple",
+      "iconType": "Users"
+    }
+  ],
+  "quickActions": [
+    {
+      "title": "Schedule Meeting",
+      "color": "blue",
+      "route": "/schedule",
+      "description": "Plan and schedule meetings with your team and clients",
+      "iconType": "Calendar"
+    },
+    {
+      "title": "Order Materials",
+      "color": "green",
+      "route": "/materials",
+      "description": "Order construction materials for your projects",
+      "iconType": "Package"
+    },
+    {
+      "title": "Review Budget",
+      "color": "purple",
+      "route": "/expenses",
+      "description": "Review and manage your project budgets",
+      "iconType": "DollarSign"
+    },
+    {
+      "title": "Team Management",
+      "color": "amber",
+      "route": "/team",
+      "description": "Manage your team members and assignments",
+      "iconType": "Users"
+    }
+  ],
+  "navItems": [
+    { 
+      "label": "Dashboard", 
+      "path": "/dashboard", 
+      "iconType": "Briefcase"
+    },
+    { 
+      "label": "Projects", 
+      "path": "/projects", 
+      "iconType": "Briefcase",
+      "badge": {
+        "text": "4",
+        "color": "blue"
+      }
+    },
+    { 
+      "label": "Schedule", 
+      "path": "/schedule", 
+      "iconType": "Calendar"
+    },
+    { 
+      "label": "Materials", 
+      "path": "/materials", 
+      "iconType": "Package"
+    },
+    { 
+      "label": "Expenses", 
+      "path": "/expenses", 
+      "iconType": "DollarSign"
+    }
+  ]
+}
