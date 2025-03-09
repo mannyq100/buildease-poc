@@ -571,7 +571,7 @@ const ProjectPhases = () => {
                 <Label htmlFor="phase-status" className={isDarkMode ? "text-slate-300" : ""}>Status</Label>
                 <Select 
                   value={newPhase.status} 
-                  onValueChange={(value) => setNewPhase({...newPhase, status: value as any})}
+                  onValueChange={(value) => setNewPhase({...newPhase, status: value as "optimized" | "warning"})}
                 >
                   <SelectTrigger id="phase-status" className={isDarkMode ? "bg-slate-900 border-slate-700 text-white" : ""}>
                     <SelectValue placeholder="Select status" />
@@ -635,7 +635,7 @@ const ProjectPhases = () => {
               <Label htmlFor="task-status" className={isDarkMode ? "text-slate-300" : ""}>Status</Label>
               <Select 
                 value={newTask.status} 
-                onValueChange={(value) => setNewTask({...newTask, status: value as any})}
+                onValueChange={(value) => setNewTask({...newTask, status: value as "pending" | "in-progress" | "completed"})}
               >
                 <SelectTrigger id="task-status" className={isDarkMode ? "bg-slate-900 border-slate-700 text-white" : ""}>
                   <SelectValue placeholder="Select status" />

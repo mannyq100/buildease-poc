@@ -17,6 +17,7 @@ type ToastInstance = ToastOptions & {
   id: string;
   progress: number;
   open: boolean;
+  startTime?: number;
 }
 
 type ToastContextType = {
@@ -81,7 +82,7 @@ export const ToastContextProvider: React.FC<{children: React.ReactNode}> = ({ ch
       setToasts(prev => 
         prev.map(toast => {
           if (!toast.open) return toast;
-          const elapsed = 100 * (Date.now() - (toast as any).startTime) / toast.duration;
+          const elapsed = 100 * (Date.now() - (toast.startTime || Date.now())) / toast.duration;
           return {
             ...toast,
             progress: Math.max(0, 100 - elapsed)
@@ -97,7 +98,7 @@ export const ToastContextProvider: React.FC<{children: React.ReactNode}> = ({ ch
   useEffect(() => {
     setToasts(prev => 
       prev.map(toast => {
-        if ((toast as any).startTime) return toast;
+        if (toast.startTime) return toast;
         return { ...toast, startTime: Date.now() };
       })
     );

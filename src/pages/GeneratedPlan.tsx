@@ -35,7 +35,10 @@ import {
   Download,
   Printer,
   Users,
-  CheckCircle
+  CheckCircle,
+  Code,
+  AlignLeft,
+  LayoutGrid
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -46,12 +49,14 @@ import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { MarkdownEditor } from '@/components/plan/MarkdownEditor'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb'
 
 export default function GeneratedPlan() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('visual')
   const [projectData, setProjectData] = useState<ProjectData>({
-    name: 'Modern Home Renovation Project',
+    name: 'New Construction Project',
     description: 'Complete renovation of a 2-story residential home including kitchen, bathrooms, and outdoor spaces.'
   })
   const [phases, setPhases] = useState<Phase[]>(SAMPLE_PROJECT_PLAN)
@@ -65,6 +70,7 @@ export default function GeneratedPlan() {
   const [editablePlan, setEditablePlan] = useState(markdownPlan)
   const [showActionMenu, setShowActionMenu] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [viewMode, setViewMode] = useState<'markdown' | 'text'>('markdown')
   
   // Check system dark mode preference on component mount
   useEffect(() => {
@@ -106,12 +112,52 @@ export default function GeneratedPlan() {
     }, 2000)
   }
 
-  const handleSavePlan = () => {
-    toast.success('Plan saved successfully')
+  const handleSavePlan = (status: PlanStatus = 'draft') => {
+    setSaving(true)
+    
+    // Simulate API call delay
+    setTimeout(() => {
+      setPlanStatus(status)
+      setSaving(false)
+      
+      if (status === 'final') {
+        toast.success('Plan finalized and saved')
+      } else {
+        toast.success('Plan saved as draft')
+      }
+      
+      setEditMode(false)
+    }, 1500)
   }
 
-  const navigateToProjectInput = () => {
-    navigate('/project-input')
+  const handleEditPlan = () => {
+    setEditMode(true)
+    setEditablePlan(markdownContent)
+  }
+
+  const handleCancelEdit = () => {
+    setEditMode(false)
+    setEditablePlan(markdownContent)
+  }
+
+  const handleSaveEdit = () => {
+    setMarkdownContent(editablePlan)
+    setEditMode(false)
+    toast.success('Plan content updated')
+  }
+
+  const handlePhaseClick = (phaseId: string) => {
+    // Navigate to phase details page with the phase ID
+    console.log(`Navigating to phase details for phase: ${phaseId}`);
+    navigate(`/phase-details/${phaseId}`);
+    toast.success(`Viewing details for phase ${phaseId}`);
+  }
+
+  // Toggle view mode between markdown and plain text
+  const handleViewModeChange = (value: string) => {
+    if (value === 'markdown' || value === 'text') {
+      setViewMode(value)
+    }
   }
 
   const handleAddPhase = () => {
@@ -134,15 +180,6 @@ export default function GeneratedPlan() {
   const addNewPhase = () => {
     handleAddPhase()
     setShowActionMenu(false)
-  }
-
-  const savePlan = (status: PlanStatus) => {
-    setSaving(true)
-    setTimeout(() => {
-      setSaving(false)
-      setPlanStatus(status)
-      toast.success('Plan saved successfully')
-    }, 2000)
   }
 
   const forceRefresh = () => {
@@ -257,7 +294,7 @@ export default function GeneratedPlan() {
                 <div className="flex flex-col gap-1">
                   <Button
                     onClick={() => {
-                      savePlan('draft');
+                      handleSavePlan('draft');
                       setShowActionMenu(false);
                     }}
                     variant="ghost"
@@ -270,7 +307,7 @@ export default function GeneratedPlan() {
                   </Button>
                   <Button
                     onClick={() => {
-                      savePlan('final');
+                      handleSavePlan('final');
                       setShowActionMenu(false);
                     }}
                     variant="ghost"

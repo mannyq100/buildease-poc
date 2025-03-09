@@ -51,6 +51,7 @@ import {
   SelectValue 
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 // Shared Components
 import { HorizontalNav } from '@/components/navigation/HorizontalNav'
@@ -202,14 +203,19 @@ export function ProjectDetails() {
                     </div>
 
         {/* Project Navigation */}
-        <div className="border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 sticky top-16 z-30 mt-8">
-          <HorizontalNav
-            items={PROJECT_NAV_ITEMS(id)}
-            variant="underlined"
-            showIcons={true}
-            className="py-2"
-                      />
-                    </div>
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden sticky top-16 z-30 mt-8 mb-6">
+          <div className="border-b border-gray-200 dark:border-slate-700 px-1">
+            <HorizontalNav
+              items={PROJECT_NAV_ITEMS(id)}
+              variant="underlined"
+              showIcons={true}
+              className="py-2 px-2"
+              itemClassName="font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+              animated={true}
+              showTooltips={true}
+            />
+          </div>
+        </div>
 
         {/* Tab Content */}
         <div className="mt-8">
@@ -334,24 +340,63 @@ export function ProjectDetails() {
                   <CardDescription>Frequent operations</CardDescription>
                 </CardHeader>
                 <CardContent>
-            <div className="grid grid-cols-2 gap-2">
-                    <Button variant="outline" className="justify-start hover:bg-[#1E3A8A]/10 hover:text-[#1E3A8A]">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Message Team
-              </Button>
-                    <Button variant="outline" className="justify-start hover:bg-[#D97706]/10 hover:text-[#D97706]">
-                <FileText className="h-4 w-4 mr-2" />
-                Add Document
-              </Button>
-                    <Button variant="outline" className="justify-start hover:bg-[#1E3A8A]/10 hover:text-[#1E3A8A]">
-                <Users className="h-4 w-4 mr-2" />
-                Update Team
-              </Button>
-                    <Button variant="outline" className="justify-start hover:bg-[#D97706]/10 hover:text-[#D97706]">
-                <Calendar className="h-4 w-4 mr-2" />
-                Schedule Meeting
-              </Button>
-            </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="outline" className="justify-start hover:bg-[#1E3A8A]/10 hover:text-[#1E3A8A] w-full overflow-hidden">
+                            <MessageSquare className="h-4 w-4 mr-2 flex-shrink-0" />
+                            <span className="truncate">Message Team</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Message Team</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="outline" className="justify-start hover:bg-[#D97706]/10 hover:text-[#D97706] w-full overflow-hidden">
+                            <FileText className="h-4 w-4 mr-2 flex-shrink-0" />
+                            <span className="truncate">Add Document</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Add Document</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="outline" className="justify-start hover:bg-[#1E3A8A]/10 hover:text-[#1E3A8A] w-full overflow-hidden">
+                            <Users className="h-4 w-4 mr-2 flex-shrink-0" />
+                            <span className="truncate">Update Team</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Update Team</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="outline" className="justify-start hover:bg-[#D97706]/10 hover:text-[#D97706] w-full overflow-hidden">
+                            <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
+                            <span className="truncate">Schedule Meeting</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Schedule Meeting</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 </CardContent>
               </Card>
                 </div>
@@ -423,35 +468,83 @@ function DocumentItem({ title, type, date, size }: DocumentItemProps) {
 }
 
 function ProjectStatCard({ icon, label, value, subtitle, colorScheme }: ProjectStatCardProps) {
-  const baseClasses = "bg-gradient-to-br shadow-sm hover:shadow-md transition-all duration-300 border"
-  
-  const colorClasses = {
-    blue: "from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 border-blue-200 dark:border-blue-800/30",
-    emerald: "from-emerald-50 to-emerald-100 dark:from-emerald-900/30 dark:to-emerald-800/20 border-emerald-200 dark:border-emerald-800/30",
-    purple: "from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/20 border-purple-200 dark:border-purple-800/30",
-    amber: "from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-800/20 border-amber-200 dark:border-amber-800/30"
-  }
-  
-  const iconBgClasses = {
-    blue: "bg-blue-100 dark:bg-blue-900/50",
-    emerald: "bg-emerald-100 dark:bg-emerald-900/50",
-    purple: "bg-purple-100 dark:bg-purple-900/50",
-    amber: "bg-amber-100 dark:bg-amber-900/50"
-  }
+  const colorConfig = {
+    blue: {
+      gradient: "from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/10",
+      border: "border-blue-200 dark:border-blue-800/30",
+      iconBg: "bg-blue-100 dark:bg-blue-900/50",
+      iconColor: "text-blue-600 dark:text-blue-400",
+      ring: "ring-blue-500/20 dark:ring-blue-400/10",
+      shadow: "shadow-blue-500/5",
+      hoverBg: "hover:bg-blue-50/70 dark:hover:bg-blue-900/40"
+    },
+    emerald: {
+      gradient: "from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/10",
+      border: "border-emerald-200 dark:border-emerald-800/30",
+      iconBg: "bg-emerald-100 dark:bg-emerald-900/50",
+      iconColor: "text-emerald-600 dark:text-emerald-400",
+      ring: "ring-emerald-500/20 dark:ring-emerald-400/10",
+      shadow: "shadow-emerald-500/5",
+      hoverBg: "hover:bg-emerald-50/70 dark:hover:bg-emerald-900/40"
+    },
+    purple: {
+      gradient: "from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/10",
+      border: "border-purple-200 dark:border-purple-800/30",
+      iconBg: "bg-purple-100 dark:bg-purple-900/50",
+      iconColor: "text-purple-600 dark:text-purple-400",
+      ring: "ring-purple-500/20 dark:ring-purple-400/10",
+      shadow: "shadow-purple-500/5",
+      hoverBg: "hover:bg-purple-50/70 dark:hover:bg-purple-900/40"
+    },
+    amber: {
+      gradient: "from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/10",
+      border: "border-amber-200 dark:border-amber-800/30",
+      iconBg: "bg-amber-100 dark:bg-amber-900/50",
+      iconColor: "text-amber-600 dark:text-amber-400",
+      ring: "ring-amber-500/20 dark:ring-amber-400/10",
+      shadow: "shadow-amber-500/5",
+      hoverBg: "hover:bg-amber-50/70 dark:hover:bg-amber-900/40"
+    }
+  };
   
   return (
-    <Card className={`${baseClasses} ${colorClasses[colorScheme]}`}>
-      <CardContent className="p-4">
-        <div className="flex items-center gap-3">
-          <div className={`p-2 ${iconBgClasses[colorScheme]} rounded-lg shadow-sm`}>
+    <Card className={cn(
+      "bg-gradient-to-br transition-all duration-300 group",
+      "shadow-md hover:shadow-lg overflow-hidden",
+      colorConfig[colorScheme].gradient,
+      colorConfig[colorScheme].border
+    )}>
+      <CardContent className="p-6">
+        <div className="flex items-center gap-4">
+          <div className={cn(
+            "p-3 rounded-xl shadow-sm transition-transform group-hover:scale-110",
+            "ring-2 ring-offset-2 ring-offset-white dark:ring-offset-gray-900",
+            colorConfig[colorScheme].iconBg,
+            colorConfig[colorScheme].ring,
+            colorConfig[colorScheme].shadow
+          )}>
             {icon}
           </div>
-          <div>
-            <p className="text-sm text-gray-600 dark:text-gray-300">{label}</p>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{label}</p>
             <div className="flex items-baseline gap-2">
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
               {subtitle && <p className="text-sm text-gray-500 dark:text-gray-400">{subtitle}</p>}
             </div>
+          </div>
+        </div>
+        <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
+          <div className="flex justify-between items-center">
+            <div className="w-full bg-gray-100 dark:bg-gray-700 h-1 rounded-full overflow-hidden">
+              <div 
+                className={cn(
+                  "h-full rounded-full", 
+                  colorConfig[colorScheme].iconBg
+                )} 
+                style={{width: '75%'}}
+              ></div>
+            </div>
+            <span className="ml-3 text-xs font-medium text-gray-500 dark:text-gray-400">75%</span>
           </div>
         </div>
       </CardContent>

@@ -392,7 +392,7 @@ const PhaseCard: React.FC<PhaseCardProps> = ({
                         <XCircle className="h-4 w-4" />
                       </Button>
                     </m.div>
-          </div>
+                  </div>
                 ) : (
                   <>
                     <m.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
@@ -425,8 +425,8 @@ const PhaseCard: React.FC<PhaseCardProps> = ({
                     </m.div>
                   </>
                 )}
-          </div>
-          </div>
+              </div>
+            </div>
           </m.div>
         </div>
 
@@ -528,7 +528,7 @@ const PhaseCard: React.FC<PhaseCardProps> = ({
                                 />
                                 <Select 
                                   value={task.status}
-                                  onValueChange={(value) => handleUpdateTask(task.id, { status: value as any })}
+                                  onValueChange={(value) => handleUpdateTask(task.id, { status: value as "pending" | "in-progress" | "completed" })}
                                 >
                                   <SelectTrigger className={isDarkMode ? "bg-slate-900 border-slate-700 text-white" : ""}>
                                     <SelectValue placeholder="Status" />
@@ -555,8 +555,8 @@ const PhaseCard: React.FC<PhaseCardProps> = ({
                                 >
                                   Save Changes
                                 </Button>
-        </div>
-      </div>
+                              </div>
+                            </div>
                           ) : (
                             // View mode
                             <div className="flex justify-between items-start">
@@ -568,8 +568,8 @@ const PhaseCard: React.FC<PhaseCardProps> = ({
                                   <Badge className={`${taskStatusBadgeStyles[task.status].bg} ${taskStatusBadgeStyles[task.status].text} text-xs font-normal`}>
                                     {task.status === 'pending' ? 'Pending' : 
                                      task.status === 'in-progress' ? 'In Progress' : 'Completed'}
-      </Badge>
-    </div>
+                                  </Badge>
+                                </div>
                                 <div className="flex items-center gap-4">
                                   <div className="flex items-center text-sm">
                                     <Clock className={`w-3.5 h-3.5 mr-1 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`} />
@@ -583,9 +583,9 @@ const PhaseCard: React.FC<PhaseCardProps> = ({
                                       <span className={isDarkMode ? "text-slate-400" : "text-gray-600"}>
                                         {getTeamMember(task.assignedTo)?.name || 'Unknown'}
                                       </span>
-      </div>
-    )}
-  </div>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                               <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Popover>
@@ -631,18 +631,6 @@ const PhaseCard: React.FC<PhaseCardProps> = ({
                                     </div>
                                   </PopoverContent>
                                 </Popover>
-                                <Button 
-                                  size="icon" 
-                                  variant="outline"
-                                  onClick={() => handleEditTask(task.id)}
-                                  className={`h-7 w-7 rounded-full ${
-                                    isDarkMode 
-                                      ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" 
-                                      : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
-                                  }`}
-                                >
-                                  <Edit2 className="h-3.5 w-3.5" />
-                                </Button>
                               </div>
                             </div>
                           )}
@@ -664,35 +652,153 @@ const PhaseCard: React.FC<PhaseCardProps> = ({
                         No materials added yet
                       </p>
                     ) : (
-                      phaseMaterialItems.map((material) => (
+                      phaseMaterialItems.map((item) => (
                         <m.div 
-                          key={material.id}
+                          key={item.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
                           layout
                           className={`p-3 rounded-md border ${
                             isDarkMode 
                               ? "bg-slate-800/60 border-slate-700 hover:border-slate-600" 
                               : "bg-white border-gray-200 hover:border-gray-300"
-                          } transition-all duration-200 shadow-sm hover:shadow`}
+                          } transition-all duration-200 shadow-sm hover:shadow group`}
                           whileHover={{ y: -2 }}
                         >
-                          <div className="flex justify-between items-start">
+                          {editingTaskId === item.id ? (
+                            // Edit mode
                             <div className="space-y-2">
-                              <div className="flex items-center gap-2">
-                                <h4 className={`font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}>
-                                  {material.name}
-                                </h4>
-                                <Badge className={`${materialStatusBadgeStyles[material.status].bg} ${materialStatusBadgeStyles[material.status].text} text-xs font-normal`}>
-                                  {material.status === 'not-ordered' ? 'Not Ordered' : 
-                                   material.status === 'ordered' ? 'Ordered' : 'Delivered'}
-                                </Badge>
+                              <Input
+                                value={item.name}
+                                onChange={(e) => handleUpdateTask(item.id, { name: e.target.value })}
+                                className={`text-sm ${
+                                  isDarkMode 
+                                    ? "bg-slate-900 border-slate-700 text-white" 
+                                    : "bg-white"
+                                }`}
+                                placeholder="Material name"
+                              />
+                              <div className="flex gap-2">
+                                <Input
+                                  value={item.quantity}
+                                  onChange={(e) => handleUpdateTask(item.id, { quantity: e.target.value })}
+                                  className={`text-sm ${
+                                    isDarkMode 
+                                      ? "bg-slate-900 border-slate-700 text-white" 
+                                      : "bg-white"
+                                  }`}
+                                  placeholder="Quantity"
+                                />
+                                <Select 
+                                  value={item.unit}
+                                  onValueChange={(value) => handleUpdateTask(item.id, { unit: value as "not-ordered" | "ordered" | "delivered" })}
+                                >
+                                  <SelectTrigger className={isDarkMode ? "bg-slate-900 border-slate-700 text-white" : ""}>
+                                    <SelectValue placeholder="Unit" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="not-ordered">Not Ordered</SelectItem>
+                                    <SelectItem value="ordered">Ordered</SelectItem>
+                                    <SelectItem value="delivered">Delivered</SelectItem>
+                                  </SelectContent>
+                                </Select>
                               </div>
-                              <div className="flex items-center text-sm">
-                                <span className={isDarkMode ? "text-slate-400" : "text-gray-600"}>
-                                  {material.quantity} {material.unit}
-                                </span>
+                              <div className="flex justify-end gap-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => setEditingTaskId(null)}
+                                  className={isDarkMode ? "border-slate-700 text-slate-300 hover:bg-slate-700" : ""}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button 
+                                  size="sm"
+                                  onClick={() => setEditingTaskId(null)}
+                                >
+                                  Save Changes
+                                </Button>
                               </div>
                             </div>
-                          </div>
+                          ) : (
+                            // View mode
+                            <div className="flex justify-between items-start">
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <h4 className={`font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                                    {item.name}
+                                  </h4>
+                                  <Badge className={`${materialStatusBadgeStyles[item.status].bg} ${materialStatusBadgeStyles[item.status].text} text-xs font-normal`}>
+                                    {item.status === 'not-ordered' ? 'Not Ordered' : 
+                                     item.status === 'ordered' ? 'Ordered' : 'Delivered'}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                  <div className="flex items-center text-sm">
+                                    <span className={isDarkMode ? "text-slate-400" : "text-gray-600"}>
+                                      {item.quantity}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button 
+                                      size="icon" 
+                                      variant="outline" 
+                                      className={`h-7 w-7 rounded-full ${
+                                        isDarkMode 
+                                          ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" 
+                                          : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
+                                      }`}
+                                    >
+                                      <Edit2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent 
+                                    className={`w-48 p-2 ${
+                                      isDarkMode ? "bg-slate-800 border-slate-700" : ""
+                                    }`}
+                                  >
+                                    <div className="space-y-1">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className={`w-full justify-start ${
+                                          isDarkMode ? "hover:bg-slate-700 text-slate-300" : ""
+                                        } ${item.status === 'not-ordered' ? (isDarkMode ? "bg-slate-700" : "bg-gray-100") : ""}`}
+                                        onClick={() => handleUpdateTask(item.id, { status: 'not-ordered' })}
+                                      >
+                                        Not Ordered
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className={`w-full justify-start ${
+                                          isDarkMode ? "hover:bg-slate-700 text-slate-300" : ""
+                                        } ${item.status === 'ordered' ? (isDarkMode ? "bg-slate-700" : "bg-gray-100") : ""}`}
+                                        onClick={() => handleUpdateTask(item.id, { status: 'ordered' })}
+                                      >
+                                        Ordered
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className={`w-full justify-start ${
+                                          isDarkMode ? "hover:bg-slate-700 text-slate-300" : ""
+                                        } ${item.status === 'delivered' ? (isDarkMode ? "bg-slate-700" : "bg-gray-100") : ""}`}
+                                        onClick={() => handleUpdateTask(item.id, { status: 'delivered' })}
+                                      >
+                                        Delivered
+                                      </Button>
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
+                              </div>
+                            </div>
+                          )}
                         </m.div>
                       ))
                     )}

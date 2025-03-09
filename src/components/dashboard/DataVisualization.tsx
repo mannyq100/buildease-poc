@@ -39,7 +39,7 @@ export const CHART_COLORS = [
 type ChartType = 'bar' | 'line' | 'pie';
 
 interface DataVisualizationProps {
-  data: any[];
+  data: Record<string, unknown>[];
   title: string;
   description?: string;
   xAxisKey?: string;
@@ -58,7 +58,7 @@ interface DataVisualizationProps {
   }[];
 }
 
-const CustomTooltip = ({ active, payload, label }: TooltipProps<any, any>) => {
+const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
   if (active && payload && payload.length) {
     const isDarkMode = document.documentElement.classList.contains('dark');
     

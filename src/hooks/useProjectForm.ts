@@ -7,7 +7,8 @@ import {
   ProjectFormData, 
   DEFAULT_PROJECT_FORM_DATA, 
   CostEstimate,
-  ProjectInputTab
+  ProjectInputTab,
+  FormFieldValue
 } from '@/types/projectInputs';
 import { calculateCostEstimate, getTabProgress, isFormComplete } from '@/utils/projectUtils';
 
@@ -35,9 +36,7 @@ export function useProjectForm() {
     if (formData.buildingSize && formData.projectType) {
       setCostEstimate(calculateCostEstimate(formData));
     }
-  }, [formData.buildingSize, formData.projectType, formData.buildingStructure, 
-      formData.specialFeatures, formData.modernAmenities, 
-      formData.energyEfficiency, formData.waterConservation]);
+  }, [formData]);
   
   // Update progress when tab changes
   useEffect(() => {
@@ -76,7 +75,7 @@ export function useProjectForm() {
    * @param field The field name to update
    * @param value The new value
    */
-  const handleInputChange = (field: keyof ProjectFormData, value: any) => {
+  const handleInputChange = (field: keyof ProjectFormData, value: FormFieldValue) => {
     setFormData(prev => ({
       ...prev,
       [field]: value

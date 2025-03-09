@@ -6,13 +6,13 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // Performance utilities
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
+export function debounce<Args extends unknown[], R>(
+  func: (...args: Args) => R,
   wait: number
-): (...args: Parameters<T>) => void {
+): (...args: Args) => void {
   let timeout: ReturnType<typeof setTimeout> | null = null;
   
-  return function(...args: Parameters<T>) {
+  return function(...args: Args) {
     const later = () => {
       timeout = null;
       func(...args);
@@ -61,19 +61,19 @@ export const darkModeDetector = {
 };
 
 // Simple memo for expensive calculations
-export function memoize<T extends (...args: any[]) => any>(
-  func: T
-): T {
-  const cache = new Map();
+export function memoize<Args extends unknown[], R>(
+  func: (...args: Args) => R
+): (...args: Args) => R {
+  const cache = new Map<string, R>();
   
-  return function(...args: Parameters<T>) {
+  return function(...args: Args) {
     const key = JSON.stringify(args);
     if (cache.has(key)) {
-      return cache.get(key);
+      return cache.get(key)!;
     }
     
     const result = func(...args);
     cache.set(key, result);
     return result;
-  } as T;
+  };
 }

@@ -15,7 +15,7 @@ interface ProjectFeaturesFormProps {
   traditionalElements: boolean;
   siteConstraints: string;
   additionalNotes: string;
-  onInputChange: (field: string, value: any) => void;
+  onInputChange: (field: string, value: string | boolean | string[]) => void;
   onArrayToggle: (field: 'specialFeatures' | 'sustainabilityFeatures', value: string) => void;
   isDarkMode: boolean;
 }
