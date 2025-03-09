@@ -46,7 +46,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { 
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -62,10 +62,10 @@ import {
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card'
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
   TabsTrigger 
 } from '@/components/ui/tabs'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -91,7 +91,7 @@ import { StatCard } from '@/components/shared/StatCard'
 import { TeamMember, NewTeamMember, ViewMode } from '@/types/team'
 
 // Data Services
-import {
+import { 
   getTeamMembers,
   getDepartments,
   getStatusOptions,
