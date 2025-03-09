@@ -126,6 +126,7 @@ export type ProjectInputTab = 'intro' | 'basic' | 'building' | 'materials' | 'fe
 export interface Task {
   id: string;
   title: string;
+  duration?: string;
   description?: string;
   completed: boolean;
 }
@@ -153,3 +154,24 @@ export interface Phase {
   materials: Material[];
   description?: string;
 } 
+export interface ProjectPhaseManagerProps {
+  phases: Phase[]
+  setPhases: (phases: Phase[]) => void
+  isDarkMode: boolean
+}
+
+export interface ProjectData {
+  name?: string
+  description?: string
+  type?: string
+  location?: string
+  region?: string
+  budget?: string
+  currency?: string
+  timeframe?: string
+  images?: string[]
+  [key: string]: unknown
+}
+
+// Add this to src/types/projectInputs.ts
+export type PlanStatus = 'draft' | 'in-progress' | 'completed' | 'approved' | 'rejected' | 'final';
