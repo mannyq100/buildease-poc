@@ -356,11 +356,14 @@ export function Team() {
    * Navigate to the messaging page with the selected team member for starting a chat
    */
   function handleStartChat(member: TeamMember) {
-    // Navigate to the messaging page with the team member information
+    console.log("Starting chat with team member:", member);
+    
+    // The ID in startChatWith needs to be a string, and should match the exact ID format
+    // expected in the Messaging component
     navigate('/messaging', { 
       state: { 
         startChatWith: {
-          id: `user-${member.id}`,
+          id: String(member.id), // Convert number to string without adding 'user-' prefix
           name: member.name,
           avatar: member.avatar,
           role: member.role

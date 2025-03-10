@@ -5,7 +5,8 @@ import { MessageInput } from "./MessageInput";
 import { 
   Conversation, 
   Message, 
-  ChatParticipant 
+  ChatParticipant,
+  ConversationType
 } from "@/types/messaging";
 import { 
   Phone, 
@@ -17,7 +18,13 @@ import {
   ChevronRight,
   Star,
   StarOff,
-  Search
+  Search,
+  ChevronLeft,
+  Archive,
+  Trash,
+  Bell,
+  BellOff,
+  UserPlus
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -40,12 +47,14 @@ import {
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
-  DropdownMenuTrigger 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ChatProps {
   conversations: Conversation[];
@@ -57,8 +66,6 @@ interface ChatProps {
   targetUserId?: string;
   onMessageSent?: (conversationId: string, message: Message) => void;
   onCreateConversation?: (type: ConversationType, participants: ChatParticipant[]) => void;
-  isNewChatDialogOpen?: boolean;
-  onNewChatDialogClose?: () => void;
 }
 
 export const Chat: React.FC<ChatProps> = ({ 
@@ -70,9 +77,7 @@ export const Chat: React.FC<ChatProps> = ({
   isDarkMode = false,
   targetUserId,
   onMessageSent,
-  onCreateConversation,
-  isNewChatDialogOpen = false,
-  onNewChatDialogClose
+  onCreateConversation
 }) => {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
@@ -82,6 +87,15 @@ export const Chat: React.FC<ChatProps> = ({
   const [typingStatus, setTypingStatus] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState<string>('');
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [replyingTo, setReplyingTo] = useState<{
+    id: string;
+    content: string;
+    senderName: string;
+  } | null>(null);
   
   // Check if mobile view
   useEffect(() => {
@@ -100,6 +114,8 @@ export const Chat: React.FC<ChatProps> = ({
   // Handle targeted user conversation if targetUserId is provided
   useEffect(() => {
     if (targetUserId && conversations.length > 0) {
+      console.log("Chat component received targetUserId:", targetUserId);
+      
       // Find the conversation with the target user
       const targetConversation = conversations.find(conv => 
         conv.type === "individual" && 
@@ -107,7 +123,10 @@ export const Chat: React.FC<ChatProps> = ({
       );
       
       if (targetConversation) {
+        console.log("Found conversation with target user:", targetConversation.id);
         setActiveConversationId(targetConversation.id);
+      } else {
+        console.log("No existing conversation found with targetUserId:", targetUserId);
       }
     }
   }, [targetUserId, conversations]);
@@ -133,13 +152,6 @@ export const Chat: React.FC<ChatProps> = ({
       setActiveConversationId(conversations[0].id);
     }
   }, [activeConversationId, conversations, messages, isMobileView]);
-  
-  // Handle external control of the create dialog
-  useEffect(() => {
-    if (isNewChatDialogOpen) {
-      setShowConversationList(true); // Make sure conversation list is visible
-    }
-  }, [isNewChatDialogOpen]);
   
   const handleSendMessage = () => {
     if (newMessage.trim() === '') return;
@@ -241,12 +253,179 @@ export const Chat: React.FC<ChatProps> = ({
     return conversation.participants.find(p => p.id !== currentUser.id);
   };
   
+  // Handle typing indicator
+  const handleTypingStart = () => {
+    if (!activeConversation) return;
+    
+    // Clear any existing timeout
+    if (typingTimeoutRef.current[currentUser.id]) {
+      clearTimeout(typingTimeoutRef.current[currentUser.id]);
+    }
+    
+    // Set typing state for current user
+    setTypingStatus('typing...');
+    
+    // Set timeout to clear typing state after 3 seconds
+    typingTimeoutRef.current[currentUser.id] = setTimeout(() => {
+      setTypingStatus(null);
+    }, 3000);
+  };
+
+  // Handle end of typing
+  const handleTypingEnd = () => {
+    if (!activeConversation) return;
+    
+    // Clear typing state for current user
+    setTypingStatus(null);
+    
+    // Clear any existing timeout
+    if (typingTimeoutRef.current[currentUser.id]) {
+      clearTimeout(typingTimeoutRef.current[currentUser.id]);
+    }
+  };
+
+  // Handle message reactions
+  const handleAddReaction = (messageId: string, reaction: string) => {
+    // This would be handled by updating the message in state and sending to server
+    console.log(`Added reaction ${reaction} to message ${messageId}`);
+  };
+
+  // Handle replying to a message
+  const handleReplyToMessage = (messageId: string) => {
+    if (!activeConversation) return;
+    
+    const messagesList = messages[activeConversation.id] || [];
+    const message = messagesList.find(m => m.id === messageId);
+    
+    if (message) {
+      const sender = activeConversation.participants.find(p => p.id === message.senderId);
+      const senderName = sender 
+        ? `${sender.firstName} ${sender.lastName}`
+        : 'Unknown User';
+      
+      setReplyingTo({
+        id: messageId,
+        content: message.content,
+        senderName
+      });
+    }
+  };
+
+  // Handle searching in conversation
+  const handleSearchToggle = () => {
+    setIsSearching(!isSearching);
+    if (!isSearching) {
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 100);
+    } else {
+      setSearchQuery('');
+    }
+  };
+
+  // Handle marking a conversation as important
+  const handleMarkImportant = (important: boolean) => {
+    if (!activeConversation) return;
+    
+    setConversations(prevConversations => 
+      prevConversations.map(conv => {
+        if (conv.id === activeConversation.id) {
+          return {
+            ...conv,
+            isImportant: important
+          };
+        }
+        return conv;
+      })
+    );
+  };
+
+  // Handle archiving a conversation
+  const handleArchiveConversation = () => {
+    if (!activeConversation) return;
+    
+    setConversations(prevConversations => 
+      prevConversations.map(conv => {
+        if (conv.id === activeConversation.id) {
+          return {
+            ...conv,
+            isArchived: true
+          };
+        }
+        return conv;
+      })
+    );
+    
+    if (isMobileView) {
+      setShowConversationList(false);
+    }
+    setActiveConversation(null);
+  };
+
+  // Handle deleting a conversation
+  const handleDeleteConversation = () => {
+    if (!activeConversation) return;
+    
+    setConversations(prevConversations => 
+      prevConversations.filter(conv => conv.id !== activeConversation.id)
+    );
+    
+    if (isMobileView) {
+      setShowConversationList(false);
+    }
+    setActiveConversation(null);
+  };
+
+  // Handle muting notifications
+  const handleMuteNotifications = (muted: boolean) => {
+    if (!activeConversation) return;
+    
+    setConversations(prevConversations => 
+      prevConversations.map(conv => {
+        if (conv.id === activeConversation.id) {
+          return {
+            ...conv,
+            isMuted: muted
+          };
+        }
+        return conv;
+      })
+    );
+  };
+
+  // Handle adding participants
+  const handleAddParticipant = () => {
+    // This would open a dialog to add participants
+    console.log('Open add participant dialog');
+  };
+
+  // Render empty state when no conversation is selected
+  const renderEmptyState = () => (
+    <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+      <div className="w-24 h-24 mb-6 rounded-full bg-slate-100 flex items-center justify-center">
+        <m.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 100 }}
+        >
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+        </m.div>
+      </div>
+      <h3 className="text-xl font-medium mb-2">No conversation selected</h3>
+      <p className="text-slate-500 mb-6 max-w-md">
+        Select a conversation from the list or start a new conversation.
+      </p>
+    </div>
+  );
+
   return (
     <div className={cn("flex h-full", className)}>
       {/* Conversation List - Always visible on desktop, conditionally on mobile */}
       <AnimatePresence mode="wait">
         {(showConversationList || !isMobileView) && (
-          <motion.div 
+          <m.div 
             className={cn(
               "border-r h-full",
               isDarkMode ? "border-slate-700 bg-slate-900/95" : "border-slate-200 bg-white/95",
@@ -276,17 +455,15 @@ export const Chat: React.FC<ChatProps> = ({
               isDarkMode={isDarkMode}
               onCreateConversation={onCreateConversation}
               currentUser={currentUser}
-              isDialogOpenExternal={isNewChatDialogOpen}
-              onDialogCloseExternal={onNewChatDialogClose}
             />
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
       
       {/* Active Conversation */}
       <AnimatePresence mode="wait">
         {activeConversation && (!showConversationList || !isMobileView) && (
-          <motion.div 
+          <m.div 
             className="flex-1 flex flex-col h-full"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -309,7 +486,7 @@ export const Chat: React.FC<ChatProps> = ({
                     )}
                     onClick={handleBackToList}
                   >
-                    <ArrowLeft className="h-4 w-4" />
+                    <ChevronLeft className="h-4 w-4" />
                   </Button>
                 )}
                 
@@ -381,124 +558,119 @@ export const Chat: React.FC<ChatProps> = ({
               </div>
               
               <div className="flex items-center gap-1">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        className={cn(
-                          "rounded-full",
-                          isDarkMode ? "text-slate-300 hover:text-slate-100 hover:bg-slate-800" : "hover:bg-slate-100"
-                        )}
-                      >
-                        <Phone className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Voice call</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        className={cn(
-                          "rounded-full",
-                          isDarkMode ? "text-slate-300 hover:text-slate-100 hover:bg-slate-800" : "hover:bg-slate-100"
-                        )}
-                      >
-                        <Video className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Video call</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                
-                <Sheet>
-                  <SheetTrigger asChild>
+                {isSearching ? (
+                  <div className="relative flex items-center mr-1">
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search in conversation..."
+                      className="h-8 px-3 pl-8 text-sm border rounded-md w-[200px] dark:bg-slate-800 dark:border-slate-700"
+                    />
+                    <Search size={14} className="absolute left-2.5 text-slate-500" />
                     <Button 
                       variant="ghost" 
-                      size="icon"
-                      className={isDarkMode ? "text-slate-300 hover:text-slate-100 hover:bg-slate-800" : ""}
+                      size="sm" 
+                      onClick={handleSearchToggle}
+                      className="ml-1 h-8 w-8 p-0"
                     >
-                      <Users className="h-4 w-4" />
+                      <span className="sr-only">Close search</span>
+                      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.80708 2.99385 3.44301 2.99385 3.21846 3.2184C2.99391 3.44295 2.99391 3.80702 3.21846 4.03157L6.68688 7.49999L3.21846 10.9684C2.99391 11.193 2.99391 11.557 3.21846 11.7816C3.44301 12.0061 3.80708 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
+                      </svg>
                     </Button>
-                  </SheetTrigger>
-                  <SheetContent className={isDarkMode ? "bg-slate-900 text-slate-100 border-slate-700" : ""}>
-                    <SheetHeader>
-                      <SheetTitle>Participants</SheetTitle>
-                      <SheetDescription className={isDarkMode ? "text-slate-400" : ""}>
-                        {activeConversation.participants.length} members in this conversation
-                      </SheetDescription>
-                    </SheetHeader>
-                    <div className="mt-6 space-y-4">
-                      {activeConversation.participants.map(participant => (
-                        <div key={participant.id} className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <Avatar>
-                              <AvatarImage src={participant.avatar} />
-                              <AvatarFallback className={isDarkMode ? "bg-slate-700 text-slate-200" : ""}>
-                                {participant.name.charAt(0)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <div className="font-medium">
-                                {participant.name}
-                                {participant.id === currentUser.id && " (You)"}
-                              </div>
-                              <div className={cn(
-                                "text-xs",
-                                isDarkMode ? "text-slate-400" : "text-slate-500"
-                              )}>
-                                {participant.role}
-                              </div>
-                            </div>
-                          </div>
-                          <div>
-                            {participant.isOnline ? (
-                              <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
-                                Online
-                              </Badge>
-                            ) : (
-                              <span className={cn(
-                                "text-xs",
-                                isDarkMode ? "text-slate-400" : "text-slate-500"
-                              )}>
-                                Offline
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </SheetContent>
-                </Sheet>
+                  </div>
+                ) : (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={handleSearchToggle}
+                          className="h-8 w-8"
+                        >
+                          <Search size={16} />
+                          <span className="sr-only">Search</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Search in conversation</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+                
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Phone size={16} />
+                        <span className="sr-only">Call</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Start voice call</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Video size={16} />
+                        <span className="sr-only">Video Call</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Start video call</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      className={isDarkMode ? "text-slate-300 hover:text-slate-100 hover:bg-slate-800" : ""}
-                    >
-                      <MoreVertical className="h-4 w-4" />
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreVertical size={16} />
+                      <span className="sr-only">More options</span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className={isDarkMode ? "bg-slate-900 border-slate-700" : ""}>
-                    <DropdownMenuItem>Pin conversation</DropdownMenuItem>
-                    <DropdownMenuItem>Mark as unread</DropdownMenuItem>
-                    <DropdownMenuItem>Mute notifications</DropdownMenuItem>
-                    <DropdownMenuItem>Search in conversation</DropdownMenuItem>
-                    {activeConversation.type !== "individual" && (
-                      <DropdownMenuItem>Leave conversation</DropdownMenuItem>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem onClick={() => handleMarkImportant(!activeConversation.isImportant)}>
+                      <Star size={16} className="mr-2" />
+                      {activeConversation.isImportant ? 'Remove from important' : 'Mark as important'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleMuteNotifications(!activeConversation.isMuted)}>
+                      {activeConversation.isMuted ? (
+                        <>
+                          <Bell size={16} className="mr-2" />
+                          Unmute notifications
+                        </>
+                      ) : (
+                        <>
+                          <BellOff size={16} className="mr-2" />
+                          Mute notifications
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                    {(activeConversation.type === 'group' || activeConversation.type === 'project') && (
+                      <DropdownMenuItem onClick={handleAddParticipant}>
+                        <UserPlus size={16} className="mr-2" />
+                        Add participants
+                      </DropdownMenuItem>
                     )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleArchiveConversation}>
+                      <Archive size={16} className="mr-2" />
+                      Archive conversation
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleDeleteConversation} className="text-red-500">
+                      <Trash size={16} className="mr-2" />
+                      Delete conversation
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -514,6 +686,8 @@ export const Chat: React.FC<ChatProps> = ({
                 participants={activeConversation.participants}
                 currentUserId={currentUser.id}
                 isDarkMode={isDarkMode}
+                onReplyToMessage={handleReplyToMessage}
+                onAddReaction={handleAddReaction}
               />
             </div>
             
@@ -566,22 +740,24 @@ export const Chat: React.FC<ChatProps> = ({
                 }}
                 isDarkMode={isDarkMode}
                 className="rounded-b-lg"
+                replyingTo={replyingTo}
+                onCancelReply={() => setReplyingTo(null)}
               />
             </div>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
       
       {/* Empty State */}
       <AnimatePresence>
         {!activeConversation && !showConversationList && (
-          <motion.div 
+          <m.div 
             className="flex-1 flex items-center justify-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <motion.div 
+            <m.div 
               className="text-center p-6"
               initial={{ scale: 0.95 }}
               animate={{ scale: 1 }}
@@ -615,8 +791,8 @@ export const Chat: React.FC<ChatProps> = ({
                   <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               )}
-            </motion.div>
-          </motion.div>
+            </m.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>
