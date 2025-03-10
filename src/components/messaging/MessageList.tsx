@@ -4,7 +4,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Message, ChatParticipant } from "@/types/messaging";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { CheckCheck, Check } from "lucide-react";
+import { CheckCheck, Check, Image, Paperclip, FileText } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface MessageListProps {
   messages: Message[];
@@ -125,12 +126,17 @@ export const MessageList: React.FC<MessageListProps> = ({
           return (
             <div key={dateStr} className="mb-6">
               <div className="flex justify-center mb-4">
-                <div className={cn(
-                  "px-3 py-1 rounded-full text-xs", 
-                  isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600"
-                )}>
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className={cn(
+                    "px-3 py-1 rounded-full text-xs shadow-sm", 
+                    isDarkMode ? "bg-slate-800 text-slate-300 shadow-black/10" : "bg-white text-slate-600 shadow-black/5"
+                  )}
+                >
                   {formatDateHeader(date)}
-                </div>
+                </motion.div>
               </div>
               
               {groups.map((group, groupIndex) => {
@@ -140,7 +146,7 @@ export const MessageList: React.FC<MessageListProps> = ({
                   <div key={`group-${groupIndex}`} className="mb-6">
                     {!isCurrentUser && !group.messages[0].isSystemMessage && (
                       <div className="flex items-center gap-2 mb-1.5">
-                        <Avatar className="h-6 w-6">
+                        <Avatar className="h-6 w-6 ring-2 ring-offset-1 ring-blue-500/20 dark:ring-blue-600/20">
                           <AvatarImage src={group.sender?.avatar} />
                           <AvatarFallback className={isDarkMode ? "bg-slate-700 text-slate-200" : ""}>
                             {group.sender?.name?.charAt(0) || "?"}
@@ -162,33 +168,60 @@ export const MessageList: React.FC<MessageListProps> = ({
                       {group.messages.map((message, messageIndex) => {
                         if (message.isSystemMessage) {
                           return (
-                            <div 
+                            <motion.div 
                               key={message.id} 
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.3 }}
                               className={cn(
-                                "py-1.5 px-3 mx-auto rounded-full text-xs",
-                                isDarkMode ? "bg-slate-800 text-slate-400" : "bg-slate-100 text-slate-500"
+                                "py-1.5 px-3 mx-auto rounded-full text-xs shadow-sm",
+                                isDarkMode ? "bg-slate-800/80 text-slate-400 shadow-black/10" : "bg-slate-100 text-slate-500 shadow-black/5"
                               )}
                             >
                               {message.content}
-                            </div>
+                            </motion.div>
                           );
                         }
                         
                         return (
-                          <div 
+                          <motion.div 
                             key={message.id} 
+                            initial={{ opacity: 0, scale: 0.95, x: isCurrentUser ? 10 : -10 }}
+                            animate={{ opacity: 1, scale: 1, x: 0 }}
+                            transition={{ duration: 0.2, delay: messageIndex * 0.05 }}
                             className={cn(
                               "max-w-[80%] break-words",
                               isCurrentUser && "text-right"
                             )}
                           >
                             <div className={cn(
-                              "inline-block py-2 px-3 rounded-lg",
+                              "inline-block py-2 px-3 rounded-lg shadow-sm",
                               isCurrentUser
-                                ? (isDarkMode ? "bg-blue-900/50 text-blue-50" : "bg-blue-600 text-white")
-                                : (isDarkMode ? "bg-slate-800 text-slate-200" : "bg-slate-100 text-slate-800")
+                                ? (isDarkMode 
+                                  ? "bg-gradient-to-br from-blue-700 to-blue-900 text-blue-50 shadow-black/20" 
+                                  : "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-black/10")
+                                : (isDarkMode 
+                                  ? "bg-slate-800 text-slate-200 shadow-black/20" 
+                                  : "bg-white text-slate-800 shadow-black/5 border border-slate-200/50")
                             )}>
                               {message.content}
+                              
+                              {message.attachments && message.attachments.length > 0 && (
+                                <div className="mt-2 pt-2 border-t border-blue-400/20 dark:border-slate-700/50">
+                                  {message.attachments.map(attachment => (
+                                    <div key={attachment.id} className="flex items-center gap-2 text-xs">
+                                      {attachment.type === 'image' ? (
+                                        <Image className="h-3.5 w-3.5 opacity-70" />
+                                      ) : attachment.type === 'document' ? (
+                                        <FileText className="h-3.5 w-3.5 opacity-70" />
+                                      ) : (
+                                        <Paperclip className="h-3.5 w-3.5 opacity-70" />
+                                      )}
+                                      <span className="flex-1 truncate">{attachment.name}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                             
                             <div className="flex items-center gap-1 mt-1 text-xs">
@@ -202,7 +235,7 @@ export const MessageList: React.FC<MessageListProps> = ({
                                 </span>
                               )}
                             </div>
-                          </div>
+                          </motion.div>
                         );
                       })}
                     </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback, useRef, ReactNode } from "react";
 import { Helmet } from "react-helmet-async";
 import { useLocation } from "react-router-dom";
 import { Chat } from "@/components/messaging/Chat";
@@ -11,10 +11,13 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { MessagesSquare } from "lucide-react";
+import { MessagesSquare, Users, Bell } from "lucide-react";
 import { useToast } from "@/components/ui/toast-context";
 import { Conversation, ChatParticipant, Message } from "@/types/messaging";
 import { PageLayout } from '@/components/ui/layout';
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { motion } from "framer-motion";
 
 const Messaging: React.FC = () => {
   const { toast } = useToast();
@@ -181,24 +184,49 @@ const Messaging: React.FC = () => {
   
   return (
     <PageLayout>
+      <Helmet>
+        <title>Messages | Buildease</title>
+      </Helmet>
+      
       <div className="flex flex-col h-full">
-        <PageHeader
-          title="Messages"
-          description="Communicate with your project team in real-time"
-          icon={<MessagesSquare className="h-6 w-6" />}
-        />
-        
-        <div className="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow flex-grow overflow-hidden border h-[calc(100vh-200px)]">
-          <Chat 
-            conversations={conversations} 
-            setConversations={setConversations}
-            messages={messages}
-            currentUser={currentUser}
-            isDarkMode={isDarkMode}
-            targetUserId={targetUserId}
-            onMessageSent={handleMessageSent}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <PageHeader
+            title={
+              <div className="flex items-center gap-2">
+                Messages
+                <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20 ml-2">
+                  <Bell className="h-3 w-3 mr-1" />
+                  <span className="text-xs font-normal">Real-time</span>
+                </Badge>
+              </div>
+            }
+            description="Communicate with your project team in real-time"
+            icon={<MessagesSquare className="h-6 w-6 text-blue-500" />}
           />
-        </div>
+        </motion.div>
+        
+        <motion.div 
+          className="mt-4 rounded-lg shadow-lg flex-grow overflow-hidden border border-slate-200 dark:border-slate-700 h-[calc(100vh-200px)]"
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+        >
+          <div className="bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800 h-full">
+            <Chat 
+              conversations={conversations} 
+              setConversations={setConversations}
+              messages={messages}
+              currentUser={currentUser}
+              isDarkMode={isDarkMode}
+              targetUserId={targetUserId}
+              onMessageSent={handleMessageSent}
+            />
+          </div>
+        </motion.div>
       </div>
     </PageLayout>
   );

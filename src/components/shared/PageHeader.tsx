@@ -8,7 +8,7 @@ export interface PageHeaderProps {
   /**
    * The title of the page
    */
-  title: string;
+  title: React.ReactNode;
   
   /**
    * Optional subtitle or description

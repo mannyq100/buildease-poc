@@ -8,7 +8,8 @@ import {
   XCircle,
   Image as ImageIcon,
   FileText,
-  Link
+  Link,
+  Mic
 } from "lucide-react";
 import { 
   Popover, 
@@ -17,6 +18,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface MessageInputProps {
   onSendMessage: (content: string) => void;
@@ -99,7 +101,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   
   return (
     <div className={cn(
-      "relative flex flex-col",
+      "relative flex flex-col p-3",
       isDarkMode ? "bg-slate-900" : "bg-white",
       className
     )}>
@@ -112,14 +114,19 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         onChange={handleFileSelect}
       />
       
-      <div className="flex items-end gap-2 p-3">
+      <div className="flex items-end gap-2">
         {/* Attachment Button */}
         <Popover>
           <PopoverTrigger asChild>
             <Button 
-              variant="outline" 
+              variant="ghost" 
               size="icon"
-              className={isDarkMode ? "border-slate-700 bg-slate-800 hover:bg-slate-700" : ""}
+              className={cn(
+                "rounded-full transition-all",
+                isDarkMode 
+                  ? "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-slate-100" 
+                  : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+              )}
               disabled={disabled}
             >
               <Paperclip className="h-4 w-4" />
@@ -127,39 +134,65 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           </PopoverTrigger>
           <PopoverContent 
             className={cn(
-              "w-48 p-2", 
-              isDarkMode ? "bg-slate-800 border-slate-700" : ""
+              "w-48 p-2 rounded-xl", 
+              isDarkMode ? "bg-slate-800 border-slate-700" : "bg-white"
             )}
             align="start"
           >
             <div className="flex flex-col gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                className={cn(
-                  "w-full justify-start", 
-                  isDarkMode ? "hover:bg-slate-700 text-slate-300" : ""
-                )}
-                onClick={() => triggerAttachmentDialog("image")}
+              <motion.div
+                whileHover={{ scale: 1.02, x: 2 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
               >
-                <ImageIcon className="h-4 w-4 mr-2" />
-                Image
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={cn(
-                  "w-full justify-start", 
-                  isDarkMode ? "hover:bg-slate-700 text-slate-300" : ""
-                )}
-                onClick={() => triggerAttachmentDialog("document")}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "w-full justify-start rounded-lg", 
+                    isDarkMode ? "hover:bg-slate-700 text-slate-300" : ""
+                  )}
+                  onClick={() => triggerAttachmentDialog("image")}
+                >
+                  <ImageIcon className="h-4 w-4 mr-2 text-blue-500" />
+                  Image
+                </Button>
+              </motion.div>
+              
+              <motion.div
+                whileHover={{ scale: 1.02, x: 2 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
               >
-                <FileText className="h-4 w-4 mr-2" />
-                Document
-              </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "w-full justify-start rounded-lg", 
+                    isDarkMode ? "hover:bg-slate-700 text-slate-300" : ""
+                  )}
+                  onClick={() => triggerAttachmentDialog("document")}
+                >
+                  <FileText className="h-4 w-4 mr-2 text-amber-500" />
+                  Document
+                </Button>
+              </motion.div>
             </div>
           </PopoverContent>
         </Popover>
+        
+        {/* Voice message button */}
+        <Button 
+          variant="ghost" 
+          size="icon"
+          className={cn(
+            "rounded-full transition-all",
+            isDarkMode 
+              ? "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-slate-100" 
+              : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+          )}
+          disabled={disabled}
+        >
+          <Mic className="h-4 w-4" />
+        </Button>
         
         {/* Message Input */}
         <div className="flex-1 relative">
@@ -170,74 +203,110 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             className={cn(
-              "min-h-[40px] py-2 pr-10 resize-none",
-              isDarkMode ? "bg-slate-800 border-slate-700 text-white placeholder:text-slate-400" : "",
+              "min-h-[40px] py-2 pr-10 resize-none rounded-xl",
+              isDarkMode 
+                ? "bg-slate-800 border-slate-700 text-white placeholder:text-slate-400"
+                : "bg-slate-100 border-slate-100 focus:border-blue-500 text-slate-900 placeholder:text-slate-500",
               !message && "h-10" // Default height when empty
             )}
             maxLength={1000}
             disabled={disabled}
           />
           
-          {message && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className={cn(
-                      "h-5 w-5 absolute right-3 top-2.5",
-                      isDarkMode ? "text-slate-400 hover:text-slate-300" : "text-slate-500 hover:text-slate-600"
-                    )}
-                    onClick={() => setMessage("")}
-                  >
-                    <XCircle className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  <p>Clear message</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
+          <AnimatePresence>
+            {message && (
+              <motion.div
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{ duration: 0.15 }}
+              >
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className={cn(
+                          "h-5 w-5 absolute right-3 top-2.5",
+                          isDarkMode ? "text-slate-400 hover:text-slate-300" : "text-slate-500 hover:text-slate-600"
+                        )}
+                        onClick={() => setMessage("")}
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p>Clear message</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
         
         {/* Emoji Picker Button - Placeholder */}
         <Button 
-          variant="outline" 
+          variant="ghost" 
           size="icon"
-          className={isDarkMode ? "border-slate-700 bg-slate-800 hover:bg-slate-700" : ""}
+          className={cn(
+            "rounded-full transition-all",
+            isDarkMode 
+              ? "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-slate-100" 
+              : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+          )}
           disabled={disabled}
         >
           <Smile className="h-4 w-4" />
         </Button>
         
         {/* Send Button */}
-        <Button 
-          variant="default" 
-          size="icon"
-          onClick={handleSendMessage}
-          disabled={!message.trim() || disabled}
+        <motion.div
+          whileTap={{ scale: 0.94 }}
+          transition={{ type: "spring", stiffness: 400, damping: 17 }}
         >
-          <Send className="h-4 w-4" />
-        </Button>
+          <Button 
+            variant={message.trim() ? "default" : "outline"}
+            size="icon"
+            className={cn(
+              "rounded-full transition-all shadow-sm", 
+              !message.trim() && 
+              (isDarkMode 
+                ? "bg-slate-800 text-slate-400 border-slate-700" 
+                : "bg-slate-100 text-slate-400")
+            )}
+            onClick={handleSendMessage}
+            disabled={!message.trim() || disabled}
+          >
+            <Send className={cn(
+              "h-4 w-4", 
+              message.trim() && "text-white"
+            )} />
+          </Button>
+        </motion.div>
       </div>
       
       {/* Character counter */}
-      {message.length > 500 && (
-        <div 
-          className={cn(
-            "text-xs px-4 pb-2",
-            message.length > 900 
-              ? "text-red-500" 
-              : message.length > 800 
-                ? (isDarkMode ? "text-yellow-300" : "text-yellow-600")
-                : (isDarkMode ? "text-slate-400" : "text-slate-500")
-          )}
-        >
-          {message.length}/1000 characters
-        </div>
-      )}
+      <AnimatePresence>
+        {message.length > 500 && (
+          <motion.div
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+            className={cn(
+              "text-xs px-4 py-1 mt-1 self-end rounded-full",
+              message.length > 900 
+                ? (isDarkMode ? "bg-red-900/20 text-red-400" : "bg-red-100 text-red-500") 
+                : message.length > 800 
+                  ? (isDarkMode ? "bg-yellow-900/20 text-yellow-400" : "bg-yellow-100 text-yellow-600")
+                  : (isDarkMode ? "bg-slate-800 text-slate-400" : "bg-slate-100 text-slate-500")
+            )}
+          >
+            {message.length}/1000 characters
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }; 

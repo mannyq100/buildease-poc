@@ -7,7 +7,9 @@ import {
   Users,
   User,
   Inbox,
-  ChevronDown
+  ChevronDown,
+  Pin,
+  Clock
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -31,6 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Conversation, ConversationType } from "@/types/messaging";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 interface ConversationListProps {
   conversations: Conversation[];
@@ -215,7 +218,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
       </div>
       
       <ScrollArea className="flex-1">
-        <div className="px-2 py-1">
+        <div className="py-2">
           {filteredConversations.length === 0 ? (
             <div className={cn("text-center py-8", isDarkMode ? "text-slate-400" : "text-slate-500")}>
               <MessagesSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
@@ -225,59 +228,90 @@ export const ConversationList: React.FC<ConversationListProps> = ({
               </p>
             </div>
           ) : (
-            filteredConversations.map((conversation) => (
-              <div
+            filteredConversations.map((conversation, index) => (
+              <motion.div
                 key={conversation.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, delay: index * 0.05 }}
                 className={cn(
-                  "flex items-start gap-3 p-3 rounded-md cursor-pointer transition-colors",
+                  "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors relative mb-1.5",
                   conversation.id === activeConversationId
-                    ? (isDarkMode ? "bg-slate-800/80" : "bg-slate-100")
+                    ? (isDarkMode ? "bg-blue-900/30 text-white" : "bg-blue-50 text-blue-800")
                     : (isDarkMode ? "hover:bg-slate-800/50" : "hover:bg-slate-50"),
-                  conversation.isPinned && (isDarkMode ? "border-l-2 border-blue-500" : "border-l-2 border-blue-500")
                 )}
                 onClick={() => onSelectConversation(conversation.id)}
               >
-                {getConversationIcon(conversation)}
+                {conversation.isPinned && (
+                  <div className="absolute top-1 right-1">
+                    <Pin className="h-3 w-3 text-blue-500" />
+                  </div>
+                )}
+                
+                <div className="relative">
+                  {getConversationIcon(conversation)}
+                  
+                  {conversation.type === "individual" && 
+                   conversation.participants.find(p => p.id !== "current-user")?.isOnline && (
+                    <span className="absolute -bottom-0.5 -right-0.5 block h-2.5 w-2.5 rounded-full bg-green-500 ring-1 ring-white dark:ring-slate-800" />
+                  )}
+                </div>
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start">
                     <h3 className={cn(
                       "font-medium truncate", 
-                      isDarkMode ? "text-white" : "text-slate-900"
+                      conversation.id === activeConversationId
+                        ? (isDarkMode ? "text-blue-100" : "text-blue-800")
+                        : (isDarkMode ? "text-white" : "text-slate-900")
                     )}>
                       {getConversationName(conversation)}
                     </h3>
                     <span className={cn(
-                      "text-xs whitespace-nowrap ml-2", 
-                      isDarkMode ? "text-slate-400" : "text-slate-500"
+                      "text-xs whitespace-nowrap flex items-center",
+                      conversation.id === activeConversationId
+                        ? (isDarkMode ? "text-blue-200/70" : "text-blue-600/80")
+                        : (isDarkMode ? "text-slate-400" : "text-slate-500")
                     )}>
-                      {formatDistanceToNow(new Date(conversation.updatedAt), { addSuffix: true })}
+                      <Clock className="h-3 w-3 mr-1 opacity-70" />
+                      {formatDistanceToNow(new Date(conversation.updatedAt), { addSuffix: false })}
                     </span>
                   </div>
                   
-                  <div className="flex items-center justify-between mt-1">
-                    <p className={cn(
-                      "text-sm truncate max-w-[200px]", 
-                      isDarkMode ? "text-slate-300" : "text-slate-600"
-                    )}>
-                      {conversation.lastMessage?.content}
-                    </p>
-                    
-                    {conversation.unreadCount && conversation.unreadCount > 0 ? (
-                      <Badge 
-                        variant="default" 
-                        className="ml-2 px-1.5 text-xs h-5 min-w-[20px] flex items-center justify-center"
-                      >
-                        {conversation.unreadCount}
-                      </Badge>
-                    ) : null}
-                  </div>
+                  {conversation.lastMessage && (
+                    <div className="flex justify-between items-center mt-1">
+                      <p className={cn(
+                        "text-xs truncate max-w-[14rem]",
+                        conversation.id === activeConversationId
+                          ? (isDarkMode ? "text-blue-200/70" : "text-blue-600/80")
+                          : (isDarkMode ? "text-slate-400" : "text-slate-600")
+                      )}>
+                        {conversation.lastMessage.content}
+                      </p>
+                      
+                      {conversation.unreadCount && conversation.unreadCount > 0 && (
+                        <span className={cn(
+                          "ml-1 px-1.5 py-0.5 text-[10px] rounded-full bg-blue-500 text-white font-medium",
+                          "flex items-center justify-center min-w-[1.25rem]"
+                        )}>
+                          {conversation.unreadCount}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
+              </motion.div>
             ))
           )}
         </div>
       </ScrollArea>
+      
+      <div className="p-4 border-t border-slate-200 dark:border-slate-700">
+        <Button className="w-full" size="sm">
+          <Plus className="h-4 w-4 mr-2" />
+          New Conversation
+        </Button>
+      </div>
     </div>
   );
 }; 
