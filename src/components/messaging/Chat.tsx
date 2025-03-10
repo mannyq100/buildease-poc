@@ -56,6 +56,9 @@ interface ChatProps {
   isDarkMode?: boolean;
   targetUserId?: string;
   onMessageSent?: (conversationId: string, message: Message) => void;
+  onCreateConversation?: (type: ConversationType, participants: ChatParticipant[]) => void;
+  isNewChatDialogOpen?: boolean;
+  onNewChatDialogClose?: () => void;
 }
 
 export const Chat: React.FC<ChatProps> = ({ 
@@ -66,7 +69,10 @@ export const Chat: React.FC<ChatProps> = ({
   className,
   isDarkMode = false,
   targetUserId,
-  onMessageSent
+  onMessageSent,
+  onCreateConversation,
+  isNewChatDialogOpen = false,
+  onNewChatDialogClose
 }) => {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
@@ -127,6 +133,13 @@ export const Chat: React.FC<ChatProps> = ({
       setActiveConversationId(conversations[0].id);
     }
   }, [activeConversationId, conversations, messages, isMobileView]);
+  
+  // Handle external control of the create dialog
+  useEffect(() => {
+    if (isNewChatDialogOpen) {
+      setShowConversationList(true); // Make sure conversation list is visible
+    }
+  }, [isNewChatDialogOpen]);
   
   const handleSendMessage = () => {
     if (newMessage.trim() === '') return;
@@ -261,6 +274,10 @@ export const Chat: React.FC<ChatProps> = ({
               activeConversationId={activeConversationId}
               onSelectConversation={setActiveConversationId}
               isDarkMode={isDarkMode}
+              onCreateConversation={onCreateConversation}
+              currentUser={currentUser}
+              isDialogOpenExternal={isNewChatDialogOpen}
+              onDialogCloseExternal={onNewChatDialogClose}
             />
           </motion.div>
         )}

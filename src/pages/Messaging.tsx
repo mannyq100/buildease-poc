@@ -11,13 +11,14 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { MessagesSquare, Users, Bell } from "lucide-react";
+import { MessagesSquare, Users, Bell, UserPlus, Plus } from "lucide-react";
 import { useToast } from "@/components/ui/toast-context";
-import { Conversation, ChatParticipant, Message } from "@/types/messaging";
+import { Conversation, ChatParticipant, Message, ConversationType } from "@/types/messaging";
 import { PageLayout } from '@/components/ui/layout';
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
 
 const Messaging: React.FC = () => {
   const { toast } = useToast();
@@ -32,6 +33,7 @@ const Messaging: React.FC = () => {
   const [messages, setMessages] = useState(mockMessages);
   const [targetUserId, setTargetUserId] = useState<string | undefined>(undefined);
   const processedStartChatRef = useRef<boolean>(false);
+  const [isNewChatDialogOpen, setIsNewChatDialogOpen] = useState<boolean>(false);
   
   // Function to sort conversations by activity (most recent first)
   const sortConversationsByActivity = useCallback((convs: Conversation[]) => {
@@ -76,6 +78,64 @@ const Messaging: React.FC = () => {
       return sortConversationsByActivity(updatedConversations);
     });
   }, [sortConversationsByActivity]);
+  
+  // Function to create a new conversation
+  const handleCreateConversation = useCallback((type: ConversationType, participants: ChatParticipant[]) => {
+    // Generate a unique conversation ID
+    const newConversationId = `new-conv-${Date.now()}`;
+    
+    // Determine conversation name for group/project chats
+    let name = undefined;
+    if (type !== "individual") {
+      // Use first 3 participant names or default name
+      const participantNames = participants.map(p => p.name.split(' ')[0]).slice(0, 3);
+      name = `${type === "group" ? "Group" : "Project"}: ${participantNames.join(', ')}${participants.length > 3 ? '...' : ''}`;
+    }
+    
+    // Create the new conversation
+    const newConversation: Conversation = {
+      id: newConversationId,
+      type,
+      name,
+      participants: [currentUser, ...participants],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      icon: type === "individual" ? "user" : type === "group" ? "users" : "inbox",
+      unreadCount: 0
+    };
+    
+    // Add the new conversation to the list
+    setConversations(prevConversations => {
+      const newConversations = [newConversation, ...prevConversations];
+      return newConversations;
+    });
+    
+    // Initialize an empty messages array for the new conversation
+    setMessages(prevMessages => ({
+      ...prevMessages,
+      [newConversationId]: []
+    }));
+    
+    // Set the new conversation as active
+    setTargetUserId(participants[0].id);
+    
+    // Notify user
+    toast({
+      title: `New ${type} conversation created`,
+      description: type === "individual" 
+        ? `Started a conversation with ${participants[0].name}`
+        : `Created a new ${type} with ${participants.length} participants`,
+      variant: "success",
+      duration: 3000
+    });
+    
+  }, [toast]);
+  
+  // Function to open the new chat dialog
+  const openNewChatDialog = useCallback(() => {
+    // We'll use a ref to communicate with the ConversationList component
+    setIsNewChatDialogOpen(true);
+  }, []);
   
   // Check if we're coming from the Team page with a team member to chat with
   useEffect(() => {
@@ -206,6 +266,12 @@ const Messaging: React.FC = () => {
             }
             description="Communicate with your project team in real-time"
             icon={<MessagesSquare className="h-6 w-6 text-blue-500" />}
+            actions={
+              <Button size="sm" className="gap-1.5" onClick={openNewChatDialog}>
+                <UserPlus className="h-4 w-4" />
+                New Chat
+              </Button>
+            }
           />
         </motion.div>
         
@@ -224,6 +290,9 @@ const Messaging: React.FC = () => {
               isDarkMode={isDarkMode}
               targetUserId={targetUserId}
               onMessageSent={handleMessageSent}
+              onCreateConversation={handleCreateConversation}
+              isNewChatDialogOpen={isNewChatDialogOpen}
+              onNewChatDialogClose={() => setIsNewChatDialogOpen(false)}
             />
           </div>
         </motion.div>
