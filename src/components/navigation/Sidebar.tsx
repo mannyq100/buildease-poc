@@ -15,7 +15,8 @@ import {
   Settings,
   Building,
   ListTodo,
-  X
+  X,
+  MessagesSquare
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
@@ -325,6 +326,13 @@ const Sidebar: React.FC<SidebarProps> = ({
           icon: <Users className="w-5 h-5" />,
           isActive: isActive('/team'),
           onClick: () => navigate('/team')
+        },
+        { 
+          label: 'Messaging', 
+          path: '/messaging', 
+          icon: <MessagesSquare className="w-5 h-5" />,
+          isActive: isActive('/messaging'),
+          onClick: () => navigate('/messaging')
         },
         { 
           label: 'Documents', 

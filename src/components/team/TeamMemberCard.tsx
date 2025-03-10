@@ -1,7 +1,7 @@
 /**
  * Component for displaying a team member in card format
  */
-import { Building, Eye, Mail, MoreHorizontal, Phone, User, UserCheck, UserX } from 'lucide-react'
+import { Building, Eye, Mail, MoreHorizontal, Phone, User, UserCheck, UserX, MessageSquare } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -20,7 +20,8 @@ export function TeamMemberCard({
   member, 
   onView, 
   onRemove, 
-  onStatusChange 
+  onStatusChange,
+  onStartChat 
 }: TeamMemberCardProps) {
   /**
    * Get the appropriate color for the workload progress bar
@@ -114,15 +115,30 @@ export function TeamMemberCard({
       </CardContent>
       
       <div className="p-4 border-t bg-gray-50 dark:bg-slate-800/90 dark:border-slate-700 flex justify-between">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => onView(member)}
-          className="dark:text-gray-300 dark:hover:bg-slate-700/50 dark:hover:text-white"
-        >
-          <Eye className="h-4 w-4 mr-1" />
-          View Profile
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => onView(member)}
+            className="dark:text-gray-300 dark:hover:bg-slate-700/50 dark:hover:text-white"
+          >
+            <Eye className="h-4 w-4 mr-1" />
+            View Profile
+          </Button>
+
+          {onStartChat && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => onStartChat(member)}
+              className="dark:text-gray-300 dark:hover:bg-slate-700/50 dark:hover:text-white"
+            >
+              <MessageSquare className="h-4 w-4 mr-1" />
+              Message
+            </Button>
+          )}
+        </div>
+        
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 
@@ -141,6 +157,16 @@ export function TeamMemberCard({
               <User className="mr-2 h-4 w-4" />
               <span>View Profile</span>
             </DropdownMenuItem>
+            
+            {onStartChat && (
+              <DropdownMenuItem 
+                onClick={() => onStartChat(member)}
+                className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-white cursor-pointer"
+              >
+                <MessageSquare className="mr-2 h-4 w-4" />
+                <span>Send Message</span>
+              </DropdownMenuItem>
+            )}
             
             {onStatusChange && (
               <>

@@ -13,13 +13,14 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu'
 import { TeamMemberListItemProps } from '@/types/team'
-import { Building, Eye, Mail, MoreHorizontal, Phone, User, UserCheck, UserX } from 'lucide-react'
+import { Building, Eye, Mail, MoreHorizontal, Phone, User, UserCheck, UserX, MessageSquare } from 'lucide-react'
 
 export function TeamMemberListItem({ 
   member, 
   onView, 
   onRemove,
-  onStatusChange
+  onStatusChange,
+  onStartChat
 }: TeamMemberListItemProps) {
   /**
    * Get the appropriate color for the workload progress bar
@@ -89,6 +90,18 @@ export function TeamMemberListItem({
             <span className="hidden sm:inline">View</span>
           </Button>
           
+          {onStartChat && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => onStartChat(member)}
+              className="dark:text-gray-300 dark:hover:bg-slate-700/50 dark:hover:text-white"
+            >
+              <MessageSquare className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Message</span>
+            </Button>
+          )}
+          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
@@ -129,6 +142,16 @@ export function TeamMemberListItem({
                   )}
                   <DropdownMenuSeparator className="dark:bg-slate-700" />
                 </>
+              )}
+              
+              {onStartChat && (
+                <DropdownMenuItem 
+                  onClick={() => onStartChat(member)}
+                  className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-white cursor-pointer"
+                >
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  <span>Send Message</span>
+                </DropdownMenuItem>
               )}
               
               <DropdownMenuItem 

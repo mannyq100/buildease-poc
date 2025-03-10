@@ -41,6 +41,7 @@ export interface TeamMemberCardProps {
   onView: (member: TeamMember) => void
   onRemove: (member: TeamMember) => void
   onStatusChange?: (id: number, status: 'active' | 'inactive') => void
+  onStartChat?: (member: TeamMember) => void
 }
 
 export interface TeamMemberListItemProps {
@@ -48,6 +49,7 @@ export interface TeamMemberListItemProps {
   onView: (member: TeamMember) => void
   onRemove: (member: TeamMember) => void
   onStatusChange?: (id: number, status: 'active' | 'inactive') => void
+  onStartChat?: (member: TeamMember) => void
 }
 
 export type ViewMode = 'grid' | 'list' 

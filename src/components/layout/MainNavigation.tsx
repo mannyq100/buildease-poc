@@ -15,7 +15,8 @@ import {
   DollarSign,
   Users,
   FileText,
-  Menu
+  Menu,
+  MessagesSquare
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -82,6 +83,11 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ className }) => {
       label: 'Team', 
       path: '/team', 
       icon: <Users className="h-4 w-4" /> 
+    },
+    { 
+      label: 'Messages', 
+      path: '/messaging', 
+      icon: <MessagesSquare className="h-4 w-4" /> 
     },
     { 
       label: 'Schedule', 

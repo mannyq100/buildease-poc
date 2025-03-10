@@ -352,6 +352,23 @@ export function Team() {
     })
   }
 
+  /**
+   * Navigate to the messaging page with the selected team member for starting a chat
+   */
+  function handleStartChat(member: TeamMember) {
+    // Navigate to the messaging page with the team member information
+    navigate('/messaging', { 
+      state: { 
+        startChatWith: {
+          id: `user-${member.id}`,
+          name: member.name,
+          avatar: member.avatar,
+          role: member.role
+        }
+      } 
+    });
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
       <MainNavigation
@@ -510,6 +527,7 @@ export function Team() {
                   onView={openViewProfile}
                   onRemove={openConfirmRemoveDialog}
                   onStatusChange={handleStatusChange}
+                  onStartChat={handleStartChat}
                 />
               ))
             ) : (
@@ -529,6 +547,7 @@ export function Team() {
                   onView={openViewProfile}
                   onRemove={openConfirmRemoveDialog}
                   onStatusChange={handleStatusChange}
+                  onStartChat={handleStartChat}
                       />
                     ))
             ) : (

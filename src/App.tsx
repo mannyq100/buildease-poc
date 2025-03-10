@@ -3,6 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ToastContextProvider } from "@/components/ui/toast-context";
+import { HelmetProvider } from "react-helmet-async";
 
 // Libraries
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -27,6 +28,7 @@ import Expenses from "./pages/Expenses";
 import { Projects } from "./pages/Projects";
 import CreateProject from "./pages/CreateProject";
 import Settings from './pages/Settings';
+import Messaging from './pages/Messaging';
 
 // Set up default query client options with better user feedback
 const queryClient = new QueryClient({
@@ -43,41 +45,44 @@ function App() {
   return (
     <LazyMotion features={domAnimation}>
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <ToastContextProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-              <Route element={<AppLayout />}>
-                {/* Main routes */}
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/create-project" element={<CreateProject />} />
-                <Route path="/generated-plan" element={<GeneratedPlan />} />
-                <Route path="/project-details" element={<ProjectDetails />} />
-                <Route path="/project/:id" element={<ProjectDetails />} />
-                <Route path="/phase-details" element={<PhaseDetails />} />
-                <Route path="/phase/:id" element={<PhaseDetails />} />
-                <Route path="/generate-tasks" element={<TaskPlanningSetup />} />
-                
-                {/* Sidebar navigation routes */}
-                <Route path="/projects" element={<Projects />} />
-                <Route path="/schedule" element={<Schedule />} />
-                <Route path="/team" element={<Team />} />
-                <Route path="/materials" element={<Materials />} />
-                <Route path="/expenses" element={<Expenses />} />
-                <Route path="/documents" element={<Documents />} />
-                <Route path="/settings" element={<Settings />} />
-                
-                {/* 404 route */}
-                <Route path="*" element={<NotFound />} />
-              </Route>
-            </Routes>
-          </BrowserRouter>
-        </ToastContextProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+        <HelmetProvider>
+          <TooltipProvider>
+            <ToastContextProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                <Route element={<AppLayout />}>
+                  {/* Main routes */}
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/create-project" element={<CreateProject />} />
+                  <Route path="/generated-plan" element={<GeneratedPlan />} />
+                  <Route path="/project-details" element={<ProjectDetails />} />
+                  <Route path="/project/:id" element={<ProjectDetails />} />
+                  <Route path="/phase-details" element={<PhaseDetails />} />
+                  <Route path="/phase/:id" element={<PhaseDetails />} />
+                  <Route path="/generate-tasks" element={<TaskPlanningSetup />} />
+                  
+                  {/* Sidebar navigation routes */}
+                  <Route path="/projects" element={<Projects />} />
+                  <Route path="/schedule" element={<Schedule />} />
+                  <Route path="/team" element={<Team />} />
+                  <Route path="/materials" element={<Materials />} />
+                  <Route path="/expenses" element={<Expenses />} />
+                  <Route path="/documents" element={<Documents />} />
+                  <Route path="/messaging" element={<Messaging />} />
+                  <Route path="/settings" element={<Settings />} />
+                  
+                  {/* 404 route */}
+                  <Route path="*" element={<NotFound />} />
+                </Route>
+                </Routes>
+              </BrowserRouter>
+            </ToastContextProvider>
+          </TooltipProvider>
+        </HelmetProvider>
+      </QueryClientProvider>
     </LazyMotion>
   );
 }
