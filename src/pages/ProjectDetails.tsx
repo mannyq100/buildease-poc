@@ -205,17 +205,17 @@ export function ProjectDetails() {
         {/* Project Navigation */}
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden sticky top-16 z-30 mt-8 mb-6">
           <div className="border-b border-gray-200 dark:border-slate-700 px-1">
-            <HorizontalNav
+          <HorizontalNav
               items={PROJECT_NAV_ITEMS(id)}
-              variant="underlined"
-              showIcons={true}
+            variant="underlined"
+            showIcons={true}
               className="py-2 px-2"
               itemClassName="font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
               animated={true}
               showTooltips={true}
-            />
+                      />
           </div>
-        </div>
+                    </div>
 
         {/* Tab Content */}
         <div className="mt-8">
@@ -340,14 +340,14 @@ export function ProjectDetails() {
                   <CardDescription>Frequent operations</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2">
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button variant="outline" className="justify-start hover:bg-[#1E3A8A]/10 hover:text-[#1E3A8A] w-full overflow-hidden">
                             <MessageSquare className="h-4 w-4 mr-2 flex-shrink-0" />
                             <span className="truncate">Message Team</span>
-                          </Button>
+              </Button>
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>Message Team</p>
@@ -361,7 +361,7 @@ export function ProjectDetails() {
                           <Button variant="outline" className="justify-start hover:bg-[#D97706]/10 hover:text-[#D97706] w-full overflow-hidden">
                             <FileText className="h-4 w-4 mr-2 flex-shrink-0" />
                             <span className="truncate">Add Document</span>
-                          </Button>
+              </Button>
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>Add Document</p>
@@ -375,7 +375,7 @@ export function ProjectDetails() {
                           <Button variant="outline" className="justify-start hover:bg-[#1E3A8A]/10 hover:text-[#1E3A8A] w-full overflow-hidden">
                             <Users className="h-4 w-4 mr-2 flex-shrink-0" />
                             <span className="truncate">Update Team</span>
-                          </Button>
+              </Button>
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>Update Team</p>
@@ -389,14 +389,14 @@ export function ProjectDetails() {
                           <Button variant="outline" className="justify-start hover:bg-[#D97706]/10 hover:text-[#D97706] w-full overflow-hidden">
                             <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
                             <span className="truncate">Schedule Meeting</span>
-                          </Button>
+              </Button>
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>Schedule Meeting</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
-                  </div>
+            </div>
                 </CardContent>
               </Card>
                 </div>
