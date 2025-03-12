@@ -1,5 +1,10 @@
 import { Task, TeamMember } from '@/types/schedule';
 
+// Helper function to generate avatars based on the person's name
+const getAvatar = (name: string) => {
+  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${name.replace(' ', '')}`;
+};
+
 // Mock data for tasks
 export const initialTasks: Task[] = [
   {
@@ -13,14 +18,14 @@ export const initialTasks: Task[] = [
     status: 'Completed',
     priority: 'High',
     assignedTo: [
-      { id: 1, name: 'John Doe', avatar: '/api/placeholder/32/32', role: 'Project Manager' },
-      { id: 2, name: 'Jane Smith', avatar: '/api/placeholder/32/32', role: 'Civil Engineer' }
+      { id: 1, name: 'John Doe', avatar: getAvatar('John Doe'), role: 'Project Manager' },
+      { id: 2, name: 'Jane Smith', avatar: getAvatar('Jane Smith'), role: 'Civil Engineer' }
     ],
     completion: 100,
     comments: [
       { 
         id: 1, 
-        author: { id: 1, name: 'John Doe', avatar: '/api/placeholder/32/32', role: 'Project Manager' },
+        author: { id: 1, name: 'John Doe', avatar: getAvatar('John Doe'), role: 'Project Manager' },
         text: 'Inspection completed successfully. All foundation elements meet specifications.',
         date: '2024-05-16T14:30:00'
       }
@@ -31,7 +36,7 @@ export const initialTasks: Task[] = [
         name: 'foundation_inspection_report.pdf',
         type: 'application/pdf',
         size: '2.4 MB',
-        uploadedBy: { id: 1, name: 'John Doe', avatar: '/api/placeholder/32/32', role: 'Project Manager' },
+        uploadedBy: { id: 1, name: 'John Doe', avatar: getAvatar('John Doe'), role: 'Project Manager' },
         uploadDate: '2024-05-16T16:00:00'
       }
     ]
@@ -47,15 +52,15 @@ export const initialTasks: Task[] = [
     status: 'In Progress',
     priority: 'High',
     assignedTo: [
-      { id: 3, name: 'Mike Johnson', avatar: '/api/placeholder/32/32', role: 'Lead Carpenter' },
-      { id: 4, name: 'Sarah Williams', avatar: '/api/placeholder/32/32', role: 'Structural Engineer' }
+      { id: 3, name: 'Mike Johnson', avatar: getAvatar('Mike Johnson'), role: 'Lead Carpenter' },
+      { id: 4, name: 'Sarah Williams', avatar: getAvatar('Sarah Williams'), role: 'Structural Engineer' }
     ],
     completion: 45,
     dependencies: [1],
     comments: [
       { 
         id: 2, 
-        author: { id: 3, name: 'Mike Johnson', avatar: '/api/placeholder/32/32', role: 'Lead Carpenter' },
+        author: { id: 3, name: 'Mike Johnson', avatar: getAvatar('Mike Johnson'), role: 'Lead Carpenter' },
         text: 'First floor framing completed. Moving to second floor tomorrow.',
         date: '2024-05-20T17:15:00'
       }
@@ -72,7 +77,7 @@ export const initialTasks: Task[] = [
     status: 'Not Started',
     priority: 'Medium',
     assignedTo: [
-      { id: 5, name: 'David Brown', avatar: '/api/placeholder/32/32', role: 'Electrician' }
+      { id: 5, name: 'David Brown', avatar: getAvatar('David Brown'), role: 'Electrician' }
     ],
     completion: 0,
     dependencies: [2]
@@ -88,7 +93,7 @@ export const initialTasks: Task[] = [
     status: 'Not Started',
     priority: 'Medium',
     assignedTo: [
-      { id: 6, name: 'Emily Davis', avatar: '/api/placeholder/32/32', role: 'Plumber' }
+      { id: 6, name: 'Emily Davis', avatar: getAvatar('Emily Davis'), role: 'Plumber' }
     ],
     completion: 0,
     dependencies: [2]
@@ -104,14 +109,14 @@ export const initialTasks: Task[] = [
     status: 'In Progress',
     priority: 'Medium',
     assignedTo: [
-      { id: 7, name: 'Robert Wilson', avatar: '/api/placeholder/32/32', role: 'Painter' },
-      { id: 8, name: 'Lisa Taylor', avatar: '/api/placeholder/32/32', role: 'Interior Designer' }
+      { id: 7, name: 'Robert Wilson', avatar: getAvatar('Robert Wilson'), role: 'Painter' },
+      { id: 8, name: 'Lisa Taylor', avatar: getAvatar('Lisa Taylor'), role: 'Interior Designer' }
     ],
     completion: 60,
     comments: [
       { 
         id: 3, 
-        author: { id: 7, name: 'Robert Wilson', avatar: '/api/placeholder/32/32', role: 'Painter' },
+        author: { id: 7, name: 'Robert Wilson', avatar: getAvatar('Robert Wilson'), role: 'Painter' },
         text: 'Main area and conference room completed. Starting on offices tomorrow.',
         date: '2024-05-23T16:45:00'
       }
@@ -128,7 +133,7 @@ export const initialTasks: Task[] = [
     status: 'Not Started',
     priority: 'Medium',
     assignedTo: [
-      { id: 9, name: 'Thomas Moore', avatar: '/api/placeholder/32/32', role: 'Flooring Specialist' }
+      { id: 9, name: 'Thomas Moore', avatar: getAvatar('Thomas Moore'), role: 'Flooring Specialist' }
     ],
     completion: 0,
     dependencies: [5]
@@ -144,8 +149,8 @@ export const initialTasks: Task[] = [
     status: 'Not Started',
     priority: 'High',
     assignedTo: [
-      { id: 1, name: 'John Doe', avatar: '/api/placeholder/32/32', role: 'Project Manager' },
-      { id: 10, name: 'Amanda Clark', avatar: '/api/placeholder/32/32', role: 'Quality Inspector' }
+      { id: 1, name: 'John Doe', avatar: getAvatar('John Doe'), role: 'Project Manager' },
+      { id: 10, name: 'Amanda Clark', avatar: getAvatar('Amanda Clark'), role: 'Quality Inspector' }
     ],
     completion: 0,
     dependencies: [6]
@@ -161,8 +166,8 @@ export const initialTasks: Task[] = [
     status: 'Not Started',
     priority: 'High',
     assignedTo: [
-      { id: 1, name: 'John Doe', avatar: '/api/placeholder/32/32', role: 'Project Manager' },
-      { id: 11, name: 'Michael Scott', avatar: '/api/placeholder/32/32', role: 'Client Representative' }
+      { id: 1, name: 'John Doe', avatar: getAvatar('John Doe'), role: 'Project Manager' },
+      { id: 11, name: 'Michael Scott', avatar: getAvatar('Michael Scott'), role: 'Client Representative' }
     ],
     completion: 0,
     dependencies: [3, 4]
@@ -171,17 +176,17 @@ export const initialTasks: Task[] = [
 
 // Define team members
 export const teamMembers: TeamMember[] = [
-  { id: 1, name: 'John Doe', avatar: '/api/placeholder/32/32', role: 'Project Manager', department: 'Management' },
-  { id: 2, name: 'Jane Smith', avatar: '/api/placeholder/32/32', role: 'Civil Engineer', department: 'Engineering' },
-  { id: 3, name: 'Mike Johnson', avatar: '/api/placeholder/32/32', role: 'Lead Carpenter', department: 'Construction' },
-  { id: 4, name: 'Sarah Williams', avatar: '/api/placeholder/32/32', role: 'Structural Engineer', department: 'Engineering' },
-  { id: 5, name: 'David Brown', avatar: '/api/placeholder/32/32', role: 'Electrician', department: 'Electrical' },
-  { id: 6, name: 'Emily Davis', avatar: '/api/placeholder/32/32', role: 'Plumber', department: 'Plumbing' },
-  { id: 7, name: 'Robert Wilson', avatar: '/api/placeholder/32/32', role: 'Painter', department: 'Finishing' },
-  { id: 8, name: 'Lisa Taylor', avatar: '/api/placeholder/32/32', role: 'Interior Designer', department: 'Design' },
-  { id: 9, name: 'Thomas Moore', avatar: '/api/placeholder/32/32', role: 'Flooring Specialist', department: 'Finishing' },
-  { id: 10, name: 'Amanda Clark', avatar: '/api/placeholder/32/32', role: 'Quality Inspector', department: 'Quality Assurance' },
-  { id: 11, name: 'Michael Scott', avatar: '/api/placeholder/32/32', role: 'Client Representative', department: 'Client' }
+  { id: 1, name: 'John Doe', avatar: getAvatar('John Doe'), role: 'Project Manager', department: 'Management' },
+  { id: 2, name: 'Jane Smith', avatar: getAvatar('Jane Smith'), role: 'Civil Engineer', department: 'Engineering' },
+  { id: 3, name: 'Mike Johnson', avatar: getAvatar('Mike Johnson'), role: 'Lead Carpenter', department: 'Construction' },
+  { id: 4, name: 'Sarah Williams', avatar: getAvatar('Sarah Williams'), role: 'Structural Engineer', department: 'Engineering' },
+  { id: 5, name: 'David Brown', avatar: getAvatar('David Brown'), role: 'Electrician', department: 'Electrical' },
+  { id: 6, name: 'Emily Davis', avatar: getAvatar('Emily Davis'), role: 'Plumber', department: 'Plumbing' },
+  { id: 7, name: 'Robert Wilson', avatar: getAvatar('Robert Wilson'), role: 'Painter', department: 'Finishing' },
+  { id: 8, name: 'Lisa Taylor', avatar: getAvatar('Lisa Taylor'), role: 'Interior Designer', department: 'Design' },
+  { id: 9, name: 'Thomas Moore', avatar: getAvatar('Thomas Moore'), role: 'Flooring Specialist', department: 'Finishing' },
+  { id: 10, name: 'Amanda Clark', avatar: getAvatar('Amanda Clark'), role: 'Quality Inspector', department: 'Quality Assurance' },
+  { id: 11, name: 'Michael Scott', avatar: getAvatar('Michael Scott'), role: 'Client Representative', department: 'Client' }
 ];
 
 // Project options for selection

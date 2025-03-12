@@ -30,6 +30,7 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/auth/contexts/AuthContext';
 
 interface MainNavigationProps {
   className?: string;
@@ -41,6 +42,7 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ className }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const { logout } = useAuth();
   
   // Check dark mode
   useEffect(() => {
@@ -110,6 +112,36 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ className }) => {
       icon: <FileText className="h-4 w-4" /> 
     }
   ];
+
+  // Handle logout click
+  const handleLogout = () => {
+    try {
+      console.log('MainNavigation: Handling logout...');
+      
+      // Check if logout function exists
+      if (typeof logout !== 'function') {
+        console.error('Logout function is not available:', logout);
+        navigate('/login');
+        return;
+      }
+      
+      // Perform logout
+      console.log('Calling logout function...');
+      logout();
+      console.log('Logout function called successfully');
+      
+      // Navigate to login page
+      console.log('Navigating to login page...');
+      setTimeout(() => {
+        navigate('/login');
+        console.log('Navigation completed');
+      }, 100);
+    } catch (error) {
+      console.error('Error during logout:', error);
+      // Still attempt to navigate even if there was an error
+      navigate('/login');
+    }
+  };
 
   return (
     <header className={cn(
@@ -222,7 +254,15 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ className }) => {
                 <span>Settings</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('MainNavigation: Dropdown logout button clicked');
+                  handleLogout();
+                }}
+                className="text-red-600 dark:text-red-400"
+              >
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>

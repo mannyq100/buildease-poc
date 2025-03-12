@@ -1,4 +1,4 @@
-import React, { createContext, useEffect, useReducer } from 'react';
+import React, { createContext, useEffect, useReducer, useContext } from 'react';
 import { User, AuthProvider as Provider, RegisterData } from '../types/auth';
 import { getStoredToken, removeToken, setToken, getProviderToken, setProviderToken } from '../utils/token';
 import { apiRequest } from '@/lib/api-client';
@@ -78,7 +78,17 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
   }
 }
 
+// Create the context with a default value
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Create a hook to use the auth context
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(authReducer, initialState);
@@ -252,25 +262,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Logout from any provider
   function logout() {
-    // Special handling for different providers if needed
-    if (state.lastProvider === 'google') {
-      const googleToken = getProviderToken('google');
-      if (googleToken) {
-        // Optional: revoke Google token
-        fetch(`https://accounts.google.com/o/oauth2/revoke?token=${googleToken}`);
+    try {
+      console.log('AuthContext: Starting logout process');
+      
+      // Special handling for different providers if needed
+      if (state.lastProvider === 'google') {
+        const googleToken = getProviderToken('google');
+        if (googleToken) {
+          // Optional: revoke Google token
+          fetch(`https://accounts.google.com/o/oauth2/revoke?token=${googleToken}`)
+            .catch(err => console.log('Error revoking Google token:', err));
+        }
       }
+      
+      console.log('AuthContext: Clearing tokens and storage');
+      
+      // Clear all tokens and auth state
+      removeToken();
+      localStorage.removeItem('auth_provider');
+      
+      // Clear all provider tokens
+      ['google', 'facebook', 'apple'].forEach(provider => {
+        localStorage.removeItem(`${provider}_token`);
+      });
+
+      // Clear any session storage that might be used
+      sessionStorage.removeItem('auth_redirect');
+      
+      // Clear localStorage items that might be causing issues
+      try {
+        // Attempt to clear potential localStorage items
+        const keysToRemove = ['user', 'auth_token', 'buildease_token', 'buildease_auth_token'];
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+      } catch (e) {
+        console.error('Error clearing additional localStorage items:', e);
+      }
+      
+      console.log('AuthContext: Dispatching LOGOUT action');
+      
+      // Dispatch logout action to reset auth state
+      dispatch({ type: 'LOGOUT' });
+      
+      console.log('AuthContext: Logout completed successfully');
+    } catch (error) {
+      console.error('AuthContext: Error during logout:', error);
+      // Still reset state in case of error
+      dispatch({ type: 'LOGOUT' });
     }
-    
-    // Clear all tokens and auth state
-    removeToken();
-    localStorage.removeItem('auth_provider');
-    
-    // Clear all provider tokens
-    ['google', 'facebook', 'apple'].forEach(provider => {
-      localStorage.removeItem(`${provider}_token`);
-    });
-    
-    dispatch({ type: 'LOGOUT' });
   }
 
   // Update user profile

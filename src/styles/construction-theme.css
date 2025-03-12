@@ -1,0 +1,157 @@
+/* Construction Theme CSS - BuildEase UI */
+
+/* Construction-themed colors */
+:root {
+  --builder-blue-50: #eef7ff;
+  --builder-blue-100: #d4ebff;
+  --builder-blue-200: #a8d5ff;
+  --builder-blue-300: #75bbff;
+  --builder-blue-400: #429fff;
+  --builder-blue-500: #1a85ff;
+  --builder-blue-600: #0068e1;
+  --builder-blue-700: #0054b8;
+  --builder-blue-800: #004595;
+  --builder-blue-900: #00397b;
+  
+  --builder-yellow-50: #fffaeb;
+  --builder-yellow-100: #fff0c2;
+  --builder-yellow-200: #fee283;
+  --builder-yellow-300: #fdd14a;
+  --builder-yellow-400: #fac220;
+  --builder-yellow-500: #f2b705;
+  --builder-yellow-600: #cb9102;
+  --builder-yellow-700: #a57105;
+  --builder-yellow-800: #85590c;
+  --builder-yellow-900: #6d480f;
+}
+
+/* Background patterns for construction theme */
+.construction-bg-pattern {
+  background-color: #0c2e60;
+  background-image: 
+    linear-gradient(30deg, rgba(255, 255, 255, 0.05) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.05) 87.5%, rgba(255, 255, 255, 0.05)),
+    linear-gradient(150deg, rgba(255, 255, 255, 0.05) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.05) 87.5%, rgba(255, 255, 255, 0.05)),
+    linear-gradient(30deg, rgba(255, 255, 255, 0.05) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.05) 87.5%, rgba(255, 255, 255, 0.05)),
+    linear-gradient(150deg, rgba(255, 255, 255, 0.05) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.05) 87.5%, rgba(255, 255, 255, 0.05)),
+    linear-gradient(60deg, rgba(255, 255, 255, 0.05) 25%, transparent 25.5%, transparent 75%, rgba(255, 255, 255, 0.05) 75%, rgba(255, 255, 255, 0.05)),
+    linear-gradient(60deg, rgba(255, 255, 255, 0.05) 25%, transparent 25.5%, transparent 75%, rgba(255, 255, 255, 0.05) 75%, rgba(255, 255, 255, 0.05));
+  background-size: 20px 35px;
+  background-position: 0 0, 0 0, 10px 18px, 10px 18px, 0 0, 10px 18px;
+}
+
+.blueprint-bg-pattern {
+  background-color: #0f4c91;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Element styles for construction-themed UI */
+.hard-hat-icon {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  background: var(--builder-yellow-500);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  position: relative;
+}
+
+.hard-hat-icon::before {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 15%;
+  right: 15%;
+  height: 4px;
+  background: var(--builder-yellow-600);
+  border-radius: 0 0 10px 10px;
+}
+
+/* Construction-themed form elements */
+.construction-input {
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  padding-left: 2.5rem;
+  background-color: #f8f9fa;
+  transition: all 0.2s ease;
+}
+
+.construction-input:focus {
+  border-color: var(--builder-blue-500);
+  box-shadow: 0 0 0 3px rgba(26, 133, 255, 0.15);
+  outline: none;
+}
+
+/* Blueprint-style decorative elements */
+.blueprint-line {
+  border-top: 2px dashed rgba(255, 255, 255, 0.2);
+  position: relative;
+}
+
+.blueprint-line::before,
+.blueprint-line::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  top: -5px;
+}
+
+.blueprint-line::before {
+  left: 0;
+}
+
+.blueprint-line::after {
+  right: 0;
+}
+
+/* Construction-themed buttons */
+.construction-button {
+  background: linear-gradient(to right, var(--builder-blue-600), var(--builder-blue-700));
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.construction-button:hover {
+  background: linear-gradient(to right, var(--builder-blue-700), var(--builder-blue-800));
+  box-shadow: 0 4px 12px rgba(0, 84, 184, 0.15);
+}
+
+.construction-button:active {
+  transform: translateY(1px);
+}
+
+/* Animation for form elements */
+@keyframes blueprint-appear {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.blueprint-animate {
+  animation: blueprint-appear 0.5s ease forwards;
+}
+
+/* Media queries for responsive design */
+@media (max-width: 768px) {
+  .construction-bg-pattern,
+  .blueprint-bg-pattern {
+    background-size: 15px 15px;
+  }
+} 
