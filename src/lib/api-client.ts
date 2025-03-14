@@ -4,8 +4,14 @@
 import { getAuthHeader, removeToken, getProviderToken } from '@/auth/utils/token';
 import { AuthProvider } from '@/auth/types/auth';
 
-// For development/testing
-const USE_MOCK_API = process.env.NODE_ENV === 'development';
+// For development/testing - check the environment variable
+const USE_MOCK_API = import.meta.env.VITE_USE_MOCK === 'true' || process.env.NODE_ENV === 'development';
+
+console.log('API Client initialized with:', { 
+  mockEnabled: USE_MOCK_API,
+  apiUrl: import.meta.env.VITE_API_URL,
+  mockEnvVar: import.meta.env.VITE_USE_MOCK
+});
 
 type RequestMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
@@ -38,8 +44,11 @@ export async function apiRequest<T>(
 
   // For testing with mock data
   if (USE_MOCK_API) {
+    console.log(`📦 Using MOCK data for ${method} ${endpoint}`);
     return mockApiRequest<T>(endpoint, { method, body, mockDelay });
   }
+
+  console.log(`🌐 Using REAL API for ${method} ${endpoint} at ${API_URL}`);
 
   // Prepare headers
   const requestHeaders: Record<string, string> = {

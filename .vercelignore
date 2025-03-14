@@ -1,0 +1,35 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+.vite
+
+# Development files
+*.log
+.git
+.github
+.husky
+.eslintrc
+.DS_Store
+
+# Environment variables (these will be set in Vercel dashboard)
+.env
+.env.*
+!.env.example
+
+# Scripts and tests
+scripts
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Documentation
+README.md
+CHANGELOG.md
+docs
+
+# Editor configs
+.vscode
+.idea 
