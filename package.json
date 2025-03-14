@@ -4,11 +4,19 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "vite --mode development",
+    "dev:staging": "vite --mode staging",
+    "build": "vite build --mode production",
     "build:dev": "vite build --mode development",
+    "build:staging": "vite build --mode staging",
+    "preview": "vite preview",
+    "preview:dev": "vite preview --mode development",
+    "preview:staging": "vite preview --mode staging",
+    "preview:prod": "vite preview --mode production",
     "lint": "eslint . --fix",
-    "preview": "vite preview"
+    "deploy:dev": "node scripts/deploy.js dev",
+    "deploy:staging": "node scripts/deploy.js staging",
+    "deploy:prod": "node scripts/deploy.js prod"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",

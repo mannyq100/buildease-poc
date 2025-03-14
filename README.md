@@ -55,6 +55,68 @@ This project is built with:
 - Lucide React for icons
 - React Query for data fetching
 
+## Environment Configuration
+
+BuildEase supports multiple deployment environments:
+
+### Available Environments
+
+- **Development**: Local development environment
+- **Staging**: Pre-production testing environment
+- **Production**: Live production environment
+
+### Environment Configuration Files
+
+The application uses environment-specific configuration files:
+
+- `.env.development` - Development environment variables
+- `.env.staging` - Staging environment variables
+- `.env.production` - Production environment variables
+
+Example environment files (`.env.*.example`) are provided as templates. To set up your environments:
+
+1. Copy the example files to create your actual environment files:
+   ```sh
+   cp .env.development.example .env.development
+   cp .env.staging.example .env.staging
+   cp .env.production.example .env.production
+   ```
+
+2. Update the variables in each file with your specific settings.
+
+### Running in Different Environments
+
+Development:
+```sh
+npm run dev          # Run development server
+npm run build:dev    # Build for development
+npm run deploy:dev   # Deploy to development (if configured)
+```
+
+Staging:
+```sh
+npm run dev:staging  # Run with staging configuration
+npm run build:staging # Build for staging
+npm run deploy:staging # Deploy to staging (if configured)
+```
+
+Production:
+```sh
+npm run build        # Build for production
+npm run deploy:prod  # Deploy to production (if configured)
+```
+
+### Environment Variables
+
+Key environment variables include:
+
+- `VITE_API_URL`: Backend API endpoint
+- `VITE_ENV`: Current environment name
+- `VITE_APP_TITLE`: Application title (includes environment indicator in non-production)
+- `VITE_USE_MOCK`: Whether to use mock data (true/false)
+- `VITE_BASE_URL`: Base URL for the application
+- `VITE_ANALYTICS_ID`: Analytics tracking ID (production only)
+
 ## Getting Started
 
 The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
@@ -69,7 +131,11 @@ cd buildese-ui-poc
 # Step 3: Install dependencies
 npm install
 
-# Step 4: Start the development server
+# Step 4: Set up environment files
+cp .env.development.example .env.development
+# Edit .env.development with your settings
+
+# Step 5: Start the development server
 npm run dev
 ```
 
@@ -85,6 +151,9 @@ buildese-ui-poc/
 ├── tsconfig.json        # TypeScript configuration
 ├── tailwind.config.js   # Tailwind CSS configuration
 ├── vite.config.ts       # Vite configuration
+├── .env.development     # Development environment variables
+├── .env.staging         # Staging environment variables
+├── .env.production      # Production environment variables
 └── README.md            # Project documentation
 ```
 
@@ -108,7 +177,8 @@ src/
 │   └── Documents.tsx    # Document management page
 ├── hooks/               # Custom React hooks
 ├── lib/                 # Utility functions and helpers
-│   └── utils.ts         # General utility functions
+│   ├── utils.ts         # General utility functions
+│   └── env-config.ts    # Environment configuration utilities
 ├── App.tsx              # Main application component
 ├── main.tsx             # Application entry point
 └── index.css            # Global styles

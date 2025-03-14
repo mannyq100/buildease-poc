@@ -12,6 +12,9 @@ import { LazyMotion, domAnimation } from "framer-motion";
 import { AuthProvider } from '@/auth/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 
+// Environment configuration
+import config, { isDevelopment, isProduction } from '@/lib/env-config';
+
 // Layout
 import AppLayout from "@/components/layout/AppLayout";
 
@@ -49,6 +52,18 @@ const queryClient = new QueryClient({
   },
 });
 
+// Environment-specific configurations
+if (isDevelopment()) {
+  // Enable additional features for development
+  queryClient.setDefaultOptions({
+    queries: {
+      retry: false,
+      staleTime: 1000, // 1 second in development for faster iteration
+      refetchOnWindowFocus: true,
+    },
+  });
+}
+
 function App() {
   return (
     <LazyMotion features={domAnimation}>
@@ -59,6 +74,12 @@ function App() {
               <ToastContextProvider>
                 <Toaster />
                 <Sonner />
+                {/* Display environment indicator in non-production environments */}
+                {!isProduction() && (
+                  <div className="fixed top-0 right-0 z-50 px-2 py-1 text-xs font-bold text-white bg-blue-500 rounded-bl-md">
+                    {config.appTitle}
+                  </div>
+                )}
                 <BrowserRouter>
                   <Routes>
                     {/* Public routes */}

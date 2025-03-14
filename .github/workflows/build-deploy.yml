@@ -1,0 +1,122 @@
+name: Build and Deploy
+
+on:
+ workflow_dispatch:
+# on:
+#   push:
+#     branches: 
+#       - main       # Production deployment
+#       - staging    # Staging deployment
+#       - develop    # Development deployment
+#   pull_request:
+#     branches: [ main, staging ]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Lint
+        run: npm run lint
+      
+      - name: Determine environment
+        id: determine-env
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/staging" ]]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          else
+            echo "environment=development" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Build application
+        run: |
+          if [[ "${{ steps.determine-env.outputs.environment }}" == "production" ]]; then
+            npm run build
+          elif [[ "${{ steps.determine-env.outputs.environment }}" == "staging" ]]; then
+            npm run build:staging
+          else
+            npm run build:dev
+          fi
+          
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ steps.determine-env.outputs.environment }}
+          path: dist/${{ steps.determine-env.outputs.environment }}
+          retention-days: 7
+  
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Determine environment
+        id: determine-env
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/staging" ]]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          else
+            echo "environment=development" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-${{ steps.determine-env.outputs.environment }}
+          path: dist/${{ steps.determine-env.outputs.environment }}
+      
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+      
+      - name: Deploy to Vercel (Development)
+        if: steps.determine-env.outputs.environment == 'development'
+        run: |
+          vercel deploy --token ${{ secrets.VERCEL_TOKEN }} \
+            --env VITE_ENV=development \
+            --env VITE_API_URL=${{ secrets.DEV_API_URL }} \
+            --env VITE_USE_MOCK=true \
+            --env VITE_APP_TITLE="BuildEase (Dev)" \
+            --env VITE_BASE_URL=${{ secrets.DEV_BASE_URL }}
+      
+      - name: Deploy to Vercel (Staging)
+        if: steps.determine-env.outputs.environment == 'staging'
+        run: |
+          vercel deploy --token ${{ secrets.VERCEL_TOKEN }} \
+            --env VITE_ENV=staging \
+            --env VITE_API_URL=${{ secrets.STAGING_API_URL }} \
+            --env VITE_USE_MOCK=false \
+            --env VITE_APP_TITLE="BuildEase (Staging)" \
+            --env VITE_BASE_URL=${{ secrets.STAGING_BASE_URL }}
+      
+      - name: Deploy to Vercel (Production)
+        if: steps.determine-env.outputs.environment == 'production'
+        run: |
+          vercel deploy --prod --token ${{ secrets.VERCEL_TOKEN }} \
+            --env VITE_ENV=production \
+            --env VITE_API_URL=${{ secrets.PROD_API_URL }} \
+            --env VITE_USE_MOCK=false \
+            --env VITE_APP_TITLE="BuildEase" \
+            --env VITE_BASE_URL=${{ secrets.PROD_BASE_URL }} \
+            --env VITE_ANALYTICS_ID=${{ secrets.ANALYTICS_ID }} 
