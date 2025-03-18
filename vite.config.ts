@@ -18,7 +18,7 @@ export default defineConfig(({ mode = 'production' }) => {
     base: '/',
     server: {
       host: "::",
-      port: 8080,
+      port: 3000,
       proxy: {
         // Proxy API requests during development
         '/api': {

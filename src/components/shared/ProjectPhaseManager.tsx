@@ -21,6 +21,7 @@ import {
   Package,
   Users
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -132,6 +133,8 @@ export function ProjectPhaseManager({
     description: '',
     status: 'upcoming'
   });
+  
+  const navigate = useNavigate();
   
   // Toggle phase expansion
   const togglePhaseExpand = (phaseId: string) => {
@@ -378,6 +381,15 @@ export function ProjectPhaseManager({
     }
   }, [phases]);
 
+  const handlePhaseClick = (phaseId: string) => {
+    if (onPhaseClick) {
+      onPhaseClick(phaseId);
+    } else {
+      // Default behavior - navigate to phase details
+      navigate(`/phases/${phaseId}`);
+    }
+  };
+
   return (
     <LazyMotion features={domAnimation}>
       <Card className="border shadow-sm">
@@ -447,7 +459,7 @@ export function ProjectPhaseManager({
                   onEditPhase={() => handleEditPhase(phase.id)}
                   onAddTask={() => setShowAddTask(phase.id)}
                   onAddMaterial={() => setShowAddMaterial(phase.id)}
-                  onClick={onPhaseClick ? () => onPhaseClick(phase.id) : undefined}
+                  onClick={() => handlePhaseClick(phase.id)}
                 />
               ))}
             </div>

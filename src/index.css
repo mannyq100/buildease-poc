@@ -1,5 +1,7 @@
 /* Import fonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Open+Sans:wght@400;600&display=swap');
+/* Import custom dropdown styles to fix transparency issues */
+@import './components/ui/dropdown-menu-custom.css';
 
 @tailwind base;
 @tailwind components;
@@ -396,12 +398,9 @@
 
 @keyframes glow {
   from {
-    box-shadow: 0 0 5px rgba(var(--primary), 0.5);
+    box-shadow: 0 0 5px rgba(var(--primary), 0.4);
   }
   to {
     box-shadow: 0 0 20px rgba(var(--primary), 0.8);
   }
 }
-
-/* Import custom dropdown styles to fix transparency issues */
-@import './components/ui/dropdown-menu-custom.css';

@@ -161,4 +161,65 @@ export function isFormComplete(formData: ProjectFormData): boolean {
  */
 export function getTabsOrder(): string[] {
   return ["intro", "basic", "building", "materials", "features", "final"];
+}
+
+/**
+ * Utility functions for project management components
+ */
+
+/**
+ * Get the color classes for a priority level
+ * @param priority The priority level (High, Medium, Low)
+ * @returns CSS classes for text and background color
+ */
+export function getPriorityColor(priority: string): string {
+  switch (priority) {
+    case 'High': return 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30';
+    case 'Medium': return 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/30';
+    case 'Low': return 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30';
+    default: return 'text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-800/50';
+  }
+}
+
+/**
+ * Get the color classes for a status
+ * @param status The status (Completed, In Progress, Not Started, Delayed)
+ * @returns CSS classes for text and background color
+ */
+export function getStatusColor(status: string): string {
+  switch (status) {
+    case 'Completed': return 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30';
+    case 'In Progress': return 'text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-900/30';
+    case 'Not Started': return 'text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-800/50';
+    case 'Delayed': return 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30';
+    default: return 'text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-800/50';
+  }
+}
+
+/**
+ * Setup a mutation observer to check for dark mode changes
+ * @param callback Function to call when dark mode changes
+ * @returns Cleanup function to disconnect the observer
+ */
+export function observeDarkMode(callback: () => void): () => void {
+  // Check on initial call
+  callback();
+  
+  // Set up a mutation observer to watch for dark mode changes
+  const observer = new MutationObserver(callback);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class']
+  });
+  
+  // Return cleanup function
+  return () => observer.disconnect();
+}
+
+/**
+ * Check if dark mode is currently active
+ * @returns true if dark mode is active, false otherwise
+ */
+export function checkDarkMode(): boolean {
+  return document.documentElement.classList.contains('dark');
 } 

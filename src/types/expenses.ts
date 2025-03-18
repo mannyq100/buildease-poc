@@ -1,5 +1,8 @@
+import React from 'react';
+
 /**
- * Types for expense management and financial data
+ * Expense-related type definitions
+ * Used for expense management features
  */
 
 /**
@@ -8,25 +11,33 @@
 export interface Expense {
   id: number;
   description: string;
-  category: string;
   amount: number;
   date: string;
+  category: string;
   project: string;
-  phase: string;
-  paymentMethod: string;
-  vendor: string;
-  receiptUploaded: boolean;
-  receiptUrl?: string;
   status: 'approved' | 'pending' | 'rejected';
-  selected?: boolean;
+  receiptUploaded: boolean;
+  notes?: string;
+}
+
+/**
+ * Represents a new expense entry
+ */
+export interface NewExpense {
+  description: string;
+  amount: number;
+  date: string;
+  category: string;
+  project: string;
+  notes?: string;
 }
 
 /**
  * Represents a top spending category with its amount
  */
 export interface TopCategory {
-  category?: string;
-  amount?: number;
+  category: string;
+  amount: number;
 }
 
 /**
@@ -36,11 +47,6 @@ export interface BudgetData {
   total: number;
   spent: number;
   remaining: number;
-  allocations?: {
-    category: string;
-    amount: number;
-    spent: number;
-  }[];
 }
 
 /**
@@ -48,9 +54,7 @@ export interface BudgetData {
  */
 export interface TimeSeriesDataPoint {
   date: string;
-  amount: number;
-  project?: string;
-  category?: string;
+  value: number;
 }
 
 /**
@@ -60,7 +64,7 @@ export interface ExpenseInsight {
   title: string;
   description: string;
   icon: React.ReactNode;
-  color: string;
+  color: 'green' | 'blue' | 'amber' | 'red' | 'purple';
 }
 
 /**

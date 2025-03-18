@@ -1,0 +1,62 @@
+import React from 'react';
+import { LazyMotion, domAnimation, m } from 'framer-motion';
+import { ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ContentSection } from '@/components/shared/ContentSection';
+import { scaleInVariants, buttonHoverVariants } from '@/lib/animations';
+
+interface QuickActionProps {
+  label: string;
+  icon: React.ReactNode;
+  onClick?: () => void;
+}
+
+interface QuickActionsSectionProps {
+  actions: QuickActionProps[];
+  className?: string;
+}
+
+/**
+ * QuickActionsSection - Displays quick action buttons for common project tasks
+ */
+export function QuickActionsSection({
+  actions,
+  className
+}: QuickActionsSectionProps) {
+  return (
+    <ContentSection
+      title="Quick Actions"
+      variant="default"
+      elevation="sm"
+      borderRadius="lg"
+      className={`shadow-md border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 ${className || ''}`}
+    >
+      <LazyMotion features={domAnimation}>
+        <div className="space-y-3">
+          {actions.map((action, i) => (
+            <m.div
+              key={i}
+              variants={scaleInVariants}
+              initial="hidden"
+              animate="visible"
+              transition={{ duration: 0.2, delay: i * 0.05 }}
+              whileHover={buttonHoverVariants}
+            >
+              <Button 
+                variant="outline" 
+                className="w-full justify-between bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                onClick={action.onClick}
+              >
+                <span className="flex items-center">
+                  {action.icon}
+                  {action.label}
+                </span>
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </m.div>
+          ))}
+        </div>
+      </LazyMotion>
+    </ContentSection>
+  );
+} 

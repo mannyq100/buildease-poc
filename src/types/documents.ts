@@ -41,4 +41,14 @@ export interface DocumentItemProps {
   onMove?: () => void
   onCopy?: () => void
   onDownload?: () => void
+}
+
+/**
+ * Simple document item for display purposes
+ */
+export interface SimpleDocumentItem {
+  title: string
+  type: string
+  date: string
+  size: string
 } 

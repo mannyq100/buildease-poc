@@ -103,6 +103,7 @@ function App() {
                       <Route path="/project/:id" element={<ProjectDetails />} />
                       <Route path="/phase-details" element={<PhaseDetails />} />
                       <Route path="/phase/:id" element={<PhaseDetails />} />
+                      <Route path="/phases/:phaseId" element={<PhaseDetails />} />
                       <Route path="/generate-tasks" element={<TaskPlanningSetup />} />
                       
                       {/* Sidebar navigation routes */}

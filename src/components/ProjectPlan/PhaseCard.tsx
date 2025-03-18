@@ -32,28 +32,15 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { TeamMember, MaterialItem } from '@/types/project';
 
-interface TeamMember {
-  id: string;
-  name: string;
-  role: string;
-  avatar?: string;
-}
-
+// Local interface for task items that differs from the global Task interface
 interface TaskItem {
   id: string;
   name: string;
   duration: string;
   status: 'pending' | 'in-progress' | 'completed';
   assignedTo?: string;
-}
-
-interface MaterialItem {
-  id: string;
-  name: string;
-  quantity: string;
-  unit: string;
-  status: 'not-ordered' | 'ordered' | 'delivered';
 }
 
 interface PhaseCardProps {

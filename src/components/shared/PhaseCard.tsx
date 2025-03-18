@@ -20,28 +20,15 @@ import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { TeamMember, MaterialItem } from '@/types/project';
 
-// Define interfaces for team members and tasks
-interface TeamMember {
-  id: string;
-  name: string;
-  role: string;
-  avatar?: string;
-}
-
+// Local version of task item
 interface TaskItem {
   id: string;
   name: string;
   duration?: string;
   status?: 'pending' | 'in-progress' | 'completed';
   assignedTo?: string;
-}
-
-interface MaterialItem {
-  id: string;
-  name: string;
-  quantity: string;
-  unit: string;
 }
 
 interface PhaseCardProps {

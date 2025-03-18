@@ -4,6 +4,7 @@
 import { format } from 'date-fns'
 import React, { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { LazyMotion, domAnimation, m } from 'framer-motion'
 
 // Icons
 import { 
@@ -19,7 +20,14 @@ import {
   Plus,
   Settings,
   Users,
-  Building
+  Building,
+  ArrowRight,
+  Clock,
+  Activity,
+  ChartPie,
+  FileBarChart,
+  Calendar as CalendarIcon,
+  LayoutDashboard
 } from 'lucide-react'
 
 // UI Components
@@ -52,6 +60,7 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Badge } from '@/components/ui/badge'
 
 // Shared Components
 import { HorizontalNav } from '@/components/navigation/HorizontalNav'
@@ -59,9 +68,22 @@ import {
   ActivityItem,
   InsightItem,
   PageHeader,
-  PhaseCard
+  PhaseCard,
+  StatCard,
+  DocumentItem
 } from '@/components/shared'
+import { 
+  AddPhaseDialog, 
+  AddTaskDialog, 
+  ProjectStatGrid, 
+  ProjectPhasesSection, 
+  ProjectActivitySection,
+  ProjectInsightsSection,
+  QuickActionsSection,
+  RecentDocumentsSection
+} from '@/components/project'
 import { cn } from '@/lib/utils'
+import { ContentSection } from '@/components/shared/ContentSection'
 
 /**
  * Main component for project details page
@@ -101,809 +123,472 @@ export function ProjectDetails() {
     return () => observer.disconnect()
   }, [])
   
+  /**
+   * Handle adding a new phase to the project
+   */
   function handleAddPhase() {
-    if (!newPhase.name || !newPhase.budget) return
-    
-    const newId = phases.length > 0 ? Math.max(...phases.map(p => p.id)) + 1 : 1
-    
-    const phaseToAdd: Phase = {
-      id: newId,
+    setShowPhaseDialog(true)
+    setNewPhase(INITIAL_NEW_PHASE)
+  }
+  
+  /**
+   * Save a new phase to the project
+   */
+  function handleSavePhase() {
+    const newPhaseObj: Phase = {
+      id: phases.length + 1,
       name: newPhase.name,
       progress: 0,
       startDate: format(newPhase.startDate, 'MMM d, yyyy'),
       endDate: format(newPhase.endDate, 'MMM d, yyyy'),
-      status: "upcoming",
-      budget: `$${parseFloat(newPhase.budget).toLocaleString()}`,
-      spent: "$0"
+      status: 'upcoming',
+      budget: newPhase.budget,
+      spent: '$0'
     }
     
-    setPhases([...phases, phaseToAdd])
+    setPhases([...phases, newPhaseObj])
     setShowPhaseDialog(false)
-    setNewPhase(INITIAL_NEW_PHASE)
   }
-
+  
+  /**
+   * Handle adding a new task
+   */
   function handleAddTask() {
-    if (!newTask.title || !newTask.phaseId) return
-    
-    const newId = tasks.length > 0 ? Math.max(...tasks.map(t => t.id)) + 1 : 1
-    
-    const taskToAdd: Task = {
-      id: newId,
-      title: newTask.title,
-      phaseId: Number(newTask.phaseId),
-      description: newTask.description,
-      startDate: format(newTask.startDate, 'MMM d, yyyy'),
-      endDate: format(newTask.endDate, 'MMM d, yyyy'),
-      status: "Not Started",
-      assignedTo: [newTask.assignee],
-      priority: newTask.priority as 'Low' | 'Medium' | 'High'
-    }
-    
-    setTasks([...tasks, taskToAdd])
-    setShowTaskDialog(false)
+    setShowTaskDialog(true)
     setNewTask(INITIAL_NEW_TASK)
   }
-
-  function togglePhaseExpansion(phaseId: number) {
+  
+  /**
+   * Toggle expansion of a phase card
+   */
+  function togglePhaseExpand(phaseId: number) {
     setExpandedPhase(expandedPhase === phaseId ? null : phaseId)
   }
-
-  function getTasksForPhase(phaseId: number) {
-    return tasks.filter(task => task.phaseId === phaseId)
+  
+  /**
+   * Navigate to a specific phase
+   */
+  function handlePhaseClick(phaseId: number) {
+    navigate(`/phases/${phaseId}`)
   }
+  
+  /**
+   * View all activities
+   */
+  function handleViewAllActivities() {
+    // This would typically navigate to a page showing all activities
+    console.log('View all activities')
+  }
+  
+  /**
+   * View all documents
+   */
+  function handleViewAllDocuments() {
+    // This would typically navigate to a page showing all documents
+    console.log('View all documents')
+  }
+  
+  /**
+   * Handle quick action click
+   */
+  function handleQuickActionClick(action: string) {
+    // This would typically handle the specific action
+    console.log(`Quick action clicked: ${action}`)
+  }
+  
+  /**
+   * Calculate total progress across all phases
+   */
+  const totalProgress = Math.round(
+    phases.reduce((sum, phase) => sum + phase.progress, 0) / phases.length
+  )
+  
+  /**
+   * Calculate total budget across all phases
+   */
+  const totalBudget = phases.reduce((acc, phase) => {
+    const budget = parseInt(phase.budget.replace(/\D/g, ''))
+    return acc + (isNaN(budget) ? 0 : budget)
+  }, 0)
+  
+  /**
+   * Calculate total spent across all phases
+   */
+  const totalSpent = phases.reduce((acc, phase) => {
+    const spent = parseInt(phase.spent.replace(/\D/g, ''))
+    return acc + (isNaN(spent) ? 0 : spent);
+  }, 0);
+
+  // Animation variants for metric cards
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring",
+        stiffness: 100,
+        damping: 12
+      }
+    }
+  };
+
+  // Animation variants for content sections
+  const contentVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        when: "beforeChildren",
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const sectionVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1, 
+      y: 0,
+      transition: {
+        type: "spring",
+        stiffness: 100,
+        damping: 15
+      }
+    }
+  };
+
+  // Project insights data
+  const projectInsights = [
+    {
+      title: "Budget Forecast",
+      description: "Project is currently 5% under budget. Most savings from efficient material sourcing.",
+      type: "success" as const,
+      icon: <DollarSign className="h-5 w-5" />
+    },
+    {
+      title: "Schedule Analysis",
+      description: "Current pace suggests completion 2 weeks ahead of schedule if weather permits.",
+      type: "default" as const,
+      icon: <CalendarIcon className="h-5 w-5" />
+    },
+    {
+      title: "Risk Detection",
+      description: "Material delivery delays possible in May due to supplier capacity constraints.",
+      type: "warning" as const,
+      icon: <FileBarChart className="h-5 w-5" />
+    }
+  ];
+
+  // Quick actions data
+  const quickActions = [
+    {
+      label: "Generate Progress Report",
+      icon: <ChartPie className="h-4 w-4 mr-2" />,
+      onClick: () => handleQuickActionClick("Generate Progress Report")
+    },
+    {
+      label: "Schedule Team Meeting",
+      icon: <Users className="h-4 w-4 mr-2" />,
+      onClick: () => handleQuickActionClick("Schedule Team Meeting")
+    },
+    {
+      label: "Review Material Orders",
+      icon: <Package className="h-4 w-4 mr-2" />,
+      onClick: () => handleQuickActionClick("Review Material Orders")
+    }
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900/95">
       <PageHeader
         title={`Residential Renovation #${id}`}
         description="Modern home renovation project with eco-friendly materials"
-        icon={<Building className="h-6 w-6" />}
+        icon={<Building className="h-8 w-8 text-blue-600 dark:text-blue-400" />}
         actions={
-          <Button
-            variant="outline"
-            onClick={() => navigate(`/project/${id}/settings`)}
-          >
-            <Settings className="mr-2 h-4 w-4" /> Settings
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="bg-white/20 backdrop-blur-sm border-white/10 hover:bg-white/30 text-white"
+              onClick={() => navigate(`/project/${id}/settings`)}
+            >
+              <Settings className="mr-2 h-4 w-4" /> Settings
+            </Button>
+            <Button
+              className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border-white/10"
+              onClick={() => navigate(`/project/${id}/documents`)}
+            >
+              <FileText className="mr-2 h-4 w-4" /> Documents
+            </Button>
+          </div>
         }
+      />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        {/* Project Stats */}
+        <ProjectStatGrid 
+          timelineValue="7 months"
+          timelineSubtitle={`${phases[0]?.startDate || 'Jan 2023'} - ${phases[phases.length-1]?.endDate || 'Jul 2023'}`}
+          budgetValue={`$${totalBudget.toLocaleString()}`}
+          budgetSubtitle={`$${totalSpent.toLocaleString()} spent (${Math.round((totalSpent/totalBudget) * 100)}%)`}
+          teamSizeValue="12"
+          teamSizeSubtitle="active members"
+          progressValue={`${totalProgress}%`}
+          progressSubtitle="overall completion"
+          className="mb-8"
         />
 
-        {/* Project Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
-          <ProjectStatCard
-            icon={<Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />}
-            label="Timeline"
-            value="7 months"
-            colorScheme="blue"
-          />
-          
-          <ProjectStatCard
-            icon={<DollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />}
-            label="Budget"
-            value="$120,000"
-            colorScheme="emerald"
-          />
-          
-          <ProjectStatCard
-            icon={<Users className="h-5 w-5 text-purple-600 dark:text-purple-400" />}
-            label="Team Size"
-            value="12"
-            subtitle="members"
-            colorScheme="purple"
-          />
-          
-          <ProjectStatCard
-            icon={<CheckSquare className="h-5 w-5 text-amber-600 dark:text-amber-400" />}
-            label="Progress"
-            value="75%"
-            subtitle="complete"
-            colorScheme="amber"
-          />
-                    </div>
-
         {/* Project Navigation */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden sticky top-16 z-30 mt-8 mb-6">
-          <div className="border-b border-gray-200 dark:border-slate-700 px-1">
-          <HorizontalNav
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden sticky top-16 z-30 mb-8 border border-gray-100 dark:border-slate-700">
+          <div className="border-b border-gray-200 dark:border-slate-700">
+            <HorizontalNav
               items={PROJECT_NAV_ITEMS(id)}
-            variant="underlined"
-            showIcons={true}
+              variant="underlined"
+              showIcons={true}
               className="py-2 px-2"
               itemClassName="font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
               animated={true}
               showTooltips={true}
-                      />
+            />
           </div>
-                    </div>
+        </div>
 
         {/* Tab Content */}
-        <div className="mt-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <LazyMotion features={domAnimation}>
+          <m.div 
+            className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+            variants={contentVariants}
+            initial="hidden"
+            animate="visible"
+          >
             {/* Main Content Area */}
-            <div className="lg:col-span-2 space-y-6">
+            <m.div 
+              className="lg:col-span-2 space-y-8"
+              variants={sectionVariants}
+            >
               {/* Project Phases */}
-              <Card className="bg-white dark:bg-slate-800 shadow-sm">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle className="text-xl text-[#1E1E1E] dark:text-white">Project Phases</CardTitle>
-                    <CardDescription>Construction timeline breakdown</CardDescription>
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button 
-                      size="sm"
-                      variant="outline"
-                      className="text-[#1E3A8A] border-[#1E3A8A] hover:bg-[#1E3A8A]/10"
-                      onClick={() => setShowTaskDialog(true)}
-                    >
-                      <Plus className="h-4 w-4 mr-1" /> Add Task
-                    </Button>
-                    <Button 
-                    size="sm"
-                    className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white"
-                    onClick={() => setShowPhaseDialog(true)}
-                    >
-                    <Plus className="h-4 w-4 mr-1" /> Add Phase
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-            <div className="space-y-4">
-              {phases.map((phase) => (
-                      <PhaseCard
-                        key={phase.id}
-                        name={phase.name}
-                        progress={phase.progress}
-                        startDate={phase.startDate}
-                        endDate={phase.endDate}
-                        status={phase.status}
-                        budget={phase.budget}
-                        spent={phase.spent}
-                      />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+              <ProjectPhasesSection
+                phases={phases}
+                expandedPhase={expandedPhase}
+                onToggleExpand={togglePhaseExpand}
+                onPhaseClick={handlePhaseClick}
+                onAddTask={handleAddTask}
+                onAddPhase={handleAddPhase}
+              />
 
-          {/* Recent Activity */}
-              <Card className="bg-white dark:bg-slate-800 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-xl text-[#1E1E1E] dark:text-white">Recent Activity</CardTitle>
-                  <CardDescription>Latest updates and changes</CardDescription>
-                </CardHeader>
-                <CardContent>
-            <div className="space-y-4">
-              <ActivityItem
-                icon={<FileText className="h-5 w-5" />}
-                title="Permit Approval"
-                description="Building permit has been approved by the city."
-                time="2 days ago"
-                iconColor="blue"
+              {/* Recent Activity */}
+              <ProjectActivitySection
+                activities={RECENT_ACTIVITY}
+                onViewAll={handleViewAllActivities}
+                limit={4}
               />
-              <ActivityItem
-                icon={<DollarSign className="h-5 w-5" />}
-                title="Payment Made"
-                description="$15,450 paid to contractor for foundation work."
-                time="5 days ago"
-                iconColor="green"
+            </m.div>
+            
+            <m.div 
+              className="space-y-8"
+              variants={sectionVariants}
+            >
+              {/* Project Insights */}
+              <ProjectInsightsSection
+                insights={projectInsights}
+                isDarkMode={isDarkMode}
               />
-              <ActivityItem
-                icon={<Users className="h-5 w-5" />}
-                title="Team Updated"
-                description="2 new contractors added to the team."
-                time="1 week ago"
-                iconColor="indigo"
-              />
-            </div>
-                </CardContent>
-              </Card>
-            </div>
         
-            {/* Sidebar */}
-            <div className="space-y-6">
-          {/* Project Insights */}
-              <Card className={cn(
-                "border shadow-sm",
-              isDarkMode 
-                ? "bg-indigo-950/30 border-indigo-900/50" 
-                : "bg-gradient-to-br from-blue-50/80 to-indigo-50/80 border-blue-100"
-              )}>
-                <CardHeader>
-                  <CardTitle className="text-xl text-[#1E1E1E] dark:text-white">Project Insights</CardTitle>
-                  <CardDescription>AI-powered analysis</CardDescription>
-                </CardHeader>
-                <CardContent>
-            <div className="space-y-3">
-              <InsightItem
-                title="Budget Forecast"
-                description="Project is currently 5% under budget. Most savings from efficient material sourcing."
-                type="success"
+              {/* Quick Actions */}
+              <QuickActionsSection
+                actions={quickActions}
               />
-              <InsightItem
-                title="Schedule Analysis"
-                description="Current pace suggests completion 2 weeks ahead of schedule if weather permits."
-                type="default"
+              
+              {/* Recent Documents */}
+              <RecentDocumentsSection
+                documents={RECENT_DOCUMENTS}
+                onViewAll={handleViewAllDocuments}
               />
-              <InsightItem
-                title="Risk Detection"
-                description="Material delivery delays possible in May due to supplier capacity constraints."
-                type="warning"
-              />
-            </div>
-                </CardContent>
-              </Card>
-        
-          {/* Quick Actions */}
-              <Card className="bg-white dark:bg-slate-800 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-xl text-[#1E1E1E] dark:text-white">Quick Actions</CardTitle>
-                  <CardDescription>Frequent operations</CardDescription>
-                </CardHeader>
-                <CardContent>
-            <div className="grid grid-cols-2 gap-2">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="outline" className="justify-start hover:bg-[#1E3A8A]/10 hover:text-[#1E3A8A] w-full overflow-hidden">
-                            <MessageSquare className="h-4 w-4 mr-2 flex-shrink-0" />
-                            <span className="truncate">Message Team</span>
-              </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Message Team</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="outline" className="justify-start hover:bg-[#D97706]/10 hover:text-[#D97706] w-full overflow-hidden">
-                            <FileText className="h-4 w-4 mr-2 flex-shrink-0" />
-                            <span className="truncate">Add Document</span>
-              </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Add Document</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="outline" className="justify-start hover:bg-[#1E3A8A]/10 hover:text-[#1E3A8A] w-full overflow-hidden">
-                            <Users className="h-4 w-4 mr-2 flex-shrink-0" />
-                            <span className="truncate">Update Team</span>
-              </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Update Team</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="outline" className="justify-start hover:bg-[#D97706]/10 hover:text-[#D97706] w-full overflow-hidden">
-                            <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
-                            <span className="truncate">Schedule Meeting</span>
-              </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Schedule Meeting</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-            </div>
-                </CardContent>
-              </Card>
-                </div>
-              </div>
-            </div>
-
-        {/* Dialogs for adding phases and tasks */}
-        <AddPhaseDialog 
-          isOpen={showPhaseDialog}
-          setIsOpen={setShowPhaseDialog}
-          newPhase={newPhase}
-          setNewPhase={setNewPhase}
-          handleAddPhase={handleAddPhase}
-        />
-        
-        <AddTaskDialog
-          isOpen={showTaskDialog}
-          setIsOpen={setShowTaskDialog}
-          newTask={newTask}
-          setNewTask={setNewTask}
-          handleAddTask={handleAddTask}
-          phases={phases}
-        />
+            </m.div>
+          </m.div>
+        </LazyMotion>
       </div>
+      
+      {/* Add Phase Dialog */}
+      <AddPhaseDialog
+        isOpen={showPhaseDialog}
+        onClose={() => setShowPhaseDialog(false)}
+        onAddPhase={handleSavePhase}
+        projectId={id}
+        phase={newPhase}
+        setPhase={setNewPhase}
+      />
+
+      {/* Add Task Dialog */}
+      <AddTaskDialog
+        isOpen={showTaskDialog}
+        onClose={() => setShowTaskDialog(false)}
+        projectId={id}
+        phases={phases}
+      />
     </div>
   )
 }
 
-// Helper Components
-function DatePicker({ mode, selected, onSelect, initialFocus }: DatePickerProps) {
-  return (
-    <CalendarComponent
-      mode={mode}
-      selected={selected}
-      onSelect={onSelect}
-      initialFocus={initialFocus}
-    />
-  )
-}
-
-function DocumentItem({ title, type, date, size }: DocumentItemProps) {
-  function getIcon() {
-    switch (type) {
-      case 'PDF':
-        return <FileText className="h-5 w-5 text-red-500" />
-      case 'DWG':
-        return <FileText className="h-5 w-5 text-blue-500" />
-      case 'XLSX':
-        return <FileText className="h-5 w-5 text-green-500" />
-      default:
-        return <FileText className="h-5 w-5 text-gray-500" />
-    }
-  }
-  
-  return (
-    <div className="flex items-center p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-all hover:shadow-sm">
-      <div className="flex-shrink-0 mr-3">
-        {getIcon()}
-      </div>
-      <div className="flex-grow">
-        <h3 className="font-medium">{title}</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{date} · {size}</p>
-      </div>
-      <Button variant="ghost" size="icon" className="text-gray-500 hover:text-blue-600 dark:hover:text-blue-400">
-        <ChevronRight className="h-4 w-4" />
-      </Button>
-    </div>
-  )
-}
-
-function ProjectStatCard({ icon, label, value, subtitle, colorScheme }: ProjectStatCardProps) {
-  const colorConfig = {
-    blue: {
-      gradient: "from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/10",
-      border: "border-blue-200 dark:border-blue-800/30",
-      iconBg: "bg-blue-100 dark:bg-blue-900/50",
-      iconColor: "text-blue-600 dark:text-blue-400",
-      ring: "ring-blue-500/20 dark:ring-blue-400/10",
-      shadow: "shadow-blue-500/5",
-      hoverBg: "hover:bg-blue-50/70 dark:hover:bg-blue-900/40"
-    },
-    emerald: {
-      gradient: "from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/10",
-      border: "border-emerald-200 dark:border-emerald-800/30",
-      iconBg: "bg-emerald-100 dark:bg-emerald-900/50",
-      iconColor: "text-emerald-600 dark:text-emerald-400",
-      ring: "ring-emerald-500/20 dark:ring-emerald-400/10",
-      shadow: "shadow-emerald-500/5",
-      hoverBg: "hover:bg-emerald-50/70 dark:hover:bg-emerald-900/40"
-    },
-    purple: {
-      gradient: "from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/10",
-      border: "border-purple-200 dark:border-purple-800/30",
-      iconBg: "bg-purple-100 dark:bg-purple-900/50",
-      iconColor: "text-purple-600 dark:text-purple-400",
-      ring: "ring-purple-500/20 dark:ring-purple-400/10",
-      shadow: "shadow-purple-500/5",
-      hoverBg: "hover:bg-purple-50/70 dark:hover:bg-purple-900/40"
-    },
-    amber: {
-      gradient: "from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/10",
-      border: "border-amber-200 dark:border-amber-800/30",
-      iconBg: "bg-amber-100 dark:bg-amber-900/50",
-      iconColor: "text-amber-600 dark:text-amber-400",
-      ring: "ring-amber-500/20 dark:ring-amber-400/10",
-      shadow: "shadow-amber-500/5",
-      hoverBg: "hover:bg-amber-50/70 dark:hover:bg-amber-900/40"
-    }
-  };
-  
-  return (
-    <Card className={cn(
-      "bg-gradient-to-br transition-all duration-300 group",
-      "shadow-md hover:shadow-lg overflow-hidden",
-      colorConfig[colorScheme].gradient,
-      colorConfig[colorScheme].border
-    )}>
-      <CardContent className="p-6">
-        <div className="flex items-center gap-4">
-          <div className={cn(
-            "p-3 rounded-xl shadow-sm transition-transform group-hover:scale-110",
-            "ring-2 ring-offset-2 ring-offset-white dark:ring-offset-gray-900",
-            colorConfig[colorScheme].iconBg,
-            colorConfig[colorScheme].ring,
-            colorConfig[colorScheme].shadow
-          )}>
-            {icon}
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{label}</p>
-            <div className="flex items-baseline gap-2">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
-              {subtitle && <p className="text-sm text-gray-500 dark:text-gray-400">{subtitle}</p>}
-            </div>
-          </div>
-        </div>
-        <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
-          <div className="flex justify-between items-center">
-            <div className="w-full bg-gray-100 dark:bg-gray-700 h-1 rounded-full overflow-hidden">
-              <div 
-                className={cn(
-                  "h-full rounded-full", 
-                  colorConfig[colorScheme].iconBg
-                )} 
-                style={{width: '75%'}}
-              ></div>
-            </div>
-            <span className="ml-3 text-xs font-medium text-gray-500 dark:text-gray-400">75%</span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-function AddPhaseDialog({ isOpen, setIsOpen, newPhase, setNewPhase, handleAddPhase }: AddPhaseDialogProps) {
-  return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add New Project Phase</DialogTitle>
-          <DialogDescription>
-            Create a new phase for your construction project.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="phase-name">Phase Name</Label>
-            <Input
-              id="phase-name"
-              value={newPhase.name}
-              onChange={(e) => setNewPhase({ ...newPhase, name: e.target.value })}
-              placeholder="e.g. Foundation Work"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label>Start Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline">
-                    {format(newPhase.startDate, 'PPP')}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <DatePicker
-                    mode="single"
-                    selected={newPhase.startDate}
-                    onSelect={(date) => date && setNewPhase({ ...newPhase, startDate: date })}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="grid gap-2">
-              <Label>End Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline">
-                    {format(newPhase.endDate, 'PPP')}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <DatePicker
-                    mode="single"
-                    selected={newPhase.endDate}
-                    onSelect={(date) => date && setNewPhase({ ...newPhase, endDate: date })}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="phase-budget">Budget</Label>
-            <Input
-              id="phase-budget"
-              value={newPhase.budget}
-              onChange={(e) => setNewPhase({ ...newPhase, budget: e.target.value.replace(/[^0-9]/g, '') })}
-              placeholder="e.g. 25000"
-              type="text"
-              inputMode="numeric"
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="phase-description">Description</Label>
-            <Textarea
-              id="phase-description"
-              value={newPhase.description}
-              onChange={(e) => setNewPhase({ ...newPhase, description: e.target.value })}
-              placeholder="Describe the work to be done in this phase..."
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-          <Button onClick={handleAddPhase}>Add Phase</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-function AddTaskDialog({ isOpen, setIsOpen, newTask, setNewTask, handleAddTask, phases }: AddTaskDialogProps) {
-  return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add New Task</DialogTitle>
-          <DialogDescription>
-            Create a new task for your project phase.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="task-title">Task Title</Label>
-            <Input
-              id="task-title"
-              value={newTask.title}
-              onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-              placeholder="e.g. Pour concrete for foundation"
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="task-phase">Project Phase</Label>
-            <Select
-              value={newTask.phaseId.toString()}
-              onValueChange={(value) => setNewTask({ ...newTask, phaseId: parseInt(value) })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a phase" />
-              </SelectTrigger>
-              <SelectContent>
-                {phases.map((phase) => (
-                  <SelectItem key={phase.id} value={phase.id.toString()}>
-                    {phase.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label>Start Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline">
-                    {format(newTask.startDate, 'PPP')}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <DatePicker
-                    mode="single"
-                    selected={newTask.startDate}
-                    onSelect={(date) => date && setNewTask({ ...newTask, startDate: date })}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="grid gap-2">
-              <Label>End Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline">
-                    {format(newTask.endDate, 'PPP')}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <DatePicker
-                    mode="single"
-                    selected={newTask.endDate}
-                    onSelect={(date) => date && setNewTask({ ...newTask, endDate: date })}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="task-priority">Priority</Label>
-            <Select
-              value={newTask.priority}
-              onValueChange={(value) => setNewTask({ ...newTask, priority: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Low">Low</SelectItem>
-                <SelectItem value="Medium">Medium</SelectItem>
-                <SelectItem value="High">High</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="task-assignee">Assignee</Label>
-            <Input
-              id="task-assignee"
-              value={newTask.assignee}
-              onChange={(e) => setNewTask({ ...newTask, assignee: e.target.value })}
-              placeholder="e.g. John Smith"
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="task-description">Description</Label>
-            <Textarea
-              id="task-description"
-              value={newTask.description}
-              onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-              placeholder="Describe the task..."
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-          <Button onClick={handleAddTask}>Add Task</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-// Utility Functions
-function getPriorityColor(priority: string) {
-  switch (priority) {
-    case 'High': return 'text-red-600 bg-red-100'
-    case 'Medium': return 'text-yellow-600 bg-yellow-100'
-    case 'Low': return 'text-green-600 bg-green-100'
-    default: return 'text-gray-600 bg-gray-100'
-  }
-}
-
-function getStatusColor(status: string) {
-  switch (status) {
-    case 'Completed': return 'text-green-600 bg-green-100'
-    case 'In Progress': return 'text-blue-600 bg-blue-100'
-    case 'Not Started': return 'text-gray-600 bg-gray-100'
-    case 'Delayed': return 'text-red-600 bg-red-100'
-    default: return 'text-gray-600 bg-gray-100'
-  }
-}
-
-// Constants
-const INITIAL_PHASES: Phase[] = [
-  {
-    id: 1,
-    name: "Foundation Work",
-    progress: 100,
-    startDate: "Jan 15, 2024",
-    endDate: "Feb 28, 2024",
-    status: "completed",
-    budget: "$25,000",
-    spent: "$23,450"
-  },
-  {
-    id: 2,
-    name: "Framing",
-    progress: 80,
-    startDate: "Mar 1, 2024",
-    endDate: "Apr 15, 2024",
-    status: "in-progress",
-    budget: "$35,000",
-    spent: "$28,000"
-  },
-  {
-    id: 3,
-    name: "Electrical & Plumbing",
-    progress: 0,
-    startDate: "Apr 16, 2024",
-    endDate: "May 30, 2024",
-    status: "upcoming",
-    budget: "$40,000",
-    spent: "$0"
-  },
-  {
-    id: 4,
-    name: "Interior & Finishing",
-    progress: 0,
-    startDate: "Jun 1, 2024",
-    endDate: "Aug 15, 2024",
-    status: "upcoming",
-    budget: "$20,000",
-    spent: "$1,000"
-  }
-]
-
-const INITIAL_NEW_PHASE: NewPhase = {
-  name: "",
-  startDate: new Date(),
-  endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days later
-  budget: "",
-  description: ""
-}
-
-const INITIAL_NEW_TASK: NewTask = {
-  title: "",
-  phaseId: 0,
-  description: "",
-  startDate: new Date(),
-  endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days later
-  priority: "Medium",
-  assignee: ""
-}
-
+// Navigation items for the project
 const PROJECT_NAV_ITEMS = (id?: string) => [
   {
-    label: "Overview",
-    value: "overview",
-    path: `/projects/${id}/overview`,
-    icon: <Home className="h-4 w-4" />
+    label: 'Overview',
+    value: 'overview',
+    icon: <LayoutDashboard className="h-4 w-4" />,
+    tooltip: 'Project overview',
+    href: `/project/${id}`
   },
   {
-    label: "Schedule",
-    value: "schedule",
-    path: `/projects/${id}/schedule`,
-    icon: <Calendar className="h-4 w-4" />
+    label: 'Tasks',
+    value: 'tasks',
+    icon: <CheckSquare className="h-4 w-4" />,
+    tooltip: 'Project tasks',
+    href: `/project/${id}/tasks`
   },
   {
-    label: "Budget",
-    value: "budget",
-    path: `/projects/${id}/budget`,
-    icon: <DollarSign className="h-4 w-4" />
+    label: 'Calendar',
+    value: 'calendar',
+    icon: <Calendar className="h-4 w-4" />,
+    tooltip: 'Project calendar',
+    href: `/project/${id}/calendar`
   },
   {
-    label: "Team",
-    value: "team",
-    path: `/projects/${id}/team`,
-    icon: <Users className="h-4 w-4" />
+    label: 'Team',
+    value: 'team',
+    icon: <Users className="h-4 w-4" />,
+    tooltip: 'Project team',
+    href: `/project/${id}/team`
   },
   {
-    label: "Materials",
-    value: "materials",
-    path: `/projects/${id}/materials`,
-    icon: <Package className="h-4 w-4" />
+    label: 'Materials',
+    value: 'materials',
+    icon: <Package className="h-4 w-4" />,
+    tooltip: 'Project materials',
+    href: `/project/${id}/materials`
   },
   {
-    label: "Documents",
-    value: "documents",
-    path: `/projects/${id}/documents`,
+    label: 'Documents',
+    value: 'documents',
     icon: <FileText className="h-4 w-4" />,
-    badge: {
-      text: "3",
-      color: "blue"
-    }
+    tooltip: 'Project documents',
+    href: `/project/${id}/documents`
   },
   {
-    label: "Photos",
-    value: "photos",
-    path: `/projects/${id}/photos`,
-    icon: <Image className="h-4 w-4" />
+    label: 'Photos',
+    value: 'photos',
+    icon: <Image className="h-4 w-4" />,
+    tooltip: 'Project photos',
+    href: `/project/${id}/photos`
+  },
+  {
+    label: 'Discussions',
+    value: 'discussions',
+    icon: <MessageSquare className="h-4 w-4" />,
+    tooltip: 'Project discussions',
+    href: `/project/${id}/discussions`
   }
 ]
 
+// Breadcrumb items for the project
 const BREADCRUMB_ITEMS = (id?: string) => [
-  { label: 'Dashboard', href: '/dashboard' },
-  { label: 'Projects', href: '/projects' },
-  { label: `Project #${id}` }
+  {
+    label: 'Home',
+    icon: <Home className="h-4 w-4" />,
+    href: '/'
+  },
+  {
+    label: 'Projects',
+    href: '/projects'
+  },
+  {
+    label: `Project ${id}`,
+    href: `/project/${id}`,
+    active: true
+  }
 ]
 
-// Types
-interface DatePickerProps {
-  mode: 'single'
-  selected: Date
-  onSelect: (date: Date | undefined) => void
-  initialFocus?: boolean
-}
+// Mock data for recent activity
+const RECENT_ACTIVITY = [
+  {
+    date: 'Today, 10:30 AM',
+    title: 'Material Order Placed',
+    description: 'Order #123456 for kitchen cabinets was placed with supplier',
+    icon: <Package className="h-5 w-5 text-blue-500" />,
+    user: {
+      name: 'John Smith',
+      avatar: ''
+    }
+  },
+  {
+    date: 'Yesterday, 3:45 PM',
+    title: 'Phase Completed',
+    description: 'Demolition phase marked as completed',
+    icon: <CheckSquare className="h-5 w-5 text-green-500" />,
+    user: {
+      name: 'Sarah Johnson',
+      avatar: ''
+    }
+  },
+  {
+    date: 'Yesterday, 11:15 AM',
+    title: 'Document Uploaded',
+    description: 'New electrical blueprints uploaded to documents',
+    icon: <FileText className="h-5 w-5 text-purple-500" />,
+    user: {
+      name: 'Mike Richards',
+      avatar: ''
+    }
+  },
+  {
+    date: '2 days ago',
+    title: 'Team Meeting Scheduled',
+    description: 'Weekly progress meeting scheduled for Friday at 2PM',
+    icon: <Calendar className="h-5 w-5 text-amber-500" />,
+    user: {
+      name: 'Amanda Peterson',
+      avatar: ''
+    }
+  }
+]
+
+// Mock data for recent documents
+const RECENT_DOCUMENTS = [
+  {
+    title: 'Architectural Blueprints v2.1',
+    type: 'PDF',
+    size: '4.2 MB',
+    date: '2 days ago'
+  },
+  {
+    title: 'Material Specifications',
+    type: 'XLSX',
+    size: '1.8 MB',
+    date: '3 days ago'
+  },
+  {
+    title: 'Contractor Agreement',
+    type: 'DOC',
+    size: '320 KB',
+    date: '1 week ago'
+  },
+  {
+    title: 'Budget Forecast Q2',
+    type: 'XLSX',
+    size: '980 KB',
+    date: '1 week ago'
+  }
+]
 
 interface Phase {
   id: number
@@ -918,14 +603,11 @@ interface Phase {
 
 interface Task {
   id: number
-  title: string
-  phaseId: number
-  description: string
-  startDate: string
-  endDate: string
-  status: 'Not Started' | 'In Progress' | 'Completed' | 'Delayed'
-  assignedTo: string[]
-  priority: 'Low' | 'Medium' | 'High'
+  name: string
+  description?: string
+  dueDate: string
+  assignee?: string
+  status: 'completed' | 'in-progress' | 'pending'
 }
 
 interface NewPhase {
@@ -937,43 +619,79 @@ interface NewPhase {
 }
 
 interface NewTask {
-  title: string
-  phaseId: number
+  name: string
   description: string
-  startDate: Date
-  endDate: Date
-  priority: string
-  assignee: string
+  dueDate: Date
+  assigneeId?: string
 }
 
-interface DocumentItemProps {
-  title: string
-  type: string
-  date: string
-  size: string
+// Initial mock data for phases
+const INITIAL_PHASES: Phase[] = [
+  {
+    id: 1,
+    name: 'Demolition & Site Preparation',
+    progress: 100,
+    startDate: 'Jan 15, 2023',
+    endDate: 'Feb 5, 2023',
+    status: 'completed',
+    budget: '$12,000',
+    spent: '$11,450'
+  },
+  {
+    id: 2,
+    name: 'Foundation & Framing',
+    progress: 85,
+    startDate: 'Feb 6, 2023',
+    endDate: 'Mar 20, 2023',
+    status: 'in-progress',
+    budget: '$45,000',
+    spent: '$38,500'
+  },
+  {
+    id: 3,
+    name: 'Electrical & Plumbing',
+    progress: 10,
+    startDate: 'Mar 15, 2023',
+    endDate: 'Apr 30, 2023',
+    status: 'in-progress',
+    budget: '$28,000',
+    spent: '$4,200'
+  },
+  {
+    id: 4,
+    name: 'Interior Finishing',
+    progress: 0,
+    startDate: 'May 1, 2023',
+    endDate: 'Jun 15, 2023',
+    status: 'upcoming',
+    budget: '$35,000',
+    spent: '$0'
+  },
+  {
+    id: 5,
+    name: 'Final Inspection & Handover',
+    progress: 0,
+    startDate: 'Jun 16, 2023',
+    endDate: 'Jul 1, 2023',
+    status: 'upcoming',
+    budget: '$8,000',
+    spent: '$0'
+  }
+]
+
+// Initial new phase data
+const INITIAL_NEW_PHASE: NewPhase = {
+  name: '',
+  startDate: new Date(),
+  endDate: new Date(),
+  budget: '',
+  description: ''
 }
 
-interface ProjectStatCardProps {
-  icon: React.ReactNode
-  label: string
-  value: string
-  subtitle?: string
-  colorScheme: 'blue' | 'emerald' | 'purple' | 'amber'
-}
-
-interface AddPhaseDialogProps {
-  isOpen: boolean
-  setIsOpen: (open: boolean) => void
-  newPhase: NewPhase
-  setNewPhase: (phase: NewPhase) => void
-  handleAddPhase: () => void
-}
-
-interface AddTaskDialogProps {
-  isOpen: boolean
-  setIsOpen: (open: boolean) => void
-  newTask: NewTask
-  setNewTask: (task: NewTask) => void
-  handleAddTask: () => void
-  phases: Phase[]
+// Initial new task data
+const INITIAL_NEW_TASK: NewTask = {
+  name: '',
+  description: '',
+  dueDate: new Date(),
+  assigneeId: undefined
 } 

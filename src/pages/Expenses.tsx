@@ -87,6 +87,16 @@ import { PageHeader } from '@/components/shared';
 import { Form } from '@/components/ui/form';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 // Types
 import { 
@@ -119,6 +129,15 @@ import {
   prepareProjectChartData,
   calculateGrowthInsights
 } from '@/utils/expenseUtils';
+
+// Import the new components
+import {
+  ExpensesFilters,
+  ExpenseMetricsGrid,
+  ExpensesTable, 
+  BatchActionsBar,
+  ExpenseDialog
+} from '@/components/expenses';
 
 /**
  * Expenses page component
@@ -821,259 +840,16 @@ function Expenses() {
                   </div>
 
       {/* Add Expense Dialog */}
-      <Dialog open={isAddExpenseOpen} onOpenChange={setIsAddExpenseOpen}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Add New Expense</DialogTitle>
-            <DialogDescription>
-              Record a new expense for your construction project.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-3">
-              {/* Description */}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="description" className="text-right">
-                  Description <span className="text-red-500">*</span>
-                </Label>
-                <div className="col-span-3">
-              <Input
-                id="description"
-                placeholder="Enter expense description"
-                    value={newExpense.description}
-                    onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
-                    className="w-full"
-                required
-              />
-                </div>
-            </div>
-            
-              {/* Category */}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="category" className="text-right">
-                  Category <span className="text-red-500">*</span>
-                </Label>
-                <div className="col-span-3">
-              <Select 
-                value={newExpense.category}
-                    onValueChange={(value) => setNewExpense({ ...newExpense, category: value })}
-              >
-                    <SelectTrigger id="category" className="w-full">
-                      <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                      {EXPENSE_CATEGORIES.slice(1).map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              </div>
-            </div>
-            
-              {/* Amount */}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="amount" className="text-right">
-                  Amount <span className="text-red-500">*</span>
-                </Label>
-                <div className="col-span-3 relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <DollarSign className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <Input
-                    id="amount"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0.00"
-                    className="pl-8"
-                    value={newExpense.amount}
-                    onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-              
-              {/* Date */}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="date" className="text-right">
-                  Date <span className="text-red-500">*</span>
-                </Label>
-                <div className="col-span-3">
-              <Input
-                id="date"
-                type="date"
-                value={newExpense.date}
-                    onChange={(e) => setNewExpense({ ...newExpense, date: e.target.value })}
-                    max={new Date().toISOString().split('T')[0]}
-                    required
-              />
-              </div>
-            </div>
-            
-              {/* Project */}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="project" className="text-right">
-                  Project <span className="text-red-500">*</span>
-                </Label>
-                <div className="col-span-3">
-              <Select 
-                value={newExpense.project}
-                    onValueChange={(value) => setNewExpense({ ...newExpense, project: value })}
-              >
-                    <SelectTrigger id="project" className="w-full">
-                      <SelectValue placeholder="Select a project" />
-                </SelectTrigger>
-                <SelectContent>
-                      {EXPENSE_PROJECTS.slice(1).map((project) => (
-                      <SelectItem key={project} value={project}>
-                        {project}
-                      </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-                </div>
-            </div>
-            
-              {/* Phase */}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="phase" className="text-right">
-                  Phase <span className="text-red-500">*</span>
-                </Label>
-                <div className="col-span-3">
-              <Select 
-                value={newExpense.phase}
-                    onValueChange={(value) => setNewExpense({ ...newExpense, phase: value })}
-              >
-                    <SelectTrigger id="phase" className="w-full">
-                      <SelectValue placeholder="Select a phase" />
-                </SelectTrigger>
-                <SelectContent>
-                      {EXPENSE_PHASES.slice(1).map((phase) => (
-                      <SelectItem key={phase} value={phase}>
-                        {phase}
-                      </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            </div>
-            
-              {/* Payment Method */}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="paymentMethod" className="text-right">
-                Payment Method
-                </Label>
-                <div className="col-span-3">
-              <Select 
-                value={newExpense.paymentMethod}
-                    onValueChange={(value) => setNewExpense({ ...newExpense, paymentMethod: value })}
-              >
-                    <SelectTrigger id="paymentMethod" className="w-full">
-                      <SelectValue placeholder="Select payment method" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Cash">Cash</SelectItem>
-                  <SelectItem value="Credit Card">Credit Card</SelectItem>
-                      <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                  <SelectItem value="Check">Check</SelectItem>
-                      <SelectItem value="Mobile Payment">Mobile Payment</SelectItem>
-                </SelectContent>
-              </Select>
-                </div>
-            </div>
-            
-              {/* Vendor */}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="vendor" className="text-right">
-                  Vendor/Supplier
-                </Label>
-                <div className="col-span-3">
-                <Input 
-                  id="vendor" 
-                    placeholder="Enter vendor/supplier name"
-                  value={newExpense.vendor} 
-                    onChange={(e) => setNewExpense({ ...newExpense, vendor: e.target.value })}
-                />
-            </div>
-          </div>
-          
-              {/* Receipt Upload */}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <div className="text-right">
-                  <Label>Receipt</Label>
-                </div>
-                <div className="col-span-3">
-                  <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="receiptUploaded" 
-                checked={newExpense.receiptUploaded}
-                      onCheckedChange={(checked) => 
-                        setNewExpense({ 
-                          ...newExpense, 
-                          receiptUploaded: checked as boolean 
-                        })
-                      }
-              />
-              <label 
-                htmlFor="receiptUploaded" 
-                      className="text-sm font-medium leading-none cursor-pointer"
-              >
-                      Receipt available
-              </label>
-                  </div>
-              
-              {newExpense.receiptUploaded && (
-                    <div className="mt-2">
-                      <div className="flex items-center justify-center w-full">
-                        <label
-                          htmlFor="receipt-upload"
-                          className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-slate-800 dark:bg-slate-700 hover:bg-gray-100"
-                        >
-                          <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            <Upload className="w-8 h-8 mb-2 text-gray-500 dark:text-gray-400" />
-                            <p className="mb-1 text-sm text-gray-500 dark:text-gray-400">
-                              <span className="font-semibold">Click to upload</span> or drag and drop
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              PNG, JPG or PDF (MAX. 10MB)
-                            </p>
-                          </div>
-                          <input id="receipt-upload" type="file" className="hidden" />
-                        </label>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            <DialogFooter className="pt-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex w-full justify-between items-center">
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  <span className="text-red-500">*</span> Required fields
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setIsAddExpenseOpen(false)}>Cancel</Button>
-                        <Button
-                    onClick={handleAddExpense}
-                    disabled={
-                      !newExpense.description || 
-                      !newExpense.category || 
-                      !newExpense.amount || 
-                      !newExpense.date || 
-                      !newExpense.project || 
-                      !newExpense.phase
-                    }
-                  >
-                    Add Expense
-                        </Button>
-                  </div>
-            </div>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+      <ExpenseDialog
+        mode="add"
+        open={isAddExpenseOpen}
+        setOpen={setIsAddExpenseOpen}
+        newExpense={newExpense}
+        setNewExpense={setNewExpense}
+        handleAddExpense={handleAddExpense}
+        EXPENSE_CATEGORIES={EXPENSE_CATEGORIES.filter(c => c !== 'All Categories')}
+        EXPENSE_PROJECTS={EXPENSE_PROJECTS.filter(p => p !== 'All Projects')}
+      />
         
         {/* Delete Confirmation Dialog */}
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
