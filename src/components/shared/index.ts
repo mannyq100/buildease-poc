@@ -6,6 +6,5 @@ export * from './StatusBadge';
 export * from './TaskItem';
 export * from './MaterialItem';
 export * from './PageHeader';
-export * from './ProjectStatCard';
 export * from './DocumentItem';
 export * from './StatCard'; 

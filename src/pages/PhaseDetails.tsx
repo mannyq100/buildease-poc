@@ -27,7 +27,6 @@ import { LazyMotion, domAnimation, m } from 'framer-motion';
 // Import common shared components
 import { 
   PageHeader, 
-  ProjectStatCard,
   StatCard, 
   DocumentItem 
 } from '@/components/shared';
