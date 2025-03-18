@@ -2,17 +2,18 @@
  * Team.tsx - Team management page
  * Manage team members, roles, and assignments across construction projects
  */
-import React, { useState, useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
+import { useToast } from '@/components/ui/use-toast'
 
 // Icons
 import { 
   Users, 
   UserCheck, 
   Briefcase, 
-  Radar, 
+  Activity, 
   Search, 
-  GridIcon, 
   List, 
   Plus, 
   Mail, 
@@ -23,8 +24,13 @@ import {
   Calendar, 
   Clock, 
   User,
-  Activity,
-  ChevronRight
+  ChevronRight,
+  Grid2X2,
+  ListFilter,
+  RefreshCw,
+  MessageSquare,
+  FileText,
+  Info
 } from 'lucide-react'
 
 // UI Components
@@ -86,6 +92,9 @@ import { MainNavigation } from '@/components/navigation/MainNavigation'
 import { PageHeader } from '@/components/shared'
 import { Grid } from '@/components/layout/Grid'
 import { StatCard } from '@/components/shared/StatCard'
+import { TeamFilters, TeamFilters as TeamFiltersType } from '@/components/team/TeamFilters'
+import { EmptyState } from '@/components/shared/EmptyState'
+import { AnimatePresence, m } from 'framer-motion'
 
 // Types
 import { TeamMember, NewTeamMember, ViewMode } from '@/types/team'
@@ -97,6 +106,9 @@ import {
   getStatusOptions,
   getProjects
 } from '@/data/teamService'
+
+// Import mock team data
+import { teamData } from '@/data/teamData'
 
 /**
  * MultiSelect component
@@ -176,14 +188,20 @@ const MultiSelect = ({ values, onChange, options, placeholder, className }: Mult
 /**
  * Team management page component
  */
-export function Team() {
+export default function Team() {
+  const { toast } = useToast()
   const navigate = useNavigate()
   
   // State management
-  const [viewMode, setViewMode] = useState<ViewMode>('grid')
+  const [loading, setLoading] = useState(true)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [sortBy, setSortBy] = useState('name')
   const [searchQuery, setSearchQuery] = useState('')
-  const [departmentFilter, setDepartmentFilter] = useState('All')
-  const [statusFilter, setStatusFilter] = useState('All')
+  const [filters, setFilters] = useState<TeamFiltersType>({
+    departments: [],
+    availability: [],
+    onlyTopPerformers: false
+  })
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false)
   const [isViewProfileOpen, setIsViewProfileOpen] = useState(false)
   const [isConfirmRemoveOpen, setIsConfirmRemoveOpen] = useState(false)
@@ -203,26 +221,54 @@ export function Team() {
     projects: []
   })
 
-  // Filter team members based on search and filters
-  const filteredMembers = useMemo(() => {
-    return teamMembers.filter(member => {
-    const matchesSearch = 
-      member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      member.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        member.email.toLowerCase().includes(searchQuery.toLowerCase())
+  // Simulate data loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false)
+    }, 1000)
     
-    const matchesDepartment = 
-      departmentFilter === 'All' || 
-        member.department === departmentFilter
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Filter and sort team members
+  const filteredTeamMembers = useMemo(() => {
+    if (!teamMembers) return []
     
-    const matchesStatus = 
-      statusFilter === 'All' || 
-      (statusFilter === 'Active' && member.status === 'active') ||
-        (statusFilter === 'Inactive' && member.status === 'inactive')
-      
-      return matchesSearch && matchesDepartment && matchesStatus
-    })
-  }, [teamMembers, searchQuery, departmentFilter, statusFilter])
+    return teamMembers
+      .filter(member => {
+        // Filter by search query
+        const matchesSearch = member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          member.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          member.department.toLowerCase().includes(searchQuery.toLowerCase())
+        
+        // Filter by department
+        const matchesDepartment = filters.departments.length === 0 || 
+          filters.departments.includes(member.department)
+        
+        // Filter by availability
+        const matchesAvailability = filters.availability.length === 0 || 
+          filters.availability.includes(member.status)
+        
+        // Filter by top performers
+        const matchesTopPerformer = !filters.onlyTopPerformers || 
+          member.projects?.length >= 3
+          
+        return matchesSearch && matchesDepartment && matchesAvailability && matchesTopPerformer
+      })
+      .sort((a, b) => {
+        // Sort by selected criteria
+        switch (sortBy) {
+          case 'name':
+            return a.name.localeCompare(b.name)
+          case 'department':
+            return a.department.localeCompare(b.department)
+          case 'tasks':
+            return (b.tasks?.completed || 0) - (a.tasks?.completed || 0)
+          default:
+            return a.name.localeCompare(b.name)  // Default sort by name
+        }
+      })
+  }, [teamMembers, searchQuery, filters, sortBy])
 
   // Calculate average workload
   const averageWorkload = useMemo(() => {
@@ -329,8 +375,11 @@ export function Team() {
    */
   function handleResetFilters() {
     setSearchQuery('')
-    setDepartmentFilter('All')
-    setStatusFilter('All')
+    setFilters({
+      departments: [],
+      availability: [],
+      onlyTopPerformers: false
+    })
   }
 
   /**
@@ -372,195 +421,222 @@ export function Team() {
     });
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
-      <MainNavigation
-        title="Team"
-        icon={<Users className="h-6 w-6" />}
-      />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-          <PageHeader
-            title="Team Management"
-          description="Manage your team members, roles, and assignments"
-          icon={<Users className="h-8 w-8" />}
-          actions={
-            <Button
-              variant="default"
-              className="bg-white hover:bg-gray-100 text-blue-700 border border-white/20"
-              onClick={() => setIsAddMemberOpen(true)}
-            >
-              <Plus className="mr-2 h-4 w-4" /> Add Team Member
-            </Button>
-          }
+  // Render team member cards
+  const renderTeamMembers = () => {
+    if (loading) {
+      // Render skeleton loaders
+      return Array.from({ length: 8 }).map((_, index) => (
+        <div 
+          key={index} 
+          className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 h-[280px] animate-pulse"
         />
-
-        {/* Team Statistics */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard
-            title="Total Members"
-            value={teamMembers.length}
-            icon={<Users className="h-6 w-6" />}
-            color="blue"
-            subtitle="team members"
-          />
-          
-          <StatCard
-            title="Active Members"
-            value={teamMembers.filter(m => m.status === 'active').length}
-            icon={<UserCheck className="h-6 w-6" />}
-            color="green"
-            subtitle="currently active"
-          />
-          
-          <StatCard
-            title="Projects Assigned"
-            value={Array.from(new Set(teamMembers.flatMap(m => m.projects || []))).length}
-            icon={<Briefcase className="h-6 w-6" />}
-            color="amber"
-            subtitle="active projects"
-          />
-          
-          <StatCard
-            title="Average Workload"
-            value={`${Math.round(teamMembers.reduce((acc, member) => acc + member.workload, 0) / (teamMembers.length || 1))}%`}
-            icon={<Activity className="h-6 w-6" />}
-            color="purple"
-            subtitle="team capacity"
+      ))
+    }
+    
+    if (filteredTeamMembers.length === 0) {
+      return (
+        <div className="col-span-full">
+          <EmptyState
+            title="No team members found"
+            description="Try changing your filters or search query"
+            icon={<Users className="h-12 w-12 text-gray-400" />}
+            actions={
+              <Button 
+                variant="outline" 
+                onClick={handleResetFilters}
+              >
+                Clear All Filters
+              </Button>
+            }
           />
         </div>
+      )
+    }
+    
+    return filteredTeamMembers.map((member) => (
+      <m.div
+        key={member.id}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.2 }}
+      >
+        <TeamMemberCard
+          member={member}
+          viewMode={viewMode}
+          onViewProfile={openViewProfile}
+          onStartChat={handleStartChat}
+        />
+      </m.div>
+    ))
+  }
 
-        {/* Filters and Controls */}
-        <Card className="mb-6 dark:bg-slate-800 border dark:border-slate-700">
-          <CardContent className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <Input
-                  placeholder="Search team members..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full dark:bg-slate-900 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-500"
-                  icon={<Search className="h-4 w-4 dark:text-gray-500" />}
-                />
-              </div>
-              <div>
-                <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                  <SelectTrigger className="w-full dark:bg-slate-900 dark:border-slate-700 dark:text-white">
-                    <SelectValue placeholder="Department" />
-                  </SelectTrigger>
-                  <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
-                    {departments.map((department) => (
-                      <SelectItem 
-                        key={department} 
-                        value={department}
-                        className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-white"
-                      >
-                        {department === 'All' ? 'All Departments' : department}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full dark:bg-slate-900 dark:border-slate-700 dark:text-white">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
-                    {statusOptions.map((status) => (
-                      <SelectItem 
-                        key={status} 
-                        value={status}
-                        className="dark:text-gray-300 dark:focus:bg-slate-700 dark:focus:text-white"
-                      >
-                        {status === 'All' ? 'All Status' : status}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setViewMode('grid')}
-                    className={`dark:border-slate-700 ${
-                      viewMode === 'grid' 
-                        ? 'dark:bg-slate-700/50 dark:text-white' 
-                        : 'dark:bg-slate-900 dark:text-gray-400'
-                    }`}
+  // Profile dialog sections
+  const PROFILE_TABS = [
+    { id: 'overview', label: 'Overview', icon: <Info className="h-4 w-4 mr-2" /> },
+    { id: 'projects', label: 'Projects', icon: <Briefcase className="h-4 w-4 mr-2" /> },
+    { id: 'skills', label: 'Skills', icon: <Award className="h-4 w-4 mr-2" /> },
+    { id: 'documents', label: 'Documents', icon: <FileText className="h-4 w-4 mr-2" /> }
+  ]
+
+  return (
+    <>
+      <Helmet>
+        <title>Team • BuildEase</title>
+      </Helmet>
+      
+      <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
+        <MainNavigation
+          title="Team"
+          icon={<Users className="h-6 w-6" />}
+        />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+          <PageHeader
+            title="Team Management"
+            description="Manage your team members and assignments"
+            icon={<Users className="h-8 w-8" />}
+            actions={
+              <Button
+                variant="default"
+                className="bg-white hover:bg-gray-100 text-blue-700 border border-white/20"
+                onClick={() => setIsAddMemberOpen(true)}
+              >
+                <Plus className="mr-2 h-4 w-4" /> Add Team Member
+              </Button>
+            }
+          />
+
+          {/* Team Statistics */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <StatCard
+              title="Total Members"
+              value={teamMembers.length}
+              icon={<Users className="h-6 w-6" />}
+              color="blue"
+              subtitle="team members"
+            />
+            
+            <StatCard
+              title="Active Members"
+              value={teamMembers.filter(m => m.status === 'active').length}
+              icon={<UserCheck className="h-6 w-6" />}
+              color="green"
+              subtitle="currently active"
+            />
+            
+            <StatCard
+              title="Projects Assigned"
+              value={Array.from(new Set(teamMembers.flatMap(m => m.projects || []))).length}
+              icon={<Briefcase className="h-6 w-6" />}
+              color="amber"
+              subtitle="active projects"
+            />
+            
+            <StatCard
+              title="Average Workload"
+              value={`${Math.round(teamMembers.reduce((acc, member) => acc + member.workload, 0) / (teamMembers.length || 1))}%`}
+              icon={<Activity className="h-6 w-6" />}
+              color="purple"
+              subtitle="team capacity"
+            />
+          </div>
+
+          <div className="mt-6">
+            <div className={!loading && filteredTeamMembers.length === 0 ? "" : "space-y-6"}>
+              {/* Filters */}
+              <TeamFilters
+                onSearch={setSearchQuery}
+                onFilterChange={setFilters}
+              />
+              
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    {loading ? (
+                      <div className="h-5 w-28 bg-gray-200 dark:bg-slate-700 rounded animate-pulse" />
+                    ) : (
+                      <>Showing {filteredTeamMembers.length} of {teamData.length} team members</>
+                    )}
+                  </div>
+                  
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8"
+                    onClick={() => {
+                      setLoading(true)
+                      setTimeout(() => {
+                        setLoading(false)
+                        toast({
+                          title: 'Data Refreshed',
+                          description: 'Team data has been updated',
+                        })
+                      }, 1000)
+                    }}
+                    disabled={loading}
                   >
-                    <GridIcon className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setViewMode('list')}
-                    className={`dark:border-slate-700 ${
-                      viewMode === 'list' 
-                        ? 'dark:bg-slate-700/50 dark:text-white' 
-                        : 'dark:bg-slate-900 dark:text-gray-400'
-                    }`}
-                  >
-                    <List className="h-4 w-4" />
+                    <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                    <span className="sr-only">Refresh data</span>
                   </Button>
                 </div>
                 
-                  <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={handleResetFilters}
-                  className="dark:bg-slate-900 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-slate-800"
-                >
-                  Reset Filters
-                  </Button>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center">
+                    <ListFilter className="h-4 w-4 text-gray-500 dark:text-gray-400 mr-2" />
+                    <Select 
+                      defaultValue="name"
+                      value={sortBy}
+                      onValueChange={setSortBy}
+                    >
+                      <SelectTrigger className="w-[160px] h-9 bg-white dark:bg-slate-800">
+                        <SelectValue placeholder="Sort by" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="name">Sort by Name</SelectItem>
+                        <SelectItem value="department">Sort by Department</SelectItem>
+                        <SelectItem value="tasks">Sort by Task Completion</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="border-l border-gray-200 dark:border-gray-700 h-6 mx-1" />
+                  
+                  <div className="flex gap-1 bg-gray-100 dark:bg-slate-800 rounded-md p-1">
+                    <Button
+                      variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => setViewMode('grid')}
+                    >
+                      <Grid2X2 className="h-4 w-4" />
+                      <span className="sr-only">Grid view</span>
+                    </Button>
+                    
+                    <Button
+                      variant={viewMode === 'list' ? 'default' : 'ghost'}
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => setViewMode('list')}
+                    >
+                      <List className="h-4 w-4" />
+                      <span className="sr-only">List view</span>
+                    </Button>
+                  </div>
                 </div>
+              </div>
+              
+              {/* Team Members Grid or List */}
+              <div className={viewMode === 'grid' 
+                ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" 
+                : "space-y-4"
+              }>
+                <AnimatePresence>
+                  {renderTeamMembers()}
+                </AnimatePresence>
+              </div>
             </div>
-          </CardContent>
-              </Card>
-
-        {/* Team Members */}
-        {viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredMembers.length > 0 ? (
-              filteredMembers.map((member) => (
-                <TeamMemberCard 
-                  key={member.id} 
-                  member={member} 
-                  onView={openViewProfile}
-                  onRemove={openConfirmRemoveDialog}
-                  onStatusChange={handleStatusChange}
-                  onStartChat={handleStartChat}
-                />
-              ))
-            ) : (
-              <EmptyTeamState 
-                hasFilters={searchQuery !== '' || departmentFilter !== 'All' || statusFilter !== 'All'}
-                onAddMember={() => setIsAddMemberOpen(true)}
-              />
-            )}
           </div>
-        ) : (
-          <div className="space-y-4">
-            {filteredMembers.length > 0 ? (
-              filteredMembers.map((member) => (
-                      <TeamMemberListItem 
-                        key={member.id} 
-                        member={member} 
-                  onView={openViewProfile}
-                  onRemove={openConfirmRemoveDialog}
-                  onStatusChange={handleStatusChange}
-                  onStartChat={handleStartChat}
-                      />
-                    ))
-            ) : (
-              <EmptyTeamState 
-                hasFilters={searchQuery !== '' || departmentFilter !== 'All' || statusFilter !== 'All'}
-                onAddMember={() => setIsAddMemberOpen(true)}
-              />
-                  )}
-            </div>
-        )}
+        </div>
       </div>
 
       {/* Add Team Member Dialog */}
@@ -790,159 +866,275 @@ export function Team() {
 
       {/* View Profile Dialog */}
       <Dialog open={isViewProfileOpen} onOpenChange={setIsViewProfileOpen}>
-        <DialogContent className="sm:max-w-[600px] dark:bg-slate-800 dark:border-slate-700">
-              <DialogHeader>
-                <DialogTitle className="dark:text-white">Team Member Profile</DialogTitle>
-              </DialogHeader>
-              
+        <DialogContent className="sm:max-w-[700px] p-0 max-h-[85vh] overflow-hidden dark:bg-slate-800 dark:border-slate-700">
           {currentMember && (
-            <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row gap-4 items-center sm:items-start">
-                <Avatar className="h-24 w-24 ring-4 ring-white/10 dark:ring-slate-700/50">
-                    <AvatarImage src={currentMember.avatar} alt={currentMember.name} />
-                  <AvatarFallback className={`text-xl ${
-                    currentMember.status === 'active'
-                      ? 'bg-blue-600 dark:bg-blue-700 text-white'
-                      : 'bg-gray-400 dark:bg-slate-600 text-white'
-                  }`}>
-                    {currentMember.name.charAt(0)}
-                  </AvatarFallback>
-                  </Avatar>
+            <>
+              {/* Header */}
+              <div className="relative">
+                {/* Cover Image/Background */}
+                <div className="h-32 bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-blue-700 dark:to-indigo-800 rounded-t-lg" />
                 
-                <div className="text-center sm:text-left flex-1">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <div>
-                      <h3 className="text-xl font-semibold dark:text-white">{currentMember.name}</h3>
-                      <p className="text-gray-500 dark:text-gray-400">{currentMember.role}</p>
-                    </div>
-                    <Badge variant={currentMember.status === 'active' ? "success" : "secondary"}
-                    className={currentMember.status === 'active' 
-                      ? 'dark:bg-green-900/30 dark:text-green-400 dark:border-green-800/30' 
-                        : 'dark:bg-slate-700/50 dark:text-slate-300 dark:border-slate-600/30'}>
-                    {currentMember.status === 'active' ? 'Active' : 'Inactive'}
-                  </Badge>
-                </div>
-                
-                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="flex items-center text-sm group">
-                        <Mail className="h-4 w-4 mr-2 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors duration-200" />
-                      <span className="text-gray-600 dark:text-gray-300">{currentMember.email}</span>
-                    </div>
-                    <div className="flex items-center text-sm group">
-                        <Phone className="h-4 w-4 mr-2 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors duration-200" />
-                      <span className="text-gray-600 dark:text-gray-300">{currentMember.phone}</span>
-                    </div>
-                    <div className="flex items-center text-sm group">
-                        <Building className="h-4 w-4 mr-2 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors duration-200" />
-                      <span className="text-gray-600 dark:text-gray-300">{currentMember.department}</span>
-                    </div>
-                    <div className="flex items-center text-sm group">
-                        <MapPin className="h-4 w-4 mr-2 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors duration-200" />
-                      <span className="text-gray-600 dark:text-gray-300">{currentMember.location}</span>
-                    </div>
-                    <div className="flex items-center text-sm group">
-                      <Calendar className="h-4 w-4 mr-2 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors duration-200" />
-                      <span className="text-gray-600 dark:text-gray-300">Joined: {currentMember.joinDate}</span>
-                    </div>
-                    <div className="flex items-center text-sm group">
-                        <Clock className="h-4 w-4 mr-2 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors duration-200" />
-                      <span className="text-gray-600 dark:text-gray-300">{currentMember.availability}</span>
-                    </div>
-                  </div>
-                    </div>
-                  </div>
-                  
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                  <h4 className="text-sm font-medium mb-2 dark:text-gray-300 flex items-center">
-                    <Award className="h-4 w-4 mr-2 text-gray-400 dark:text-gray-500" />
-                    Skills & Expertise
-                  </h4>
-                  <div className="flex flex-wrap gap-1">
-                    {currentMember.skills.map((skill, index) => (
-                        <Badge 
-                          key={index} 
-                          variant="outline" 
-                        className="text-xs dark:border-slate-600 dark:text-gray-300 dark:bg-slate-700/30"
-                        >
-                        {skill}
-                        </Badge>
-                      ))}
-                  </div>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium mb-2 dark:text-gray-300 flex items-center">
-                    <Award className="h-4 w-4 mr-2 text-gray-400 dark:text-gray-500" />
-                    Certifications
-                  </h4>
-                  <div className="flex flex-wrap gap-1">
-                    {currentMember.certifications.map((cert, index) => (
-                      <Badge 
-                        key={index} 
-                        variant="outline" 
-                        className="text-xs dark:border-slate-600 dark:text-blue-300 dark:bg-blue-900/20"
-                      >
-                        {cert}
-                      </Badge>
-                    ))}
-                  </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                <h4 className="text-sm font-medium mb-2 dark:text-gray-300 flex items-center">
-                  <Briefcase className="h-4 w-4 mr-2 text-gray-400 dark:text-gray-500" />
-                  Assigned Projects
-                </h4>
-                <div className="flex flex-wrap gap-1">
-                  {currentMember.projects.map((project, index) => (
-                        <Badge 
-                          key={index} 
-                      className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/20"
-                        >
-                      {project}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-500 dark:text-gray-400">Current Workload</span>
-                  <span className="font-medium dark:text-white">{currentMember.workload}%</span>
+                {/* Avatar and Basic Info */}
+                <div className="px-6 pb-4">
+                  <div className="flex flex-col sm:flex-row sm:items-end -mt-16 sm:-mt-12 gap-4">
+                    <Avatar className="h-24 w-24 sm:h-28 sm:w-28 border-4 border-white dark:border-slate-700 shadow-md">
+                      <AvatarImage src={currentMember.avatar} alt={currentMember.name} />
+                      <AvatarFallback className={`text-2xl ${
+                        currentMember.status === 'active'
+                          ? 'bg-blue-600 dark:bg-blue-700 text-white'
+                          : 'bg-gray-400 dark:bg-slate-600 text-white'
+                      }`}>
+                        {currentMember.name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    <div className="flex-1 pt-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div>
+                          <h2 className="text-2xl font-bold dark:text-white">{currentMember.name}</h2>
+                          <p className="text-gray-600 dark:text-gray-400">{currentMember.role}</p>
+                        </div>
+                        <div className="flex gap-2 mt-2 sm:mt-0">
+                          <Badge variant={currentMember.status === 'active' ? "success" : "secondary"}
+                            className={currentMember.status === 'active' 
+                              ? 'text-sm py-1 px-2 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800/30' 
+                              : 'text-sm py-1 px-2 dark:bg-slate-700/50 dark:text-slate-300 dark:border-slate-600/30'}>
+                            {currentMember.status === 'active' ? 'Active' : 'Inactive'}
+                          </Badge>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            className="gap-1 bg-white/90 dark:bg-slate-800 dark:text-blue-400 dark:hover:bg-slate-700"
+                            onClick={() => {
+                              setIsViewProfileOpen(false);
+                              handleStartChat(currentMember);
+                            }}
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                            Message
+                          </Button>
+                        </div>
                       </div>
-                      <Progress 
-                        value={currentMember.workload} 
-                        className="h-2 dark:bg-slate-700"
-                        style={{
-                    '--progress-background': getWorkloadColor(currentMember.workload)
-                        } as React.CSSProperties}
-                      />
                     </div>
                   </div>
+                </div>
+              </div>
+              
+              {/* Tabbed Content */}
+              <Tabs defaultValue="overview" className="px-6">
+                <TabsList className="w-full grid grid-cols-4 mb-4">
+                  {PROFILE_TABS.map(tab => (
+                    <TabsTrigger key={tab.id} value={tab.id} className="gap-1">
+                      {tab.icon}
+                      {tab.label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+                
+                <div className="max-h-[calc(85vh-300px)] overflow-y-auto pr-2">
+                  {/* Overview Tab */}
+                  <TabsContent value="overview" className="space-y-6">
+                    {/* Contact Information */}
+                    <Card className="border-0 shadow-sm dark:border-slate-700/50 dark:bg-slate-800/50">
+                      <CardHeader className="px-4 py-3 border-b dark:border-slate-700/50">
+                        <CardTitle className="text-base text-gray-900 dark:text-gray-200 flex items-center gap-2">
+                          <User className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+                          Contact Information
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4">
+                        <div className="flex items-center gap-2 group">
+                          <Mail className="h-4 w-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400" />
+                          <span className="text-gray-700 dark:text-gray-300">{currentMember.email}</span>
+                        </div>
+                        <div className="flex items-center gap-2 group">
+                          <Phone className="h-4 w-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400" />
+                          <span className="text-gray-700 dark:text-gray-300">{currentMember.phone || 'Not provided'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 group">
+                          <Building className="h-4 w-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400" />
+                          <span className="text-gray-700 dark:text-gray-300">{currentMember.department}</span>
+                        </div>
+                        <div className="flex items-center gap-2 group">
+                          <MapPin className="h-4 w-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400" />
+                          <span className="text-gray-700 dark:text-gray-300">{currentMember.location}</span>
+                        </div>
+                        <div className="flex items-center gap-2 group">
+                          <Calendar className="h-4 w-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400" />
+                          <span className="text-gray-700 dark:text-gray-300">Joined: {currentMember.joinDate}</span>
+                        </div>
+                        <div className="flex items-center gap-2 group">
+                          <Clock className="h-4 w-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400" />
+                          <span className="text-gray-700 dark:text-gray-300">{currentMember.availability}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    {/* Current Workload */}
+                    <Card className="border-0 shadow-sm dark:border-slate-700/50 dark:bg-slate-800/50">
+                      <CardHeader className="px-4 py-3 border-b dark:border-slate-700/50">
+                        <CardTitle className="text-base text-gray-900 dark:text-gray-200 flex items-center gap-2">
+                          <Activity className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+                          Workload Status
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-4">
+                        <div className="flex justify-between text-sm mb-2">
+                          <span className="text-gray-500 dark:text-gray-400">Current Capacity</span>
+                          <span className="font-medium dark:text-white">{currentMember.workload}%</span>
+                        </div>
+                        <Progress 
+                          value={currentMember.workload} 
+                          className="h-3 dark:bg-slate-700 rounded-lg"
+                          style={{
+                            '--progress-background': getWorkloadColor(currentMember.workload)
+                          } as React.CSSProperties}
+                        />
+                        
+                        <div className="flex justify-between mt-3 text-xs">
+                          <span className="text-green-600 dark:text-green-400">Under Capacity</span>
+                          <span className="text-amber-600 dark:text-amber-400">Optimal</span>
+                          <span className="text-red-600 dark:text-red-400">Over Capacity</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                  
+                  {/* Projects Tab */}
+                  <TabsContent value="projects" className="space-y-6">
+                    <Card className="border-0 shadow-sm dark:border-slate-700/50 dark:bg-slate-800/50">
+                      <CardHeader className="px-4 py-3 border-b dark:border-slate-700/50">
+                        <CardTitle className="text-base text-gray-900 dark:text-gray-200 flex items-center gap-2">
+                          <Briefcase className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+                          Assigned Projects
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-4">
+                        {currentMember.projects && currentMember.projects.length > 0 ? (
+                          <div className="space-y-3">
+                            {currentMember.projects.map((project, index) => (
+                              <div key={index} className="flex items-center justify-between bg-gray-50 dark:bg-slate-700/40 p-3 rounded-lg">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-2 h-8 bg-blue-500 dark:bg-blue-600 rounded-full"></div>
+                                  <div>
+                                    <h4 className="font-medium text-gray-900 dark:text-white">{project}</h4>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Assigned {Math.floor(Math.random() * 12) + 1} weeks ago</p>
+                                  </div>
+                                </div>
+                                <Badge className="text-xs bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-900/50">
+                                  Active
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+                            No projects currently assigned
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                  
+                  {/* Skills Tab */}
+                  <TabsContent value="skills" className="space-y-6">
+                    <Card className="border-0 shadow-sm dark:border-slate-700/50 dark:bg-slate-800/50">
+                      <CardHeader className="px-4 py-3 border-b dark:border-slate-700/50">
+                        <CardTitle className="text-base text-gray-900 dark:text-gray-200 flex items-center gap-2">
+                          <Award className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+                          Skills & Expertise
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-4">
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {currentMember.skills && currentMember.skills.length > 0 ? (
+                            currentMember.skills.map((skill, index) => (
+                              <Badge 
+                                key={index} 
+                                variant="outline" 
+                                className="py-1.5 text-xs dark:border-slate-600 dark:text-gray-300 dark:bg-slate-700/30"
+                              >
+                                {skill}
+                              </Badge>
+                            ))
+                          ) : (
+                            <div className="text-center w-full py-2 text-gray-500 dark:text-gray-400">
+                              No skills listed
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="border-0 shadow-sm dark:border-slate-700/50 dark:bg-slate-800/50">
+                      <CardHeader className="px-4 py-3 border-b dark:border-slate-700/50">
+                        <CardTitle className="text-base text-gray-900 dark:text-gray-200 flex items-center gap-2">
+                          <Award className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+                          Certifications
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-4">
+                        <div className="flex flex-wrap gap-2">
+                          {currentMember.certifications && currentMember.certifications.length > 0 ? (
+                            currentMember.certifications.map((cert, index) => (
+                              <Badge 
+                                key={index} 
+                                variant="outline" 
+                                className="py-1.5 text-xs border-blue-200 dark:border-blue-800/30 text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20"
+                              >
+                                {cert}
+                              </Badge>
+                            ))
+                          ) : (
+                            <div className="text-center w-full py-2 text-gray-500 dark:text-gray-400">
+                              No certifications listed
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                  
+                  {/* Documents Tab */}
+                  <TabsContent value="documents" className="space-y-6">
+                    <Card className="border-0 shadow-sm dark:border-slate-700/50 dark:bg-slate-800/50">
+                      <CardHeader className="px-4 py-3 border-b dark:border-slate-700/50">
+                        <CardTitle className="text-base text-gray-900 dark:text-gray-200 flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+                          Documents
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-4">
+                        <div className="text-center py-6 text-gray-500 dark:text-gray-400 italic">
+                          No documents available for this team member
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                </div>
+              </Tabs>
+              
+              <DialogFooter className="flex justify-between items-center px-6 py-4 border-t dark:border-slate-700/50 mt-4">
+                <Button 
+                  variant="destructive" 
+                  onClick={() => {
+                    setIsViewProfileOpen(false)
+                    openConfirmRemoveDialog(currentMember)
+                  }}
+                  className="dark:bg-red-700 dark:hover:bg-red-800"
+                >
+                  Remove Member
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsViewProfileOpen(false)}
+                  className="dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600 dark:border-slate-600"
+                >
+                  Close
+                </Button>
+              </DialogFooter>
+            </>
           )}
-          
-          <DialogFooter className="flex justify-between items-center">
-            <Button 
-              variant="destructive" 
-              onClick={() => {
-                setIsViewProfileOpen(false)
-                if (currentMember) {
-                  openConfirmRemoveDialog(currentMember)
-                }
-              }}
-              className="dark:bg-red-700 dark:hover:bg-red-800"
-            >
-              Remove Member
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => setIsViewProfileOpen(false)}
-              className="dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600 dark:border-slate-600"
-            >
-              Close
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -968,7 +1160,7 @@ export function Team() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   )
 }
 
@@ -1006,7 +1198,4 @@ function EmptyTeamState({ hasFilters, onAddMember }: EmptyTeamStateProps) {
 /**
  * Import components from dedicated files to complete the page
  */
-import { TeamMemberCard } from '@/components/team/TeamMemberCard'
-import { TeamMemberListItem } from '@/components/team/TeamMemberListItem'
-
-export default Team 
+import { TeamMemberCard } from '@/components/team/TeamMemberCard' 

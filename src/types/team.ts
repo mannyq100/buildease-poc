@@ -38,18 +38,10 @@ export interface NewTeamMember {
 
 export interface TeamMemberCardProps {
   member: TeamMember
-  onView: (member: TeamMember) => void
-  onRemove: (member: TeamMember) => void
-  onStatusChange?: (id: number, status: 'active' | 'inactive') => void
+  viewMode?: 'grid' | 'list'
+  onViewProfile?: (member: TeamMember) => void
   onStartChat?: (member: TeamMember) => void
-}
-
-export interface TeamMemberListItemProps {
-  member: TeamMember
-  onView: (member: TeamMember) => void
-  onRemove: (member: TeamMember) => void
-  onStatusChange?: (id: number, status: 'active' | 'inactive') => void
-  onStartChat?: (member: TeamMember) => void
+  className?: string
 }
 
 export type ViewMode = 'grid' | 'list' 
