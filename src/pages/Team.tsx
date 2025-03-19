@@ -2,7 +2,7 @@
  * Team.tsx - Team management page
  * Manage team members, roles, and assignments across construction projects
  */
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { useToast } from '@/components/ui/use-toast'
@@ -97,7 +97,8 @@ import { EmptyState } from '@/components/shared/EmptyState'
 import { AnimatePresence, m } from 'framer-motion'
 
 // Types
-import { TeamMember, NewTeamMember, ViewMode } from '@/types/team'
+import { TeamMember, NewTeamMember } from '@/types/team'
+import { ViewMode, AvailabilityStatus } from '@/types/common'
 
 // Data Services
 import { 
@@ -109,6 +110,11 @@ import {
 
 // Import mock team data
 import { teamData } from '@/data/teamData'
+
+// Utility functions
+import { formatDate } from '@/lib/utils'
+import { useErrorHandler } from '@/lib/errorUtils'
+import { validateEmail, validateRequired, validatePhone } from '@/lib/validationUtils'
 
 /**
  * MultiSelect component
@@ -190,11 +196,12 @@ const MultiSelect = ({ values, onChange, options, placeholder, className }: Mult
  */
 export default function Team() {
   const { toast } = useToast()
+  const { handleError, handleValidationError } = useErrorHandler()
   const navigate = useNavigate()
   
   // State management
   const [loading, setLoading] = useState(true)
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [sortBy, setSortBy] = useState('name')
   const [searchQuery, setSearchQuery] = useState('')
   const [filters, setFilters] = useState<TeamFiltersType>({
@@ -206,7 +213,7 @@ export default function Team() {
   const [isViewProfileOpen, setIsViewProfileOpen] = useState(false)
   const [isConfirmRemoveOpen, setIsConfirmRemoveOpen] = useState(false)
   const [currentMember, setCurrentMember] = useState<TeamMember | null>(null)
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(getTeamMembers())
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(teamData)
   
   // Load data from service
   const departments = getDepartments()
@@ -297,42 +304,51 @@ export default function Team() {
    * Handle adding a new team member
    */
   function handleAddMember() {
-    // Validate required fields
-    if (!newMember.name || !newMember.role || !newMember.email) return
-    
-    const id = Math.max(...teamMembers.map(m => m.id), 0) + 1
-    const newTeamMember: TeamMember = {
-      id,
-      name: newMember.name,
-      role: newMember.role,
-      email: newMember.email,
-      phone: newMember.phone,
-      department: newMember.department,
-      projects: newMember.projects,
-      status: 'active',
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${newMember.name}`,
-      skills: newMember.skills || [],
-      workload: newMember.workload || 0,
-      joinDate: newMember.joinDate || new Date().toLocaleDateString('en-US', { 
-        day: 'numeric', 
-        month: 'short', 
-        year: 'numeric' 
-      }),
-      certifications: newMember.certifications || [],
-      availability: newMember.availability || 'Full-time',
-      location: newMember.location || 'Accra, Ghana'
+    try {
+      // Validate required fields
+      if (!newMember.name || !newMember.role || !newMember.email) return
+      
+      const id = Math.max(...teamMembers.map(m => m.id), 0) + 1
+      const newTeamMember: TeamMember = {
+        id,
+        name: newMember.name,
+        role: newMember.role,
+        email: newMember.email,
+        phone: newMember.phone,
+        department: newMember.department,
+        projects: newMember.projects,
+        status: 'active',
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${newMember.name}`,
+        skills: newMember.skills || [],
+        workload: newMember.workload || 0,
+        joinDate: newMember.joinDate || new Date().toLocaleDateString('en-US', { 
+          day: 'numeric', 
+          month: 'short', 
+          year: 'numeric' 
+        }),
+        certifications: newMember.certifications || [],
+        availability: newMember.availability || 'Full-time',
+        location: newMember.location || 'Accra, Ghana'
+      }
+      
+      setTeamMembers([...teamMembers, newTeamMember])
+      setNewMember({
+        name: '',
+        role: '',
+        email: '',
+        phone: '',
+        department: '',
+        projects: []
+      })
+      setIsAddMemberOpen(false)
+      
+      toast({
+        title: 'Team Member Added',
+        description: `${newTeamMember.name} has been added to the team`,
+      })
+    } catch (error) {
+      handleError(error, 'Failed to Add Team Member')
     }
-    
-    setTeamMembers([...teamMembers, newTeamMember])
-    setNewMember({
-      name: '',
-      role: '',
-      email: '',
-      phone: '',
-      department: '',
-      projects: []
-    })
-    setIsAddMemberOpen(false)
   }
 
   /**
@@ -422,7 +438,7 @@ export default function Team() {
   }
 
   // Render team member cards
-  const renderTeamMembers = () => {
+  const renderTeamMembers = useCallback(() => {
     if (loading) {
       // Render skeleton loaders
       return Array.from({ length: 8 }).map((_, index) => (
@@ -469,7 +485,7 @@ export default function Team() {
         />
       </m.div>
     ))
-  }
+  }, [loading, filteredTeamMembers, viewMode, openViewProfile, handleStartChat, handleResetFilters])
 
   // Profile dialog sections
   const PROFILE_TABS = [
@@ -571,7 +587,7 @@ export default function Team() {
                           title: 'Data Refreshed',
                           description: 'Team data has been updated',
                         })
-                      }, 1000)
+                      }, 500)
                     }}
                     disabled={loading}
                   >

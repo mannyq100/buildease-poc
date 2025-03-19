@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
 import { formatNumber } from '@/lib/chartUtils'
+import { ViewMode, AvailabilityStatus } from '@/types/common'
 
 export interface TeamMember {
   id: string | number
@@ -29,7 +30,7 @@ export interface TeamMember {
   completedTasks: number
   totalTasks: number
   performance: number
-  availability: 'available' | 'busy' | 'on-leave'
+  availability: AvailabilityStatus
   status: 'active' | 'inactive'
   tags?: string[]
   isTopPerformer?: boolean
@@ -38,7 +39,7 @@ export interface TeamMember {
 
 export interface TeamMemberCardProps {
   member: TeamMember
-  viewMode?: 'grid' | 'list'
+  viewMode?: ViewMode
   onViewProfile?: (member: TeamMember) => void
   onStartChat?: (member: TeamMember) => void
   className?: string

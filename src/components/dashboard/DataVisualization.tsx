@@ -77,8 +77,26 @@ interface DataVisualizationProps {
   }[];
 }
 
+type ChartDataItem = Record<string, string | number>;
+
+const formatData = (data: ChartDataItem[], keys: string[]) => {
+  // ... existing implementation
+};
+
+interface TooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    value: number;
+    name: string;
+    dataKey: string;
+    color: string;
+    payload: Record<string, number | string>;
+  }>;
+  label?: string;
+}
+
 // Enhanced custom tooltip with better styling and formatting
-const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
+const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
   if (active && payload && payload.length) {
     const theme = getCurrentTheme();
     const darkMode = isDarkMode();
@@ -118,8 +136,26 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>)
   return null;
 };
 
-// Active sector for pie chart
-const renderActiveShape = (props: any) => {
+// Add a proper interface for the pie chart props
+interface RenderActiveShapeProps {
+  cx: number;
+  cy: number;
+  midAngle: number;
+  innerRadius: number;
+  outerRadius: number;
+  startAngle: number;
+  endAngle: number;
+  fill: string;
+  payload: {
+    name: string;
+    value: number;
+  };
+  percent: number;
+  value: number;
+}
+
+// Update the function signature
+const renderActiveShape = (props: RenderActiveShapeProps) => {
   const RADIAN = Math.PI / 180;
   const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
   const sin = Math.sin(-RADIAN * midAngle);
@@ -206,8 +242,8 @@ export function DataVisualization({
   // Memoize the chart data to prevent unnecessary re-renders
   const chartData = useMemo(() => data, [data]);
   
-  // Use callback for pie chart hover handler
-  const onPieEnter = useCallback((_: any, index: number) => {
+  // Move the onPieEnter callback inside the component
+  const onPieEnter = useCallback((_: MouseEvent, index: number) => {
     setActiveIndex(index);
   }, []);
   

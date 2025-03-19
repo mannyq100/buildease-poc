@@ -17,6 +17,7 @@ import {
   PopoverTrigger 
 } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
+import { AvailabilityStatus } from '@/types/common'
 
 // Define the department options
 const DEPARTMENTS = [
@@ -35,9 +36,10 @@ const DEPARTMENTS = [
 
 // Define the availability status options
 const AVAILABILITY_OPTIONS = [
-  { value: 'available', label: 'Available' },
-  { value: 'busy', label: 'Busy' },
-  { value: 'on-leave', label: 'On Leave' }
+  { value: 'available' as AvailabilityStatus, label: 'Available' },
+  { value: 'busy' as AvailabilityStatus, label: 'Busy' },
+  { value: 'on-leave' as AvailabilityStatus, label: 'On Leave' },
+  { value: 'offline' as AvailabilityStatus, label: 'Offline' }
 ]
 
 export interface TeamFiltersProps {
@@ -48,7 +50,7 @@ export interface TeamFiltersProps {
 
 export interface TeamFilters {
   departments: string[]
-  availability: string[]
+  availability: AvailabilityStatus[]
   performance: number | null
   onlyTopPerformers: boolean
 }
@@ -100,7 +102,7 @@ export function TeamFilters({
   }
   
   // Handle availability filter change
-  const handleAvailabilityChange = (availability: string) => {
+  const handleAvailabilityChange = (availability: AvailabilityStatus) => {
     const newAvailability = filters.availability.includes(availability)
       ? filters.availability.filter(a => a !== availability)
       : [...filters.availability, availability]
@@ -145,7 +147,7 @@ export function TeamFilters({
   }
   
   // Remove a specific availability filter
-  const removeAvailabilityFilter = (availability: string) => {
+  const removeAvailabilityFilter = (availability: AvailabilityStatus) => {
     const newAvailability = filters.availability.filter(a => a !== availability)
     const newFilters = { ...filters, availability: newAvailability }
     setFilters(newFilters)

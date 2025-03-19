@@ -35,13 +35,23 @@ interface ExpenseDialogProps {
     project: string;
     notes: string;
   };
-  setNewExpense?: (expense: any) => void;
+  setNewExpense?: (expense: ExpenseFormData) => void;
   handleAddExpense?: () => void;
   formatCurrency?: (amount: number) => string;
   formatDate?: (date: string) => string;
   EXPENSE_CATEGORIES: string[];
   EXPENSE_PROJECTS: string[];
 }
+
+// Add this type
+type ExpenseFormData = {
+  description: string;
+  amount: number;
+  date: string;
+  category: string;
+  project: string;
+  notes: string;
+};
 
 /**
  * Dialog for adding or viewing expense details

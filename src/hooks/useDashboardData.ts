@@ -88,18 +88,64 @@ const mockDeadlines: DeadlineItem[] = [
   }
 ]
 
+// Define proper types for the dashboard data
+interface ProjectSummary {
+  id: string;
+  name: string;
+  progress: number;
+  status: string;
+}
+
+interface ActivityItem {
+  id: string;
+  type: string;
+  title: string;
+  date: string;
+  user: string;
+}
+
+interface Deadline {
+  id: string;
+  title: string;
+  dueDate: string;
+  project: string;
+  priority: string;
+}
+
+interface TeamMember {
+  id: string;
+  name: string;
+  avatar: string;
+  performance: number;
+}
+
+interface ChartData {
+  name: string;
+  value: number;
+}
+
+interface DashboardData {
+  stats: Record<string, number>;
+  projectSummaries: ProjectSummary[];
+  recentActivity: ActivityItem[];
+  deadlines: DeadlineItem[];
+  teamPerformance: TeamMember[];
+  budgetData: ChartData[];
+  scheduleData: ChartData[];
+}
+
 export interface DashboardDataState {
   isLoading: boolean
-  projectProgressData: any[]
-  budgetData: any[]
-  materialUsageData: any[]
-  taskStatusData: any[]
-  quickStats: any[]
-  quickActions: any[]
+  projectProgressData: ChartData[]
+  budgetData: ChartData[]
+  materialUsageData: ChartData[]
+  taskStatusData: ChartData[]
+  quickStats: Record<string, number>[]
+  quickActions: {id: string; title: string; icon: string}[]
   activityItems: ActivityItem[]
-  upcomingDeadlines: DeadlineItem[]
-  teamData: any[]
-  projectsData: any[]
+  upcomingDeadlines: Deadline[]
+  teamData: TeamMember[]
+  projectsData: ProjectSummary[]
   lastUpdated: Date | null
 }
 
