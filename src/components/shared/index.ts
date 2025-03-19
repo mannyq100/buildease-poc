@@ -7,4 +7,5 @@ export * from './TaskItem';
 export * from './MaterialItem';
 export * from './PageHeader';
 export * from './DocumentItem';
-export * from './StatCard'; 
+export * from './StatCard';
+export * from './TaskCard';

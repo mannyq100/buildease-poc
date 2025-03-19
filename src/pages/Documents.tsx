@@ -70,7 +70,6 @@ import { StatCard } from '@/components/shared/StatCard'
 
 // Custom Components
 import { DocumentItem } from '@/components/documents/DocumentItem'
-import { DocumentStatCard } from '@/components/documents/DocumentStatCard'
 import { DocumentQuickAction } from '@/components/documents/DocumentQuickAction'
 import { EmptyDocumentState } from '@/components/documents/EmptyDocumentState'
 

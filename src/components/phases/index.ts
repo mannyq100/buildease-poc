@@ -5,7 +5,7 @@
 
 export * from './PhaseHeader';
 export * from './PhaseTabs';
-export * from './MetricCard';
+// MetricCard has been moved to shared components
 export * from './TaskItem';
 export * from './TaskCard';
 export * from './CriticalItem';

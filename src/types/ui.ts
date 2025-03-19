@@ -39,10 +39,10 @@ export interface StatCardProps {
   title: string;
   value: string | number;
   icon?: ReactNode;
-  colorScheme?: 'blue' | 'green' | 'amber' | 'red' | 'purple';
+  colorScheme?: 'blue' | 'green' | 'amber' | 'red' | 'purple' | 'emerald' | 'orange' | 'indigo' | string;
   description?: string;
-  change?: string;
   subtitle?: string;
+  change?: string;
   className?: string;
 }
 

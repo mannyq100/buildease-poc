@@ -1,5 +1,5 @@
 import { Task, TaskViewLayout } from '@/types/schedule';
-import { TaskCard } from './TaskCard';
+import { TaskCard } from '@/components/shared/TaskCard';
 import { EmptyState } from '@/components/EmptyState';
 import { sortTasks } from '@/utils/scheduleUtils';
 import { formatDate } from '@/utils/dateUtils';

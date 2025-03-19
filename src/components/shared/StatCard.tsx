@@ -6,11 +6,15 @@ import { CardDescription, CardHeader, CardContent, CardTitle, Card } from '@/com
 import { cn } from '@/lib/utils';
 import { StatCardProps } from '@/types/ui';
 
+// Valid color schemes that have explicit mappings
+type ValidColorScheme = 'blue' | 'green' | 'amber' | 'red' | 'purple';
+
 export function StatCard({
   title,
   icon,
   value,
   description,
+  subtitle, // Add support for subtitle as an alternative to description
   change,
   colorScheme = 'blue',
   className,
@@ -20,6 +24,31 @@ export function StatCard({
     if (!change) return 'neutral';
     return change.startsWith('+') ? 'positive' : change.startsWith('-') ? 'negative' : 'neutral';
   };
+  
+  // Use subtitle as fallback for description for backward compatibility
+  const displayDescription = description || subtitle;
+  
+  // Handle legacy color scheme names with safe type casting
+  const normalizedColorScheme = ((): ValidColorScheme => {
+    // Map legacy color names to our standardized palette
+    if (colorScheme === 'emerald') return 'green';
+    if (colorScheme === 'orange') return 'amber';
+    if (colorScheme === 'indigo') return 'purple';
+    
+    // Check if the color is one of our valid schemes
+    if (
+      colorScheme === 'blue' || 
+      colorScheme === 'green' || 
+      colorScheme === 'amber' || 
+      colorScheme === 'red' || 
+      colorScheme === 'purple'
+    ) {
+      return colorScheme as ValidColorScheme;
+    }
+    
+    // Default fallback for unknown colors
+    return 'blue';
+  })();
   
   // Color mappings for different parts based on the colorScheme
   const colors = {
@@ -49,26 +78,26 @@ export function StatCard({
       valueColor: 'text-purple-600 dark:text-purple-400',
     },
   };
-  
-  // Get change type for styling
-  const changeType = getChangeType();
-  
-  // Change colors
-  const changeColors = {
-    positive: 'text-green-600 dark:text-green-400',
-    negative: 'text-red-600 dark:text-red-400',
-    neutral: 'text-gray-500 dark:text-gray-400',
+
+  const getChangeClasses = () => {
+    const type = getChangeType();
+    if (type === 'positive') {
+      return 'text-green-600 dark:text-green-400';
+    } else if (type === 'negative') {
+      return 'text-red-600 dark:text-red-400';
+    }
+    return 'text-gray-500 dark:text-gray-400';
   };
 
   return (
-    <Card className={cn(
-      // Consistent light blue background across all cards
-      'bg-blue-50/50 dark:bg-blue-950/10 border-0 shadow-sm',
-      // Improved mobile responsiveness with better padding
-      'p-0.5 sm:p-1',
-      className
-    )}>
-      <CardHeader className="pb-2 pt-4 px-4 sm:px-5">
+    <Card
+      className={cn(
+        'overflow-hidden transition-all border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md',
+        'bg-blue-50/50 dark:bg-blue-950/10', // Light blue background for all cards
+        className
+      )}
+    >
+      <CardHeader className="pb-2 pt-5 px-4 sm:px-5">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base sm:text-lg font-medium text-gray-700 dark:text-gray-200">
             {title}
@@ -76,9 +105,9 @@ export function StatCard({
           {icon && (
             <div className={cn(
               'flex items-center justify-center rounded-full w-8 h-8 sm:w-10 sm:h-10',
-              colors[colorScheme].iconBg
+              colors[normalizedColorScheme].iconBg
             )}>
-              <span className={cn('h-4 w-4 sm:h-5 sm:w-5', colors[colorScheme].iconColor)}>
+              <span className={cn('h-4 w-4 sm:h-5 sm:w-5', colors[normalizedColorScheme].iconColor)}>
                 {icon}
               </span>
             </div>
@@ -90,23 +119,26 @@ export function StatCard({
           <div className="flex flex-col gap-1">
             <p className={cn(
               'text-xl sm:text-2xl font-semibold',
-              colors[colorScheme].valueColor
+              !change && colors[normalizedColorScheme].valueColor
             )}>
               {value}
             </p>
-            {description && (
+            {displayDescription && (
               <CardDescription className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                {description}
+                {displayDescription}
               </CardDescription>
             )}
           </div>
+          
           {change && (
-            <div className={cn(
-              'flex items-center text-xs sm:text-sm font-medium',
-              changeColors[changeType]
-            )}>
+            <span
+              className={cn(
+                'text-xs sm:text-sm font-medium flex items-center gap-1',
+                getChangeClasses()
+              )}
+            >
               {change}
-            </div>
+            </span>
           )}
         </div>
       </CardContent>
