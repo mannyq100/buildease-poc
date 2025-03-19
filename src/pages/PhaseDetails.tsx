@@ -29,7 +29,8 @@ import {
   PageHeader, 
   StatCard, 
   DocumentItem,
-  TaskCard
+  TaskCard,
+  MaterialCard
 } from '@/components/shared';
 
 // Import phase-specific components
@@ -37,7 +38,6 @@ import {
   PhaseTabs,
   TaskItem,
   MaterialItem,
-  MaterialCard,
   InsightItem,
   CriticalItem,
   DependencyItem

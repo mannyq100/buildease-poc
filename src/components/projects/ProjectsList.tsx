@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import type { Project, ProjectStatus, ViewMode } from '@/types/project';
-import { ProjectCard } from './ProjectCard';
+import { ProjectCard } from '@/components/shared/ProjectCard';
 import { fadeInUpVariants } from '@/lib/animations';
 
 interface ProjectsListProps {
@@ -92,12 +92,48 @@ function ProjectsGridView({
       {projects.map((project) => (
         <ProjectCard 
           key={project.id} 
-          project={project} 
-          onViewDetails={onViewDetails} 
+          title={project.name}
+          description={project.description}
+          client={project.client}
+          startDate={project.startDate}
+          endDate={project.endDate}
+          status={mapProjectStatus(project.status)}
+          progress={project.progress}
+          budget={{
+            total: project.budget,
+            spent: project.spent,
+            currency: '$'
+          }}
+          team={project.teamMembers?.map((member, index) => ({
+            id: index,
+            name: member
+          })) || []}
+          documents={project.phases ? project.phases.length : 0}
+          phases={project.phases ? project.phases.length : 0}
+          onClick={() => onViewDetails(project.id)}
         />
       ))}
     </div>
   );
+}
+
+/**
+ * Maps the project status to the format expected by the shared ProjectCard component
+ */
+function mapProjectStatus(status: ProjectStatus): 'active' | 'completed' | 'pending' | 'delayed' {
+  switch (status) {
+    case 'active':
+      return 'active';
+    case 'completed':
+      return 'completed';
+    case 'planning':
+    case 'upcoming':
+      return 'pending';
+    case 'on-hold':
+      return 'delayed';
+    default:
+      return 'pending';
+  }
 }
 
 /**

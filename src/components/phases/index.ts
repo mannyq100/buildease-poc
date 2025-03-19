@@ -11,6 +11,6 @@ export * from './TaskCard';
 export * from './CriticalItem';
 export * from './DependencyItem';
 export * from './MaterialItem';
-export * from './MaterialCard';
+// MaterialCard has been moved to shared components
 export * from './DocumentItem';
 export * from './InsightItem'; 

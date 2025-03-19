@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Briefcase, Plus, Filter } from 'lucide-react';
+import { Briefcase, Plus } from 'lucide-react';
 import { PageHeader } from '@/components/shared';
 import { 
   ProjectMetrics, 
@@ -16,32 +16,11 @@ import { projectsData } from '@/data/projectsData';
  */
 export function Projects() {
   const navigate = useNavigate();
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [currentTab, setCurrentTab] = useState<'all' | ProjectStatus>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredProjects, setFilteredProjects] = useState(projectsData);
   const [view, setView] = useState<ViewMode>('grid');
   
-  // Check dark mode on component mount and whenever it might change
-  useEffect(() => {
-    function checkDarkMode() {
-      setIsDarkMode(document.documentElement.classList.contains('dark'));
-    }
-    
-    // Check on mount
-    checkDarkMode();
-    
-    // Set up a mutation observer to watch for dark mode changes
-    const observer = new MutationObserver(checkDarkMode);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class']
-    });
-    
-    // Clean up observer on unmount
-    return () => observer.disconnect();
-  }, []);
-
   // Filter projects when tab or search changes
   useEffect(() => {
     let filtered = projectsData;
@@ -135,4 +114,4 @@ export function Projects() {
       </div>
     </div>
   );
-} 
+}
