@@ -14,28 +14,32 @@ import { teamData } from '@/data/teamData'
 // Mock recent activity data - in a real app, this would come from an API
 const mockActivityItems: ActivityItem[] = [
   { 
-    text: "Budget for Main St. project updated", 
-    time: "1h ago", 
-    icon: "dollar", 
-    link: "/project/1"
+    id: "1",
+    type: "dollar",
+    title: "Budget for Main St. project updated", 
+    date: "1h ago", 
+    user: "John Doe"
   },
   { 
-    text: "3 new tasks assigned to team", 
-    time: "3h ago", 
-    icon: "task", 
-    link: "/schedule"
+    id: "2",
+    type: "task",
+    title: "3 new tasks assigned to team", 
+    date: "3h ago", 
+    user: "Jane Smith"
   },
   { 
-    text: "Meeting scheduled with contractors", 
-    time: "5h ago", 
-    icon: "calendar", 
-    link: "/schedule"
+    id: "3",
+    type: "calendar",
+    title: "Meeting scheduled with contractors", 
+    date: "5h ago", 
+    user: "Mike Johnson"
   },
   { 
-    text: "New material order placed", 
-    time: "Yesterday", 
-    icon: "package", 
-    link: "/materials"
+    id: "4",
+    type: "package",
+    title: "New material order placed", 
+    date: "Yesterday", 
+    user: "Sarah Williams"
   }
 ]
 

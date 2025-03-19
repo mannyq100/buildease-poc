@@ -69,7 +69,7 @@ export function TeamPerformance({ teamMembers, className = '' }: TeamPerformance
           <div className="flex items-center justify-between">
             <CardTitle className="text-purple-900 dark:text-purple-100 flex items-center text-base">
               <Users className="h-5 w-5 mr-2 text-purple-600 dark:text-purple-400" />
-              Team Performance
+              Top Performers
             </CardTitle>
             <Badge 
               variant="outline" 
@@ -95,9 +95,21 @@ export function TeamPerformance({ teamMembers, className = '' }: TeamPerformance
                   >
                     <Avatar className="h-10 w-10 border-2 border-white dark:border-slate-700 shadow-sm">
                       {member.avatar ? (
-                        <img src={member.avatar} alt={member.name} className="object-cover" />
+                        <img 
+                          src={member.avatar} 
+                          alt={member.name} 
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            // If image fails to load, show fallback
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.parentElement?.querySelector('[data-fallback]')?.removeAttribute('style');
+                          }}
+                        />
                       ) : (
-                        <AvatarFallback className="bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
+                        <AvatarFallback 
+                          data-fallback 
+                          className="bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200"
+                        >
                           {getInitials(member.name)}
                         </AvatarFallback>
                       )}

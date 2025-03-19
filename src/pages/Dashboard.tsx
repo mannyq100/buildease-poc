@@ -15,6 +15,11 @@ import {
   ListTodo, 
   Calendar,
   Package,
+  ChevronRight,
+  BarChart3,
+  Users,
+  Clock,
+  Activity
 } from 'lucide-react'
 
 // UI Components
@@ -39,6 +44,28 @@ import { PageHeader } from '@/components/shared'
 
 // Custom Hooks
 import { useDashboardData } from '@/hooks/useDashboardData'
+
+// Import types from dashboard types file
+import { QuickStatCard, ActivityItem as DashboardActivityItem, QuickAction as DashboardQuickAction } from '@/types/dashboard'
+
+// Local interface for activity items from API
+interface ActivityItem {
+  id: string
+  type: string
+  title?: string
+  text?: string
+  date?: string
+  time?: string
+  user?: string
+  icon?: React.ReactNode
+  link?: string
+}
+
+// Define chart data interface to match DataVisualization component's expected type
+interface ChartData extends Record<string, unknown> {
+  name: string
+  [key: string]: unknown
+}
 
 /**
  * Dashboard component
@@ -113,7 +140,7 @@ export function Dashboard() {
       toast({
         title: "Refresh failed",
         description: "There was a problem refreshing the dashboard data",
-        variant: "error",
+        variant: "destructive", // Using 'destructive' instead of 'error' to match ToastType
         duration: 5000,
       })
     } finally {
@@ -137,11 +164,15 @@ export function Dashboard() {
     }
   }
   
-  // Enhanced activity items with React components instead of strings
-  const enhancedActivityItems = activityItems.map(item => ({
-    ...item,
-    icon: getActivityIcon(item.icon as string)
-  }))
+  // Transform activity items to match the expected DashboardActivityItem format
+  const enhancedActivityItems: DashboardActivityItem[] = activityItems && activityItems.length > 0 
+    ? activityItems.map(item => ({
+        text: item.title, // Use title from the API format
+        time: item.date, // Use date from the API format
+        icon: getActivityIcon(item.type), // Generate icon based on type
+        link: `/activity/${item.id}` // Create link using ID
+      }))
+    : []
 
   // If data is loading and not refreshing, show loading state
   if (isLoading && !isRefreshing) {
@@ -155,38 +186,44 @@ export function Dashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {/* PageHeader */}
-        <PageHeader
-          title="Project Dashboard"
-          description="Track your construction projects with real-time insights and analytics"
-          icon={<LayoutDashboard className="h-8 w-8" />}
-          actions={
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefresh}
+        {/* PageHeader with enhanced styling */}
+        <m.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <PageHeader
+            title="Project Dashboard"
+            description="Track your construction projects with real-time insights and analytics"
+            icon={<LayoutDashboard className="h-8 w-8 text-white" />}
+            actions={
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefresh}
                 className="mr-2 bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20"
-                disabled={isRefreshing}
-              >
-                <RefreshCw className={cn("h-4 w-4 mr-2", isRefreshing && "animate-spin")} />
-                {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
-              </Button>
-              <Button 
-                variant="default" 
+                  disabled={isRefreshing}
+                >
+                  <RefreshCw className={cn("h-4 w-4 mr-2", isRefreshing && "animate-spin")} />
+                  {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
+                </Button>
+                <Button 
+                  variant="default" 
                 className="bg-white hover:bg-gray-50 text-blue-700 border border-white/20 shadow-sm"
-                onClick={() => navigate('/create-project')}
-              >
-                <Plus className="mr-2 h-4 w-4" /> New Project
-              </Button>
-            </>
-          }
-        />
+                  onClick={() => navigate('/create-project')}
+                >
+                  <Plus className="mr-2 h-4 w-4" /> New Project
+                </Button>
+              </div>
+            }
+          />
+        </m.div>
         
         {/* Last Updated Timestamp */}
         {lastUpdated && (
           <div className="mt-2 text-right">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-gray-500 dark:text-gray-400 italic">
               Last updated: {lastUpdated.toLocaleTimeString()} {lastUpdated.toLocaleDateString()}
             </p>
           </div>
@@ -194,35 +231,47 @@ export function Dashboard() {
         
         {/* Welcome Banner with Quick Actions */}
         <m.div 
-          className="mt-8 mb-8 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+          className="mt-6 mb-6 p-6 rounded-xl shadow-md border border-gray-200 dark:border-slate-700/50 bg-white dark:bg-slate-800/80 backdrop-blur-sm hover:shadow-lg transition-all duration-300"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
           <div className="relative z-10">
             {/* Quick Actions Row */}
-            <div className="flex flex-wrap gap-2">
-              {quickActions.map((action, index) => (
-                <Button
+            <div className="flex flex-wrap gap-3">
+              {(quickActions as unknown as DashboardQuickAction[]).map((action, index) => (
+                <m.div
                   key={index}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate(action.route)}
-                  className="bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-blue-700 dark:text-blue-400 border border-gray-200 dark:border-slate-700"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.1, duration: 0.3 }}
                 >
-                  {action.icon}
-                  <span className="ml-2">{action.title}</span>
-                </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(action.route)}
+                    className="bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-blue-700 dark:text-blue-400 border border-gray-200 dark:border-slate-700/50 shadow-sm hover:shadow transition-all duration-200"
+                  >
+                    {action.icon}
+                    <span className="ml-2">{action.title}</span>
+                  </Button>
+                </m.div>
               ))}
             </div>
           </div>
         </m.div>
         
-        {/* Metrics Overview */}
-        <DashboardMetricsGrid
-          stats={quickStats}
-          className="mb-8"
-        />
+        {/* Metrics Overview with enhanced styling */}
+        <m.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <DashboardMetricsGrid
+            stats={quickStats as unknown as QuickStatCard[]}
+            className="mb-6"
+          />
+        </m.div>
         
         {/* Loading Overlay for Refresh */}
         {isRefreshing && (
@@ -231,26 +280,36 @@ export function Dashboard() {
           </div>
         )}
         
-        {/* Charts Section */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
+        {/* Charts Section with enhanced styling */}
+        <m.div 
+          className="mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <div className="bg-white dark:bg-slate-800/80 rounded-xl shadow-md border border-gray-200 dark:border-slate-700/50 p-5 backdrop-blur-sm hover:shadow-lg transition-all duration-300">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              <BarChart3 className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
+              Analytics Overview
+            </h2>
+            
             <Tabs defaultValue="progress" value={activeChartTab} onValueChange={setActiveChartTab} className="w-full">
-              <TabsList className="bg-gray-100/80 dark:bg-slate-800/50">
+              <TabsList className="bg-gray-100/80 dark:bg-slate-800/50 p-1 rounded-lg mb-4">
                 <TabsTrigger 
                   value="progress" 
-                  className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800"
+                  className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm rounded-md transition-all duration-200"
                 >
                   Project Progress
                 </TabsTrigger>
                 <TabsTrigger 
                   value="budget" 
-                  className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800"
+                  className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm rounded-md transition-all duration-200"
                 >
                   Budget Overview
                 </TabsTrigger>
                 <TabsTrigger 
                   value="tasks" 
-                  className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800"
+                  className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm rounded-md transition-all duration-200"
                 >
                   Task Status
                 </TabsTrigger>
@@ -260,7 +319,7 @@ export function Dashboard() {
                 <div className="lg:col-span-2">
                   <TabsContent value="progress" className="m-0">
                     <DataVisualization
-                      data={projectProgressData}
+                      data={projectProgressData as unknown as ChartData[]}
                       title="Project Progress"
                       description="Overview of all active project phases"
                       xAxisKey="name"
@@ -273,7 +332,7 @@ export function Dashboard() {
                   
                   <TabsContent value="budget" className="m-0">
                     <DataVisualization
-                      data={budgetData}
+                      data={budgetData as unknown as ChartData[]}
                       title="Budget Overview"
                       description="Monthly planned vs actual spending"
                       xAxisKey="name"
@@ -286,7 +345,7 @@ export function Dashboard() {
                   
                   <TabsContent value="tasks" className="m-0">
                     <DataVisualization
-                      data={taskStatusData}
+                      data={taskStatusData as unknown as ChartData[]}
                       title="Task Status"
                       description="Current status of all project tasks"
                       pieKey="name"
@@ -300,7 +359,7 @@ export function Dashboard() {
                 
                 <div className="lg:col-span-1">
                   <DataVisualization
-                    data={materialUsageData}
+                    data={materialUsageData as unknown as ChartData[]}
                     title="Material Usage"
                     description="Distribution of materials across projects"
                     pieKey="name"
@@ -314,27 +373,37 @@ export function Dashboard() {
               </div>
             </Tabs>
           </div>
-        </div>
+        </m.div>
         
-        {/* Dashboard Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Dashboard Content Grid with enhanced styling */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column */}
-          <div className="space-y-8">
+          <m.div 
+            className="space-y-6"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+          >
             {/* Projects Overview */}
             <ProjectsOverview projects={projectsData} />
             
             {/* Team Performance */}
             <TeamPerformance teamMembers={teamData} />
-          </div>
+          </m.div>
           
           {/* Right Column */}
-          <div className="space-y-8">
+          <m.div 
+            className="space-y-6"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+          >
             {/* Upcoming Deadlines */}
             <UpcomingDeadlines deadlines={upcomingDeadlines} />
             
             {/* Recent Activity */}
             <RecentActivity activities={enhancedActivityItems} />
-          </div>
+          </m.div>
         </div>
       </div>
     </div>

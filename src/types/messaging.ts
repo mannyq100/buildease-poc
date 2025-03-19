@@ -82,6 +82,7 @@ export interface Conversation {
   updatedAt: Date | string;
   icon?: string;
   isPinned?: boolean;
+  muted?: boolean;
 }
 
 /**

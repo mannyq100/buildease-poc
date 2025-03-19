@@ -34,6 +34,7 @@ import { Projects } from "./pages/Projects";
 import CreateProject from "./pages/CreateProject";
 import Settings from './pages/Settings';
 import Messaging from './pages/Messaging';
+import LandingPage from './pages/LandingPage';
 
 // Auth Pages
 import { Login } from './pages/Login';
@@ -83,6 +84,7 @@ function App() {
                 <BrowserRouter>
                   <Routes>
                     {/* Public routes */}
+                    <Route path="/" element={<LandingPage />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
                     <Route path="/auth/callback/:provider" element={<AuthCallback />} />
@@ -95,7 +97,6 @@ function App() {
                       </ProtectedRoute>
                     }>
                       {/* Main routes */}
-                      <Route path="/" element={<Dashboard />} />
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/create-project" element={<CreateProject />} />
                       <Route path="/generated-plan" element={<GeneratedPlan />} />

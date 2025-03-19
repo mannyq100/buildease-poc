@@ -1,12 +1,12 @@
-# Buildese UI - Construction Project Management Platform
+# BuildEase UI - Construction Project Management Platform
 
 ## Project Overview
 
-Buildese is a comprehensive construction project management platform designed to streamline workflows, enhance collaboration, and provide powerful insights for construction professionals. This UI prototype demonstrates the core functionality and user experience of the platform.
+BuildEase is a comprehensive construction project management platform designed to streamline workflows, enhance collaboration, and provide powerful insights for construction professionals. This UI prototype demonstrates the core functionality and user experience of the platform.
 
 ## Project Scope
 
-Buildese aims to solve critical challenges in the construction industry by providing:
+BuildEase aims to solve critical challenges in the construction industry by providing:
 
 1. **Centralized Project Management**: A single source of truth for all project information, eliminating data silos and improving communication across stakeholders.
 
@@ -196,4 +196,3 @@ The project uses a modern React stack with the following key dependencies:
 - **Data Visualization**: Recharts for charts and graphs
 - **Form Handling**: React Hook Form with Zod validation
 - **Icons**: Lucide React icon library
-

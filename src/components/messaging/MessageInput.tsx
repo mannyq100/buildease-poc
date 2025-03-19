@@ -16,7 +16,12 @@ import {
   Clock,
   ChevronDown,
   Film,
-  Users
+  Users,
+  X,
+  Plus,
+  Calendar,
+  FileUp,
+  Map
 } from "lucide-react";
 import { 
   Popover, 
@@ -36,7 +41,9 @@ import {
 import { Progress } from "@/components/ui/progress";
 
 interface MessageInputProps {
-  onSendMessage: (content: string) => void;
+  value: string;
+  onChange: (value: string) => void;
+  onSend: () => void;
   onSendAttachment?: (file: File) => void;
   onTypingStart?: () => void;
   onTypingEnd?: () => void;
@@ -63,7 +70,9 @@ const EMOJI_CATEGORIES = [
 ];
 
 export const MessageInput: React.FC<MessageInputProps> = ({
-  onSendMessage,
+  value,
+  onChange,
+  onSend,
   onSendAttachment,
   onTypingStart,
   onTypingEnd,
@@ -74,7 +83,6 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   replyingTo,
   onCancelReply
 }) => {
-  const [message, setMessage] = useState<string>("");
   const [attachmentType, setAttachmentType] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
@@ -85,6 +93,9 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   
   // Auto-resize the textarea as content grows
   useEffect(() => {
@@ -92,13 +103,13 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       textareaRef.current.style.height = "auto";
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
-  }, [message]);
+  }, [value]);
   
   // Typing indicator handling
   useEffect(() => {
     let typingTimeout: NodeJS.Timeout | null = null;
     
-    if (message && onTypingStart) {
+    if (value && onTypingStart) {
       onTypingStart();
       typingTimeout = setTimeout(() => {
         if (onTypingEnd) onTypingEnd();
@@ -108,7 +119,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     return () => {
       if (typingTimeout) clearTimeout(typingTimeout);
     };
-  }, [message, onTypingStart, onTypingEnd]);
+  }, [value, onTypingStart, onTypingEnd]);
   
   // Cleanup recording timer
   useEffect(() => {
@@ -128,12 +139,12 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   };
   
   const handleSendMessage = () => {
-    const trimmedMessage = message.trim();
+    const trimmedMessage = value.trim();
     if (trimmedMessage && !disabled) {
       // Clear input first for better UX
-      setMessage("");
+      onChange("");
       // Then send the message
-      onSendMessage(trimmedMessage);
+      onSend();
       
       if (onTypingEnd) {
         onTypingEnd();
@@ -213,7 +224,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     }
     
     // Simulate sending audio message
-    onSendMessage(`[Audio message - ${formatRecordingTime(recordingTime)}]`);
+    onChange(`[Audio message - ${formatRecordingTime(recordingTime)}]`);
   };
   
   // Format recording time as mm:ss
@@ -237,8 +248,20 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   
   // Add emoji to message
   const addEmoji = (emoji: string) => {
-    setMessage(prev => prev + emoji);
+    onChange(prev => prev + emoji);
     textareaRef.current?.focus();
+  };
+  
+  // Placeholder for attachment handling
+  const handleAttachment = (type: string) => {
+    console.log(`Attaching ${type}`);
+    setIsAttachMenuOpen(false);
+  };
+  
+  // Placeholder for voice recording
+  const handleVoiceRecording = () => {
+    setIsRecording(!isRecording);
+    console.log(isRecording ? "Stopping recording" : "Starting recording");
   };
   
   return (
@@ -408,7 +431,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       
       <div className="flex items-end gap-2">
         {/* Attachment Button */}
-        <Popover>
+        <Popover open={isAttachMenuOpen} onOpenChange={setIsAttachMenuOpen}>
           <PopoverTrigger asChild>
             <Button 
               variant="ghost" 
@@ -431,114 +454,82 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             )}
             align="start"
           >
-            <div className="grid grid-cols-3 gap-1">
-              <m.div
-                whileHover={{ scale: 1.05 }}
-                transition={{ type: "spring", stiffness: 400, damping: 10 }}
-              >
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "w-full justify-center flex-col h-16 gap-1 rounded-lg", 
-                    isDarkMode ? "hover:bg-slate-700 text-slate-300" : ""
-                  )}
-                  onClick={() => triggerAttachmentDialog("image")}
-                >
-                  <ImageIcon className="h-5 w-5 text-blue-500" />
-                  <span className="text-xs">Image</span>
-                </Button>
-              </m.div>
+            <div className="grid grid-cols-4 gap-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="flex flex-col h-16 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                      onClick={() => handleAttachment("image")}
+                    >
+                      <ImageIcon className="h-6 w-6 mb-1 text-blue-500" />
+                      <span className="text-xs">Image</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Send an image</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               
-              <m.div
-                whileHover={{ scale: 1.05 }}
-                transition={{ type: "spring", stiffness: 400, damping: 10 }}
-              >
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "w-full justify-center flex-col h-16 gap-1 rounded-lg", 
-                    isDarkMode ? "hover:bg-slate-700 text-slate-300" : ""
-                  )}
-                  onClick={() => triggerAttachmentDialog("document")}
-                >
-                  <FileText className="h-5 w-5 text-amber-500" />
-                  <span className="text-xs">Document</span>
-                </Button>
-              </m.div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="flex flex-col h-16 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                      onClick={() => handleAttachment("document")}
+                    >
+                      <FileText className="h-6 w-6 mb-1 text-amber-500" />
+                      <span className="text-xs">File</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Send a document</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               
-              <m.div
-                whileHover={{ scale: 1.05 }}
-                transition={{ type: "spring", stiffness: 400, damping: 10 }}
-              >
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "w-full justify-center flex-col h-16 gap-1 rounded-lg", 
-                    isDarkMode ? "hover:bg-slate-700 text-slate-300" : ""
-                  )}
-                  onClick={() => {/* Implement camera functionality */}}
-                >
-                  <Camera className="h-5 w-5 text-green-500" />
-                  <span className="text-xs">Camera</span>
-                </Button>
-              </m.div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="flex flex-col h-16 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                      onClick={() => handleAttachment("camera")}
+                    >
+                      <Camera className="h-6 w-6 mb-1 text-rose-500" />
+                      <span className="text-xs">Camera</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Take a photo</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               
-              <m.div
-                whileHover={{ scale: 1.05 }}
-                transition={{ type: "spring", stiffness: 400, damping: 10 }}
-              >
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "w-full justify-center flex-col h-16 gap-1 rounded-lg", 
-                    isDarkMode ? "hover:bg-slate-700 text-slate-300" : ""
-                  )}
-                  onClick={() => {/* Implement GIF functionality */}}
-                >
-                  <Film className="h-5 w-5 text-purple-500" />
-                  <span className="text-xs">GIF</span>
-                </Button>
-              </m.div>
-              
-              <m.div
-                whileHover={{ scale: 1.05 }}
-                transition={{ type: "spring", stiffness: 400, damping: 10 }}
-              >
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "w-full justify-center flex-col h-16 gap-1 rounded-lg", 
-                    isDarkMode ? "hover:bg-slate-700 text-slate-300" : ""
-                  )}
-                  onClick={() => {/* Implement link sharing */}}
-                >
-                  <Link className="h-5 w-5 text-cyan-500" />
-                  <span className="text-xs">Link</span>
-                </Button>
-              </m.div>
-              
-              <m.div
-                whileHover={{ scale: 1.05 }}
-                transition={{ type: "spring", stiffness: 400, damping: 10 }}
-              >
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "w-full justify-center flex-col h-16 gap-1 rounded-lg", 
-                    isDarkMode ? "hover:bg-slate-700 text-slate-300" : ""
-                  )}
-                  onClick={() => {/* Implement contact sharing */}}
-                >
-                  <Users className="h-5 w-5 text-pink-500" />
-                  <span className="text-xs">Contact</span>
-                </Button>
-              </m.div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="flex flex-col h-16 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                      onClick={() => handleAttachment("schedule")}
+                    >
+                      <Calendar className="h-6 w-6 mb-1 text-green-500" />
+                      <span className="text-xs">Schedule</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Schedule meeting</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </PopoverContent>
         </Popover>
@@ -575,15 +566,15 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           <Textarea
             ref={textareaRef}
             placeholder={recordingAudio ? "Recording audio..." : placeholder}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
             className={cn(
               "min-h-[40px] py-2 pr-10 resize-none rounded-xl",
               isDarkMode 
                 ? "bg-slate-800 border-slate-700 text-white placeholder:text-slate-400"
                 : "bg-slate-100 border-slate-100 focus:border-blue-500 text-slate-900 placeholder:text-slate-500",
-              !message && "h-10", // Default height when empty
+              !value && "h-10", // Default height when empty
               recordingAudio && "opacity-50 pointer-events-none"
             )}
             maxLength={1000}
@@ -591,7 +582,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           />
           
           <AnimatePresence>
-            {message && (
+            {value && (
               <m.div
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -608,7 +599,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                           "h-5 w-5 absolute right-3 top-2.5",
                           isDarkMode ? "text-slate-400 hover:text-slate-300" : "text-slate-500 hover:text-slate-600"
                         )}
-                        onClick={() => setMessage("")}
+                        onClick={() => onChange("")}
                       >
                         <XCircle className="h-4 w-4" />
                       </Button>
@@ -624,7 +615,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         </div>
         
         {/* Emoji Picker Button */}
-        <Popover>
+        <Popover open={isEmojiPickerOpen} onOpenChange={setIsEmojiPickerOpen}>
           <PopoverTrigger asChild>
             <Button 
               variant="ghost" 
@@ -700,21 +691,21 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           transition={{ type: "spring", stiffness: 400, damping: 17 }}
         >
           <Button 
-            variant={message.trim() || attachments.length > 0 ? "default" : "outline"}
+            variant={value.trim() || attachments.length > 0 ? "default" : "outline"}
             size="icon"
             className={cn(
               "rounded-full transition-all shadow-sm", 
-              (!message.trim() && attachments.length === 0) && 
+              (!value.trim() && attachments.length === 0) && 
               (isDarkMode 
                 ? "bg-slate-800 text-slate-400 border-slate-700" 
                 : "bg-slate-100 text-slate-400")
             )}
             onClick={handleSendMessage}
-            disabled={(!message.trim() && attachments.length === 0) || disabled || recordingAudio}
+            disabled={(!value.trim() && attachments.length === 0) || disabled || recordingAudio}
           >
             <Send className={cn(
               "h-4 w-4", 
-              (message.trim() || attachments.length > 0) && "text-white"
+              (value.trim() || attachments.length > 0) && "text-white"
             )} />
           </Button>
         </m.div>
@@ -722,21 +713,21 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       
       {/* Character counter */}
       <AnimatePresence>
-        {message.length > 500 && (
+        {value.length > 500 && (
           <m.div
             initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
             className={cn(
               "text-xs px-4 py-1 mt-1 self-end rounded-full",
-              message.length > 900 
+              value.length > 900 
                 ? (isDarkMode ? "bg-red-900/20 text-red-400" : "bg-red-100 text-red-500") 
-                : message.length > 800 
+                : value.length > 800 
                   ? (isDarkMode ? "bg-yellow-900/20 text-yellow-400" : "bg-yellow-100 text-yellow-600")
                   : (isDarkMode ? "bg-slate-800 text-slate-400" : "bg-slate-100 text-slate-500")
             )}
           >
-            {message.length}/1000 characters
+            {value.length}/1000 characters
           </m.div>
         )}
       </AnimatePresence>
