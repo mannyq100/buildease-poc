@@ -21,14 +21,31 @@ import { cn } from '@/lib/utils';
 import { Task, TeamMember } from '@/types/schedule';
 
 // Interface for assignees if passed directly (not via Task object)
-interface Assignee {
+export interface Assignee {
   id: number | string;
   name: string;
   avatar?: string | null;
 }
 
+// Phase-specific task type that matches the structure used in phases
+export interface PhaseTask {
+  title: string;
+  description: string;
+  dueDate: string;
+  status: 'completed' | 'in-progress' | 'pending' | 'delayed' | 'Not Started' | 'In Progress' | 'Completed' | 'Delayed' | 'Blocked';
+  priority: 'high' | 'medium' | 'low';
+  progress?: number;
+  completion?: number;
+  assignees?: Assignee[];
+  comments?: number;
+  attachments?: number;
+  dependencies?: number;
+  project?: string;
+  phase?: string;
+}
+
 // Consolidated TaskCard props that support both use cases
-interface TaskCardProps {
+export interface TaskCardProps {
   /** Task object for schedule view */
   task?: Task;
   
@@ -36,8 +53,8 @@ interface TaskCardProps {
   title?: string;
   description?: string;
   dueDate?: string;
-  status?: 'completed' | 'in-progress' | 'pending' | 'delayed';
-  priority?: 'high' | 'medium' | 'low';
+  status?: PhaseTask['status'];
+  priority?: PhaseTask['priority'];
   progress?: number;
   completion?: number;
   assignees?: Assignee[];
@@ -48,18 +65,19 @@ interface TaskCardProps {
   project?: string;
   phase?: string;
   
-  /** Additional styling */
+  /** Additional styling and behavior */
   className?: string;
-  
-  /** Callback for click events */
-  onClick?: (task: Task | {[key: string]: any}) => void;
-  
-  /** Animation enable flag */
+  onClick?: (task: Task | PhaseTask) => void;
   animate?: boolean;
 }
 
 /**
- * Enhanced TaskCard component that works for both phase and schedule views
+ * Enhanced TaskCard component that works for both phase and schedule views.
+ * Follows Buildese UI design principles:
+ * - Card-based UI with subtle shadows
+ * - Clear visual feedback
+ * - Consistent spacing
+ * - Modern, aesthetic look
  */
 export function TaskCard({
   task,
@@ -186,20 +204,25 @@ export function TaskCard({
   // Event handler for card click
   const handleClick = () => {
     if (onClick) {
-      onClick(usingTaskObject ? task! : {
-        title: taskTitle,
-        description: taskDescription,
-        dueDate: taskDueDate,
-        status: taskStatus,
-        priority: taskPriority,
-        completion: taskProgress,
-        assignedTo: taskAssignees,
-        comments: commentsCount,
-        attachments: attachmentsCount,
-        dependencies: dependenciesCount,
-        project: taskProject,
-        phase: taskPhase
-      });
+      if (task) {
+        onClick(task);
+      } else {
+        onClick({
+          title: title || '',
+          description: description || '',
+          dueDate: dueDate || '',
+          status: status || 'pending',
+          priority: priority,
+          progress: progress,
+          completion: completion,
+          assignees: assignees,
+          comments: comments,
+          attachments: attachments,
+          dependencies: dependencies,
+          project: project || '',
+          phase: phase || ''
+        });
+      }
     }
   };
   

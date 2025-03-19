@@ -44,6 +44,11 @@ export interface StatCardProps {
   subtitle?: string;
   change?: string;
   className?: string;
+  trend?: {
+    value: number;
+    isPositive: boolean;
+  };
+  simplified?: boolean;
 }
 
 /**
