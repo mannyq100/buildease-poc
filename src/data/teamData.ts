@@ -2,7 +2,43 @@
  * Mock team data for the construction management application
  * In a real app, this would come from an API
  */
-import { TeamMember } from '@/components/team/TeamMemberCard'
+import { TeamMember } from '@/types/team'
+
+/**
+ * Get all departments from the team data
+ */
+export function getDepartments(): string[] {
+  const departments = new Set<string>();
+  teamData.forEach(member => {
+    if (member.department) {
+      departments.add(member.department);
+    }
+  });
+  return ['All', ...Array.from(departments)];
+}
+
+/**
+ * Get all status options for team members
+ */
+export function getStatusOptions(): string[] {
+  return ['active', 'inactive', 'on-leave', 'remote'];
+}
+
+/**
+ * Get all projects for assignment
+ */
+export function getProjects(): string[] {
+  return [
+    'Downtown Office Complex',
+    'Riverside Apartments',
+    'Central Hospital Renovation',
+    'Tech Park Development',
+    'Harbor Bridge Repair',
+    'Mountain View Residences',
+    'City Center Mall',
+    'University Campus Extension'
+  ];
+}
 
 export const teamData: TeamMember[] = [
   {

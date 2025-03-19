@@ -18,30 +18,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
 import { formatNumber } from '@/lib/chartUtils'
 import { ViewMode, AvailabilityStatus } from '@/types/common'
-
-export interface TeamMember {
-  id: string | number
-  name: string
-  position: string
-  email: string
-  phone?: string
-  avatar?: string
-  department: string
-  completedTasks: number
-  totalTasks: number
-  performance: number
-  availability: AvailabilityStatus
-  status: 'active' | 'inactive'
-  tags?: string[]
-  isTopPerformer?: boolean
-  joinDate: string
-}
+import { TeamMember } from '@/types/team'
 
 export interface TeamMemberCardProps {
   member: TeamMember
   viewMode?: ViewMode
   onViewProfile?: (member: TeamMember) => void
   onStartChat?: (member: TeamMember) => void
+  onClick?: () => void
   className?: string
 }
 
@@ -54,6 +38,7 @@ export function TeamMemberCard({
   viewMode = 'grid',
   onViewProfile,
   onStartChat,
+  onClick,
   className
 }: TeamMemberCardProps) {
   const navigate = useNavigate()
@@ -98,8 +83,10 @@ export function TeamMemberCard({
   }
   
   // Handle profile click
-  const handleViewProfile = () => {
-    if (onViewProfile) {
+  const handleViewProfile = (e: React.MouseEvent) => {
+    if (onClick) {
+      onClick()
+    } else if (onViewProfile) {
       onViewProfile(member)
     } else {
       navigate(`/team/member/${member.id}`)
@@ -111,6 +98,9 @@ export function TeamMemberCard({
     e.stopPropagation()
     if (onStartChat) {
       onStartChat(member)
+    } else {
+      // Navigate to messaging page with state to start chat with this team member
+      navigate('/messaging', { state: { startChatWith: member } })
     }
   }
   

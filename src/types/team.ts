@@ -4,21 +4,27 @@
  */
 
 export interface TeamMember {
-  id: number
+  id: number | string
   name: string
-  role: string
+  role?: string
+  position?: string
   email: string
   phone: string
   department: string
-  projects: string[]
-  status: 'active' | 'inactive'
-  avatar: string
-  skills: string[]
-  workload: number
+  projects?: string[]
+  status: 'active' | 'inactive' | 'on-leave' | 'remote'
+  avatar?: string
+  skills?: string[]
+  workload?: number
   joinDate: string
-  certifications: string[]
+  certifications?: string[]
   availability: string
-  location: string
+  location?: string
+  completedTasks?: number
+  totalTasks?: number
+  performance?: number
+  isTopPerformer?: boolean
+  tags?: string[]
 }
 
 export interface NewTeamMember {
