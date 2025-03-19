@@ -88,7 +88,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 // Shared Components
-import { MainNavigation } from '@/components/navigation/MainNavigation'
 import { PageHeader } from '@/components/shared'
 import { Grid } from '@/components/layout/Grid'
 import { StatCard } from '@/components/shared/StatCard'
@@ -502,10 +501,6 @@ export default function Team() {
       </Helmet>
       
       <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
-        <MainNavigation
-          title="Team"
-          icon={<Users className="h-6 w-6" />}
-        />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
           <PageHeader
             title="Team Management"
@@ -528,7 +523,7 @@ export default function Team() {
               title="Total Members"
               value={teamMembers.length}
               icon={<Users className="h-6 w-6" />}
-              color="blue"
+              colorScheme="blue"
               subtitle="team members"
             />
             
@@ -536,7 +531,7 @@ export default function Team() {
               title="Active Members"
               value={teamMembers.filter(m => m.status === 'active').length}
               icon={<UserCheck className="h-6 w-6" />}
-              color="green"
+              colorScheme="green"
               subtitle="currently active"
             />
             
@@ -544,7 +539,7 @@ export default function Team() {
               title="Projects Assigned"
               value={Array.from(new Set(teamMembers.flatMap(m => m.projects || []))).length}
               icon={<Briefcase className="h-6 w-6" />}
-              color="amber"
+              colorScheme="amber"
               subtitle="active projects"
             />
             
@@ -552,7 +547,7 @@ export default function Team() {
               title="Average Workload"
               value={`${Math.round(teamMembers.reduce((acc, member) => acc + member.workload, 0) / (teamMembers.length || 1))}%`}
               icon={<Activity className="h-6 w-6" />}
-              color="purple"
+              colorScheme="purple"
               subtitle="team capacity"
             />
           </div>
@@ -958,30 +953,32 @@ export default function Team() {
                           Contact Information
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4">
-                        <div className="flex items-center gap-2 group">
-                          <Mail className="h-4 w-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400" />
-                          <span className="text-gray-700 dark:text-gray-300">{currentMember.email}</span>
-                        </div>
-                        <div className="flex items-center gap-2 group">
-                          <Phone className="h-4 w-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400" />
-                          <span className="text-gray-700 dark:text-gray-300">{currentMember.phone || 'Not provided'}</span>
-                        </div>
-                        <div className="flex items-center gap-2 group">
-                          <Building className="h-4 w-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400" />
-                          <span className="text-gray-700 dark:text-gray-300">{currentMember.department}</span>
-                        </div>
-                        <div className="flex items-center gap-2 group">
-                          <MapPin className="h-4 w-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400" />
-                          <span className="text-gray-700 dark:text-gray-300">{currentMember.location}</span>
-                        </div>
-                        <div className="flex items-center gap-2 group">
-                          <Calendar className="h-4 w-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400" />
-                          <span className="text-gray-700 dark:text-gray-300">Joined: {currentMember.joinDate}</span>
-                        </div>
-                        <div className="flex items-center gap-2 group">
-                          <Clock className="h-4 w-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400" />
-                          <span className="text-gray-700 dark:text-gray-300">{currentMember.availability}</span>
+                      <CardContent className="p-4">
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          <div className="flex items-center gap-2 group">
+                            <Mail className="h-4 w-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400" />
+                            <span className="text-gray-700 dark:text-gray-300">{currentMember.email}</span>
+                          </div>
+                          <div className="flex items-center gap-2 group">
+                            <Phone className="h-4 w-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400" />
+                            <span className="text-gray-700 dark:text-gray-300">{currentMember.phone || 'Not provided'}</span>
+                          </div>
+                          <div className="flex items-center gap-2 group">
+                            <Building className="h-4 w-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400" />
+                            <span className="text-gray-700 dark:text-gray-300">{currentMember.department}</span>
+                          </div>
+                          <div className="flex items-center gap-2 group">
+                            <MapPin className="h-4 w-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400" />
+                            <span className="text-gray-700 dark:text-gray-300">{currentMember.location}</span>
+                          </div>
+                          <div className="flex items-center gap-2 group">
+                            <Calendar className="h-4 w-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400" />
+                            <span className="text-gray-700 dark:text-gray-300">Joined: {currentMember.joinDate}</span>
+                          </div>
+                          <div className="flex items-center gap-2 group">
+                            <Clock className="h-4 w-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400" />
+                            <span className="text-gray-700 dark:text-gray-300">{currentMember.availability}</span>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>

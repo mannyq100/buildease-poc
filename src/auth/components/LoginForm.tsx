@@ -55,10 +55,10 @@ export function LoginForm() {
       transition={{ duration: 0.5 }}
       className="w-full"
     >
-      <Card className="w-full max-w-md mx-auto border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg overflow-hidden">
+      <Card className="w-full max-w-md mx-auto border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg overflow-hidden shadow-sm">
         <div className="h-1 bg-blue-500"></div>
         
-        <CardContent className="p-6 space-y-5">
+        <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-5">
           <AnimatePresence>
             {error && (
               <m.div
@@ -80,12 +80,13 @@ export function LoginForm() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
+            className="px-1"
           >
             <SocialLoginButtons className="mb-2" />
           </m.div>
           
           <m.div 
-            className="relative my-5"
+            className="relative my-4 sm:my-5"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.5 }}
@@ -155,7 +156,7 @@ export function LoginForm() {
                     onFocus={() => setFocusedField('email')}
                     onBlur={() => setFocusedField(null)}
                     placeholder="you@example.com"
-                    className="pl-10 py-5 h-11 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:focus:border-blue-500 transition-all relative z-10"
+                    className="pl-10 py-5 h-12 sm:h-11 text-base sm:text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:focus:border-blue-500 transition-all relative z-10"
                     required
                   />
                 </m.div>
@@ -168,7 +169,7 @@ export function LoginForm() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7, duration: 0.3 }}
             >
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0">
                 <Label htmlFor="password" className="text-sm font-medium flex items-center space-x-1 text-slate-700 dark:text-slate-300">
                   <m.span
                     animate={focusedField === 'password' ? { color: '#3b82f6' } : {}}
@@ -212,14 +213,14 @@ export function LoginForm() {
                     onChange={(e) => setPassword(e.target.value)}
                     onFocus={() => setFocusedField('password')}
                     onBlur={() => setFocusedField(null)}
-                    className="pl-10 pr-10 py-5 h-11 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:focus:border-blue-500 transition-all relative z-10"
+                    className="pl-10 pr-10 py-5 h-12 sm:h-11 text-base sm:text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:focus:border-blue-500 transition-all relative z-10"
                     required
                   />
                 </m.div>
                 <m.button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors z-10"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors z-10 p-1.5"
                   whileHover={{ scale: 1.1, color: '#3b82f6' }}
                   whileTap={{ scale: 0.9 }}
                   transition={{ duration: 0.15 }}
@@ -244,7 +245,7 @@ export function LoginForm() {
                   id="remember" 
                   checked={rememberMe}
                   onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                  className="border-slate-300 dark:border-slate-600 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+                  className="w-4 h-4 border-slate-300 dark:border-slate-600 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
                 />
                 <Label htmlFor="remember" className="font-normal text-sm cursor-pointer">Remember me</Label>
               </div>
@@ -259,7 +260,7 @@ export function LoginForm() {
               <m.button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-11 flex items-center justify-center font-medium rounded-md text-white transition-all duration-200 relative overflow-hidden border-0 bg-blue-500 hover:bg-blue-600"
+                className="w-full h-12 sm:h-11 flex items-center justify-center font-medium rounded-md text-white transition-all duration-200 relative overflow-hidden border-0 bg-blue-500 hover:bg-blue-600 text-base sm:text-sm"
                 whileHover={{ 
                   scale: 1.01
                 }}
@@ -281,7 +282,7 @@ export function LoginForm() {
                       whileHover={{ x: 3 }}
                       transition={{ type: "spring", stiffness: 400, damping: 10 }}
                     >
-                      <span className="text-base">Sign In</span>
+                      <span>Sign In</span>
                       <m.svg 
                         xmlns="http://www.w3.org/2000/svg" 
                         className="h-5 w-5 ml-2" 
@@ -302,7 +303,7 @@ export function LoginForm() {
           </m.form>
           
           <m.div 
-            className="flex items-center justify-center mt-5 space-x-1 text-sm"
+            className="flex flex-col sm:flex-row items-center justify-center mt-4 sm:mt-5 space-y-2 sm:space-y-0 sm:space-x-1 text-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1, duration: 0.5 }}
@@ -321,4 +322,4 @@ export function LoginForm() {
       </Card>
     </m.div>
   );
-} 
+}

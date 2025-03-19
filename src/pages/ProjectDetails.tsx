@@ -310,22 +310,23 @@ export function ProjectDetails() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900/95">
+    <div className="min-h-screen bg-slate-50 dark:from-slate-950 dark:to-slate-900">
       <PageHeader
         title={`Residential Renovation #${id}`}
         description="Modern home renovation project with eco-friendly materials"
-        icon={<Building className="h-8 w-8 text-blue-600 dark:text-blue-400" />}
+        icon={<Building className="h-8 w-8 text-white" />}
+        className="bg-gradient-to-r from-[#2B6CB0] to-[#1E40AF] shadow-md border-0"
         actions={
           <div className="flex gap-2">
             <Button
               variant="outline"
-              className="bg-white/20 backdrop-blur-sm border-white/10 hover:bg-white/30 text-white"
+              className="bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/20 text-white"
               onClick={() => navigate(`/project/${id}/settings`)}
             >
               <Settings className="mr-2 h-4 w-4" /> Settings
             </Button>
             <Button
-              className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border-white/10"
+              className="bg-[#ED8936] hover:bg-[#DD6B20] text-white border-0 shadow-sm"
               onClick={() => navigate(`/project/${id}/documents`)}
             >
               <FileText className="mr-2 h-4 w-4" /> Documents
@@ -349,14 +350,14 @@ export function ProjectDetails() {
         />
 
         {/* Project Navigation */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden sticky top-16 z-30 mb-8 border border-gray-100 dark:border-slate-700">
-          <div className="border-b border-gray-200 dark:border-slate-700">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden sticky top-16 z-30 mb-8 border border-gray-100 dark:border-slate-700">
+          <div className="border-b border-gray-100 dark:border-slate-700">
             <HorizontalNav
               items={PROJECT_NAV_ITEMS(id)}
               variant="underlined"
               showIcons={true}
-              className="py-2 px-2"
-              itemClassName="font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+              className="py-2 px-4"
+              itemClassName="font-medium text-gray-600 dark:text-gray-300 hover:text-[#2B6CB0] dark:hover:text-blue-400"
               animated={true}
               showTooltips={true}
             />
@@ -365,55 +366,67 @@ export function ProjectDetails() {
 
         {/* Tab Content */}
         <LazyMotion features={domAnimation}>
-          <m.div 
-            className="grid grid-cols-1 lg:grid-cols-3 gap-8"
-            variants={contentVariants}
+          <m.div
+            className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+            variants={containerVariants}
             initial="hidden"
             animate="visible"
           >
-            {/* Main Content Area */}
+            {/* Left column - Phases and Activity */}
             <m.div 
-              className="lg:col-span-2 space-y-8"
-              variants={sectionVariants}
+              className="lg:col-span-2 space-y-6" 
+              variants={contentVariants}
             >
               {/* Project Phases */}
-              <ProjectPhasesSection
-                phases={phases}
-                expandedPhase={expandedPhase}
-                onToggleExpand={togglePhaseExpand}
-                onPhaseClick={handlePhaseClick}
-                onAddTask={handleAddTask}
-                onAddPhase={handleAddPhase}
-              />
-
+              <m.div variants={sectionVariants}>
+                <ProjectPhasesSection
+                  phases={phases}
+                  expandedPhase={expandedPhase}
+                  onToggleExpand={togglePhaseExpand}
+                  onPhaseClick={handlePhaseClick}
+                  onAddTask={handleAddTask}
+                  onAddPhase={handleAddPhase}
+                  className="rounded-xl overflow-hidden"
+                />
+              </m.div>
+              
               {/* Recent Activity */}
-              <ProjectActivitySection
-                activities={RECENT_ACTIVITY}
-                onViewAll={handleViewAllActivities}
-                limit={4}
-              />
+              <m.div variants={sectionVariants}>
+                <ProjectActivitySection
+                  activities={RECENT_ACTIVITY}
+                  onViewAll={handleViewAllActivities}
+                  className="rounded-xl overflow-hidden"
+                />
+              </m.div>
             </m.div>
             
-            <m.div 
-              className="space-y-8"
-              variants={sectionVariants}
-            >
+            {/* Right column - Insights, Quick Actions, Documents */}
+            <m.div className="space-y-6" variants={contentVariants}>
               {/* Project Insights */}
-              <ProjectInsightsSection
-                insights={projectInsights}
-                isDarkMode={isDarkMode}
-              />
+              <m.div variants={sectionVariants}>
+                <ProjectInsightsSection
+                  insights={projectInsights}
+                  isDarkMode={isDarkMode}
+                  className="rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-slate-700"
+                />
+              </m.div>
         
               {/* Quick Actions */}
-              <QuickActionsSection
-                actions={quickActions}
-              />
+              <m.div variants={sectionVariants}>
+                <QuickActionsSection
+                  actions={quickActions}
+                  className="rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-slate-700"
+                />
+              </m.div>
               
               {/* Recent Documents */}
-              <RecentDocumentsSection
-                documents={RECENT_DOCUMENTS}
-                onViewAll={handleViewAllDocuments}
-              />
+              <m.div variants={sectionVariants}>
+                <RecentDocumentsSection
+                  documents={RECENT_DOCUMENTS}
+                  onViewAll={handleViewAllDocuments}
+                  className="rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-slate-700"
+                />
+              </m.div>
             </m.div>
           </m.div>
         </LazyMotion>
@@ -423,17 +436,22 @@ export function ProjectDetails() {
       <AddPhaseDialog
         isOpen={showPhaseDialog}
         onClose={() => setShowPhaseDialog(false)}
-        onAddPhase={handleSavePhase}
-        projectId={id}
         phase={newPhase}
         setPhase={setNewPhase}
+        onSave={handleSavePhase}
       />
 
       {/* Add Task Dialog */}
       <AddTaskDialog
         isOpen={showTaskDialog}
         onClose={() => setShowTaskDialog(false)}
-        projectId={id}
+        task={{
+          name: '',
+          description: '',
+          dueDate: new Date(),
+        }}
+        setTask={() => {}}
+        onSave={() => setShowTaskDialog(false)}
         phases={phases}
       />
     </div>

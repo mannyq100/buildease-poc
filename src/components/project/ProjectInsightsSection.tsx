@@ -9,7 +9,7 @@ import { fadeInUpVariants } from '@/lib/animations';
 interface InsightItemProps {
   title: string;
   description: string;
-  type: 'success' | 'warning' | 'error' | 'default';
+  type: 'success' | 'warning' | 'default' | 'alert' | 'performance';
   icon: React.ReactNode;
 }
 
@@ -30,14 +30,14 @@ export function ProjectInsightsSection({
   return (
     <ContentSection
       title="Project Insights"
-      variant="gradient"
+      variant="default"
       elevation="sm"
       borderRadius="lg"
       className={cn(
-        "shadow-md border",
+        "shadow-sm border",
         isDarkMode 
-          ? "bg-gradient-to-br from-blue-950/30 to-indigo-950/20 border-blue-900/30" 
-          : "bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100",
+          ? "bg-slate-800 border-slate-700" 
+          : "bg-white border-gray-100",
         className
       )}
     >
@@ -50,12 +50,14 @@ export function ProjectInsightsSection({
               initial="hidden"
               animate="visible"
               transition={{ duration: 0.3, delay: i * 0.1 }}
+              className="hover:translate-y-[-2px] transition-transform duration-200"
             >
               <InsightItem
                 title={insight.title}
                 description={insight.description}
                 type={insight.type}
                 icon={insight.icon}
+                className="rounded-lg overflow-hidden"
               />
             </m.div>
           ))}
@@ -63,4 +65,4 @@ export function ProjectInsightsSection({
       </LazyMotion>
     </ContentSection>
   );
-} 
+}

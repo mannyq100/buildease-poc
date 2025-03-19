@@ -53,7 +53,6 @@ import {
 
 // Shared Components
 import { Grid } from '@/components/layout/Grid'
-import { MainNavigation } from '@/components/navigation/MainNavigation'
 import { PageHeader } from '@/components/shared'
 import { usePageActions } from '@/hooks/usePageActions'
 
@@ -190,10 +189,6 @@ export function Materials() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
-      <MainNavigation
-        title="Materials"
-        icon={<Package className="h-6 w-6" />}
-      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <PageHeader
           title="Materials Management"
@@ -225,28 +220,28 @@ export function Materials() {
             title="Total Materials"
             value={materials.length}
             icon={<Package className="h-6 w-6" />}
-            color="blue"
+            colorScheme="blue"
             subtitle="items"
           />
           <StatCard
             title="Low Stock Items"
             value={materials.filter(m => m.status === 'Low Stock').length}
             icon={<AlertCircle className="h-6 w-6" />}
-            color="red"
+            colorScheme="red"
             subtitle="need ordering"
           />
           <StatCard
             title="Value in Stock"
             value={`$${totalValue.toLocaleString()}`}
             icon={<DollarSign className="h-6 w-6" />}
-            color="green"
+            colorScheme="green"
             subtitle="total inventory"
           />
           <StatCard
             title="Categories"
             value={uniqueCategories.length}
             icon={<Layers className="h-6 w-6" />}
-            color="purple"
+            colorScheme="purple"
             subtitle="material types"
           />
         </div>

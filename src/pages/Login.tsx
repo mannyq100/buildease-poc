@@ -21,7 +21,7 @@ export function Login() {
   return (
     <LazyMotion features={domAnimation}>
       <div className="flex min-h-screen bg-gradient-to-b from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 overflow-hidden">
-        {/* Left side - Image */}
+        {/* Left side - Image (hidden on mobile and tablets, visible on desktop) */}
         <div className="hidden lg:block lg:w-1/2 relative">
           <div 
             className="absolute inset-0 bg-cover bg-center" 
@@ -70,22 +70,36 @@ export function Login() {
           </div>
         </div>
 
-        {/* Right side - Form */}
-        <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-4 sm:p-8">
+        {/* Right side - Form (takes full width on mobile/tablet, half on desktop) */}
+        <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-4 py-8 sm:px-6 md:px-8 lg:px-12">
+          {/* Small logo shown only on mobile */}
+          <div className="lg:hidden flex justify-center mb-8">
+            <img src="/buildease-logo-1.svg" alt="BuildEase" className="h-10 w-auto" />
+          </div>
+          
           <m.div 
-            className="mb-8 text-center"
+            className="mb-6 md:mb-8 text-center w-full max-w-md"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
           >
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome back</h1>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Welcome back</h1>
+            <p className="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-400">
               Sign in to continue to your construction dashboard
             </p>
           </m.div>
           
-          <div className="w-full max-w-md">
+          <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 sm:p-6 md:p-8">
             <LoginForm />
+          </div>
+          
+          {/* Footer links for mobile and desktop */}
+          <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
+            <div className="space-x-4">
+              <a href="#" className="hover:text-blue-600 dark:hover:text-blue-400">Privacy Policy</a>
+              <a href="#" className="hover:text-blue-600 dark:hover:text-blue-400">Terms of Service</a>
+              <a href="#" className="hover:text-blue-600 dark:hover:text-blue-400">Help</a>
+            </div>
           </div>
         </div>
       </div>

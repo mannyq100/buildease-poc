@@ -1,101 +1,84 @@
-import React, { useState, useEffect, useCallback, memo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
-import MainNavigation from '@/components/layout/MainNavigation';
+import { cn } from '@/lib/utils';
+import MainNavigation from './MainNavigation';
 import Breadcrumb from '@/components/navigation/Breadcrumb';
-import { Footer } from '@/components/layout/Footer';
-import { cn, debounce } from '@/lib/utils';
-import { LazyMotion, domAnimation, m } from 'framer-motion';
 
 interface AppLayoutProps {
   showBreadcrumbs?: boolean;
   className?: string;
 }
 
-function AppLayout({ showBreadcrumbs = true, className }: AppLayoutProps) {
+/**
+ * Main application layout component that provides consistent structure across the app
+ * Includes responsive header, navigation, breadcrumbs and content area
+ */
+export function AppLayout({ showBreadcrumbs = true, className }: AppLayoutProps) {
   const [isMobile, setIsMobile] = useState(false);
+  const [isSmallTablet, setIsSmallTablet] = useState(false);
   
-  // Create stable, memoized handler for resize
-  const checkMobile = useCallback(() => {
-    const isMobileView = window.innerWidth < 768;
-    setIsMobile(isMobileView);
+  // Detect mobile/tablet screen sizes
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth < 640); // sm breakpoint
+      setIsSmallTablet(window.innerWidth >= 640 && window.innerWidth < 768); // between sm and md
+    };
+    
+    // Initial check
+    checkScreenSize();
+    
+    // Listen for window resize
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
   
-  // Debounced version of checkMobile to reduce updates during resize
-  const debouncedCheckMobile = useCallback(
-    debounce(checkMobile, 100),
-    [checkMobile]
-  );
-  
-  useEffect(() => {
-    // Check on mount
-    checkMobile();
-    
-    // Update on resize with debounce
-    window.addEventListener('resize', debouncedCheckMobile);
-    
-    return () => window.removeEventListener('resize', debouncedCheckMobile);
-  }, [checkMobile, debouncedCheckMobile]);
-  
+  // Determine padding based on screen size
+  const getContentPadding = () => {
+    if (isMobile) return 'px-3 py-4'; // Less padding on mobile
+    if (isSmallTablet) return 'px-4 py-5'; // Medium padding on small tablets
+    return 'px-6 py-6'; // More padding on larger screens
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex flex-col">
-      {/* Top Navigation - Fixed at the top with integrated nav links */}
-      <MainNavigation className="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-800" />
+      {/* Fixed navigation */}
+      <MainNavigation className="sticky top-0 z-10" />
       
-      {/* Main Content Area */}
-      <div className="flex flex-col flex-grow">        
-        {/* Content Container with Centered Alignment */}
-        <div className="flex justify-center flex-grow">
-          {/* Content - Using LazyMotion for performance */}
-          <LazyMotion features={domAnimation} strict>
-            <m.main 
-              className="py-4 w-full transition-all duration-300 mt-2"
-              style={{
-                // More padding on larger screens, less on mobile
-                paddingLeft: 'max(1rem, env(safe-area-inset-left))',
-                paddingRight: 'max(1rem, env(safe-area-inset-right))'
-              }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.2 }}
-            >
-              {/* Page Content - Rendered by React Router */}
-              <div className={cn(
-                "bg-white dark:bg-slate-800 rounded-lg shadow-card max-w-6xl mx-auto",
-                // Add responsive padding - less on mobile, more on desktop
-                "p-3 sm:p-4 md:p-6",
-                className
-              )}>
-                {/* Breadcrumbs - Moved inside content container */}
-                {showBreadcrumbs && (
-                  <div className="mb-4 hidden md:block">
-                    <Breadcrumb 
-                      autoGenerate 
-                      className="text-sm text-gray-500 dark:text-gray-400"
-                    />
-                  </div>
-                )}
-                
-                {/* Main outlet content */}
-                <Outlet />
-              </div>
-            </m.main>
-          </LazyMotion>
-        </div>
+      {/* Main content */}
+      <main className={cn(
+        'flex-1 flex flex-col',
+        getContentPadding(),
+        className
+      )}>
+        {/* Breadcrumbs - responsive padding and visibility based on screen size */}
+        {showBreadcrumbs && (
+          <div className="mb-4 md:mb-6">
+            <Breadcrumb 
+              autoGenerate 
+              className="text-sm text-gray-500 dark:text-gray-400" 
+            />
+          </div>
+        )}
         
-        {/* Footer */}
-        <Footer 
-          variant="minimal-modern" 
-          showSocial={true}
-          showLegal={true}
-          showContact={false}
-          showCopyright={true}
-          companyName="BuildEase"
-          logoSrc="/buildease-logo-1.svg"
-        />
-      </div>
+        {/* Page content - Outlet renders the current route */}
+        <div className="flex-1">
+          <Outlet />
+        </div>
+      </main>
+      
+      {/* Simple responsive footer */}
+      <footer className="bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 py-4 px-4 md:px-6">
+        <div className="mx-auto max-w-7xl flex flex-col md:flex-row justify-between items-center">
+          <div className="text-sm text-gray-500 dark:text-gray-400 mb-3 md:mb-0">
+            &copy; {new Date().getFullYear()} BuildEase. All rights reserved.
+          </div>
+          <div className="flex space-x-4">
+            <a href="#" className="text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">Privacy</a>
+            <a href="#" className="text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">Terms</a>
+            <a href="#" className="text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">Support</a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
-};
-
-// Memoize the entire component to reduce re-renders
-export default memo(AppLayout);
+}

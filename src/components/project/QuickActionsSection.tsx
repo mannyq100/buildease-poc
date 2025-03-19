@@ -4,6 +4,7 @@ import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ContentSection } from '@/components/shared/ContentSection';
 import { scaleInVariants, buttonHoverVariants } from '@/lib/animations';
+import { cn } from '@/lib/utils';
 
 interface QuickActionProps {
   label: string;
@@ -29,7 +30,10 @@ export function QuickActionsSection({
       variant="default"
       elevation="sm"
       borderRadius="lg"
-      className={`shadow-md border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 ${className || ''}`}
+      className={cn(
+        "shadow-sm border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800",
+        className
+      )}
     >
       <LazyMotion features={domAnimation}>
         <div className="space-y-3">
@@ -44,14 +48,16 @@ export function QuickActionsSection({
             >
               <Button 
                 variant="outline" 
-                className="w-full justify-between bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                className="w-full justify-between bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-gray-800 dark:text-gray-200 font-medium"
                 onClick={action.onClick}
               >
                 <span className="flex items-center">
-                  {action.icon}
+                  <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[#2B6CB0]/10 text-[#2B6CB0] dark:bg-blue-900/30 dark:text-blue-400 mr-3">
+                    {action.icon}
+                  </span>
                   {action.label}
                 </span>
-                <ArrowRight className="h-4 w-4 ml-2" />
+                <ArrowRight className="h-4 w-4 ml-2 text-[#ED8936] dark:text-[#F6AD55]" />
               </Button>
             </m.div>
           ))}
@@ -59,4 +65,4 @@ export function QuickActionsSection({
       </LazyMotion>
     </ContentSection>
   );
-} 
+}

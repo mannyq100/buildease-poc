@@ -64,10 +64,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 // Shared Components
-import { MainNavigation } from '@/components/navigation/MainNavigation'
-import {
-  PageHeader
-} from '@/components/shared'
+import { PageHeader } from '@/components/shared'
 import { usePageActions } from '@/hooks/usePageActions'
 import { StatCard } from '@/components/shared/StatCard'
 
@@ -325,10 +322,6 @@ export function Documents() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
-      <MainNavigation
-        title="Documents"
-        icon={<FileText className="h-6 w-6" />}
-      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
           <PageHeader
           title="Documents"
@@ -360,28 +353,28 @@ export function Documents() {
             title="Total Documents"
             value={documents.length}
             icon={<Files className="h-6 w-6" />}
-            color="blue"
+            colorScheme="blue"
             subtitle="items"
           />
           <StatCard
             title="Approved"
             value={approvedCount}
             icon={<CheckCircle className="h-6 w-6" />}
-            color="green"
+            colorScheme="green"
             subtitle="documents"
           />
           <StatCard
             title="Starred"
             value={starredCount}
             icon={<Star className="h-6 w-6" />}
-            color="amber"
+            colorScheme="amber"
             subtitle="favorites"
           />
           <StatCard
             title="Recent Uploads"
             value={recentCount}
             icon={<Clock className="h-6 w-6" />}
-            color="purple"
+            colorScheme="purple"
             subtitle="this week"
           />
         </div>

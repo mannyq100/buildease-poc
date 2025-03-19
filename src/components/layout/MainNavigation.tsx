@@ -16,7 +16,9 @@ import {
   Users,
   FileText,
   Menu,
-  MessagesSquare
+  MessagesSquare,
+  Home,
+  ChevronRight
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -59,6 +61,11 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ className }) => {
     
     return () => observer.disconnect();
   }, []);
+
+  // Close mobile menu when location changes
+  useEffect(() => {
+    setShowMobileMenu(false);
+  }, [location.pathname]);
 
   // Check if a path is active
   const isActive = (path: string) => {
@@ -155,19 +162,20 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ className }) => {
             src="/buildease-logo-1.svg" 
             alt="BuildEase" 
             className="h-6 md:h-8 w-auto"
-            style={{ maxWidth: '150px' }}
+            style={{ maxWidth: '130px' }}
+            onClick={() => navigate('/')}
           />
         </div>
         
         {/* Desktop Navigation Links */}
-        <div className="hidden md:flex items-center space-x-1 mr-4">
+        <div className="hidden md:flex items-center space-x-1 mr-4 overflow-x-auto scrollbar-hide">
           {navigationItems.map((item) => (
             <Button
               key={item.path}
               variant="ghost"
               size="sm"
               className={cn(
-                "flex items-center gap-2",
+                "flex items-center gap-2 whitespace-nowrap",
                 isActive(item.path) 
                   ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" 
                   : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
@@ -273,7 +281,7 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ className }) => {
       
       {/* Mobile Search Overlay */}
       {showMobileSearch && (
-        <div className="md:hidden absolute inset-x-0 top-0 bg-white dark:bg-slate-900 h-16 px-4 flex items-center z-50">
+        <div className="md:hidden fixed inset-x-0 top-0 bg-white dark:bg-slate-900 h-16 px-4 flex items-center z-50 shadow-md">
           <Input 
             placeholder="Search..." 
             className="w-full bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700"
@@ -290,35 +298,125 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ className }) => {
         </div>
       )}
       
-      {/* Mobile Navigation Menu */}
+      {/* Mobile Navigation Menu - Improved */}
       {showMobileMenu && (
-        <div className="md:hidden absolute inset-x-0 top-16 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-gray-700 shadow-lg z-40 max-h-[70vh] overflow-y-auto">
-          <div className="px-4 py-3 space-y-1">
-            {navigationItems.map((item) => (
-              <Button
-                key={item.path}
-                variant="ghost"
-                className={cn(
-                  "w-full justify-start items-center gap-2 text-left h-auto py-2",
-                  isActive(item.path) 
-                    ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" 
-                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
-                )}
-                onClick={() => {
-                  navigate(item.path);
-                  setShowMobileMenu(false);
-                }}
+        <div className="md:hidden fixed inset-0 z-40 bg-gray-900/50 dark:bg-black/50">
+          <div 
+            className="fixed inset-y-0 left-0 w-[85%] max-w-sm bg-white dark:bg-slate-900 shadow-xl overflow-y-auto pb-safe"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
+              <div className="flex items-center">
+                <img 
+                  src="/buildease-logo-1.svg" 
+                  alt="BuildEase" 
+                  className="h-6 w-auto"
+                />
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setShowMobileMenu(false)}
               >
-                {item.icon}
-                <span className="font-medium">{item.label}</span>
-                {item.badge && (
-                  <Badge variant="outline" className="ml-auto text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/30">
-                    {item.badge.text}
-                  </Badge>
-                )}
+                <X className="h-5 w-5" />
               </Button>
-            ))}
+            </div>
+            
+            <div className="p-2">
+              {/* User info */}
+              <div className="p-4 mb-2 flex items-center">
+                <Avatar className="h-10 w-10 mr-3">
+                  <AvatarImage src="/avatar.png" alt="User" />
+                  <AvatarFallback className="bg-[#1E3A8A] text-white">JD</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium">John Doe</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Project Manager</p>
+                </div>
+              </div>
+              
+              <Separator className="my-2" />
+              
+              {/* Navigation */}
+              <div className="px-2 py-1 space-y-1">
+                {navigationItems.map((item) => (
+                  <Button
+                    key={item.path}
+                    variant="ghost"
+                    className={cn(
+                      "w-full justify-start items-center gap-3 text-left h-12 px-3 rounded-lg",
+                      isActive(item.path) 
+                        ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" 
+                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800"
+                    )}
+                    onClick={() => {
+                      navigate(item.path);
+                      setShowMobileMenu(false);
+                    }}
+                  >
+                    <div className={cn(
+                      "flex items-center justify-center w-8 h-8 rounded-full",
+                      isActive(item.path)
+                        ? "bg-blue-100 dark:bg-blue-800/30"
+                        : "bg-gray-100 dark:bg-slate-800"
+                    )}>
+                      {item.icon}
+                    </div>
+                    <span className="font-medium">{item.label}</span>
+                    {item.badge && (
+                      <Badge variant="outline" className="ml-auto text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/30">
+                        {item.badge.text}
+                      </Badge>
+                    )}
+                    <ChevronRight className="ml-auto h-4 w-4 opacity-50" />
+                  </Button>
+                ))}
+              </div>
+              
+              <Separator className="my-2" />
+              
+              {/* Quick actions */}
+              <div className="mt-4 px-4 space-y-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start text-left" 
+                  onClick={() => {
+                    navigate('/profile');
+                    setShowMobileMenu(false);
+                  }}
+                >
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start text-left" 
+                  onClick={() => {
+                    navigate('/settings');
+                    setShowMobileMenu(false);
+                  }}
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start text-left text-red-600 dark:text-red-400" 
+                  onClick={handleLogout}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </Button>
+              </div>
+            </div>
           </div>
+          {/* Backdrop click to close */}
+          <div 
+            className="fixed inset-0 z-[-1]" 
+            onClick={() => setShowMobileMenu(false)}
+          />
         </div>
       )}
     </header>

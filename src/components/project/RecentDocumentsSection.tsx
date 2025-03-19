@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { DocumentItem } from '@/components/shared';
 import { ContentSection } from '@/components/shared/ContentSection';
 import { fadeInRightVariants } from '@/lib/animations';
+import { cn } from '@/lib/utils';
 
 interface DocumentProps {
   title: string;
@@ -33,13 +34,16 @@ export function RecentDocumentsSection({
       variant="default"
       elevation="sm"
       borderRadius="lg"
-      className={`shadow-md border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 ${className || ''}`}
+      className={cn(
+        "shadow-sm border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800",
+        className
+      )}
       action={
         onViewAll && (
           <Button 
             variant="ghost" 
             size="sm" 
-            className="text-[#1E3A8A] dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+            className="text-[#2B6CB0] dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-medium"
             onClick={onViewAll}
           >
             All Files <ChevronRight className="ml-1 h-4 w-4" />
@@ -63,7 +67,7 @@ export function RecentDocumentsSection({
                 size={doc.size}
                 type={doc.type}
                 date={doc.date}
-                className="hover:bg-slate-50 dark:hover:bg-slate-700/50 p-2 rounded-md transition-colors"
+                className="hover:bg-slate-50 dark:hover:bg-slate-700/50 p-3 rounded-lg transition-colors border border-transparent hover:border-gray-100 dark:hover:border-slate-700"
               />
             </m.div>
           ))}
@@ -71,4 +75,4 @@ export function RecentDocumentsSection({
       </LazyMotion>
     </ContentSection>
   );
-} 
+}

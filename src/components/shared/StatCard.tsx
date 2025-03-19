@@ -1,101 +1,115 @@
 /**
  * StatCard component for displaying statistics across the application
  */
-import React from 'react'
-import { Card, CardContent } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
-import { StatCardProps } from '@/types/ui'
+import React from 'react';
+import { CardDescription, CardHeader, CardContent, CardTitle, Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import { StatCardProps } from '@/types/ui';
 
-export function StatCard({ 
-  title, 
-  value, 
-  icon, 
-  colorScheme = 'blue', 
-  subtitle,
+export function StatCard({
+  title,
+  icon,
+  value,
+  description,
+  change,
+  colorScheme = 'blue',
   className,
-  trend,
-  trendValue,
-  onClick
 }: StatCardProps) {
-  // Color maps for different themes
-  const colorMap = {
+  // Helper to determine if change is positive, negative, or neutral
+  const getChangeType = () => {
+    if (!change) return 'neutral';
+    return change.startsWith('+') ? 'positive' : change.startsWith('-') ? 'negative' : 'neutral';
+  };
+  
+  // Color mappings for different parts based on the colorScheme
+  const colors = {
     blue: {
-      background: 'bg-blue-50 dark:bg-blue-950/40',
-      iconBackground: 'bg-blue-100 dark:bg-blue-900/50',
+      iconBg: 'bg-blue-100 dark:bg-blue-900/40',
       iconColor: 'text-blue-600 dark:text-blue-400',
-      ring: 'ring-blue-600/20 dark:ring-blue-400/20',
-      text: 'text-blue-600 dark:text-blue-400',
-      border: 'border-blue-100 dark:border-blue-900/50'
+      valueColor: 'text-blue-600 dark:text-blue-400',
     },
-    emerald: {
-      background: 'bg-emerald-50 dark:bg-emerald-950/40',
-      iconBackground: 'bg-emerald-100 dark:bg-emerald-900/50',
-      iconColor: 'text-emerald-600 dark:text-emerald-400',
-      ring: 'ring-emerald-600/20 dark:ring-emerald-400/20',
-      text: 'text-emerald-600 dark:text-emerald-400',
-      border: 'border-emerald-100 dark:border-emerald-900/50'
+    green: {
+      iconBg: 'bg-green-100 dark:bg-green-900/40',
+      iconColor: 'text-green-600 dark:text-green-400',
+      valueColor: 'text-green-600 dark:text-green-400',
     },
     amber: {
-      background: 'bg-amber-50 dark:bg-amber-950/40',
-      iconBackground: 'bg-amber-100 dark:bg-amber-900/50',
+      iconBg: 'bg-amber-100 dark:bg-amber-900/40',
       iconColor: 'text-amber-600 dark:text-amber-400',
-      ring: 'ring-amber-600/20 dark:ring-amber-400/20',
-      text: 'text-amber-600 dark:text-amber-400',
-      border: 'border-amber-100 dark:border-amber-900/50'
-    },
-    purple: {
-      background: 'bg-purple-50 dark:bg-purple-950/40',
-      iconBackground: 'bg-purple-100 dark:bg-purple-900/50',
-      iconColor: 'text-purple-600 dark:text-purple-400',
-      ring: 'ring-purple-600/20 dark:ring-purple-400/20',
-      text: 'text-purple-600 dark:text-purple-400',
-      border: 'border-purple-100 dark:border-purple-900/50'
+      valueColor: 'text-amber-600 dark:text-amber-400',
     },
     red: {
-      background: 'bg-red-50 dark:bg-red-950/40',
-      iconBackground: 'bg-red-100 dark:bg-red-900/50',
+      iconBg: 'bg-red-100 dark:bg-red-900/40',
       iconColor: 'text-red-600 dark:text-red-400',
-      ring: 'ring-red-600/20 dark:ring-red-400/20',
-      text: 'text-red-600 dark:text-red-400',
-      border: 'border-red-100 dark:border-red-900/50'
+      valueColor: 'text-red-600 dark:text-red-400',
     },
-    indigo: {
-      background: 'bg-indigo-50 dark:bg-indigo-950/40',
-      iconBackground: 'bg-indigo-100 dark:bg-indigo-900/50',
-      iconColor: 'text-indigo-600 dark:text-indigo-400',
-      ring: 'ring-indigo-600/20 dark:ring-indigo-400/20',
-      text: 'text-indigo-600 dark:text-indigo-400',
-      border: 'border-indigo-100 dark:border-indigo-900/50'
-    }
-  }
-
-  const colors = colorMap[colorScheme] || colorMap.blue;
+    purple: {
+      iconBg: 'bg-purple-100 dark:bg-purple-900/40',
+      iconColor: 'text-purple-600 dark:text-purple-400',
+      valueColor: 'text-purple-600 dark:text-purple-400',
+    },
+  };
+  
+  // Get change type for styling
+  const changeType = getChangeType();
+  
+  // Change colors
+  const changeColors = {
+    positive: 'text-green-600 dark:text-green-400',
+    negative: 'text-red-600 dark:text-red-400',
+    neutral: 'text-gray-500 dark:text-gray-400',
+  };
 
   return (
-    <Card 
-      className={cn(
-        `${colors.background} border ${colors.border} shadow-sm hover:shadow transition-all duration-200 rounded-xl h-[120px]`,
-        className
-      )}
-    >
-      <CardContent className="p-4 h-full">
-        <div className="flex items-start h-full">
-          <div className={`flex-shrink-0 mr-4 p-3 rounded-lg ${colors.iconBackground}`}>
-            <div className={`h-6 w-6 ${colors.iconColor}`}>
-              {icon}
+    <Card className={cn(
+      // Consistent light blue background across all cards
+      'bg-blue-50/50 dark:bg-blue-950/10 border-0 shadow-sm',
+      // Improved mobile responsiveness with better padding
+      'p-0.5 sm:p-1',
+      className
+    )}>
+      <CardHeader className="pb-2 pt-4 px-4 sm:px-5">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base sm:text-lg font-medium text-gray-700 dark:text-gray-200">
+            {title}
+          </CardTitle>
+          {icon && (
+            <div className={cn(
+              'flex items-center justify-center rounded-full w-8 h-8 sm:w-10 sm:h-10',
+              colors[colorScheme].iconBg
+            )}>
+              <span className={cn('h-4 w-4 sm:h-5 sm:w-5', colors[colorScheme].iconColor)}>
+                {icon}
+              </span>
             </div>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="pb-4 px-4 sm:px-5">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 sm:gap-4">
+          <div className="flex flex-col gap-1">
+            <p className={cn(
+              'text-xl sm:text-2xl font-semibold',
+              colors[colorScheme].valueColor
+            )}>
+              {value}
+            </p>
+            {description && (
+              <CardDescription className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                {description}
+              </CardDescription>
+            )}
           </div>
-          <div className="flex flex-col justify-between h-full">
-            <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{title}</p>
-            <div className="flex flex-col">
-              <p className="text-3xl font-bold text-gray-900 dark:text-white leading-tight">{value}</p>
-              {subtitle && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2 leading-tight">{subtitle}</p>
-              )}
+          {change && (
+            <div className={cn(
+              'flex items-center text-xs sm:text-sm font-medium',
+              changeColors[changeType]
+            )}>
+              {change}
             </div>
-          </div>
+          )}
         </div>
       </CardContent>
     </Card>
-  )
-} 
+  );
+}

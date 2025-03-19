@@ -36,14 +36,14 @@ export interface ColorConfig {
  * Stat card component props pattern
  */
 export interface StatCardProps {
-  icon: ReactNode;
-  label: string;
+  title: string;
   value: string | number;
+  icon?: ReactNode;
+  colorScheme?: 'blue' | 'green' | 'amber' | 'red' | 'purple';
+  description?: string;
+  change?: string;
   subtitle?: string;
-  colorScheme?: 'blue' | 'emerald' | 'purple' | 'amber' | 'red' | 'indigo';
-  trend?: 'up' | 'down' | 'neutral';
-  trendValue?: string;
-  onClick?: () => void;
+  className?: string;
 }
 
 /**
@@ -91,4 +91,4 @@ export interface NavItem {
   isActive?: boolean;
   badge?: string | number;
   children?: NavItem[];
-} 
+}

@@ -16,7 +16,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import config, { isDevelopment, isProduction } from '@/lib/env-config';
 
 // Layout
-import AppLayout from "@/components/layout/AppLayout";
+import { AppLayout } from "@/components/layout/AppLayout";
 
 // Page Components - Lazy load these for better performance
 import Dashboard from "./pages/Dashboard";

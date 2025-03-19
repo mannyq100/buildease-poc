@@ -45,20 +45,20 @@ export function ProjectPhasesSection({
       variant="default"
       elevation="sm"
       borderRadius="lg"
-      className={`shadow-md border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 ${className || ''}`}
+      className={`shadow-sm border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 ${className || ''}`}
       action={
         <div className="flex space-x-2">
           <Button 
             size="sm"
             variant="outline"
-            className="text-[#1E3A8A] border-[#1E3A8A] hover:bg-[#1E3A8A]/10 dark:text-blue-400 dark:border-blue-400/40 dark:hover:bg-blue-400/10"
+            className="text-[#2B6CB0] border-[#2B6CB0] hover:bg-[#2B6CB0]/10 dark:text-blue-400 dark:border-blue-400/40 dark:hover:bg-blue-400/10"
             onClick={onAddTask}
           >
             <Plus className="h-4 w-4 mr-1" /> Add Task
           </Button>
           <Button 
             size="sm"
-            className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white dark:bg-blue-600 dark:hover:bg-blue-700"
+            className="bg-[#2B6CB0] hover:bg-[#2B6CB0]/90 text-white dark:bg-blue-600 dark:hover:bg-blue-700"
             onClick={onAddPhase}
           >
             <Plus className="h-4 w-4 mr-1" /> Add Phase
@@ -67,7 +67,7 @@ export function ProjectPhasesSection({
       }
     >
       <LazyMotion features={domAnimation}>
-        <div className="space-y-5">
+        <div className="space-y-4">
           {phases.map((phase, index) => (
             <m.div
               key={phase.id}
@@ -88,7 +88,7 @@ export function ProjectPhasesSection({
                 expanded={expandedPhase === phase.id}
                 onToggleExpand={() => onToggleExpand(phase.id)}
                 onClick={() => onPhaseClick(phase.id)}
-                className="transition-all hover:shadow-md border border-gray-100 dark:border-slate-700"
+                className="transition-all hover:shadow-md border border-gray-100 dark:border-slate-700 rounded-xl"
               />
             </m.div>
           ))}
@@ -96,4 +96,4 @@ export function ProjectPhasesSection({
       </LazyMotion>
     </ContentSection>
   );
-} 
+}

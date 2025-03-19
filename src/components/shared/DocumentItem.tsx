@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronRight, FileText, FileImage, FileSpreadsheet, File } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface DocumentItemProps {
   title?: string;
@@ -10,6 +11,7 @@ interface DocumentItemProps {
   size: string;
   status?: 'current' | 'approved' | 'rejected' | 'pending';
   onClick?: () => void;
+  className?: string;
 }
 
 export function DocumentItem({ 
@@ -19,7 +21,8 @@ export function DocumentItem({
   date, 
   size,
   status,
-  onClick 
+  onClick,
+  className
 }: DocumentItemProps) {
   // Support both title and name for flexibility
   const displayName = title || name || '';
@@ -28,6 +31,9 @@ export function DocumentItem({
     switch (type) {
       case 'PDF':
         return <FileText className="h-5 w-5 text-red-500" />;
+      case 'DOC':
+      case 'DOCX':
+        return <FileText className="h-5 w-5 text-blue-500" />;
       case 'DWG':
         return <FileText className="h-5 w-5 text-blue-500" />;
       case 'XLSX':
@@ -59,22 +65,25 @@ export function DocumentItem({
   
   return (
     <div 
-      className="flex items-center p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-all hover:shadow-sm"
+      className={cn(
+        "flex items-center border rounded-lg cursor-pointer transition-all",
+        className
+      )}
       onClick={onClick}
     >
-      <div className="flex-shrink-0 mr-3">
+      <div className="flex-shrink-0 mr-3 p-2 bg-gray-50 dark:bg-slate-700/50 rounded-md">
         {getIcon()}
       </div>
       <div className="flex-grow">
-        <h3 className="font-medium flex items-center">
+        <h3 className="font-medium flex items-center text-gray-800 dark:text-gray-200">
           {displayName}
           {getStatusBadge()}
         </h3>
         <p className="text-sm text-gray-500 dark:text-gray-400">{date} · {size}</p>
       </div>
-      <Button variant="ghost" size="icon" className="text-gray-500 hover:text-blue-600 dark:hover:text-blue-400">
+      <Button variant="ghost" size="icon" className="text-[#ED8936] hover:text-[#DD6B20] dark:text-[#F6AD55] dark:hover:text-[#ED8936]">
         <ChevronRight className="h-4 w-4" />
       </Button>
     </div>
   );
-} 
+}
