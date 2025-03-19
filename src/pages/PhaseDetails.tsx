@@ -190,10 +190,10 @@ const PhaseDetails = () => {
         description={phase.description}
         actions={
           <Button
-            variant="outline"
             size="sm"
             onClick={handleBackClick}
-            className="flex items-center gap-1"
+             variant="default" 
+              className="bg-white hover:bg-gray-100 text-blue-700 border border-white/20"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Projects

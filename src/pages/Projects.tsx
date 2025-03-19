@@ -87,19 +87,7 @@ export function Projects() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-0">
-        {/* Quick Actions */}
-        <div className="flex justify-end gap-2 mb-6">
-          <Button 
-            variant="outline"
-            size="sm"
-            onClick={resetFilters}
-            className="bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300"
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            Reset Filters
-          </Button>
-        </div>
-        
+  
         <PageHeader
           title="Projects"
           description="Manage and monitor all your construction projects"

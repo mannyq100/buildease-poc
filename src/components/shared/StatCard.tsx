@@ -86,8 +86,8 @@ export function StatCard({
     }
   };
 
-  const safeColorScheme = colorScheme === 'purple' ? 'blue' : colorScheme;
-  const colorConfig = colors[safeColorScheme];
+  // Ensure we use a valid color scheme that exists in our colors object
+  const colorConfig = colors[colorScheme] || colors.blue;
 
   return (
     <div className={cn('w-full', className)}>

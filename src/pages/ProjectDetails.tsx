@@ -17,13 +17,9 @@ import {
   Image,
   MessageSquare,
   Package,
-  Plus,
   Settings,
   Users,
   Building,
-  ArrowRight,
-  Clock,
-  Activity,
   ChartPie,
   FileBarChart,
   Calendar as CalendarIcon,
@@ -319,14 +315,13 @@ export function ProjectDetails() {
         actions={
           <div className="flex gap-2">
             <Button
-              variant="outline"
-              className="bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/20 text-white"
+              className="bg-white hover:bg-gray-100 text-blue-700 border border-white/20"
               onClick={() => navigate(`/project/${id}/settings`)}
             >
               <Settings className="mr-2 h-4 w-4" /> Settings
             </Button>
             <Button
-              className="bg-[#ED8936] hover:bg-[#DD6B20] text-white border-0 shadow-sm"
+              className="bg-white hover:bg-gray-100 text-blue-700 border border-white/20"
               onClick={() => navigate(`/project/${id}/documents`)}
             >
               <FileText className="mr-2 h-4 w-4" /> Documents
