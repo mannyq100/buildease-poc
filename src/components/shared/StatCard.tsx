@@ -91,20 +91,20 @@ export function StatCard({
 
   return (
     <div className={cn('w-full', className)}>
-      <Card className={cn('p-4','bg-blue-50/50 dark:bg-blue-950/10')}>
-        <div className="space-y-2">
+      <Card className={cn('p-4 h-full min-h-[140px] flex flex-col justify-between', 'bg-blue-50/50 dark:bg-blue-950/10')}>
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
             {icon && (
               <div className={cn('p-2 rounded-lg', colorConfig.iconBg)}>
                 <span className={colorConfig.iconColor}>{icon}</span>
               </div>
             )}
-            <h3 className="text-sm font-medium text-muted-foreground">
+            <h3 className="text-sm font-medium text-muted-foreground flex-grow ml-2">
               {title}
             </h3>
             {trend && (
               <div className={cn(
-                'flex items-center gap-1 px-2 py-1 rounded text-sm font-medium',
+                'flex items-center gap-1 px-2 py-1 rounded text-sm font-medium ml-2',
                 colorConfig.trendBg,
                 trend.isPositive ? colorConfig.trendPositive : colorConfig.trendNegative
               )}>
@@ -119,19 +119,19 @@ export function StatCard({
           </div>
           <div className="flex items-baseline gap-2">
             <span className={cn(
-              'text-2xl font-semibold tracking-tight',
+              'text-2xl font-semibold tracking-tight truncate max-w-[150px]',
               colorConfig.valueColor
             )}>
               {value}
             </span>
             {subtitle && (
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm text-muted-foreground truncate">
                 {subtitle}
               </span>
             )}
           </div>
           {description && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground line-clamp-2">
               {description}
             </p>
           )}

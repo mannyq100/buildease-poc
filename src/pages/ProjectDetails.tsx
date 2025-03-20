@@ -17,6 +17,7 @@ import {
   Image,
   MessageSquare,
   Package,
+  Plus,
   Settings,
   Users,
   Building,
@@ -61,25 +62,19 @@ import { Badge } from '@/components/ui/badge'
 // Shared Components
 import { HorizontalNav } from '@/components/navigation/HorizontalNav'
 import {
-  ActivityItem,
-  InsightItem,
   PageHeader,
-  PhaseCard,
-  StatCard,
-  DocumentItem
+  StatCard
 } from '@/components/shared'
 import { 
   AddPhaseDialog, 
   AddTaskDialog, 
-  ProjectStatGrid, 
-  ProjectPhasesSection, 
+  ProjectPhasesSection,
   ProjectActivitySection,
   ProjectInsightsSection,
   QuickActionsSection,
   RecentDocumentsSection
 } from '@/components/project'
 import { cn } from '@/lib/utils'
-import { ContentSection } from '@/components/shared/ContentSection'
 
 /**
  * Main component for project details page
@@ -147,11 +142,14 @@ export function ProjectDetails() {
   }
   
   /**
-   * Handle adding a new task
+   * Handle adding a new task to a phase
    */
-  function handleAddTask() {
+  function handleAddTask(phaseId: number) {
     setShowTaskDialog(true)
-    setNewTask(INITIAL_NEW_TASK)
+    setNewTask({
+      ...INITIAL_NEW_TASK,
+      phaseId
+    })
   }
   
   /**
@@ -332,18 +330,59 @@ export function ProjectDetails() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* Project Stats */}
-        <ProjectStatGrid 
-          timelineValue="7 months"
-          timelineSubtitle={`${phases[0]?.startDate || 'Jan 2023'} - ${phases[phases.length-1]?.endDate || 'Jul 2023'}`}
-          budgetValue={`$${totalBudget.toLocaleString()}`}
-          budgetSubtitle={`$${totalSpent.toLocaleString()} spent (${Math.round((totalSpent/totalBudget) * 100)}%)`}
-          teamSizeValue="12"
-          teamSizeSubtitle="active members"
-          progressValue={`${totalProgress}%`}
-          progressSubtitle="overall completion"
-          className="mb-8"
-        />
-
+        <LazyMotion features={domAnimation}>
+          <m.div 
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            <m.div variants={itemVariants}>
+              <StatCard
+                title="Timeline"
+                value="7 months"
+                subtitle={`${phases[0]?.startDate || 'Jan 2023'} - ${phases[phases.length-1]?.endDate || 'Jul 2023'}`}
+                icon={<Calendar className="h-5 w-5" />}
+                colorScheme="blue"
+              />
+            </m.div>
+            
+            <m.div variants={itemVariants}>
+              <StatCard
+                title="Budget"
+                value={`$${totalBudget.toLocaleString()}`}
+                subtitle={`$${totalSpent.toLocaleString()} spent (${Math.round((totalSpent/totalBudget) * 100)}%)`}
+                icon={<DollarSign className="h-5 w-5" />}
+                colorScheme="green"
+                trend={{
+                  value: 5.2,
+                  isPositive: true
+                }}
+              />
+            </m.div>
+            
+            <m.div variants={itemVariants}>
+              <StatCard
+                title="Team Size"
+                value="12"
+                subtitle="active members"
+                icon={<Users className="h-5 w-5" />}
+                colorScheme="purple"
+              />
+            </m.div>
+            
+            <m.div variants={itemVariants}>
+              <StatCard
+                title="Progress"
+                value={`${totalProgress}%`}
+                subtitle="overall completion"
+                icon={<ChartPie className="h-5 w-5" />}
+                colorScheme={totalProgress > 75 ? "green" : totalProgress > 40 ? "amber" : "red"}
+              />
+            </m.div>
+          </m.div>
+        </LazyMotion>
+        
         {/* Project Navigation */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden sticky top-16 z-30 mb-8 border border-gray-100 dark:border-slate-700">
           <div className="border-b border-gray-100 dark:border-slate-700">
@@ -377,10 +416,10 @@ export function ProjectDetails() {
                 <ProjectPhasesSection
                   phases={phases}
                   expandedPhase={expandedPhase}
-                  onToggleExpand={togglePhaseExpand}
                   onPhaseClick={handlePhaseClick}
-                  onAddTask={handleAddTask}
+                  onAddTask={(phaseId) => handleAddTask(phaseId)}
                   onAddPhase={handleAddPhase}
+                  onToggleExpand={togglePhaseExpand}
                   className="rounded-xl overflow-hidden"
                 />
               </m.div>
@@ -402,7 +441,7 @@ export function ProjectDetails() {
                 <ProjectInsightsSection
                   insights={projectInsights}
                   isDarkMode={isDarkMode}
-                  className="rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-slate-700"
+                  className="rounded-xl overflow-hidden"
                 />
               </m.div>
         
@@ -410,7 +449,7 @@ export function ProjectDetails() {
               <m.div variants={sectionVariants}>
                 <QuickActionsSection
                   actions={quickActions}
-                  className="rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-slate-700"
+                  className="rounded-xl overflow-hidden"
                 />
               </m.div>
               
@@ -419,7 +458,7 @@ export function ProjectDetails() {
                 <RecentDocumentsSection
                   documents={RECENT_DOCUMENTS}
                   onViewAll={handleViewAllDocuments}
-                  className="rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-slate-700"
+                  className="rounded-xl overflow-hidden"
                 />
               </m.div>
             </m.div>
@@ -636,6 +675,7 @@ interface NewTask {
   description: string
   dueDate: Date
   assigneeId?: string
+  phaseId: number
 }
 
 // Initial mock data for phases
@@ -706,5 +746,6 @@ const INITIAL_NEW_TASK: NewTask = {
   name: '',
   description: '',
   dueDate: new Date(),
-  assigneeId: undefined
+  assigneeId: undefined,
+  phaseId: 0
 } 

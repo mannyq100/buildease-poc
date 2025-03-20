@@ -3,7 +3,7 @@ import { ChevronRight } from 'lucide-react';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ActivityItem } from '@/components/shared';
-import { ContentSection } from '@/components/shared/ContentSection';
+import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { fadeInLeftVariants } from '@/lib/animations';
 import { cn } from '@/lib/utils';
 
@@ -37,17 +37,13 @@ export function ProjectActivitySection({
   const displayedActivities = activities.slice(0, limit);
   
   return (
-    <ContentSection
-      title="Recent Activity"
-      variant="default"
-      elevation="sm"
-      borderRadius="lg"
-      className={cn(
-        "shadow-sm border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800",
-        className
-      )}
-      action={
-        onViewAll && (
+    <Card className={cn(
+      "shadow-sm border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800",
+      className
+    )}>
+      <CardHeader className="p-4 border-b border-slate-200 dark:border-slate-700 flex flex-row justify-between items-center">
+        <h2 className="text-lg font-semibold">Recent Activity</h2>
+        {onViewAll && (
           <Button 
             variant="ghost" 
             size="sm" 
@@ -56,32 +52,35 @@ export function ProjectActivitySection({
           >
             View All <ChevronRight className="ml-1 h-4 w-4" />
           </Button>
-        )
-      }
-    >
-      <LazyMotion features={domAnimation}>
-        <div className="space-y-4">
-          {displayedActivities.map((activity, i) => (
-            <m.div
-              key={i}
-              variants={fadeInLeftVariants}
-              initial="hidden"
-              animate="visible"
-              transition={{ duration: 0.3, delay: i * 0.05 }}
-              className="hover:translate-x-1 transition-transform duration-200"
-            >
-              <ActivityItem
-                date={activity.date}
-                title={activity.title}
-                description={activity.description}
-                icon={activity.icon}
-                user={activity.user}
-                className="border border-transparent hover:border-gray-100 dark:hover:border-slate-700 rounded-lg p-0.5"
-              />
-            </m.div>
-          ))}
-        </div>
-      </LazyMotion>
-    </ContentSection>
+        )}
+      </CardHeader>
+      <CardContent className="p-4">
+        <LazyMotion features={domAnimation}>
+          <m.div 
+            className="space-y-4"
+            variants={fadeInLeftVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            {displayedActivities.map((activity, i) => (
+              <m.div 
+                key={i}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.1 }}
+              >
+                <ActivityItem
+                  time={activity.date}
+                  title={activity.title}
+                  description={activity.description}
+                  icon={activity.icon}
+                  project={activity.user?.name}
+                />
+              </m.div>
+            ))}
+          </m.div>
+        </LazyMotion>
+      </CardContent>
+    </Card>
   );
 }

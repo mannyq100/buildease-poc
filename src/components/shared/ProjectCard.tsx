@@ -1,17 +1,9 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import {
-  Calendar,
-  Building2,
-  Users,
-  FileText,
-  Clock,
-  BarChart2
-} from 'lucide-react';
+import { Building2, Calendar, Image as ImageIcon, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Progress } from '@/components/ui/progress';
 
 export interface TeamMember {
   id: string | number;
@@ -23,17 +15,18 @@ export interface TeamMember {
 export interface ProjectCardProps {
   /** Project details */
   title: string;
-  description: string;
+  description?: string;
   client: string;
-  startDate: string;
-  endDate: string;
   status: 'active' | 'completed' | 'pending' | 'delayed';
-  progress: number;
+  progress?: number;
+  imageUrl?: string;
   budget?: {
     total: number;
     spent: number;
     currency?: string;
   };
+  startDate?: string;
+  endDate?: string;
   team?: TeamMember[];
   documents?: number;
   phases?: number;
@@ -55,16 +48,13 @@ export interface ProjectCardProps {
  */
 export function ProjectCard({
   title,
-  description,
   client,
+  status,
+  progress = 0,
+  imageUrl,
   startDate,
   endDate,
-  status,
-  progress,
-  budget,
   team = [],
-  documents = 0,
-  phases = 0,
   className,
   onClick,
   animate = true
@@ -95,100 +85,71 @@ export function ProjectCard({
   return (
     <Card 
       className={cn(
-        'overflow-hidden transition-all duration-300',
-        'hover:shadow-md cursor-pointer',
+        'overflow-hidden transition-all duration-300 h-full flex flex-col',
+        'hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800 cursor-pointer',
+        'border-2 border-transparent',
         className
       )}
       onClick={onClick}
     >
-      <div className="p-6 space-y-4">
-        {/* Header with Title and Status */}
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <h3 className="text-xl font-semibold">{title}</h3>
-            <p className="text-sm text-muted-foreground line-clamp-2">
-              {description}
-            </p>
+      {/* Project Image */}
+      <div className="relative w-full h-48 overflow-hidden">
+        {imageUrl ? (
+          <img 
+            src={imageUrl} 
+            alt={title} 
+            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+          />
+        ) : (
+          <div className="w-full h-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+            <ImageIcon className="h-12 w-12 text-slate-400 dark:text-slate-600" />
           </div>
-          <Badge 
-            className={cn(
-              'flex items-center',
-              statusConfig[status].bg,
-              statusConfig[status].text
-            )}
-          >
-            <div className={cn('w-2 h-2 rounded-full mr-1.5', statusConfig[status].indicator)} />
-            {status.charAt(0).toUpperCase() + status.slice(1)}
-          </Badge>
-        </div>
+        )}
+        
+        {/* Status Badge Overlay */}
+        <Badge 
+          className={cn(
+            'absolute top-3 right-3',
+            statusConfig[status].bg,
+            statusConfig[status].text
+          )}
+        >
+          <div className={cn('w-2 h-2 rounded-full mr-1.5', statusConfig[status].indicator)} />
+          {status.charAt(0).toUpperCase() + status.slice(1)}
+        </Badge>
+      </div>
 
-        {/* Client and Dates */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex items-center text-sm text-muted-foreground">
-            <Building2 className="h-4 w-4 mr-2" />
-            {client}
-          </div>
-          <div className="flex items-center text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4 mr-2" />
-            <span>{startDate} - {endDate}</span>
-          </div>
+      <div className="p-4 flex flex-col flex-grow">
+        {/* Title */}
+        <h3 className="text-lg font-semibold line-clamp-1 mb-1">{title}</h3>
+        
+        {/* Client */}
+        <div className="flex items-center text-sm text-muted-foreground mb-3">
+          <Building2 className="h-4 w-4 mr-2 flex-shrink-0" />
+          <span className="line-clamp-1">{client}</span>
         </div>
-
-        {/* Progress */}
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
+        
+        {/* Progress Bar */}
+        <div className="mt-auto space-y-2">
+          {/* Timeline */}
+          {startDate && endDate && (
+            <div className="flex items-center text-xs text-muted-foreground mb-2">
+              <Calendar className="h-3 w-3 mr-1.5 flex-shrink-0" />
+              <span className="truncate">{startDate} - {endDate}</span>
+            </div>
+          )}
+          
+          <div className="flex justify-between text-xs mb-1">
             <span className="text-muted-foreground">Progress</span>
             <span className="font-medium">{progress}%</span>
           </div>
-          <Progress value={progress} className="h-2" />
-        </div>
-
-        {/* Budget if available */}
-        {budget && (
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center text-muted-foreground">
-              <BarChart2 className="h-4 w-4 mr-2" />
-              Budget
-            </div>
-            <div className="font-medium">
-              {budget.currency || '$'}{budget.spent.toLocaleString()} / {budget.currency || '$'}{budget.total.toLocaleString()}
-            </div>
-          </div>
-        )}
-
-        {/* Stats and Team */}
-        <div className="flex items-center justify-between pt-2 border-t">
-          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-            <div className="flex items-center">
-              <Clock className="h-4 w-4 mr-1.5" />
-              {phases} Phases
-            </div>
-            <div className="flex items-center">
-              <FileText className="h-4 w-4 mr-1.5" />
-              {documents} Docs
-            </div>
-            <div className="flex items-center">
-              <Users className="h-4 w-4 mr-1.5" />
-              {team.length} Members
-            </div>
-          </div>
+          <Progress value={progress} className="h-1.5" />
           
-          {/* Team Avatars */}
+          {/* Team Count */}
           {team.length > 0 && (
-            <div className="flex -space-x-2">
-              {team.slice(0, 3).map(member => (
-                <Avatar key={member.id} className="h-8 w-8 border-2 border-background">
-                  <AvatarImage src={member.avatar} alt={member.name} />
-                  <AvatarFallback>
-                    {member.name.split(' ').map(n => n[0]).join('')}
-                  </AvatarFallback>
-                </Avatar>
-              ))}
-              {team.length > 3 && (
-                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs border-2 border-background">
-                  +{team.length - 3}
-                </div>
-              )}
+            <div className="flex items-center justify-end text-xs text-muted-foreground mt-2">
+              <Users className="h-3 w-3 mr-1.5" />
+              <span>{team.length} member{team.length !== 1 ? 's' : ''}</span>
             </div>
           )}
         </div>

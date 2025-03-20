@@ -3,7 +3,7 @@ import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DocumentItem } from '@/components/shared';
-import { ContentSection } from '@/components/shared/ContentSection';
+import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { fadeInRightVariants } from '@/lib/animations';
 import { cn } from '@/lib/utils';
 
@@ -29,17 +29,13 @@ export function RecentDocumentsSection({
   className
 }: RecentDocumentsSectionProps) {
   return (
-    <ContentSection
-      title="Recent Documents"
-      variant="default"
-      elevation="sm"
-      borderRadius="lg"
-      className={cn(
-        "shadow-sm border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800",
-        className
-      )}
-      action={
-        onViewAll && (
+    <Card className={cn(
+      "shadow-sm border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800",
+      className
+    )}>
+      <CardHeader className="p-4 border-b border-slate-200 dark:border-slate-700 flex flex-row justify-between items-center">
+        <h2 className="text-lg font-semibold">Recent Documents</h2>
+        {onViewAll && (
           <Button 
             variant="ghost" 
             size="sm" 
@@ -48,31 +44,34 @@ export function RecentDocumentsSection({
           >
             All Files <ChevronRight className="ml-1 h-4 w-4" />
           </Button>
-        )
-      }
-    >
-      <LazyMotion features={domAnimation}>
-        <div className="space-y-3">
-          {documents.map((doc, i) => (
-            <m.div
-              key={i}
-              variants={fadeInRightVariants}
-              initial="hidden"
-              animate="visible"
-              transition={{ duration: 0.3, delay: i * 0.05 }}
-              whileHover={{ x: 2 }}
-            >
-              <DocumentItem
-                title={doc.title}
-                size={doc.size}
-                type={doc.type}
-                date={doc.date}
-                className="hover:bg-slate-50 dark:hover:bg-slate-700/50 p-3 rounded-lg transition-colors border border-transparent hover:border-gray-100 dark:hover:border-slate-700"
-              />
-            </m.div>
-          ))}
-        </div>
-      </LazyMotion>
-    </ContentSection>
+        )}
+      </CardHeader>
+      <CardContent className="p-4">
+        <LazyMotion features={domAnimation}>
+          <m.div 
+            className="space-y-2"
+            variants={fadeInRightVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            {documents.map((doc, i) => (
+              <m.div 
+                key={i}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.1 }}
+              >
+                <DocumentItem
+                  title={doc.title}
+                  type={doc.type}
+                  size={doc.size}
+                  date={doc.date}
+                />
+              </m.div>
+            ))}
+          </m.div>
+        </LazyMotion>
+      </CardContent>
+    </Card>
   );
 }

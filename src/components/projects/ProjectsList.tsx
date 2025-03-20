@@ -99,17 +99,17 @@ function ProjectsGridView({
           endDate={project.endDate}
           status={mapProjectStatus(project.status)}
           progress={project.progress}
+          imageUrl={project.imageUrl}
           budget={{
             total: project.budget,
             spent: project.spent,
-            currency: '$'
           }}
-          team={project.teamMembers?.map((member, index) => ({
-            id: index,
-            name: member
+          team={project.teamMembers?.map(id => ({
+            id,
+            name: id, // In a real app, we would look up the actual user name
           })) || []}
-          documents={project.phases ? project.phases.length : 0}
-          phases={project.phases ? project.phases.length : 0}
+          documents={Math.floor(Math.random() * 10) + 1} // Mock data
+          phases={Math.floor(Math.random() * 5) + 1} // Mock data
           onClick={() => onViewDetails(project.id)}
         />
       ))}
