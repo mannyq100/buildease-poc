@@ -20,7 +20,7 @@ interface NewPhase {
   startDate: Date;
   endDate: Date;
   budget: string;
-  description: string;
+  description?: string;
 }
 
 interface AddPhaseDialogProps {

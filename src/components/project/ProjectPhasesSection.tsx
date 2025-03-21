@@ -1,22 +1,13 @@
 import React from 'react';
-import { Plus, ChevronRight } from 'lucide-react';
-import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { PhaseCard } from '@/components/shared';
-import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Plus } from 'lucide-react';
+import { PhaseCard } from '../phases/PhaseCard';
+import { PhaseDetailsPanel } from '@/components/project/PhaseDetailsPanel';
+import { Phase } from '@/types/phase';
+import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { fadeInUpVariants } from '@/lib/animations';
-import { Badge } from '@/components/ui/badge';
-
-interface Phase {
-  id: number
-  name: string
-  progress: number
-  startDate: string
-  endDate: string
-  status: 'completed' | 'in-progress' | 'upcoming' | 'warning'
-  budget: string
-  spent: string
-}
+import { cn } from '@/lib/utils';
 
 interface ProjectPhasesSectionProps {
   phases: Phase[];
@@ -30,6 +21,7 @@ interface ProjectPhasesSectionProps {
 
 /**
  * ProjectPhasesSection - Displays the list of project phases with actions
+ * Enhanced to show detailed phase information with tabs when expanded
  */
 export function ProjectPhasesSection({
   phases,
@@ -41,19 +33,19 @@ export function ProjectPhasesSection({
   className
 }: ProjectPhasesSectionProps) {
   return (
-    <Card className={`bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 overflow-hidden ${className || ''}`}>
-      <CardHeader className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
-        <h2 className="text-lg font-semibold">Project Phases</h2>
-        <div className="flex space-x-2">
-          <Button 
-            size="sm"
-            variant="outline"
-            className="text-[#2B6CB0] border-[#2B6CB0] hover:bg-[#2B6CB0]/10 dark:text-blue-400 dark:border-blue-400/40 dark:hover:bg-blue-400/10"
-            onClick={onAddPhase}
-          >
-            <Plus className="h-4 w-4 mr-1" /> Add Phase
-          </Button>
-        </div>
+    <Card className={cn(
+      "bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 overflow-hidden", 
+      className
+    )}>
+      <CardHeader className="flex flex-row items-center justify-between bg-blue-50 dark:bg-blue-900/20 px-6">
+        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">Project Phases</CardTitle>
+        <Button
+          size="sm"
+          className="text-blue-700 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 bg-white hover:bg-blue-50 dark:bg-blue-950/50 dark:hover:bg-blue-900/50 shadow-sm"
+          onClick={onAddPhase}
+        >
+          <Plus className="h-4 w-4 mr-1" /> Add Phase
+        </Button>
       </CardHeader>
       <CardContent className="p-0">
         <LazyMotion features={domAnimation}>
@@ -74,89 +66,37 @@ export function ProjectPhasesSection({
                 </Button>
               </div>
             ) : (
-              phases.map((phase) => (
-              <m.div 
-                key={phase.id}
-                className={`cursor-pointer ${expandedPhase === phase.id ? 'bg-slate-50 dark:bg-slate-800/50' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
-                onClick={() => onToggleExpand(phase.id)}
-                whileHover={{
-                  scale: 1.02,
-                  y: -2,
-                  transition: {
-                    type: "spring",
-                    stiffness: 100,
-                    damping: 12
-                  }
-                }}
-              >
-                <div className="p-4">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center">
-                      <h3 className="font-medium text-gray-900 dark:text-gray-100">{phase.name}</h3>
-                      <Badge 
-                        variant={phase.status === 'completed' ? 'success' : phase.status === 'in-progress' ? 'default' : phase.status === 'warning' ? 'destructive' : 'secondary'}
-                        className="ml-2"
+              <div className="grid gap-4 p-4">
+                {phases.map((phase) => (
+                  <div key={phase.id} className="space-y-4">
+                    <PhaseCard 
+                      phase={phase}
+                      isExpanded={expandedPhase === phase.id}
+                      onExpandToggle={onToggleExpand}
+                      onViewDetails={onPhaseClick}
+                      onAddTask={(e) => onAddTask(phase.id, e)}
+                      className={expandedPhase === phase.id ? 
+                        "ring-2 ring-blue-500/30 dark:ring-blue-500/20 shadow-md" : 
+                        ""}
+                    />
+                    
+                    {/* Render phase details panel if this phase is expanded */}
+                    {expandedPhase === phase.id && (
+                      <m.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
                       >
-                        {phase.status === 'in-progress' ? 'In Progress' : phase.status.charAt(0).toUpperCase() + phase.status.slice(1)}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        className="text-[#2B6CB0] hover:bg-[#2B6CB0]/10 dark:text-blue-400 dark:hover:bg-blue-400/10"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onAddTask(phase.id, e);
-                        }}
-                      >
-                        <Plus className="h-3.5 w-3.5 mr-1" /> Task
-                      </Button>
-                      <ChevronRight className={`h-5 w-5 text-gray-400 transition-transform duration-200 ${expandedPhase === phase.id ? 'rotate-90' : ''}`} />
-                    </div>
+                        <PhaseDetailsPanel 
+                          phaseId={phase.id}
+                          onClose={() => onToggleExpand(phase.id)}
+                        />
+                      </m.div>
+                    )}
                   </div>
-                  
-                  <div className="mt-2 flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
-                    <div>
-                      <span>{phase.startDate}</span>
-                      <span className="mx-2">→</span>
-                      <span>{phase.endDate}</span>
-                    </div>
-                    <div>
-                      <span className="font-medium">{phase.progress}%</span> complete
-                    </div>
-                  </div>
-                  
-                  {expandedPhase === phase.id && (
-                    <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700">
-                      <div className="flex justify-between items-center mb-2">
-                        <h4 className="font-medium text-gray-800 dark:text-gray-200">Budget</h4>
-                        <div>
-                          <span className="text-gray-900 dark:text-gray-100 font-medium">{phase.spent}</span>
-                          <span className="text-gray-500 dark:text-gray-400 mx-1">of</span>
-                          <span className="text-gray-900 dark:text-gray-100 font-medium">{phase.budget}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="text-[#2B6CB0] border-[#2B6CB0] hover:bg-[#2B6CB0]/10 dark:text-blue-400 dark:border-blue-400/40 dark:hover:bg-blue-400/10 mr-2"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onPhaseClick(phase.id);
-                          }}
-                        >
-                          View Details
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </m.div>
-              )))
-            }
+                ))}
+              </div>
+            )}
           </m.div>
         </LazyMotion>
       </CardContent>
