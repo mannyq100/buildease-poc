@@ -21,41 +21,24 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Phase } from '@/types/phase';
+import { Task } from '@/types/task';
 
-interface Phase {
-  id: number;
-  name: string;
-  progress?: number;
-  startDate?: string;
-  endDate?: string;
-  status?: string;
-  budget?: string;
-  spent?: string;
-}
-
-interface Task {
+// For backward compatibility with existing code that might use these interfaces
+interface NewTask {
   name: string;
   description: string;
   dueDate: Date;
-  assigneeId?: string;
-}
-
-// For backward compatibility
-interface NewTask {
-  title: string;
   phaseId: number;
-  description: string;
-  startDate: Date;
-  endDate: Date;
-  priority: string;
-  assignee: string;
+  priority?: 'low' | 'medium' | 'high';
+  assignee?: string;
 }
 
 interface AddTaskDialogProps {
   isOpen: boolean;
   onClose: (open: boolean) => void;
-  task: Task;
-  setTask: (task: Task) => void;
+  task: NewTask;
+  setTask: (task: NewTask) => void;
   onSave: () => void;
   phases?: Phase[];
   // For backward compatibility
@@ -114,7 +97,7 @@ export function AddTaskDialog({
     if (isNewInterface && setTask) {
       setTask({ ...task, name: value });
     } else if (newTask && setNewTask) {
-      setNewTask({ ...newTask, title: value });
+      setNewTask({ ...newTask, name: value });
     }
   };
   
@@ -132,15 +115,23 @@ export function AddTaskDialog({
     if (isNewInterface && setTask) {
       setTask({ ...task, dueDate: date });
     } else if (newTask && setNewTask) {
-      setNewTask({ ...newTask, endDate: date });
+      setNewTask({ ...newTask, dueDate: date });
     }
   };
   
   const handleAssigneeChange = (value: string) => {
     if (isNewInterface && setTask) {
-      setTask({ ...task, assigneeId: value });
+      setTask({ ...task, assignee: value });
     } else if (newTask && setNewTask) {
       setNewTask({ ...newTask, assignee: value });
+    }
+  };
+
+  const handlePriorityChange = (value: string) => {
+    if (isNewInterface && setTask) {
+      setTask({ ...task, priority: value as 'low' | 'medium' | 'high' });
+    } else if (newTask && setNewTask) {
+      setNewTask({ ...newTask, priority: value as 'low' | 'medium' | 'high' });
     }
   };
 
@@ -158,7 +149,7 @@ export function AddTaskDialog({
             <Label htmlFor="task-title">Task Title</Label>
             <Input
               id="task-title"
-              value={isNewInterface ? task.name : (newTask?.title || '')}
+              value={isNewInterface ? task.name : (newTask?.name || '')}
               onChange={(e) => handleNameChange(e.target.value)}
               placeholder="e.g. Pour concrete for foundation"
             />
@@ -192,13 +183,13 @@ export function AddTaskDialog({
                 <Button variant="outline">
                   {isNewInterface 
                     ? format(task.dueDate, 'PPP') 
-                    : (newTask ? format(newTask.endDate, 'PPP') : 'Select date')}
+                    : (newTask ? format(newTask.dueDate, 'PPP') : 'Select date')}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
                 <DatePicker
                   mode="single"
-                  selected={isNewInterface ? task.dueDate : (newTask?.endDate || new Date())}
+                  selected={isNewInterface ? task.dueDate : (newTask?.dueDate || new Date())}
                   onSelect={handleDueDateChange}
                   initialFocus
                 />
@@ -211,15 +202,15 @@ export function AddTaskDialog({
               <Label htmlFor="task-priority">Priority</Label>
               <Select
                 value={newTask.priority}
-                onValueChange={(value) => setNewTask({ ...newTask, priority: value })}
+                onValueChange={handlePriorityChange}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select priority" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Low">Low</SelectItem>
-                  <SelectItem value="Medium">Medium</SelectItem>
-                  <SelectItem value="High">High</SelectItem>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -229,7 +220,7 @@ export function AddTaskDialog({
             <Label htmlFor="task-assignee">Assignee</Label>
             <Input
               id="task-assignee"
-              value={isNewInterface ? (task.assigneeId || '') : (newTask?.assignee || '')}
+              value={isNewInterface ? (task.assignee || '') : (newTask?.assignee || '')}
               onChange={(e) => handleAssigneeChange(e.target.value)}
               placeholder="e.g. John Smith"
             />
@@ -252,4 +243,4 @@ export function AddTaskDialog({
       </DialogContent>
     </Dialog>
   );
-} 
+}
