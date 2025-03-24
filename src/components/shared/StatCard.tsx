@@ -42,7 +42,8 @@ export function StatCard({
       valueColor: 'text-blue-700 dark:text-blue-300',
       trendPositive: 'text-blue-600 dark:text-blue-400',
       trendNegative: 'text-blue-600 dark:text-blue-400',
-      trendBg: 'bg-blue-50 dark:bg-blue-900/20'
+      trendBg: 'bg-blue-50 dark:bg-blue-900/20',
+      cardBg: 'bg-blue-50/50 dark:bg-blue-950/10 hover:bg-blue-50/70 dark:hover:bg-blue-950/20'
     },
     green: {
       iconBg: 'bg-green-100 dark:bg-green-900/40',
@@ -50,7 +51,8 @@ export function StatCard({
       valueColor: 'text-green-700 dark:text-green-300',
       trendPositive: 'text-green-600 dark:text-green-400',
       trendNegative: 'text-red-600 dark:text-red-400',
-      trendBg: 'bg-green-50 dark:bg-green-900/20'
+      trendBg: 'bg-green-50 dark:bg-green-900/20',
+      cardBg: 'bg-green-50/50 dark:bg-green-950/10 hover:bg-green-50/70 dark:hover:bg-green-950/20'
     },
     amber: {
       iconBg: 'bg-amber-100 dark:bg-amber-900/40',
@@ -58,7 +60,8 @@ export function StatCard({
       valueColor: 'text-amber-700 dark:text-amber-300',
       trendPositive: 'text-amber-600 dark:text-amber-400',
       trendNegative: 'text-amber-600 dark:text-amber-400',
-      trendBg: 'bg-amber-50 dark:bg-amber-900/20'
+      trendBg: 'bg-amber-50 dark:bg-amber-900/20',
+      cardBg: 'bg-amber-50/50 dark:bg-amber-950/10 hover:bg-amber-50/70 dark:hover:bg-amber-950/20'
     },
     red: {
       iconBg: 'bg-red-100 dark:bg-red-900/40',
@@ -66,7 +69,8 @@ export function StatCard({
       valueColor: 'text-red-700 dark:text-red-300',
       trendPositive: 'text-green-600 dark:text-green-400',
       trendNegative: 'text-red-600 dark:text-red-400',
-      trendBg: 'bg-red-50 dark:bg-red-900/20'
+      trendBg: 'bg-red-50 dark:bg-red-900/20',
+      cardBg: 'bg-red-50/50 dark:bg-red-950/10 hover:bg-red-50/70 dark:hover:bg-red-950/20'
     },
     gray: {
       iconBg: 'bg-gray-100 dark:bg-gray-800',
@@ -74,7 +78,8 @@ export function StatCard({
       valueColor: 'text-gray-700 dark:text-gray-300',
       trendPositive: 'text-gray-600 dark:text-gray-400',
       trendNegative: 'text-gray-600 dark:text-gray-400',
-      trendBg: 'bg-gray-50 dark:bg-gray-800'
+      trendBg: 'bg-gray-50 dark:bg-gray-800',
+      cardBg: 'bg-gray-50/50 dark:bg-gray-900/10 hover:bg-gray-50/70 dark:hover:bg-gray-900/20'
     },
     purple: {
       iconBg: 'bg-purple-100 dark:bg-purple-900/40',
@@ -82,7 +87,8 @@ export function StatCard({
       valueColor: 'text-purple-700 dark:text-purple-300',
       trendPositive: 'text-purple-600 dark:text-purple-400',
       trendNegative: 'text-purple-600 dark:text-purple-400',
-      trendBg: 'bg-purple-50 dark:bg-purple-900/20'
+      trendBg: 'bg-purple-50 dark:bg-purple-900/20',
+      cardBg: 'bg-purple-50/50 dark:bg-purple-950/10 hover:bg-purple-50/70 dark:hover:bg-purple-950/20'
     }
   };
 
@@ -91,11 +97,16 @@ export function StatCard({
 
   return (
     <div className={cn('w-full', className)}>
-      <Card className={cn('p-4 h-full min-h-[140px] flex flex-col justify-between', 'bg-blue-50/50 dark:bg-blue-950/10')}>
+      <Card className={cn(
+        'p-4 h-full min-h-[140px] flex flex-col justify-between', 
+        colorConfig.cardBg,
+        'border-gray-200/70 dark:border-slate-700/30',
+        'transition-all duration-200 shadow-sm hover:shadow-md dark:shadow-slate-900/10'
+      )}>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             {icon && (
-              <div className={cn('p-2 rounded-lg', colorConfig.iconBg)}>
+              <div className={cn('p-2 rounded-lg transition-colors duration-200', colorConfig.iconBg)}>
                 <span className={colorConfig.iconColor}>{icon}</span>
               </div>
             )}
@@ -106,7 +117,8 @@ export function StatCard({
               <div className={cn(
                 'flex items-center gap-1 px-2 py-1 rounded text-sm font-medium ml-2',
                 colorConfig.trendBg,
-                trend.isPositive ? colorConfig.trendPositive : colorConfig.trendNegative
+                trend.isPositive ? colorConfig.trendPositive : colorConfig.trendNegative,
+                'transition-colors duration-200'
               )}>
                 {trend.isPositive ? (
                   <ArrowUpRight className="w-4 h-4" />
@@ -120,7 +132,8 @@ export function StatCard({
           <div className="flex items-baseline gap-2">
             <span className={cn(
               'text-2xl font-semibold tracking-tight truncate max-w-[150px]',
-              colorConfig.valueColor
+              colorConfig.valueColor,
+              'transition-colors duration-200'
             )}>
               {value}
             </span>
