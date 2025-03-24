@@ -11,9 +11,13 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LazyMotion, domAnimation } from "framer-motion";
 import { AuthProvider } from '@/auth/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 
 // Environment configuration
 import config, { isDevelopment, isProduction } from '@/lib/env-config';
+
+// Styles
+import '@/styles/dark-theme.css';
 
 // Layout
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -70,68 +74,70 @@ function App() {
     <LazyMotion features={domAnimation}>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <HelmetProvider>
-            <TooltipProvider>
-              <ToastContextProvider>
-                <Toaster />
-                <Sonner />
-                {/* Display environment indicator in non-production environments */}
-                {!isProduction() && (
-                  <div className="fixed top-0 right-0 z-50 px-2 py-1 text-xs font-bold text-white bg-blue-500 rounded-bl-md">
-                    {config.appTitle}
-                  </div>
-                )}
-                <BrowserRouter>
-                  <Routes>
-                    {/* Public routes */}
-                    <Route path="/" element={<LandingPage />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route path="/auth/callback/:provider" element={<AuthCallback />} />
-                    <Route path="/unauthorized" element={<Unauthorized />} />
-                    
-                    {/* Protected routes with AppLayout */}
-                    <Route element={
-                      <ProtectedRoute>
-                        <AppLayout />
-                      </ProtectedRoute>
-                    }>
-                      {/* Main routes */}
-                      <Route path="/dashboard" element={<Dashboard />} />
-                      <Route path="/create-project" element={<CreateProject />} />
-                      <Route path="/generated-plan" element={<GeneratedPlan />} />
-                      <Route path="/project-details" element={<ProjectDetails />} />
-                      <Route path="/project/:id" element={<ProjectDetails />} />
-                      <Route path="/phase-details" element={<PhaseDetails />} />
-                      <Route path="/phase/:id" element={<PhaseDetails />} />
-                      <Route path="/phases/:phaseId" element={<PhaseDetails />} />
-                      <Route path="/generate-tasks" element={<TaskPlanningSetup />} />
+          <ThemeProvider>
+            <HelmetProvider>
+              <TooltipProvider>
+                <ToastContextProvider>
+                  <Toaster />
+                  <Sonner />
+                  {/* Display environment indicator in non-production environments */}
+                  {!isProduction() && (
+                    <div className="fixed top-0 right-0 z-50 px-2 py-1 text-xs font-bold text-white bg-blue-500 rounded-bl-md">
+                      {config.appTitle}
+                    </div>
+                  )}
+                  <BrowserRouter>
+                    <Routes>
+                      {/* Public routes */}
+                      <Route path="/" element={<LandingPage />} />
+                      <Route path="/login" element={<Login />} />
+                      <Route path="/register" element={<Register />} />
+                      <Route path="/auth/callback/:provider" element={<AuthCallback />} />
+                      <Route path="/unauthorized" element={<Unauthorized />} />
                       
-                      {/* Sidebar navigation routes */}
-                      <Route path="/projects" element={<Projects />} />
-                      <Route path="/schedule" element={<Schedule />} />
-                      <Route path="/team" element={<Team />} />
-                      <Route path="/materials" element={<Materials />} />
-                      <Route path="/expenses" element={<Expenses />} />
-                      <Route path="/documents" element={<Documents />} />
-                      <Route path="/messaging" element={<Messaging />} />
-                      <Route path="/settings" element={<Settings />} />
-                      
-                      {/* Admin routes with role-based protection */}
-                      <Route path="/settings/admin" element={
-                        <ProtectedRoute requiredRoles={['owner', 'manager']}>
-                          <Settings />
+                      {/* Protected routes with AppLayout */}
+                      <Route element={
+                        <ProtectedRoute>
+                          <AppLayout />
                         </ProtectedRoute>
-                      } />
-                      
-                      {/* 404 route */}
-                      <Route path="*" element={<NotFound />} />
-                    </Route>
-                  </Routes>
-                </BrowserRouter>
-              </ToastContextProvider>
-            </TooltipProvider>
-          </HelmetProvider>
+                      }>
+                        {/* Main routes */}
+                        <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/create-project" element={<CreateProject />} />
+                        <Route path="/generated-plan" element={<GeneratedPlan />} />
+                        <Route path="/project-details" element={<ProjectDetails />} />
+                        <Route path="/project/:id" element={<ProjectDetails />} />
+                        <Route path="/phase-details" element={<PhaseDetails />} />
+                        <Route path="/phase/:id" element={<PhaseDetails />} />
+                        <Route path="/phases/:phaseId" element={<PhaseDetails />} />
+                        <Route path="/generate-tasks" element={<TaskPlanningSetup />} />
+                        
+                        {/* Sidebar navigation routes */}
+                        <Route path="/projects" element={<Projects />} />
+                        <Route path="/schedule" element={<Schedule />} />
+                        <Route path="/team" element={<Team />} />
+                        <Route path="/materials" element={<Materials />} />
+                        <Route path="/expenses" element={<Expenses />} />
+                        <Route path="/documents" element={<Documents />} />
+                        <Route path="/messaging" element={<Messaging />} />
+                        <Route path="/settings" element={<Settings />} />
+                        
+                        {/* Admin routes with role-based protection */}
+                        <Route path="/settings/admin" element={
+                          <ProtectedRoute requiredRoles={['owner', 'manager']}>
+                            <Settings />
+                          </ProtectedRoute>
+                        } />
+                        
+                        {/* 404 route */}
+                        <Route path="*" element={<NotFound />} />
+                      </Route>
+                    </Routes>
+                  </BrowserRouter>
+                </ToastContextProvider>
+              </TooltipProvider>
+            </HelmetProvider>
+          </ThemeProvider>
         </AuthProvider>
       </QueryClientProvider>
     </LazyMotion>

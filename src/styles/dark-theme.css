@@ -1,0 +1,273 @@
+/* Dark Theme CSS for BuildEase UI */
+
+/* Dark mode color variables */
+.dark {
+  /* Base colors - using the BuildEase color scheme */
+  --background: 215 28% 12%;
+  --foreground: 210 40% 98%;
+  
+  /* Card and UI elements */
+  --card: 215 28% 16%;
+  --card-foreground: 210 40% 98%;
+  --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.35);
+  --card-shadow-hover: 0 6px 12px rgba(0, 0, 0, 0.45);
+  
+  /* Input elements */
+  --input: 214 32% 20%;
+  --border: 214 32% 25%;
+  --ring: 215 70% 35%;
+  
+  /* Popover and dropdown */
+  --popover: 215 28% 16%;
+  --popover-foreground: 210 40% 98%;
+  
+  /* Primary colors - warm blue (#2B6CB0) */
+  --primary: 210 70% 43%;
+  --primary-foreground: 210 40% 98%;
+  --primary-lighter: 210 70% 53%;
+  --primary-darker: 210 70% 33%;
+  
+  /* Secondary colors - muted earth tone */
+  --secondary: 215 25% 27%;
+  --secondary-foreground: 210 40% 98%;
+  
+  /* Accent colors - warm orange (#ED8936) */
+  --accent: 25 90% 57%;
+  --accent-foreground: 215 28% 12%;
+  
+  /* Muted elements */
+  --muted: 215 28% 20%;
+  --muted-foreground: 215 20% 65%;
+  
+  /* Destructive elements */
+  --destructive: 0 70% 50%;
+  --destructive-foreground: 210 40% 98%;
+  
+  /* Status colors */
+  --success: 142 72% 29%;
+  --success-foreground: 210 40% 98%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 215 28% 12%;
+  
+  /* Construction theme specific colors */
+  --deepblue: 210 70% 30%;
+  --deepblue-light: 210 70% 40%;
+  --deepblue-dark: 210 70% 25%;
+  
+  --darkgreen: 160 40% 20%;
+  --darkgreen-light: 160 40% 30%;
+  --darkgreen-dark: 160 40% 15%;
+  
+  --burntorange: 25 90% 57%;
+  --burntorange-light: 25 90% 67%;
+  --burntorange-dark: 25 90% 47%;
+  
+  --lightgray: 215 15% 20%;
+  --lightgray-dark: 215 15% 15%;
+  --lightgray-darker: 215 15% 10%;
+  
+  /* Sidebar specific colors */
+  --sidebar-background: 215 28% 10%;
+  --sidebar-foreground: 210 40% 90%;
+  --sidebar-primary: 210 70% 43%;
+  --sidebar-primary-foreground: 210 40% 98%;
+  --sidebar-accent: 25 90% 57%;
+  --sidebar-accent-foreground: 215 28% 12%;
+  --sidebar-border: 214 32% 20%;
+  --sidebar-ring: 215 28% 30%;
+  
+  /* Border radius */
+  --radius: 0.5rem;
+}
+
+/* Dark mode specific styles */
+.dark .construction-bg-pattern {
+  background-color: hsl(210 70% 20%);
+  background-image: 
+    linear-gradient(30deg, rgba(255, 255, 255, 0.03) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.03) 87.5%, rgba(255, 255, 255, 0.03)),
+    linear-gradient(150deg, rgba(255, 255, 255, 0.03) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.03) 87.5%, rgba(255, 255, 255, 0.03)),
+    linear-gradient(30deg, rgba(255, 255, 255, 0.03) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.03) 87.5%, rgba(255, 255, 255, 0.03)),
+    linear-gradient(150deg, rgba(255, 255, 255, 0.03) 12%, transparent 12.5%, transparent 87%, rgba(255, 255, 255, 0.03) 87.5%, rgba(255, 255, 255, 0.03)),
+    linear-gradient(60deg, rgba(255, 255, 255, 0.03) 25%, transparent 25.5%, transparent 75%, rgba(255, 255, 255, 0.03) 75%, rgba(255, 255, 255, 0.03)),
+    linear-gradient(60deg, rgba(255, 255, 255, 0.03) 25%, transparent 25.5%, transparent 75%, rgba(255, 255, 255, 0.03) 75%, rgba(255, 255, 255, 0.03));
+}
+
+.dark .blueprint-bg-pattern {
+  background-color: hsl(210 70% 25%);
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+}
+
+/* Dark mode form elements */
+.dark .construction-input {
+  border-color: hsl(214 32% 25%);
+  background-color: hsl(214 32% 20%);
+  color: hsl(210 40% 98%);
+}
+
+.dark .construction-input:focus {
+  border-color: hsl(210 70% 43%);
+  box-shadow: 0 0 0 3px hsla(210, 70%, 43%, 0.25);
+}
+
+/* Dark mode buttons */
+.dark .construction-button {
+  background: linear-gradient(to right, hsl(210 70% 43%), hsl(210 70% 38%));
+}
+
+.dark .construction-button:hover {
+  background: linear-gradient(to right, hsl(210 70% 48%), hsl(210 70% 43%));
+  box-shadow: 0 4px 12px hsla(210, 70%, 43%, 0.25);
+}
+
+/* Dark mode card styles */
+.dark .card {
+  background-color: hsl(215 28% 16%);
+  border-color: hsl(214 32% 25%);
+  box-shadow: var(--card-shadow);
+}
+
+.dark .card:hover {
+  box-shadow: var(--card-shadow-hover);
+}
+
+/* Dark mode transitions */
+.dark * {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background-color: hsl(215 28% 10%);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: hsl(214 32% 30%);
+  border-radius: 7px;
+  border: 3px solid hsl(215 28% 10%);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(214 32% 40%);
+}
+
+/* Dark mode selection */
+.dark ::selection {
+  background-color: hsla(210, 70%, 43%, 0.3);
+  color: hsl(210 40% 98%);
+}
+
+/* Dark mode focus styles */
+.dark :focus-visible {
+  outline: 2px solid hsl(210 70% 43%);
+  outline-offset: 2px;
+}
+
+/* Dark mode table styles */
+.dark table {
+  border-color: hsl(214 32% 25%);
+}
+
+.dark th {
+  background-color: hsl(215 28% 20%);
+  color: hsl(210 40% 90%);
+}
+
+.dark td {
+  border-color: hsl(214 32% 20%);
+}
+
+.dark tr:nth-child(even) {
+  background-color: hsl(215 28% 14%);
+}
+
+.dark tr:hover {
+  background-color: hsl(215 28% 18%);
+}
+
+/* Dark mode status badges */
+.dark .status-badge.status-success {
+  background-color: hsla(142, 72%, 29%, 0.15);
+  color: hsl(142, 72%, 70%);
+  border-color: hsla(142, 72%, 29%, 0.3);
+}
+
+.dark .status-badge.status-warning {
+  background-color: hsla(38, 92%, 50%, 0.15);
+  color: hsl(38, 92%, 70%);
+  border-color: hsla(38, 92%, 50%, 0.3);
+}
+
+.dark .status-badge.status-error {
+  background-color: hsla(0, 70%, 50%, 0.15);
+  color: hsl(0, 70%, 70%);
+  border-color: hsla(0, 70%, 50%, 0.3);
+}
+
+.dark .status-badge.status-info {
+  background-color: hsla(210, 70%, 43%, 0.15);
+  color: hsl(210, 70%, 70%);
+  border-color: hsla(210, 70%, 43%, 0.3);
+}
+
+/* Dark mode charts and visualizations */
+.dark .chart-grid line {
+  stroke: hsla(214, 32%, 30%, 0.5);
+}
+
+.dark .chart-axis path,
+.dark .chart-axis line {
+  stroke: hsla(214, 32%, 40%, 0.8);
+}
+
+.dark .chart-tooltip {
+  background-color: hsl(215 28% 16%);
+  border-color: hsl(214 32% 25%);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.35);
+}
+
+/* Dark mode code blocks */
+.dark pre,
+.dark code {
+  background-color: hsl(215 28% 10%);
+  border-color: hsl(214 32% 20%);
+  color: hsl(210 40% 90%);
+}
+
+/* Dark mode shadows for depth */
+.dark .shadow-sm {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.dark .shadow {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.dark .shadow-md {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
+}
+
+.dark .shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
+}
+
+.dark .shadow-xl {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+}
+
+/* Dark mode input field focus styles */
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  border-color: hsl(210 70% 43%);
+  box-shadow: 0 0 0 3px hsla(210, 70%, 43%, 0.25);
+  outline: none;
+}

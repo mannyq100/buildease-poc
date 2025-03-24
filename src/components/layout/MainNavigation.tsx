@@ -18,7 +18,9 @@ import {
   Menu,
   MessagesSquare,
   Home,
-  ChevronRight
+  ChevronRight,
+  Moon,
+  Sun
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -33,6 +35,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/auth/contexts/AuthContext';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface MainNavigationProps {
   className?: string;
@@ -41,27 +45,11 @@ interface MainNavigationProps {
 const MainNavigation: React.FC<MainNavigationProps> = ({ className }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const { logout } = useAuth();
+  const { isDarkMode } = useTheme();
   
-  // Check dark mode
-  useEffect(() => {
-    const checkDarkMode = () => {
-      setIsDarkMode(document.documentElement.classList.contains('dark'));
-    };
-    
-    checkDarkMode();
-    const observer = new MutationObserver(checkDarkMode);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class']
-    });
-    
-    return () => observer.disconnect();
-  }, []);
-
   // Close mobile menu when location changes
   useEffect(() => {
     setShowMobileMenu(false);
@@ -224,6 +212,11 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ className }) => {
 
         {/* User Menu & Actions */}
         <div className="flex items-center gap-3 ml-4">
+          {/* Theme Toggle - Desktop */}
+          <div className="hidden md:block">
+            <ThemeToggle variant="ghost" />
+          </div>
+          
           <Button variant="ghost" size="icon" className="text-gray-500 dark:text-gray-400 relative hidden md:flex">
             <Bell className="h-5 w-5" />
             <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
@@ -401,6 +394,21 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ className }) => {
                   <span>Settings</span>
                 </Button>
                 
+                {/* Theme Toggle - Mobile */}
+                <div className="flex items-center justify-between px-3 py-2 rounded-md border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center">
+                    <div className="mr-2 h-8 w-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800">
+                      {isDarkMode ? (
+                        <Moon className="h-4 w-4 text-blue-500" />
+                      ) : (
+                        <Sun className="h-4 w-4 text-yellow-500" />
+                      )}
+                    </div>
+                    <span>Theme</span>
+                  </div>
+                  <ThemeToggle variant="ghost" iconSize={16} />
+                </div>
+                
                 <Button 
                   variant="outline" 
                   className="w-full justify-start text-left text-red-600 dark:text-red-400" 
@@ -423,4 +431,4 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ className }) => {
   );
 };
 
-export default MainNavigation; 
+export default MainNavigation;

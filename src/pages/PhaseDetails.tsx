@@ -27,6 +27,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
+import { useTheme } from '@/contexts/ThemeContext';
 
 // Import common shared components
 import {
@@ -387,14 +388,11 @@ interface TaskCardProps {
 const PhaseDetails = () => {
   const navigate = useNavigate();
   const { phaseId } = useParams();
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const { isDarkMode } = useTheme();
   const [phase, setPhase] = useState<Phase | null>(null);
   const [activeTab, setActiveTab] = useState('tasks');
 
   useEffect(() => {
-    // Check for dark mode
-    setIsDarkMode(document.documentElement.classList.contains('dark'));
-
     // Fetch phase data based on ID
     if (phaseId && phaseData[phaseId]) {
       setPhase(phaseData[phaseId]);
@@ -450,9 +448,14 @@ const PhaseDetails = () => {
           size="sm"
           onClick={handleBackClick}
           variant="outline"
-          className="mb-4 text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/30 border-blue-200 dark:border-blue-800/50"
+          className={cn(
+            "flex items-center gap-1 transition-all duration-200",
+            isDarkMode 
+              ? "border-slate-700 hover:bg-slate-800" 
+              : "border-slate-200 hover:bg-slate-50"
+          )}
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-4 w-4" />
           Back to Projects
         </Button>
 
