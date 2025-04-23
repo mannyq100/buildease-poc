@@ -1,0 +1,96 @@
+{
+  "projectProgress": [
+    { "name": "Foundation", "completed": 100, "total": 100 },
+    { "name": "Framing", "completed": 75, "total": 100 },
+    { "name": "Electrical", "completed": 30, "total": 100 },
+    { "name": "Plumbing", "completed": 25, "total": 100 },
+    { "name": "Interior", "completed": 0, "total": 100 }
+  ],
+  "budgetData": [
+    { "name": "Jan", "Planned": 8000, "Actual": 7200 },
+    { "name": "Feb", "Planned": 12000, "Actual": 13100 },
+    { "name": "Mar", "Planned": 15000, "Actual": 14800 },
+    { "name": "Apr", "Planned": 14000, "Actual": 16500 },
+    { "name": "May", "Planned": 18000, "Actual": 17300 },
+    { "name": "Jun", "Planned": 9000, "Actual": 9200 }
+  ],
+  "materialUsage": [
+    { "name": "Concrete", "value": 32 },
+    { "name": "Steel", "value": 24 },
+    { "name": "Wood", "value": 18 },
+    { "name": "Glass", "value": 12 },
+    { "name": "Other", "value": 14 }
+  ],
+  "taskStatus": [
+    { "name": "Completed", "value": 42 },
+    { "name": "In Progress", "value": 28 },
+    { "name": "Not Started", "value": 30 }
+  ],
+  "quickStats": [
+    { "title": "Active Projects", "value": 8, "change": 2, "icon": "Briefcase" },
+    { "title": "Budget Utilization", "value": 72, "change": -3, "icon": "DollarSign" },
+    { "title": "Tasks Completed", "value": 183, "change": 12, "icon": "ListTodo" },
+    { "title": "Team Members", "value": 24, "change": 0, "icon": "Users" }
+  ],
+  "quickActions": [
+    { "title": "Schedule Meeting", "icon": "Calendar" },
+    { "title": "Add New Task", "icon": "ListTodo" },
+    { "title": "Order Materials", "icon": "Package" },
+    { "title": "View Team", "icon": "Users" }
+  ],
+  "recentActivity": [
+    { 
+      "text": "Budget for Main St. project updated", 
+      "time": "1h ago", 
+      "icon": "dollar",
+      "link": "/projects/1"
+    },
+    { 
+      "text": "3 new tasks assigned to team", 
+      "time": "3h ago", 
+      "icon": "task",
+      "link": "/tasks"
+    },
+    { 
+      "text": "Meeting scheduled with contractors", 
+      "time": "5h ago", 
+      "icon": "calendar",
+      "link": "/calendar"
+    },
+    { 
+      "text": "New material order placed", 
+      "time": "Yesterday", 
+      "icon": "package",
+      "link": "/materials"
+    }
+  ],
+  "upcomingDeadlines": [
+    {
+      "id": "1",
+      "title": "Foundation inspection",
+      "dueDate": "Tomorrow",
+      "project": "Villa Construction",
+      "projectId": "1",
+      "priority": "high",
+      "status": "pending"
+    },
+    {
+      "id": "2",
+      "title": "Electrical wiring planning",
+      "dueDate": "May 15, 2024",
+      "project": "Office Building",
+      "projectId": "2",
+      "priority": "medium",
+      "status": "in-progress"
+    },
+    {
+      "id": "3",
+      "title": "Material delivery",
+      "dueDate": "May 18, 2024",
+      "project": "Villa Construction",
+      "projectId": "1",
+      "priority": "medium",
+      "status": "pending"
+    }
+  ]
+}

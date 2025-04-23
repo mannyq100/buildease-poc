@@ -2,7 +2,7 @@
  * Dashboard.tsx - Main dashboard page
  * Overview of construction project metrics, tasks, and deadlines
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LazyMotion, domAnimation, m } from 'framer-motion'
 
@@ -19,7 +19,8 @@ import {
   BarChart3,
   Users,
   Clock,
-  Activity
+  Activity,
+  Briefcase
 } from 'lucide-react'
 
 // UI Components
@@ -46,7 +47,7 @@ import { PageHeader } from '@/components/shared'
 import { useDashboardData } from '@/hooks/useDashboardData'
 
 // Import types from dashboard types file
-import { QuickStatCard, ActivityItem as DashboardActivityItem, QuickAction as DashboardQuickAction } from '@/types/dashboard'
+import { QuickStatCard, ActivityItem as DashboardActivityItem, QuickAction as DashboardQuickAction, TeamMemberPerformance, DeadlineItem } from '@/types/dashboard'
 
 // Local interface for activity items from API
 interface ActivityItem {
@@ -149,18 +150,26 @@ export function Dashboard() {
   }, [isRefreshing, refreshData, toast])
 
   // Map activity item icons to components
-  const getActivityIcon = (iconType: string) => {
-    switch (iconType) {
+  const getIconForType = (type: string) => {
+    switch (type) {
       case 'dollar':
-        return <DollarSign className="h-4 w-4 text-green-500" />
+        return <DollarSign className="h-5 w-5 text-blue-500" />
       case 'task':
-        return <ListTodo className="h-4 w-4 text-amber-500" />
+        return <ListTodo className="h-5 w-5 text-green-500" />
       case 'calendar':
-        return <Calendar className="h-4 w-4 text-blue-500" />
+        return <Calendar className="h-5 w-5 text-amber-500" />
       case 'package':
-        return <Package className="h-4 w-4 text-purple-500" />
+        return <Package className="h-5 w-5 text-purple-500" />
+      case 'briefcase':
+        return <Briefcase className="h-5 w-5 text-blue-500" />
+      case 'users':
+        return <Users className="h-5 w-5 text-green-500" />
+      case 'chart':
+        return <BarChart3 className="h-5 w-5 text-amber-500" />
+      case 'dashboard':
+        return <LayoutDashboard className="h-5 w-5 text-purple-500" />
       default:
-        return <ListTodo className="h-4 w-4 text-gray-500" />
+        return <Activity className="h-5 w-5 text-gray-500" />
     }
   }
   
@@ -169,10 +178,75 @@ export function Dashboard() {
     ? activityItems.map(item => ({
         text: item.title, // Use title from the API format
         time: item.date, // Use date from the API format
-        icon: getActivityIcon(item.type), // Generate icon based on type
+        icon: getIconForType(item.type), // Generate icon based on type
         link: `/activity/${item.id}` // Create link using ID
       }))
     : []
+
+  // Transform raw dashboard data into the expected formats for components
+  // Stats data for the metrics grid
+  const formattedStats = useMemo(() => {
+    return quickStats.map(stat => {
+      // Properly handle trend object or create a default one if it's not valid
+      let trendData = {
+        value: 0,
+        isPositive: true
+      };
+      
+      // Safe type checking for trend property
+      if (stat.trend) {
+        if (typeof stat.trend === 'object' && 'value' in stat.trend) {
+          // If trend is an object with value property
+          const trendValue = Number(stat.trend.value || 0);
+          trendData = {
+            value: isNaN(trendValue) ? 0 : trendValue,
+            isPositive: Boolean(stat.trend.isPositive)
+          };
+        } else if (typeof stat.trend === 'number') {
+          // If trend is a number
+          trendData = {
+            value: Math.abs(stat.trend),
+            isPositive: stat.trend > 0
+          };
+        }
+      }
+      
+      return {
+        title: String(stat.title || ''),  // Ensure title is a string with fallback
+        value: typeof stat.value === 'number' ? stat.value : 0,
+        color: (typeof stat.color === 'string' ? stat.color : 'blue') as 'blue' | 'green' | 'amber' | 'purple' | 'red',
+        icon: typeof stat.icon === 'string' ? getIconForType(stat.icon) : stat.icon,
+        trend: trendData
+      };
+    });
+  }, [quickStats, getIconForType]);
+
+  // Team data for the team performance component
+  const formattedTeamData = useMemo(() => {
+    return teamData.map(member => ({
+      id: member.id,
+      name: member.name,
+      position: 'Team Member', // Default position since our interface doesn't have it
+      avatar: member.avatar,
+      completedTasks: 0, // Default value since our interface doesn't have it
+      totalTasks: 10,    // Default value since our interface doesn't have it
+      performance: member.performance,
+      isTopPerformer: member.performance > 85
+    }));
+  }, [teamData]);
+
+  // Deadlines for the upcoming deadlines component
+  const formattedDeadlines = useMemo(() => {
+    return upcomingDeadlines.map(deadline => ({
+      id: deadline.id,
+      title: deadline.title,
+      dueDate: deadline.dueDate,
+      project: deadline.project,
+      projectId: '1', // Default value since our interface might not have it
+      priority: (deadline.priority || 'medium') as 'high' | 'medium' | 'low',
+      status: 'pending' as 'pending' | 'in-progress' | 'completed' // Default value
+    }));
+  }, [upcomingDeadlines]);
 
   // If data is loading and not refreshing, show loading state
   if (isLoading && !isRefreshing) {
@@ -252,7 +326,7 @@ export function Dashboard() {
                     onClick={() => navigate(action.route)}
                     className="bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-blue-700 dark:text-blue-400 border border-gray-200 dark:border-slate-700/50 shadow-sm hover:shadow transition-all duration-200"
                   >
-                    {action.icon}
+                    {typeof action.icon === 'string' ? getIconForType(action.icon) : action.icon}
                     <span className="ml-2">{action.title}</span>
                   </Button>
                 </m.div>
@@ -268,7 +342,7 @@ export function Dashboard() {
           transition={{ duration: 0.5, delay: 0.2 }}
         >
           <DashboardMetricsGrid
-            stats={quickStats as unknown as QuickStatCard[]}
+            stats={formattedStats}
             className="mb-6"
           />
         </m.div>
@@ -388,7 +462,16 @@ export function Dashboard() {
             <ProjectsOverview projects={projectsData} />
             
             {/* Team Performance */}
-            <TeamPerformance teamMembers={teamData} />
+            <m.div
+              className="mb-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.6 }}
+            >
+              <TeamPerformance 
+                teamMembers={formattedTeamData}
+                className="h-96" />
+            </m.div>
           </m.div>
           
           {/* Right Column */}
@@ -399,7 +482,16 @@ export function Dashboard() {
             transition={{ duration: 0.5, delay: 0.4 }}
           >
             {/* Upcoming Deadlines */}
-            <UpcomingDeadlines deadlines={upcomingDeadlines} />
+            <m.div
+              className="col-span-1 lg:col-span-1"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.8 }}
+            >
+              <UpcomingDeadlines 
+                deadlines={formattedDeadlines}
+              />
+            </m.div>
             
             {/* Recent Activity */}
             <RecentActivity activities={enhancedActivityItems} />

@@ -9,7 +9,7 @@ import {
   ProjectsList 
 } from '@/components/projects';
 import type { Project, ProjectStatus, ViewMode } from '@/types/project';
-import { projectsData } from '@/data/projectsData';
+import { projectsData } from '@/data/mock/project/projectsData';
 
 /**
  * Projects - Main Projects page component

@@ -68,4 +68,49 @@ export const MATERIALS_INSIGHTS: InsightItemProps[] = [
     type: "default",
     animationDelay: 0.3
   }
-]; 
+];
+
+// Sample markdown project plan for the AI-generated output view
+export const markdownPlan = `# Construction Project Plan
+
+## Pre-Construction Phase (4-6 weeks)
+Initial planning, design, and preparation before construction begins.
+
+### Tasks:
+- Site analysis and evaluation
+- Architectural design finalization
+- Obtain necessary permits
+- Contractor selection
+
+### Materials:
+- Survey equipment: 1 set ($500)
+- Permit application fees: 1 lot ($2,500)
+
+## Foundation Phase (3-4 weeks)
+Establishing the structural foundation of the building.
+
+### Tasks:
+- Site clearing and excavation
+- Foundation layout
+- Concrete pouring
+- Waterproofing
+
+### Materials:
+- Concrete: 30 cubic yards ($4,500)
+- Rebar: 2 tons ($2,200)
+- Waterproofing membrane: 500 sq ft ($1,500)
+
+## Framing Phase (4-5 weeks)
+Construction of the structural framework.
+
+### Tasks:
+- Wall framing
+- Roof framing
+- Window and door installation
+
+### Materials:
+- Lumber: 5000 board feet ($7,500)
+- Roof trusses: 24 pieces ($4,800)
+- Window frames: 12 pieces ($3,600)
+- Door frames: 8 pieces ($1,600)
+`

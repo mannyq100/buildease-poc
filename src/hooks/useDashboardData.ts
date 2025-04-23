@@ -1,105 +1,19 @@
-import { useState, useEffect, useMemo } from 'react'
-import { 
-  getProjectProgressData, 
-  getBudgetData, 
-  getMaterialUsageData, 
-  getTaskStatusData, 
-  getQuickStats, 
-  getQuickActions 
-} from '@/data/dashboardService'
-import type { DeadlineItem, ActivityItem } from '@/types/dashboard'
-import { projectsData } from '@/data/projectsData'
-import { teamData } from '@/data/teamData'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import {
+  getProjectProgressData,
+  getBudgetData,
+  getMaterialUsageData,
+  getTaskStatusData,
+  getQuickStats,
+  getQuickActions,
+  getRecentActivity,
+  getUpcomingDeadlines
+} from '@/services/dashboardService'
+import type { DeadlineItem, ActivityItem as DashboardActivityItem, PieChartItem, QuickStatCard, QuickAction } from '@/types/dashboard'
+import { getProjects } from '@/services/projectService'
+import { getTeamMembers } from '@/services/teamService'
 
-// Mock recent activity data - in a real app, this would come from an API
-const mockActivityItems: ActivityItem[] = [
-  { 
-    id: "1",
-    type: "dollar",
-    title: "Budget for Main St. project updated", 
-    date: "1h ago", 
-    user: "John Doe"
-  },
-  { 
-    id: "2",
-    type: "task",
-    title: "3 new tasks assigned to team", 
-    date: "3h ago", 
-    user: "Jane Smith"
-  },
-  { 
-    id: "3",
-    type: "calendar",
-    title: "Meeting scheduled with contractors", 
-    date: "5h ago", 
-    user: "Mike Johnson"
-  },
-  { 
-    id: "4",
-    type: "package",
-    title: "New material order placed", 
-    date: "Yesterday", 
-    user: "Sarah Williams"
-  }
-]
-
-// Mock upcoming deadlines data - in a real app, this would come from an API
-const mockDeadlines: DeadlineItem[] = [
-  {
-    id: 1,
-    title: "Foundation inspection",
-    dueDate: "Tomorrow",
-    project: "Villa Construction",
-    projectId: 1,
-    priority: "high",
-    status: "pending"
-  },
-  {
-    id: 2,
-    title: "Electrical wiring planning",
-    dueDate: "May 15, 2024",
-    project: "Office Building",
-    projectId: 2,
-    priority: "medium",
-    status: "in-progress"
-  },
-  {
-    id: 3,
-    title: "Material delivery",
-    dueDate: "May 18, 2024",
-    project: "Villa Construction",
-    projectId: 1,
-    priority: "medium",
-    status: "pending"
-  },
-  {
-    id: 4,
-    title: "Weekly progress report",
-    dueDate: "May 19, 2024",
-    project: "Hospital Renovation",
-    projectId: 3,
-    priority: "low",
-    status: "pending"
-  },
-  {
-    id: 5,
-    title: "Client meeting",
-    dueDate: "May 22, 2024",
-    project: "Office Building",
-    projectId: 2,
-    priority: "high",
-    status: "in-progress"
-  }
-]
-
-// Define proper types for the dashboard data
-interface ProjectSummary {
-  id: string;
-  name: string;
-  progress: number;
-  status: string;
-}
-
+// Local interface for activity items that matches the mock data format
 interface ActivityItem {
   id: string;
   type: string;
@@ -108,6 +22,7 @@ interface ActivityItem {
   user: string;
 }
 
+// Local interface for deadlines that matches the expected return format
 interface Deadline {
   id: string;
   title: string;
@@ -116,6 +31,7 @@ interface Deadline {
   priority: string;
 }
 
+// Local interface for team members with string IDs
 interface TeamMember {
   id: string;
   name: string;
@@ -123,121 +39,173 @@ interface TeamMember {
   performance: number;
 }
 
+// Chart data interface used in dashboard visualizations
 interface ChartData {
   name: string;
   value: number;
+  completed?: number;
+  total?: number;
+  Actual?: number;
+  Planned?: number;
 }
 
-interface DashboardData {
-  stats: Record<string, number>;
-  projectSummaries: ProjectSummary[];
-  recentActivity: ActivityItem[];
-  deadlines: DeadlineItem[];
-  teamPerformance: TeamMember[];
-  budgetData: ChartData[];
-  scheduleData: ChartData[];
-}
-
+// Dashboard data state interface
 export interface DashboardDataState {
   isLoading: boolean
   projectProgressData: ChartData[]
   budgetData: ChartData[]
   materialUsageData: ChartData[]
   taskStatusData: ChartData[]
-  quickStats: Record<string, number>[]
+  quickStats: QuickStatCard[]
   quickActions: {id: string; title: string; icon: string}[]
   activityItems: ActivityItem[]
   upcomingDeadlines: Deadline[]
   teamData: TeamMember[]
-  projectsData: ProjectSummary[]
-  lastUpdated: Date | null
+  projectsData: any[]
+  lastUpdated: Date
+  refreshData: () => Promise<boolean>
 }
 
 /**
  * Custom hook for managing dashboard data
- * Handles loading, refreshing, and organizing dashboard data
+ * Fetches and consolidates data from various sources
  */
 export function useDashboardData() {
   const [isLoading, setIsLoading] = useState(true)
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [lastUpdated, setLastUpdated] = useState(new Date())
   
-  // State for chart data
+  // Chart data state including project progress, budget, materials, and tasks
   const [chartData, setChartData] = useState({
-    projectProgressData: getProjectProgressData(),
-    budgetData: getBudgetData(),
-    materialUsageData: getMaterialUsageData(),
-    taskStatusData: getTaskStatusData()
+    projectProgressData: [] as ChartData[],
+    budgetData: [] as ChartData[],
+    materialUsageData: [] as ChartData[],
+    taskStatusData: [] as ChartData[],
   })
   
-  // State for dashboard content
+  // Dashboard content state including stats, actions, activity, and deadlines
   const [dashboardContent, setDashboardContent] = useState({
-    quickStats: getQuickStats(),
-    quickActions: getQuickActions(),
-    activityItems: mockActivityItems,
-    upcomingDeadlines: mockDeadlines,
+    quickStats: [] as QuickStatCard[],
+    quickActions: [] as {id: string; title: string; icon: string}[],
+    activityItems: [] as ActivityItem[],
+    upcomingDeadlines: [] as Deadline[],
   })
-  
-  // Simulate data loading on component mount
+
+  // Project and team data state
+  const [projectsData, setProjectsData] = useState<any[]>([])
+  const [teamData, setTeamData] = useState<TeamMember[]>([])
+
+  // Fetch and transform dashboard data
   useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true)
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      // Set data
-      setChartData({
-        projectProgressData: getProjectProgressData(),
-        budgetData: getBudgetData(),
-        materialUsageData: getMaterialUsageData(),
-        taskStatusData: getTaskStatusData()
-      })
-      
-      setDashboardContent({
-        quickStats: getQuickStats(),
-        quickActions: getQuickActions(),
-        activityItems: mockActivityItems,
-        upcomingDeadlines: mockDeadlines
-      })
-      
-      setLastUpdated(new Date())
-      setIsLoading(false)
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true)
+        
+        // Fetch all data in parallel
+        const [
+          progressData,
+          budgetData,
+          materialData,
+          taskData,
+          stats,
+          actions,
+          projects,
+          team,
+          activities,
+          deadlines
+        ] = await Promise.all([
+          getProjectProgressData(),
+          getBudgetData(),
+          getMaterialUsageData(),
+          getTaskStatusData(),
+          getQuickStats(),
+          getQuickActions(),
+          getProjects(),
+          getTeamMembers(),
+          getRecentActivity(),
+          getUpcomingDeadlines()
+        ])
+        
+        // Transform and set project data
+        setProjectsData(projects)
+        
+        // Transform team data
+        const processedTeam = team.map(member => ({
+          id: String(member.id),
+          name: member.name,
+          avatar: member.avatar || '/avatars/default.jpg',
+          performance: member.performance
+        }))
+        setTeamData(processedTeam)
+        
+        // Transform the data to match our interfaces
+        const transformedProgressData = progressData.map(item => ({
+          name: item.name,
+          value: Math.round((item.completed / item.total) * 100),
+          completed: item.completed,
+          total: item.total
+        }))
+        
+        const transformedBudgetData = budgetData.map(item => ({
+          name: item.name,
+          value: item.Actual, // Using Actual spend as the value
+          Actual: item.Actual,
+          Planned: item.Planned
+        }))
+        
+        // Set chart data state
+        setChartData({
+          projectProgressData: transformedProgressData,
+          budgetData: transformedBudgetData,
+          materialUsageData: materialData,
+          taskStatusData: taskData,
+        })
+        
+        // The dashboard service already returns QuickStatCard objects with the right structure
+        const transformedStats = stats;
+        
+        const transformedActions = actions.map((action, index) => ({
+          id: String(index + 1),
+          title: action.title,
+          icon: action.icon.toString()
+        }))
+        
+        // Convert activity data to expected format
+        const transformedActivities = activities.map((item, index) => ({
+          id: String(index + 1),
+          type: typeof item.icon === 'string' ? item.icon : 'default',
+          title: item.text,
+          date: item.time,
+          user: 'User'
+        }))
+        
+        // Convert deadline data to expected format
+        const transformedDeadlines = deadlines.map(item => ({
+          id: String(item.id),
+          title: item.title,
+          dueDate: item.dueDate,
+          project: item.project,
+          priority: item.priority
+        }))
+        
+        // Set dashboard content state
+        setDashboardContent({
+          quickStats: transformedStats,
+          quickActions: transformedActions,
+          activityItems: transformedActivities,
+          upcomingDeadlines: transformedDeadlines,
+        })
+        
+        setLastUpdated(new Date())
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error)
+      } finally {
+        setIsLoading(false)
+      }
     }
     
-    loadData()
-  }, [])
-  
-  /**
-   * Refreshes dashboard data
-   * @returns Promise that resolves when data is refreshed
-   */
-  const refreshData = async () => {
-    setIsLoading(true)
-    
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
-    // Set data with updated values
-    setChartData({
-      projectProgressData: getProjectProgressData(),
-      budgetData: getBudgetData(),
-      materialUsageData: getMaterialUsageData(),
-      taskStatusData: getTaskStatusData()
-    })
-    
-    setDashboardContent({
-      quickStats: getQuickStats(),
-      quickActions: getQuickActions(),
-      activityItems: mockActivityItems,
-      upcomingDeadlines: mockDeadlines
-    })
-    
-    setLastUpdated(new Date())
-    setIsLoading(false)
-    
-    return true
-  }
-  
+    fetchDashboardData()
+  }, []) // Empty dependency array means this runs once on mount
+
   // Combine all data into a single state object with memoization
   const dashboardData = useMemo<DashboardDataState>(() => ({
     isLoading,
@@ -251,16 +219,123 @@ export function useDashboardData() {
     upcomingDeadlines: dashboardContent.upcomingDeadlines,
     teamData,
     projectsData,
-    lastUpdated
+    lastUpdated,
+    refreshData: async () => true
   }), [
     isLoading, 
     chartData, 
     dashboardContent, 
+    teamData,
+    projectsData,
     lastUpdated
   ])
+
+  // Refresh data function for dashboard refresh button
+  const refreshData = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      
+      // Fetch all data in parallel again
+      const [
+        progressData,
+        budgetData,
+        materialData,
+        taskData,
+        stats,
+        actions,
+        projects,
+        team,
+        activities,
+        deadlines
+      ] = await Promise.all([
+        getProjectProgressData(),
+        getBudgetData(),
+        getMaterialUsageData(),
+        getTaskStatusData(),
+        getQuickStats(),
+        getQuickActions(),
+        getProjects(),
+        getTeamMembers(),
+        getRecentActivity(),
+        getUpcomingDeadlines()
+      ])
+      
+      // Apply the same transformations as in the initial load
+      setProjectsData(projects)
+      
+      const processedTeam = team.map(member => ({
+        id: String(member.id),
+        name: member.name,
+        avatar: member.avatar || '/avatars/default.jpg',
+        performance: member.performance
+      }))
+      setTeamData(processedTeam)
+      
+      const transformedProgressData = progressData.map(item => ({
+        name: item.name,
+        value: Math.round((item.completed / item.total) * 100),
+        completed: item.completed,
+        total: item.total
+      }))
+      
+      const transformedBudgetData = budgetData.map(item => ({
+        name: item.name,
+        value: item.Actual,
+        Actual: item.Actual,
+        Planned: item.Planned
+      }))
+      
+      setChartData({
+        projectProgressData: transformedProgressData,
+        budgetData: transformedBudgetData,
+        materialUsageData: materialData,
+        taskStatusData: taskData,
+      })
+      
+      // The dashboard service already returns QuickStatCard objects with the right structure
+      const transformedStats = stats;
+      
+      const transformedActions = actions.map((action, index) => ({
+        id: String(index + 1),
+        title: action.title,
+        icon: action.icon.toString()
+      }))
+      
+      const transformedActivities = activities.map((item, index) => ({
+        id: String(index + 1),
+        type: typeof item.icon === 'string' ? item.icon : 'default',
+        title: item.text,
+        date: item.time,
+        user: 'User'
+      }))
+      
+      const transformedDeadlines = deadlines.map(item => ({
+        id: String(item.id),
+        title: item.title,
+        dueDate: item.dueDate,
+        project: item.project,
+        priority: item.priority
+      }))
+      
+      setDashboardContent({
+        quickStats: transformedStats,
+        quickActions: transformedActions,
+        activityItems: transformedActivities,
+        upcomingDeadlines: transformedDeadlines,
+      })
+      
+      setLastUpdated(new Date())
+      return true
+    } catch (error) {
+      console.error('Error refreshing dashboard data:', error)
+      return false
+    } finally {
+      setIsLoading(false)
+    }
+  }, []) // No dependencies to ensure stable reference
   
   return {
     ...dashboardData,
     refreshData
   }
-} 
+}

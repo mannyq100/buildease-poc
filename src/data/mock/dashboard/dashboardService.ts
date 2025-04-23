@@ -1,29 +1,21 @@
 /**
- * Dashboard data service
- * Loads dashboard data from JSON and maps icons to data
+ * Mock Dashboard Service
+ * Contains mock data for the dashboard components
  */
-import React from 'react';
-import { 
-  Briefcase, 
-  DollarSign, 
-  ListTodo, 
-  Users, 
-  Calendar, 
-  Package 
-} from 'lucide-react';
-
-import { 
-  ProjectProgressItem, 
-  BudgetItem, 
-  PieChartItem, 
-  QuickStatCard, 
+import type {
+  ProjectProgressItem,
+  BudgetItem,
+  PieChartItem,
+  QuickStatCard,
   QuickAction,
-  NavItem
+  NavItem,
+  ActivityItem,
+  DeadlineItem
 } from '@/types/dashboard';
 
 import dashboardData from './json/dashboard.json';
 
-// Define interfaces for the JSON data structure
+// Define interface for the JSON data structure
 interface DashboardDataJson {
   projectProgress: Array<{
     name: string;
@@ -45,128 +37,168 @@ interface DashboardDataJson {
   }>;
   quickStats: Array<{
     title: string;
-    value: string | number;
-    color: string;
-    iconType: string;
-    trend?: {
-      value: number;
-      isPositive: boolean;
-    };
+    value: number;
+    change: number;
+    icon: string;
   }>;
   quickActions: Array<{
     title: string;
-    color: string;
-    route: string;
-    description?: string;
-    iconType: string;
+    icon: string;
   }>;
-  navItems: Array<{
-    label: string;
-    path: string;
-    iconType: string;
-    badge?: {
-      text: string;
-      color: string;
-    };
+  recentActivity: Array<{
+    text: string;
+    time: string;
+    icon: string;
+    link?: string;
+  }>;
+  upcomingDeadlines: Array<{
+    id: string;
+    title: string;
+    dueDate: string;
+    project: string;
+    projectId: string;
+    priority: string;
+    status: string;
   }>;
 }
 
-// Type assertion for the imported JSON
-const typedDashboardData = dashboardData as DashboardDataJson;
+// Map icon names to string identifiers that components can use
+const iconMap: Record<string, string> = {
+  'Briefcase': 'briefcase',
+  'DollarSign': 'dollar',
+  'ListTodo': 'task',
+  'Users': 'users',
+  'Calendar': 'calendar',
+  'Package': 'package',
+  'default': 'chart' // Default icon
+};
 
-// Map to convert icon type strings to actual React components
-const iconMap = {
-  Briefcase,
-  DollarSign,
-  ListTodo,
-  Users,
-  Calendar,
-  Package
+// Default nav items since our JSON doesn't have this property
+const defaultNavItems: NavItem[] = [
+  { label: 'Dashboard', path: '/dashboard', icon: 'dashboard' },
+  { label: 'Projects', path: '/projects', icon: 'briefcase' },
+  { label: 'Tasks', path: '/tasks', icon: 'task' },
+  { label: 'Team', path: '/team', icon: 'users' },
+  { label: 'Materials', path: '/materials', icon: 'package' },
+  { label: 'Calendar', path: '/calendar', icon: 'calendar' },
+  { label: 'Reports', path: '/reports', icon: 'chart' }
+];
+
+// Default colors for stats and actions
+const getColorForStat = (index: number): 'blue' | 'green' | 'amber' | 'purple' | 'red' => {
+  const colors: Array<'blue' | 'green' | 'amber' | 'purple' | 'red'> = ['blue', 'green', 'amber', 'purple', 'red'];
+  return colors[index % colors.length];
 };
 
 /**
- * Get project progress data
+ * Get mock project progress data for the dashboard
+ * @returns Array of project progress items
  */
 export function getProjectProgressData(): ProjectProgressItem[] {
-  return typedDashboardData.projectProgress;
+  const data = dashboardData as unknown as DashboardDataJson;
+  return data.projectProgress;
 }
 
 /**
- * Get budget data
+ * Get mock budget data for the dashboard
+ * @returns Array of budget items
  */
 export function getBudgetData(): BudgetItem[] {
-  return typedDashboardData.budgetData;
+  const data = dashboardData as unknown as DashboardDataJson;
+  return data.budgetData;
 }
 
 /**
- * Get material usage data
+ * Get mock material usage data for the dashboard
+ * @returns Array of pie chart items representing material usage
  */
 export function getMaterialUsageData(): PieChartItem[] {
-  return typedDashboardData.materialUsage;
+  const data = dashboardData as unknown as DashboardDataJson;
+  return data.materialUsage;
 }
 
 /**
- * Get task status data
+ * Get mock task status data for the dashboard
+ * @returns Array of pie chart items representing task status
  */
 export function getTaskStatusData(): PieChartItem[] {
-  return typedDashboardData.taskStatus;
+  const data = dashboardData as unknown as DashboardDataJson;
+  return data.taskStatus;
 }
 
 /**
- * Get quick stats with mapped icons
+ * Get mock quick stats for the dashboard
+ * @returns Array of quick stat cards
  */
 export function getQuickStats(): QuickStatCard[] {
-  return typedDashboardData.quickStats.map(stat => {
-    // Ensure color is one of the allowed values in QuickStatCard
-    const color = stat.color as 'blue' | 'green' | 'amber' | 'purple' | 'red';
-    
-    // Create a properly typed QuickStatCard object
-    const result: QuickStatCard = {
-      title: stat.title,
-      value: stat.value,
-      color: color,
-      icon: stat.iconType && iconMap[stat.iconType as keyof typeof iconMap] ? 
-        React.createElement(iconMap[stat.iconType as keyof typeof iconMap], { 
-          className: `h-5 w-5 text-${color}-500` 
-        }) : null
-    };
-    
-    // Add trend if it exists
-    if (stat.trend) {
-      result.trend = stat.trend;
-    }
-    
-    return result;
-  });
-}
-
-/**
- * Get quick actions with mapped icons
- */
-export function getQuickActions(): QuickAction[] {
-  return typedDashboardData.quickActions.map(action => ({
-    title: action.title,
-    color: action.color,
-    route: action.route,
-    description: action.description,
-    icon: action.iconType && iconMap[action.iconType as keyof typeof iconMap] ? 
-      React.createElement(iconMap[action.iconType as keyof typeof iconMap], { 
-        className: `h-6 w-6 text-${action.color}-600` 
-      }) : null
+  const data = dashboardData as unknown as DashboardDataJson;
+  return data.quickStats.map((stat, index) => ({
+    title: stat.title,
+    value: stat.value,
+    // Add the required color property
+    color: getColorForStat(index),
+    // Convert string icon name to string identifier for component handling
+    icon: iconMap[stat.icon] || iconMap['default'],
+    trend: stat.change ? {
+      value: Math.abs(stat.change),
+      isPositive: stat.change > 0
+    } : undefined
   }));
 }
 
 /**
- * Get navigation items with mapped icons
+ * Get mock quick actions for the dashboard
+ * @returns Array of quick actions
+ */
+export function getQuickActions(): QuickAction[] {
+  const data = dashboardData as unknown as DashboardDataJson;
+  return data.quickActions.map((action, index) => ({
+    title: action.title,
+    // Add required properties
+    color: getColorForStat(index),
+    route: `/${action.title.toLowerCase().replace(/\s+/g, '-')}`,
+    // Convert string icon name to string for component handling
+    icon: iconMap[action.icon] || iconMap['default']
+  }));
+}
+
+/**
+ * Get mock navigation items
+ * @returns Array of navigation items
  */
 export function getNavItems(): NavItem[] {
-  return typedDashboardData.navItems.map(item => ({
-    label: item.label,
-    path: item.path,
-    badge: item.badge,
-    icon: item.iconType && iconMap[item.iconType as keyof typeof iconMap] ? 
-      React.createElement(iconMap[item.iconType as keyof typeof iconMap], { 
-        className: 'w-5 h-5' 
-      }) : null
+  // Just return the default nav items since our JSON doesn't have this property
+  return defaultNavItems;
+}
+
+/**
+ * Get recent activity
+ * @returns Array of activity items
+ */
+export function getRecentActivity(): ActivityItem[] {
+  const data = dashboardData as unknown as DashboardDataJson;
+  return data.recentActivity.map(item => ({
+    text: item.text,
+    time: item.time,
+    icon: item.icon,
+    link: item.link
+  }));
+}
+
+/**
+ * Get upcoming deadlines
+ * @returns Array of deadline items
+ */
+export function getUpcomingDeadlines(): DeadlineItem[] {
+  const data = dashboardData as unknown as DashboardDataJson;
+  return data.upcomingDeadlines.map(item => ({
+    id: item.id,
+    title: item.title,
+    dueDate: item.dueDate,
+    project: item.project,
+    projectId: item.projectId,
+    // Ensure these values match the expected enum types
+    priority: (item.priority as 'high' | 'medium' | 'low'),
+    status: (item.status as 'pending' | 'in-progress' | 'completed')
   }));
 }

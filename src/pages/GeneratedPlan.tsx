@@ -10,7 +10,8 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { DistributeModal } from '@/components/plan/DistributeModal'
 import { ActionButtons } from '@/components/plan/ActionButtons'
-import { SAMPLE_PROJECT_PLAN, markdownPlan } from '@/data/sampleProjectPlan'
+import { SAMPLE_PROJECT_PLAN } from '@/data/mock/project/sampleProjectPlan'
+import { markdownPlan } from '@/data/mock/generatedPlan/insights'
 import { InsightItemProps, Phase, PlanStatus, ProjectData } from '@/types/projectInputs'
 import { 
   AlertCircle, 

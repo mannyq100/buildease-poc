@@ -46,9 +46,7 @@ import type { TeamMember, NewTeamMember } from '@/types/team'
 import type { ViewMode } from '@/types/common'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useTeamFilters } from '@/hooks/useTeamFilters'
-
-// Mock data
-import { teamData, getDepartments, getStatusOptions, getProjects } from '@/data/teamData'
+import { getTeamMembers, getDepartments, getStatusOptions, getProjects } from '@/services/teamService'
 
 /**
  * Team management page component
@@ -62,22 +60,17 @@ import { teamData, getDepartments, getStatusOptions, getProjects } from '@/data/
  */
 export default function Team() {
   const { toast } = useToast()
-  const { handleError, handleValidationError } = useErrorHandler()
+  const { handleError } = useErrorHandler()
   const navigate = useNavigate()
   
   // State management
-  const [loading, setLoading] = useState(true)
+  const [teamData, setTeamData] = useState<TeamMember[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false)
   const [isViewProfileOpen, setIsViewProfileOpen] = useState(false)
   const [isConfirmRemoveOpen, setIsConfirmRemoveOpen] = useState(false)
   const [currentMember, setCurrentMember] = useState<TeamMember | null>(null)
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(teamData)
-  
-  // Load data from service
-  const departments = getDepartments()
-  const statusOptions = getStatusOptions()
-  const projects = getProjects()
   const [newMember, setNewMember] = useState<NewTeamMember>({
     name: '',
     role: '',
@@ -86,6 +79,11 @@ export default function Team() {
     department: '',
     projects: []
   })
+
+  // Load data from service
+  const [departments, setDepartments] = useState<string[]>([])
+  const [statusOptions, setStatusOptions] = useState<string[]>([])
+  const [projects, setProjects] = useState<string[]>([])
 
   // Use our custom hook for filtering and sorting
   const {
@@ -96,12 +94,50 @@ export default function Team() {
     sortBy,
     setSortBy,
     filteredTeamMembers
-  } = useTeamFilters(teamMembers)
+  } = useTeamFilters(teamData)
+
+  // Fetch team data on component mount
+  useEffect(() => {
+    const fetchTeamData = async () => {
+      try {
+        setIsLoading(true)
+        const data = await getTeamMembers()
+        setTeamData(data)
+      } catch (error) {
+        handleError(error, 'Failed to load team data')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    fetchTeamData()
+  }, [])
+
+  // Fetch filter options
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      try {
+        const [deptData, statusData, projectData] = await Promise.all([
+          getDepartments(),
+          getStatusOptions(),
+          getProjects()
+        ])
+        
+        setDepartments(deptData)
+        setStatusOptions(statusData)
+        setProjects(projectData)
+      } catch (error) {
+        handleError(error, 'Failed to load filter options')
+      }
+    }
+    
+    fetchFilterOptions()
+  }, [])
 
   // Simulate data loading
   useEffect(() => {
     const timer = setTimeout(() => {
-      setLoading(false)
+      setIsLoading(false)
     }, 1000)
     
     return () => clearTimeout(timer)
@@ -138,7 +174,7 @@ export default function Team() {
     }
     
     // Add to team members
-    setTeamMembers([...teamMembers, member])
+    setTeamData([...teamData, member])
     
     // Reset form and close dialog
     setNewMember({
@@ -185,7 +221,7 @@ export default function Team() {
     if (!currentMember) return
     
     // Remove from team members
-    setTeamMembers(teamMembers.filter(m => m.id !== currentMember.id))
+    setTeamData(teamData.filter(m => m.id !== currentMember.id))
     
     // Close dialog
     setIsConfirmRemoveOpen(false)
@@ -222,10 +258,10 @@ export default function Team() {
           />
 
           {/* Team Statistics */}
-          <TeamStatistics teamMembers={teamMembers} />
+          <TeamStatistics teamMembers={teamData} />
 
           <div className="mt-6">
-            <div className={!loading && filteredTeamMembers.length === 0 ? "" : "space-y-6"}>
+            <div className={!isLoading && filteredTeamMembers.length === 0 ? "" : "space-y-6"}>
               {/* Filters */}
               <TeamFilters
                 onSearch={setSearchQuery}
@@ -235,7 +271,7 @@ export default function Team() {
               <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
                 <div className="flex items-center gap-2">
                   <div className="text-sm text-gray-500 dark:text-gray-400">
-                    {loading ? (
+                    {isLoading ? (
                       <div className="h-5 w-28 bg-gray-200 dark:bg-slate-700 rounded animate-pulse" />
                     ) : (
                       <>Showing {filteredTeamMembers.length} of {teamData.length} team members</>
@@ -247,18 +283,18 @@ export default function Team() {
                     size="icon" 
                     className="h-8 w-8"
                     onClick={() => {
-                      setLoading(true)
+                      setIsLoading(true)
                       setTimeout(() => {
-                        setLoading(false)
+                        setIsLoading(false)
                         toast({
                           title: 'Data Refreshed',
                           description: 'Team data has been updated',
                         })
                       }, 500)
                     }}
-                    disabled={loading}
+                    disabled={isLoading}
                   >
-                    <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                     <span className="sr-only">Refresh data</span>
                   </Button>
                 </div>
@@ -307,7 +343,7 @@ export default function Team() {
               </div>
               
               {/* Team Members Grid/List */}
-              {loading ? (
+              {isLoading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {Array.from({ length: 6 }).map((_, index) => (
                     <div 
