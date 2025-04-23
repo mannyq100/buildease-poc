@@ -9,9 +9,12 @@ import { HelmetProvider } from "react-helmet-async";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LazyMotion, domAnimation } from "framer-motion";
-import { AuthProvider } from '@/auth/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { Auth0Provider } from '@auth0/auth0-react';
+import { useEffect } from 'react';
+import { useAuth0 } from '@auth0/auth0-react';
+import { useNavigate } from 'react-router-dom';
 
 // Environment configuration
 import config, { isDevelopment, isProduction } from '@/lib/env-config';
@@ -39,11 +42,7 @@ import CreateProject from "./pages/CreateProject";
 import Settings from './pages/Settings';
 import Messaging from './pages/Messaging';
 import LandingPage from './pages/LandingPage';
-
-// Auth Pages
-import { Login } from './pages/Login';
-import { Register } from './pages/Register';
-import { AuthCallback } from './pages/AuthCallback';
+// removed Account page
 import { Unauthorized } from './pages/Unauthorized';
 
 // Set up default query client options with better user feedback
@@ -69,11 +68,37 @@ if (isDevelopment()) {
   });
 }
 
+// TODO: Replace with your actual Auth0 domain and clientId
+const AUTH0_DOMAIN = import.meta.env.VITE_AUTH0_DOMAIN || '';
+const AUTH0_CLIENT_ID = import.meta.env.VITE_AUTH0_CLIENT_ID || '';
+const AUTH0_CALLBACK_URL = import.meta.env.VITE_AUTH0_REDIRECT_URI || '';
+const AUTH0_AUDIENCE = import.meta.env.VITE_AUTH0_AUDIENCE || '';
+
+function AuthRedirector() {
+  const { isAuthenticated, isLoading } = useAuth0();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && window.location.pathname === '/') {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, isLoading, navigate]);
+
+  return null;
+}
+
 function App() {
   return (
-    <LazyMotion features={domAnimation}>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
+    <Auth0Provider
+      domain={AUTH0_DOMAIN}
+      clientId={AUTH0_CLIENT_ID}
+      authorizationParams={{
+        redirect_uri: AUTH0_CALLBACK_URL,
+        audience: AUTH0_AUDIENCE
+      }}
+    >
+      <LazyMotion features={domAnimation}>
+        <QueryClientProvider client={queryClient}>
           <ThemeProvider>
             <HelmetProvider>
               <TooltipProvider>
@@ -87,12 +112,10 @@ function App() {
                     </div>
                   )}
                   <BrowserRouter>
+                    <AuthRedirector />
                     <Routes>
                       {/* Public routes */}
                       <Route path="/" element={<LandingPage />} />
-                      <Route path="/login" element={<Login />} />
-                      <Route path="/register" element={<Register />} />
-                      <Route path="/auth/callback/:provider" element={<AuthCallback />} />
                       <Route path="/unauthorized" element={<Unauthorized />} />
                       
                       {/* Protected routes with AppLayout */}
@@ -120,7 +143,8 @@ function App() {
                         <Route path="/expenses" element={<Expenses />} />
                         <Route path="/documents" element={<Documents />} />
                         <Route path="/messaging" element={<Messaging />} />
-                        <Route path="/settings" element={<Settings />} />
+                        {/* Account page removed; using settings */}
+                         <Route path="/settings" element={<Settings />} />
                         
                         {/* Admin routes with role-based protection */}
                         <Route path="/settings/admin" element={
@@ -138,9 +162,9 @@ function App() {
               </TooltipProvider>
             </HelmetProvider>
           </ThemeProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </LazyMotion>
+        </QueryClientProvider>
+      </LazyMotion>
+    </Auth0Provider>
   );
 }
 

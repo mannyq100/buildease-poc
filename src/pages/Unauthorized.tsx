@@ -32,10 +32,6 @@ export function Unauthorized() {
             <Button asChild variant="default">
               <Link to="/dashboard">Go to Dashboard</Link>
             </Button>
-            
-            <Button asChild variant="outline">
-              <Link to="/login">Sign in with Different Account</Link>
-            </Button>
           </div>
         </div>
       </div>

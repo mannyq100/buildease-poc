@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/auth/hooks/useAuth';
-import { UserRole } from '@/auth/types/auth';
+import { useAuth0 } from '@auth0/auth0-react';
+import type { UserRole } from '@/types/user';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -13,27 +13,18 @@ interface ProtectedRouteProps {
  * Optionally checks for required roles
  */
 export function ProtectedRoute({ children, requiredRoles = [] }: ProtectedRouteProps) {
-  const { state } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth0();
   const location = useLocation();
-  
-  // Wait until auth state is determined
-  if (state.isLoading) {
+
+  if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
-  
-  // Redirect to login if not authenticated
-  if (!state.isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+
+  if (!isAuthenticated) {
+    // Optionally: pass state={{ from: location.pathname }} if you want to remember where user was
+    return <Navigate to="/" replace />;
   }
-  
-  // Check role permissions if specified
-  if (requiredRoles.length > 0 && state.user) {
-    const hasRequiredRole = requiredRoles.includes(state.user.role);
-    
-    if (!hasRequiredRole) {
-      return <Navigate to="/unauthorized" replace />;
-    }
-  }
-  
+
+
   return <>{children}</>;
-} 
+}

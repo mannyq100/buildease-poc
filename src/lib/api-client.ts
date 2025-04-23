@@ -1,17 +1,8 @@
 /**
  * API client for making authenticated requests
  */
-import { getAuthHeader, removeToken, getProviderToken } from '@/auth/utils/token';
-import { AuthProvider } from '@/auth/types/auth';
-
-// For development/testing - check the environment variable
-const USE_MOCK_API = import.meta.env.VITE_USE_MOCK === 'true' || process.env.NODE_ENV === 'development';
-
-console.log('API Client initialized with:', { 
-  mockEnabled: USE_MOCK_API,
-  apiUrl: import.meta.env.VITE_API_URL,
-  mockEnvVar: import.meta.env.VITE_USE_MOCK
-});
+import { getAuthHeader, removeToken, getProviderToken } from '@/lib/token';
+import { AuthProvider } from '@/types/user';
 
 type RequestMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
@@ -20,11 +11,10 @@ interface RequestOptions {
   headers?: Record<string, string>;
   body?: any;
   includeAuth?: boolean;
-  mockDelay?: number;
   provider?: AuthProvider;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : '/api');
 
 /**
  * Make API request with authentication support
@@ -38,15 +28,8 @@ export async function apiRequest<T>(
     headers = {},
     body,
     includeAuth = true,
-    mockDelay = 800,
     provider
   } = options;
-
-  // For testing with mock data
-  if (USE_MOCK_API) {
-    console.log(`📦 Using MOCK data for ${method} ${endpoint}`);
-    return mockApiRequest<T>(endpoint, { method, body, mockDelay });
-  }
 
   console.log(`🌐 Using REAL API for ${method} ${endpoint} at ${API_URL}`);
 
@@ -101,6 +84,8 @@ export async function apiRequest<T>(
     }
 
     if (!response.ok) {
+      console.error(`API Error: Status ${response.status} ${response.statusText} for ${method} ${endpoint}`);
+      console.error('API Error Data:', data);
       throw new Error(
         typeof data === 'object' && data.message
           ? data.message
@@ -111,110 +96,12 @@ export async function apiRequest<T>(
     return data as T;
   } catch (error) {
     console.error(`API request failed for ${endpoint}:`, error);
-    throw error;
+    // Log specific error details
+    if (error instanceof Error) {
+      console.error('apiRequest Catch details:', { name: error.name, message: error.message, stack: error.stack });
+    } else {
+      console.error('apiRequest caught non-Error:', error);
+    }
+    throw error; // Re-throw the error to be handled by the caller
   }
 }
-
-/**
- * Mock API for development/testing
- */
-async function mockApiRequest<T>(
-  endpoint: string,
-  options: { method: string; body?: any; mockDelay: number }
-): Promise<T> {
-  const { method, body, mockDelay } = options;
-
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, mockDelay));
-
-  // Handle based on endpoint
-  if (endpoint === '/auth/login' && method === 'POST') {
-    // Mock login response
-    const mockResponse = {
-      user: {
-        id: '1',
-        email: body.email,
-        firstName: 'John',
-        lastName: 'Doe',
-        role: 'owner',
-        company: 'Doe Construction',
-        avatar: '/avatars/john-doe.jpg',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      },
-      token: 'mock-jwt-token'
-    };
-    
-    // Simulate failed login for wrong credentials
-    if (body.email !== 'john.doe@example.com' || body.password !== 'password') {
-      throw new Error('Invalid email or password');
-    }
-    
-    return mockResponse as unknown as T;
-  }
-
-  if (endpoint === '/auth/register' && method === 'POST') {
-    // Mock register response
-    const mockResponse = {
-      user: {
-        id: '2',
-        ...body,
-        avatar: null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      },
-      token: 'mock-jwt-token'
-    };
-    
-    return mockResponse as unknown as T;
-  }
-
-  if (endpoint === '/auth/social/callback' && method === 'POST') {
-    // Mock social login response
-    const { provider, code } = body;
-    
-    const mockResponse = {
-      user: {
-        id: '3',
-        email: `user@${provider}.com`,
-        firstName: 'Social',
-        lastName: 'User',
-        role: 'owner',
-        avatar: `/avatars/${provider}-user.jpg`,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        socialProfiles: {
-          [provider]: {
-            id: `${provider}-123`,
-            email: `user@${provider}.com`,
-            name: 'Social User'
-          }
-        }
-      },
-      token: `mock-jwt-token-${provider}`,
-      providerToken: `mock-provider-token-${provider}`
-    };
-    
-    return mockResponse as unknown as T;
-  }
-
-  if (endpoint === '/auth/me' && method === 'GET') {
-    // Mock user data response
-    const mockResponse = {
-      id: '1',
-      email: 'john.doe@example.com',
-      firstName: 'John',
-      lastName: 'Doe',
-      role: 'owner',
-      company: 'Doe Construction',
-      avatar: '/avatars/john-doe.jpg',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    
-    return mockResponse as unknown as T;
-  }
-
-  // Default response for unhandled endpoints
-  throw new Error(`Unhandled mock endpoint: ${method} ${endpoint}`);
-} 

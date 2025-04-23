@@ -3,6 +3,7 @@
  * Handles application settings and user preferences
  */
 import React from 'react';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
@@ -15,6 +16,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const Settings = () => {
   const { theme, setTheme, isDarkMode } = useTheme();
+  const { profile, updateSettings, isUpdating, isLoading } = useUserProfile();
+
+  if (isLoading) return <div className="flex items-center justify-center py-10">Loading profile...</div>;
 
   return (
     <div className="space-y-6">
@@ -61,7 +65,7 @@ const Settings = () => {
                     type="text"
                     className="w-full rounded-md border border-gray-300 px-3 py-2 dark:border-gray-700 dark:bg-gray-800"
                     placeholder="Your Name"
-                    defaultValue="John Doe"
+                    defaultValue={profile?.name || ''}
                   />
                 </div>
                 <div className="space-y-2">
@@ -71,11 +75,44 @@ const Settings = () => {
                     type="email"
                     className="w-full rounded-md border border-gray-300 px-3 py-2 dark:border-gray-700 dark:bg-gray-800"
                     placeholder="your.email@example.com"
-                    defaultValue="john.doe@buildease.com"
+                    defaultValue={profile?.email || ''}
+                    readOnly
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone</Label>
+                  <input
+                    id="phone"
+                    type="tel"
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 dark:border-gray-700 dark:bg-gray-800"
+                    placeholder="Your phone number"
+                    defaultValue={profile?.phone || ''}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Account Tier</Label>
+                  <div className="w-full rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
+                    {profile?.tier ? profile.tier.charAt(0).toUpperCase() + profile.tier.slice(1).toLowerCase() : 'N/A'}
+                  </div>
+                </div>
               </div>
-              <Button variant="default">Save Changes</Button>
+              <Button
+                variant="default"
+                onClick={() => {
+                  const nameInput = document.getElementById('name') as HTMLInputElement;
+                  const phoneInput = document.getElementById('phone') as HTMLInputElement;
+
+                  if (nameInput && phoneInput) {
+                    updateSettings({
+                      name: nameInput.value,
+                      phone: phoneInput.value,
+                    });
+                  }
+                }}
+                disabled={isUpdating}
+              >
+                {isUpdating ? 'Saving...' : 'Save Changes'}
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>

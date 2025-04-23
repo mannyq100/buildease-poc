@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { useAuth0 } from '@auth0/auth0-react';
 
 // Define types for our features
 interface Feature {
@@ -17,6 +18,8 @@ interface Step {
 }
 
 export function LandingPage() {
+  const { loginWithRedirect, isAuthenticated, isLoading } = useAuth0();
+
   // Features section data
   const features: Feature[] = [
     {
@@ -132,10 +135,22 @@ export function LandingPage() {
 
           {/* Authentication Buttons */}
           <div className="flex items-center space-x-4">
-            <Link to="/login" className="text-blue-600 hover:text-blue-700 transition-colors">Log In</Link>
-            <Link to="/register" className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors">
-              Sign Up
-            </Link>
+            <button
+              type="button"
+              className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-md font-medium text-center transition-colors"
+              onClick={() => loginWithRedirect({ authorizationParams: { screen_hint: 'signup' } })}
+              disabled={isLoading || isAuthenticated}
+            >
+              Get Started Free
+            </button>
+            <button
+              type="button"
+              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-md font-medium text-center transition-colors"
+              onClick={() => loginWithRedirect()}
+              disabled={isLoading || isAuthenticated}
+            >
+              Log In
+            </button>
           </div>
         </div>
       </header>
@@ -160,12 +175,22 @@ export function LandingPage() {
                 BuildEase helps individual home builders in Ghana manage their construction projects efficiently. Track expenses, schedule tasks, manage materials, and finish your project on time and within budget.
               </p>
               <div className="flex flex-col sm:flex-row mt-8 space-y-4 sm:space-y-0 sm:space-x-4">
-                <Link
-                  to="/register"
+                <button
+                  type="button"
                   className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-md font-medium text-center transition-colors"
+                  onClick={() => loginWithRedirect({ authorizationParams: { screen_hint: 'signup' } })}
+                  disabled={isLoading || isAuthenticated}
                 >
                   Get Started Free
-                </Link>
+                </button>
+                <button
+                  type="button"
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-md font-medium text-center transition-colors"
+                  onClick={() => loginWithRedirect()}
+                  disabled={isLoading || isAuthenticated}
+                >
+                  Log In
+                </button>
                 <a
                   href="#how-it-works"
                   className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-6 py-3 rounded-md font-medium text-center transition-colors"
@@ -312,12 +337,14 @@ export function LandingPage() {
             <p className="text-lg mb-8">
               Join thousands of builders in Ghana who are using BuildEase to complete projects on time and within budget.
             </p>
-            <Link
-              to="/register"
+            <button
+              type="button"
               className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-md font-medium inline-block transition-colors"
+              onClick={() => loginWithRedirect({ authorizationParams: { screen_hint: 'signup' } })}
+              disabled={isLoading || isAuthenticated}
             >
               Get Started Today
-            </Link>
+            </button>
           </motion.div>
         </div>
       </section>

@@ -1,7 +1,7 @@
 /**
  * Token utilities for authentication
  */
-import { AuthProvider } from '../types/auth';
+import { AuthProvider } from '@/types/user';
 
 const TOKEN_KEY = 'buildease_auth_token';
 
@@ -60,10 +60,10 @@ export function removeProviderToken(provider: AuthProvider): void {
  */
 export function getActiveProviders(): AuthProvider[] {
   const providers: AuthProvider[] = [];
-  const allProviders: AuthProvider[] = ['email', 'google', 'facebook', 'apple'];
+  const allProviders: AuthProvider[] = ['EMAIL', 'GOOGLE', 'FACEBOOK', 'APPLE'];
   
   allProviders.forEach(provider => {
-    if (provider === 'email' && getStoredToken()) {
+    if (provider === 'EMAIL' && getStoredToken()) {
       providers.push(provider);
     } else if (getProviderToken(provider)) {
       providers.push(provider);
@@ -71,4 +71,4 @@ export function getActiveProviders(): AuthProvider[] {
   });
   
   return providers;
-} 
+}
