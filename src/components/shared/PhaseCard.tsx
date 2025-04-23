@@ -21,7 +21,7 @@ import {
   Shield,
   Clock3
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+
 import { Button } from '@/components/ui/button';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -37,6 +37,7 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { TeamMember, MaterialItem } from '@/types/project';
+import { cn } from '@/utils/core/ui';
 
 // Local version of task item
 interface TaskItem {

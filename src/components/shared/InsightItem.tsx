@@ -1,7 +1,8 @@
 import React from 'react';
 import { Sparkles, Lightbulb, AlertTriangle, TrendingUp, Zap } from 'lucide-react';
-import { cn } from '@/lib/utils';
+
 import { LazyMotion, domAnimation, m } from 'framer-motion';
+import { cn } from '@/utils/core/ui';
 
 interface InsightItemProps {
   title: string;

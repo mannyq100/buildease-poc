@@ -1,8 +1,9 @@
 import React, { ReactNode } from 'react';
 import { Card } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { H3, Small } from '@/components/ui/typography';
+import { cn } from '@/utils/core/ui';
 
 export type CardVariant = 'metric' | 'action' | 'chart' | 'status';
 export type CardAccent = 'blue' | 'green' | 'amber' | 'purple' | 'red' | 'indigo' | 'none';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { cn } from '@/utils/core/ui';
 
 type StatusType = 'completed' | 'in-progress' | 'pending' | 'delayed' | 'cancelled' | 'warning' | 'success';
 

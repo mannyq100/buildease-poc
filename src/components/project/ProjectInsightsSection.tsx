@@ -2,9 +2,10 @@ import React from 'react';
 import { DollarSign, Calendar as CalendarIcon, FileBarChart, ArrowUpRight } from 'lucide-react';
 import { InsightItem } from '@/components/shared';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
+import { cn } from '@/utils/core/ui';
 
 interface InsightItemProps {
   title: string;

@@ -4,8 +4,8 @@ import { ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DocumentItem } from '@/components/shared';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
-import { fadeInRightVariants } from '@/lib/animations';
-import { cn } from '@/lib/utils';
+import { fadeInRightVariants } from '@/utils/core/animations';
+import { cn } from '@/utils/core/ui';
 
 interface DocumentProps {
   title: string;

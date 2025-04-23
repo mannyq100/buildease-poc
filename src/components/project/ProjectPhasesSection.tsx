@@ -6,8 +6,8 @@ import { PhaseCard } from '../phases/PhaseCard';
 import { PhaseDetailsPanel } from '@/components/project/PhaseDetailsPanel';
 import { Phase } from '@/types/phase';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
-import { fadeInUpVariants } from '@/lib/animations';
-import { cn } from '@/lib/utils';
+import { fadeInUpVariants } from '@/utils/core/animations';
+import { cn } from '@/utils/core/ui';
 
 interface ProjectPhasesSectionProps {
   phases: Phase[];

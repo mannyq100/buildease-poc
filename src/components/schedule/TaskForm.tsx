@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, parseISO } from 'date-fns';
 import { CalendarIcon, Check, ChevronsUpDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
+
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -50,6 +50,7 @@ import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Task, NewTaskForm, TeamMember } from '@/types/schedule';
 import { availableProjects, phasesByProject, teamMembers } from '@/data/scheduleData';
+import { cn } from '@/utils/core/ui';
 
 const statusOptions = [
   'Not Started',

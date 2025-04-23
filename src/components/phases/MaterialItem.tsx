@@ -1,8 +1,9 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
-import { cn } from '@/lib/utils';
+
 import { Package } from 'lucide-react';
+import { cn } from '@/utils/core/ui';
 
 interface MaterialItemProps {
   name: string;

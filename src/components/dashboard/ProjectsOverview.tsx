@@ -5,7 +5,8 @@ import { LazyMotion, domAnimation, m } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils/core/ui'
+
 import type { Project } from '@/types/project'
 
 interface ProjectsOverviewProps {

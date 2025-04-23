@@ -1,6 +1,6 @@
 import * as React from "react"
 import { CheckCircle, AlertCircle, HelpCircle } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn } from '@/utils/core/ui';
 
 export interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement> {

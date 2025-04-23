@@ -1,6 +1,6 @@
 import React from 'react';
 import { StatCard } from './StatCard';
-import { cn } from '@/lib/utils';
+import { cn } from '@/utils/core/ui';
 
 /**
  * MetricCard component that uses the unified StatCard implementation

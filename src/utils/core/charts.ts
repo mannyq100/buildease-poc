@@ -2,7 +2,8 @@
  * Chart utilities and constants for data visualization components
  */
 
-import { ReactNode } from 'react'
+import { ReactNode } from 'react';
+import { darkModeDetector } from './ui';
 
 // Enhanced color palette for consistent visualization
 export const CHART_COLORS = {
@@ -12,7 +13,7 @@ export const CHART_COLORS = {
   accent: ['#6D28D9', '#8B5CF6', '#C4B5FD', '#EDE9FE'], // Purples
   danger: ['#DC2626', '#EF4444', '#FCA5A5', '#FEE2E2'], // Reds
   neutral: ['#374151', '#6B7280', '#D1D5DB', '#F3F4F6'], // Grays
-}
+};
 
 // Flat color array for compatibility with existing code
 export const CHART_COLOR_ARRAY = [
@@ -22,7 +23,7 @@ export const CHART_COLOR_ARRAY = [
   ...CHART_COLORS.accent,
   ...CHART_COLORS.danger,
   ...CHART_COLORS.neutral,
-]
+];
 
 // Chart theme configurations for light and dark mode
 export const CHART_THEME = {
@@ -42,35 +43,47 @@ export const CHART_THEME = {
     tooltipBorder: '#374151',
     tooltipText: '#F9FAFB',
   }
-}
+};
 
 // Chart type definitions
-export type ChartType = 'bar' | 'line' | 'pie' | 'area'
-export type ColorScheme = 'primary' | 'success' | 'warning' | 'accent' | 'danger' | 'neutral'
+export type ChartType = 'bar' | 'line' | 'pie' | 'area';
+export type ColorScheme = 'primary' | 'success' | 'warning' | 'accent' | 'danger' | 'neutral';
 
-// Utility to get chart colors based on scheme
+/**
+ * Utility to get chart colors based on scheme
+ * @param scheme - Color scheme to use
+ * @returns Array of colors for the specified scheme
+ */
 export function getChartColors(scheme: ColorScheme = 'primary'): string[] {
-  return CHART_COLORS[scheme] || CHART_COLORS.primary
+  return CHART_COLORS[scheme] || CHART_COLORS.primary;
 }
 
-// Utility to determine if dark mode is active
+/**
+ * Utility to determine if dark mode is active
+ * @returns Boolean indicating whether dark mode is active
+ */
 export function isDarkMode(): boolean {
-  if (typeof document !== 'undefined') {
-    return document.documentElement.classList.contains('dark')
-  }
-  return false
+  return darkModeDetector.isDarkMode();
 }
 
-// Utility to get current theme based on mode
+/**
+ * Utility to get current theme based on mode
+ * @returns The current theme configuration based on light/dark mode
+ */
 export function getCurrentTheme() {
-  return isDarkMode() ? CHART_THEME.dark : CHART_THEME.light
+  return isDarkMode() ? CHART_THEME.dark : CHART_THEME.light;
 }
 
-// Format number with locale and precision
+/**
+ * Format number with locale and precision
+ * @param value - The number to format
+ * @param options - Intl.NumberFormatOptions for customizing the formatting
+ * @returns Formatted number string
+ */
 export function formatNumber(value: number, options: Intl.NumberFormatOptions = {}): string {
   return value.toLocaleString(undefined, {
     minimumFractionDigits: 0,
     maximumFractionDigits: 1,
     ...options
-  })
-} 
+  });
+}

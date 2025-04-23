@@ -4,8 +4,8 @@ import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ActivityItem } from '@/components/shared';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
-import { fadeInLeftVariants } from '@/lib/animations';
-import { cn } from '@/lib/utils';
+import { fadeInLeftVariants } from '@/utils/core/animations';
+import { cn } from '@/utils/core/ui';
 
 interface ActivityItemProps {
   id?: string;

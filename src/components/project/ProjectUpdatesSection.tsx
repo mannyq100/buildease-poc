@@ -3,10 +3,10 @@ import { Plus, MessageSquare } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 import { ProjectUpdateCard } from './ProjectUpdateCard';
 import { ProjectUpdate } from '@/types/update';
+import { cn } from '@/utils/core/ui';
 
 interface ProjectUpdatesSectionProps {
   updates: ProjectUpdate[];

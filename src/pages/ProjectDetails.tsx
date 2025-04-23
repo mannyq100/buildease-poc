@@ -5,6 +5,7 @@ import { format } from 'date-fns'
 import React, { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
 import { LazyMotion, domAnimation, m } from 'framer-motion'
+import { cn } from '@/utils/core/ui';
 
 // Icons
 import { 
@@ -76,7 +77,6 @@ import {
   QuickActionsSection,
   ProjectEditDialog
 } from '@/components/project'
-import { cn } from '@/lib/utils'
 
 // Import types
 import { Phase } from '@/types/phase'

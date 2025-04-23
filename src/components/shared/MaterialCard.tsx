@@ -1,8 +1,9 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+
 import { Package, Warehouse } from 'lucide-react';
+import { cn } from '@/utils/core/ui';
 
 /**
  * MaterialCard component for displaying material inventory details.

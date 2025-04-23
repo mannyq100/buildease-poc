@@ -57,10 +57,11 @@ import {
   DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+
 import { format } from "date-fns";
 import { m, AnimatePresence } from "framer-motion";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from '@/utils/core/ui';
 
 interface ChatProps {
   conversations: Conversation[];

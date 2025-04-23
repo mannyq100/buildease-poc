@@ -2,8 +2,9 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Building2, Calendar, Image as ImageIcon, Users } from 'lucide-react';
-import { cn } from '@/lib/utils';
+
 import { Progress } from '@/components/ui/progress';
+import { cn } from '@/utils/core/ui';
 
 export interface TeamMember {
   id: string | number;

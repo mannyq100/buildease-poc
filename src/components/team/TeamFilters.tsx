@@ -16,8 +16,9 @@ import {
   PopoverContent, 
   PopoverTrigger 
 } from '@/components/ui/popover'
-import { cn } from '@/lib/utils'
+
 import { AvailabilityStatus } from '@/types/common'
+import { cn } from '@/utils/core/ui'
 
 // Define the department options
 const DEPARTMENTS = [

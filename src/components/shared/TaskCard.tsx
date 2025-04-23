@@ -17,8 +17,9 @@ import {
   UserRound,
   MoreVertical
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+
 import { Task, TeamMember } from '@/types/schedule';
+import { cn } from '@/utils/core/ui';
 
 // Interface for assignees if passed directly (not via Task object)
 export interface Assignee {

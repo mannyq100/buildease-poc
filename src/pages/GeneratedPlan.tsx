@@ -41,7 +41,7 @@ import {
   AlignLeft,
   LayoutGrid
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+
 import { toast } from 'sonner'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -52,6 +52,7 @@ import { MarkdownEditor } from '@/components/plan/MarkdownEditor'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb'
+import { cn } from '@/utils/core/ui';
 
 export default function GeneratedPlan() {
   const navigate = useNavigate()

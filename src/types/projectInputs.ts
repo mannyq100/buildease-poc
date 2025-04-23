@@ -153,7 +153,34 @@ export interface Phase {
   tasks: Task[];
   materials: Material[];
   description?: string;
-} 
+}
+
+/**
+ * Task interface for project plan
+ */
+export interface PlanTask {
+  id: string;
+  name: string;
+  description: string;
+  assignedTo: string;
+  startDate: string;
+  endDate: string;
+  status: 'not-started' | 'in-progress' | 'completed' | 'on-hold';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+}
+
+/**
+ * Phase interface for project plan
+ */
+export interface PlanPhase {
+  id: string;
+  name: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  tasks: PlanTask[];
+}
+
 export interface ProjectPhaseManagerProps {
   phases: Phase[]
   setPhases: (phases: Phase[]) => void

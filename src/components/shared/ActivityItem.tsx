@@ -1,6 +1,7 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
+
 import { LazyMotion, domAnimation, m } from 'framer-motion';
+import { cn } from '@/utils/core/ui';
 
 interface ActivityItemProps {
   icon: React.ReactNode;

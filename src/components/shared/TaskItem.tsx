@@ -2,7 +2,7 @@ import React from 'react';
 import { Progress } from '@/components/ui/progress';
 import { StatusBadge } from './StatusBadge';
 import { Users, Calendar } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/utils/core/ui';
 
 interface TaskItemProps {
   title: string;

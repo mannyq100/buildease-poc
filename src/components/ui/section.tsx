@@ -1,6 +1,7 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
+
 import { Typography, H2, Paragraph } from './typography';
+import { cn } from '@/utils/core/ui';
 
 interface SectionProps extends React.HTMLAttributes<HTMLDivElement> {
   title?: string;

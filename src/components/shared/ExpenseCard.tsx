@@ -9,7 +9,7 @@ import {
   Tag,
   User
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/utils/core/ui';
 
 export interface ExpenseDetails {
   id: string | number;

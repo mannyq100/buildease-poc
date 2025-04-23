@@ -18,7 +18,7 @@ import {
   Copy, 
   Folder
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+
 import type { DocumentItemProps, Document } from '@/types/documents';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import {
@@ -29,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { cn } from '@/utils/core/ui';
 
 /**
  * Unified DocumentItem component that supports all implementations

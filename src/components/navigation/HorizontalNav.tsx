@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { cn } from '@/lib/utils';
+
 import { motion, m, useMotionValue } from 'framer-motion';
 import { 
   Tooltip, 
@@ -9,6 +9,7 @@ import {
   TooltipTrigger 
 } from "@/components/ui/tooltip";
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/utils/core/ui';
 
 export interface NavItem {
   label: string;

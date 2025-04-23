@@ -25,7 +25,7 @@ import {
 import { useToast } from "@/components/ui/toast-context";
 import { Conversation, ChatParticipant, Message, ConversationType } from "@/types/messaging";
 import { PageLayout } from '@/components/ui/layout';
-import { cn } from "@/lib/utils";
+
 import { Badge } from "@/components/ui/badge";
 import { m, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from '@/utils/core/ui';
 
 const Messaging: React.FC = () => {
   const { toast } = useToast();

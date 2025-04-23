@@ -1,5 +1,5 @@
 import React from "react";
-import { cn } from "@/lib/utils";
+import { cn } from '@/utils/core/ui';
 
 interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: "text" | "circle" | "rect" | "card" | "button" | "avatar" | "input" | "table-row" | "chart";

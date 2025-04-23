@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { cn } from '@/lib/utils';
+
 import { ContentSection } from '@/components/shared';
 import { ChevronRight } from 'lucide-react';
+import { cn } from '@/utils/core/ui';
 
 interface DashboardSectionProps {
   title?: string;

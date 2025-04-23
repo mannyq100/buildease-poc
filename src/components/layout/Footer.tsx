@@ -1,5 +1,5 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
+
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,6 +14,7 @@ import {
   MessageSquare,
   ChevronRight
 } from 'lucide-react';
+import { cn } from '@/utils/core/ui';
 
 interface FooterProps {
   className?: string;

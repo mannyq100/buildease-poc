@@ -3,7 +3,7 @@ import { Moon, Sun, Laptop } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useTheme } from '@/contexts/ThemeContext';
-import { cn } from '@/lib/utils';
+import { cn } from '@/utils/core/ui';
 
 interface ThemeToggleProps {
   className?: string;

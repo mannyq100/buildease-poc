@@ -11,7 +11,7 @@ import {
   Trash2,
   Clock
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/utils/core/ui';
 
 export interface CommentAttachment {
   id: string | number;

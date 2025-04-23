@@ -24,7 +24,7 @@ import {
   Activity as LucideActivity
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { cn } from '@/lib/utils';
+
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -40,6 +40,7 @@ import {
 
 // Import phase-specific components
 // import { PhaseCard } from '@/components/phases';
+import { cn } from '@/utils/core/ui';
 
 // These components will be created as needed
 // For now, we'll use shared components or create temporary versions

@@ -4,7 +4,7 @@
 import React from 'react'
 import { Button, ButtonProps } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils/core/ui'
 
 export interface DocumentQuickActionProps extends Omit<ButtonProps, 'children'> {
   /**

@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LazyMotion, domAnimation, m } from 'framer-motion'
+import { cn } from '@/utils/core/ui';
 
 // Icons
 import { 
@@ -25,7 +26,7 @@ import {
 
 // UI Components
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+
 import { useToast } from '@/components/ui/toast-context'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 

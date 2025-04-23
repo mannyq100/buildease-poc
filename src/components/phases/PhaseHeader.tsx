@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
-import { cn } from '@/lib/utils';
+
 import { 
   Building, 
   ArrowRight, 
@@ -12,6 +12,7 @@ import {
   Bell,
   BarChart3
 } from 'lucide-react';
+import { cn } from '@/utils/core/ui';
 
 interface PhaseHeaderProps {
   phaseName: string;

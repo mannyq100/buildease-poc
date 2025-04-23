@@ -24,7 +24,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Input } from '@/components/ui/input';
 import { BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon, SlidersHorizontal, Calendar, PanelTop } from 'lucide-react';
 import DashboardCard from './DashboardCard';
-import { cn } from '@/lib/utils';
+
 import { 
   CHART_COLOR_ARRAY, 
   CHART_COLORS,
@@ -34,7 +34,8 @@ import {
   isDarkMode, 
   getCurrentTheme,
   formatNumber
-} from '@/lib/chartUtils';
+} from '@/utils/core/charts';
+import { cn } from '@/utils/core/ui';
 
 // Chart theme configurations for light and dark mode
 const chartTheme = {

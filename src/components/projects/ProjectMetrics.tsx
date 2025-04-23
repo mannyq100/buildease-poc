@@ -2,7 +2,7 @@ import React from 'react';
 import { Briefcase, CheckSquare, DollarSign, PieChart } from 'lucide-react';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { StatCard } from '@/components/shared/StatCard';
-import { staggerContainerVariants, fadeInUpVariants } from '@/lib/animations';
+import { staggerContainerVariants, fadeInUpVariants } from '@/utils/core/animations';
 
 interface ProjectMetricsProps {
   totalProjects: number;

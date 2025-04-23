@@ -8,8 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Calendar, ChevronDown, ChevronUp, Plus, DollarSign, Clock } from 'lucide-react';
-import { cn } from '@/lib/utils';
+
 import { Phase } from '@/types/phase';
+import { cn } from '@/utils/core/ui';
 
 export interface PhaseCardProps {
   phase: Phase;

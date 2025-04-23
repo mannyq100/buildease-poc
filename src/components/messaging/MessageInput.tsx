@@ -28,7 +28,7 @@ import {
   PopoverContent, 
   PopoverTrigger 
 } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { m, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +39,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
+import { cn } from '@/utils/core/ui';
 
 interface MessageInputProps {
   value: string;

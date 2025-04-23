@@ -10,9 +10,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./dialog"
-import { cn } from "@/lib/utils"
 
 export type ConfirmationDialogType = "danger" | "warning" | "info" | "success";
+import { cn } from '@/utils/core/ui';
 
 interface ConfirmationDialogProps {
   open: boolean;

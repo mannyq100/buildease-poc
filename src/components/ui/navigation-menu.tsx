@@ -3,8 +3,6 @@ import * as NavigationMenuPrimitive from "@radix-ui/react-navigation-menu"
 import { cva } from "class-variance-authority"
 import { ChevronDown } from "lucide-react"
 
-import { cn } from "@/lib/utils"
-
 const NavigationMenu = React.forwardRef<
   React.ElementRef<typeof NavigationMenuPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Root>
@@ -85,6 +83,7 @@ const NavigationMenuViewport = React.forwardRef<
 >(({ className, ...props }, ref) => {
   // Check if dark mode is active
   const isDarkMode = document.documentElement.classList.contains('dark');
+import { cn } from '@/utils/core/ui';
   
   return (
     <div className={cn("absolute left-0 top-full flex justify-center")}>

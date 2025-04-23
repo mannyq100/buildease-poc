@@ -12,7 +12,7 @@ import {
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import type { Project, ProjectStatus, ViewMode } from '@/types/project';
 import { ProjectCard } from '@/components/shared/ProjectCard';
-import { fadeInUpVariants } from '@/lib/animations';
+import { fadeInUpVariants } from '@/utils/core/animations';
 
 interface ProjectsListProps {
   projects: Project[];

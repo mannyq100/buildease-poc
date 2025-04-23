@@ -3,110 +3,131 @@
  * Provides methods for working with team member data
  */
 import { TeamMember } from '@/types/team'
-import { teamData, DEPARTMENTS, STATUS_OPTIONS, PROJECTS } from '@/data/mock/team/teamData'
+import apiClient from '@/lib/api-client'
+import { createService } from './serviceFactory'
+import * as mockTeamService from '@/data/mock/services/teamService'
 
-/**
- * Get all team members
- * @returns Promise that resolves to an array of team members
- */
-export async function getTeamMembers(): Promise<TeamMember[]> {
-  // In a real app, this would be an API call
-  return Promise.resolve(teamData)
-}
+// Real API implementation
+const realTeamService = {
+  /**
+   * Get all team members
+   * @returns Promise that resolves to an array of team members
+   */
+  getTeamMembers: async (): Promise<TeamMember[]> => {
+    const response = await apiClient.get<TeamMember[]>('/team')
+    return response
+  },
 
-/**
- * Get a team member by ID
- * @param id Team member ID
- * @returns Promise that resolves to a team member or null if not found
- */
-export async function getTeamMemberById(id: string | number): Promise<TeamMember | null> {
-  // In a real app, this would be an API call
-  const member = teamData.find(m => String(m.id) === String(id))
-  return Promise.resolve(member || null)
-}
+  /**
+   * Get a team member by ID
+   * @param id Team member ID
+   * @returns Promise that resolves to a team member or null if not found
+   */
+  getTeamMemberById: async (id: string | number): Promise<TeamMember | null> => {
+    try {
+      const response = await apiClient.get<TeamMember>(`/team/${id}`)
+      return response
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null
+      }
+      throw error
+    }
+  },
 
-/**
- * Get all departments for filtering
- * @returns Promise that resolves to an array of department names
- */
-export async function getDepartments(): Promise<string[]> {
-  return Promise.resolve(DEPARTMENTS)
-}
+  /**
+   * Get all departments for filtering
+   * @returns Promise that resolves to an array of department names
+   */
+  getDepartments: async (): Promise<string[]> => {
+    const response = await apiClient.get<string[]>('/team/departments')
+    return response
+  },
 
-/**
- * Get all status options for filtering
- * @returns Promise that resolves to an array of status options
- */
-export async function getStatusOptions(): Promise<string[]> {
-  return Promise.resolve(STATUS_OPTIONS)
-}
+  /**
+   * Get all status options for filtering
+   * @returns Promise that resolves to an array of status options
+   */
+  getStatusOptions: async (): Promise<string[]> => {
+    const response = await apiClient.get<string[]>('/team/statuses')
+    return response
+  },
 
-/**
- * Get all projects for assignment
- * @returns Promise that resolves to an array of project names
- */
-export async function getProjects(): Promise<string[]> {
-  return Promise.resolve(PROJECTS)
-}
+  /**
+   * Get all projects for assignment
+   * @returns Promise that resolves to an array of project names
+   */
+  getProjects: async (): Promise<string[]> => {
+    const response = await apiClient.get<string[]>('/projects/names')
+    return response
+  },
 
-/**
- * Create a new team member
- * @param member Team member data
- * @returns Promise that resolves to the created team member
- */
-export async function createTeamMember(member: Omit<TeamMember, 'id'>): Promise<TeamMember> {
-  // In a real app, this would be an API call
-  const newMember: TeamMember = {
-    ...member,
-    id: teamData.length + 1,
+  /**
+   * Get team members with top performance
+   * @param limit Maximum number of team members to return
+   * @returns Promise that resolves to an array of top-performing team members
+   */
+  getTopPerformers: async (limit: number = 5): Promise<TeamMember[]> => {
+    const response = await apiClient.get<TeamMember[]>(`/team/top-performers?limit=${limit}`)
+    return response
+  },
+
+  /**
+   * Create a new team member
+   * @param member Team member data to create
+   * @returns Promise that resolves to the created team member
+   */
+  createTeamMember: async (member: Omit<TeamMember, 'id'>): Promise<TeamMember> => {
+    const response = await apiClient.post<TeamMember>('/team', member)
+    return response
+  },
+
+  /**
+   * Update an existing team member
+   * @param id Team member ID
+   * @param updates Partial team member data to update
+   * @returns Promise that resolves to the updated team member or null if not found
+   */
+  updateTeamMember: async (id: string | number, updates: Partial<TeamMember>): Promise<TeamMember | null> => {
+    try {
+      const response = await apiClient.put<TeamMember>(`/team/${id}`, updates)
+      return response
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null
+      }
+      throw error
+    }
+  },
+
+  /**
+   * Delete a team member
+   * @param id Team member ID
+   * @returns Promise that resolves to a boolean indicating success
+   */
+  deleteTeamMember: async (id: string | number): Promise<boolean> => {
+    try {
+      await apiClient.delete(`/team/${id}`)
+      return true
+    } catch (error) {
+      return false
+    }
   }
-  
-  // This is just for mock purposes
-  // In a real app, this would be persisted to a database
-  return Promise.resolve(newMember)
 }
 
-/**
- * Update a team member
- * @param id Team member ID
- * @param updates Partial team member data to update
- * @returns Promise that resolves to the updated team member
- */
-export async function updateTeamMember(
-  id: string | number, 
-  updates: Partial<TeamMember>
-): Promise<TeamMember | null> {
-  // In a real app, this would be an API call
-  const memberIndex = teamData.findIndex(m => String(m.id) === String(id))
-  
-  if (memberIndex === -1) {
-    return Promise.resolve(null)
-  }
-  
-  const updatedMember: TeamMember = {
-    ...teamData[memberIndex],
-    ...updates,
-  }
-  
-  // This is just for mock purposes
-  // In a real app, this would be persisted to a database
-  return Promise.resolve(updatedMember)
-}
-
-/**
- * Delete a team member
- * @param id Team member ID
- * @returns Promise that resolves to a boolean indicating success
- */
-export async function deleteTeamMember(id: string | number): Promise<boolean> {
-  // In a real app, this would be an API call
-  const memberIndex = teamData.findIndex(m => String(m.id) === String(id))
-  
-  if (memberIndex === -1) {
-    return Promise.resolve(false)
-  }
-  
-  // This is just for mock purposes
-  // In a real app, this would be persisted to a database
-  return Promise.resolve(true)
-}
+// Export the appropriate implementation based on configuration
+export const {
+  getTeamMembers,
+  getTeamMemberById,
+  getDepartments,
+  getStatusOptions,
+  getProjects,
+  getTopPerformers,
+  createTeamMember,
+  updateTeamMember,
+  deleteTeamMember
+} = createService<typeof realTeamService>(
+  'team',
+  mockTeamService,
+  realTeamService
+)

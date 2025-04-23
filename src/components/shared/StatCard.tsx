@@ -1,7 +1,8 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { cn } from '@/utils/core/ui';
 
 /**
  * StatCard component for displaying statistics and metrics.

@@ -21,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { ProjectStatus } from '@/types/project';
-import { fadeInUpVariants } from '@/lib/animations';
+import { fadeInUpVariants } from '@/utils/core/animations';
 
 interface ProjectFiltersProps {
   currentTab: 'all' | ProjectStatus;

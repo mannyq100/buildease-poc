@@ -48,7 +48,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Conversation, ConversationType, ChatParticipant } from "@/types/messaging";
 import { formatDistanceToNow, isToday, format } from "date-fns";
-import { cn } from "@/lib/utils";
+
 import { m } from "framer-motion";
 import { teamMembers } from "@/data/mock/messaging";
 import { 
@@ -58,6 +58,7 @@ import {
   TooltipTrigger 
 } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from '@/utils/core/ui';
 
 interface ConversationListProps {
   conversations: Conversation[];

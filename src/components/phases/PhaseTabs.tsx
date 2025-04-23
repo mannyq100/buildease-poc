@@ -1,7 +1,7 @@
 import React, { ReactNode } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LazyMotion, domAnimation, m } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn } from '@/utils/core/ui';
 
 interface PhaseTabsProps {
   children: ReactNode;

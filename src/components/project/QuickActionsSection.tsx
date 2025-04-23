@@ -3,8 +3,8 @@ import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
-import { scaleInVariants, buttonHoverVariants } from '@/lib/animations';
-import { cn } from '@/lib/utils';
+import { scaleInVariants, buttonHoverVariants } from '@/utils/core/animations';
+import { cn } from '@/utils/core/ui';
 
 interface QuickActionProps {
   label: string;

@@ -12,7 +12,7 @@ import {
   AlertTriangle,
   Calendar
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/utils/core/ui';
 
 export interface WeatherAlert {
   id: string | number;

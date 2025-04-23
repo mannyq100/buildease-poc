@@ -85,7 +85,7 @@ import {
 import { StatCard } from '@/components/shared/StatCard';
 import { PageHeader } from '@/components/shared';
 import { Form } from '@/components/ui/form';
-import { cn } from '@/lib/utils';
+
 import { Label } from '@/components/ui/label';
 import {
   AlertDialog,
@@ -138,6 +138,7 @@ import {
   BatchActionsBar,
   ExpenseDialog
 } from '@/components/expenses';
+import { cn } from '@/utils/core/ui';
 
 /**
  * Expenses page component

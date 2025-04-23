@@ -1,11 +1,12 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { ChevronRight, Home, MoreHorizontal } from "lucide-react"
-import { cn } from "@/lib/utils"
+
 import { useNavigate } from "react-router-dom"
 
 interface BreadcrumbItemType {
   label: string;
+import { cn } from '@/utils/core/ui';
   href?: string;
   icon?: React.ReactNode;
 }

@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Message, ChatParticipant } from "@/types/messaging";
 import { format, isToday, isYesterday } from "date-fns";
-import { cn } from "@/lib/utils";
+
 import { 
   CheckCheck, 
   Check, 
@@ -43,6 +43,7 @@ import {
   DropdownMenuSeparator 
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { cn } from '@/utils/core/ui';
 
 interface MessageListProps {
   messages: Message[];

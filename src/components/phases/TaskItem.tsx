@@ -2,7 +2,7 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { Calendar, Users } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/utils/core/ui';
 
 interface TaskItemProps {
   title: string;
