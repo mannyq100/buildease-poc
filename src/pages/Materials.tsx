@@ -16,7 +16,6 @@ import {
   Settings,
   Trash,
   Truck,
-  XCircle,
   AlertCircle,
   DollarSign,
   Layers
@@ -25,16 +24,7 @@ import {
 // UI Components
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -55,6 +45,7 @@ import {
 import { Grid } from '@/components/layout/Grid'
 import { PageHeader } from '@/components/shared'
 import { usePageActions } from '@/hooks/usePageActions'
+import { MaterialModal } from '@/components/shared/modals';
 
 // Custom Components
 import { StatCard } from '@/components/shared/StatCard'
@@ -65,7 +56,7 @@ import { CATEGORIES } from '@/data/constants/categories'
 import { PROJECTS } from '@/data/constants/projects'
 import { STATUSES } from '@/data/constants/statuses'
 import { INITIAL_MATERIALS } from '@/data/mock/materials'
-import { Material, NewMaterial } from '@/types/materials'
+import { Material } from '@/types/materials'
 
 /**
  * Materials page component
@@ -81,17 +72,9 @@ export function Materials() {
   const [categoryFilter, setCategoryFilter] = useState('All Categories')
   const [projectFilter, setProjectFilter] = useState('All Projects')
   const [statusFilter, setStatusFilter] = useState('All Statuses')
-  const [isAddMaterialOpen, setIsAddMaterialOpen] = useState(false)
-  const [newMaterial, setNewMaterial] = useState<NewMaterial>({
-    name: '',
-    category: '',
-    unit: '',
-    unitPrice: 0,
-    inStock: 0,
-    minStock: 0,
-    supplier: '',
-    project: ''
-  })
+  const [showMaterialModal, setShowMaterialModal] = useState(false);
+  const [currentMaterial, setCurrentMaterial] = useState<Material | null>(null);
+  const [isNewItem, setIsNewItem] = useState(true);
 
   // Filter materials based on search query and filters
   const filteredMaterials = materials.filter(material => {
@@ -123,28 +106,10 @@ export function Materials() {
   const totalValue = materials.reduce((total, material) => total + material.unitPrice * material.inStock, 0)
   const uniqueCategories = [...new Set(materials.map(material => material.category))]
 
-  /**
-   * Adds a new material to the inventory
-   */
-  function handleAddMaterial() {
-    if (!newMaterial.name || !newMaterial.category) return
-    
-    const id = Math.max(...materials.map(m => m.id)) + 1
-    const status = 
-      newMaterial.inStock === 0 ? 'Out of Stock' :
-      newMaterial.inStock <= newMaterial.minStock ? 'Low Stock' : 
-      'In Stock'
-    
-    const newMaterialItem: Material = {
-      ...newMaterial,
-      id,
-      onOrder: 0,
-      lastOrdered: '',
-      status: status as Material['status']
-    }
-    
-    setMaterials([...materials, newMaterialItem])
-    setNewMaterial({
+  // Function to open the modal for adding a new material
+  function handleOpenAddModal() {
+    setCurrentMaterial({
+      id: 0, // Temporary ID for new item
       name: '',
       category: '',
       unit: '',
@@ -152,9 +117,51 @@ export function Materials() {
       inStock: 0,
       minStock: 0,
       supplier: '',
-      project: ''
-    })
-    setIsAddMaterialOpen(false)
+      project: '',
+      status: 'In Stock', // Default status
+      lastUpdated: new Date().toISOString(),
+      lastOrdered: '', // Added missing lastOrdered
+      onOrder: 0
+    });
+    setIsNewItem(true);
+    setShowMaterialModal(true);
+  }
+
+  // Function to open the modal for editing an existing material
+  function handleOpenEditModal(material: Material) {
+    setCurrentMaterial(material);
+    setIsNewItem(false);
+    setShowMaterialModal(true);
+  }
+
+  /**
+   * Adds or updates a material in the inventory using the shared modal data
+   */
+  function handleSaveMaterial(savedMaterial: Material) {
+    if (isNewItem) {
+      // Add new material
+      const newId = Math.max(0, ...materials.map(m => m.id)) + 1;
+      const status = 
+        savedMaterial.inStock === 0 ? 'Out of Stock' :
+        savedMaterial.inStock < savedMaterial.minStock ? 'Low Stock' :
+        'In Stock';
+      
+      const materialToAdd: Material = {
+        ...savedMaterial,
+        id: newId,
+        status: status,
+        lastUpdated: new Date().toISOString(),
+        onOrder: 0, // Assuming onOrder is 0 initially for new materials
+      };
+      setMaterials(prev => [...prev, materialToAdd]);
+    } else {
+      // Update existing material
+      setMaterials(prev => prev.map(m => 
+        m.id === savedMaterial.id ? { ...savedMaterial, lastUpdated: new Date().toISOString() } : m
+      ));
+    }
+    setShowMaterialModal(false); // Close modal after save
+    setCurrentMaterial(null); // Reset current material
   }
 
   /**
@@ -199,7 +206,7 @@ export function Materials() {
               <Button
                 variant="default"
                 className="bg-white hover:bg-gray-100 text-blue-700 border border-white/20"
-                onClick={() => setIsAddMaterialOpen(true)}
+                onClick={handleOpenAddModal}
               >
                 <Plus className="mr-2 h-4 w-4" /> Add Material
               </Button>
@@ -286,15 +293,15 @@ export function Materials() {
               <div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-full">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
                     {STATUSES.map(status => (
-                  <SelectItem key={status} value={status}>{status}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+                      <SelectItem key={status} value={status}>{status}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -312,7 +319,7 @@ export function Materials() {
               </div>
             </div>
           </CardHeader>
-            <div className="overflow-x-auto">
+          <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-gray-50 dark:bg-slate-800">
@@ -351,12 +358,12 @@ export function Materials() {
                       <TableCell className="text-right">
                         <div className="flex flex-col items-end">
                           <div>{material.inStock} {material.unit}s</div>
-                        {material.onOrder > 0 && (
+                          {material.onOrder > 0 && (
                             <div className="text-xs text-muted-foreground">
                               {material.onOrder} on order
-                          </div>
+                            </div>
                           )}
-                          </div>
+                        </div>
                       </TableCell>
                       <TableCell className="text-center">
                         <StatusBadge status={material.status} />
@@ -375,20 +382,20 @@ export function Materials() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => {/* Open edit dialog */}}
+                            onClick={() => handleOpenEditModal(material)}
                           >
                             <Edit className="h-4 w-4" />
                             <span className="sr-only">Edit</span>
-                            </Button>
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                              onClick={() => handleDeleteMaterial(material.id)}
-                            >
+                            onClick={() => handleDeleteMaterial(material.id)}
+                          >
                             <Trash className="h-4 w-4" />
                             <span className="sr-only">Delete</span>
                           </Button>
-                </div>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -399,112 +406,19 @@ export function Materials() {
         </Card>
       </div>
 
-        {/* Add Material Dialog */}
-        <Dialog open={isAddMaterialOpen} onOpenChange={setIsAddMaterialOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-            <DialogTitle>Add New Material</DialogTitle>
-              <DialogDescription>
-              Add a new material to your inventory. Fill out the details below.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right" htmlFor="name">Name</Label>
-                  <Input 
-                id="name"
-                    value={newMaterial.name}
-                onChange={(e) => setNewMaterial({ ...newMaterial, name: e.target.value })}
-                className="col-span-3"
-                  />
-                </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right" htmlFor="category">Category</Label>
-                  <Select 
-                    value={newMaterial.category}
-                onValueChange={(value) => setNewMaterial({ ...newMaterial, category: value })}
-                  >
-                <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                  {CATEGORIES.filter(c => c !== 'All Categories').map(category => (
-                        <SelectItem key={category} value={category}>{category}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right" htmlFor="unit">Unit</Label>
-                  <Input 
-                id="unit"
-                    value={newMaterial.unit}
-                onChange={(e) => setNewMaterial({ ...newMaterial, unit: e.target.value })}
-                className="col-span-3"
-                  />
-                </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right" htmlFor="unitPrice">Unit Price ($)</Label>
-                  <Input 
-                id="unitPrice"
-                    type="number"
-                value={newMaterial.unitPrice || ''}
-                onChange={(e) => setNewMaterial({ ...newMaterial, unitPrice: parseFloat(e.target.value) || 0 })}
-                className="col-span-3"
-                  />
-                </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right" htmlFor="inStock">In Stock</Label>
-                  <Input 
-                id="inStock"
-                    type="number"
-                value={newMaterial.inStock || ''}
-                onChange={(e) => setNewMaterial({ ...newMaterial, inStock: parseInt(e.target.value) || 0 })}
-                className="col-span-3"
-                  />
-                </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right" htmlFor="minStock">Min Stock</Label>
-                  <Input 
-                id="minStock"
-                    type="number"
-                value={newMaterial.minStock || ''}
-                onChange={(e) => setNewMaterial({ ...newMaterial, minStock: parseInt(e.target.value) || 0 })}
-                className="col-span-3"
-                  />
-                </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right" htmlFor="supplier">Supplier</Label>
-                  <Input 
-                id="supplier"
-                    value={newMaterial.supplier}
-                onChange={(e) => setNewMaterial({ ...newMaterial, supplier: e.target.value })}
-                className="col-span-3"
-                  />
-                </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right" htmlFor="project">Project</Label>
-                  <Select 
-                    value={newMaterial.project}
-                onValueChange={(value) => setNewMaterial({ ...newMaterial, project: value })}
-                  >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select project" />
-                    </SelectTrigger>
-                    <SelectContent>
-                  {PROJECTS.filter(p => p !== 'All Projects').map(project => (
-                        <SelectItem key={project} value={project}>{project}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddMaterialOpen(false)}>Cancel</Button>
-              <Button onClick={handleAddMaterial}>Add Material</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+      {/* Render the shared MaterialModal */}
+      {currentMaterial && (
+        <MaterialModal 
+          show={showMaterialModal}
+          onClose={() => {
+            setShowMaterialModal(false);
+            setCurrentMaterial(null);
+          }}
+          onSave={handleSaveMaterial}
+          initialData={currentMaterial}
+          isNewItem={isNewItem}
+        />
+      )}
+    </div>
   )
-} 
+}

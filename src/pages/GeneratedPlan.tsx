@@ -32,11 +32,8 @@ import { BudgetView } from '@/components/plan/BudgetView'
 import { TeamView } from '@/components/plan/TeamView'
 import { DocumentsView } from '@/components/plan/DocumentsView'
 import { DistributeModal } from '@/components/plan/DistributeModal'
-import { PhaseFormModal } from '@/components/plan/PhaseFormModal'
-import { TaskFormModal } from '@/components/plan/TaskFormModal'
-import { MaterialFormModal } from '@/components/plan/MaterialFormModal'
-import { DateEditModal } from '@/components/plan/DateEditModal'
-import { mockConstructionPlan, ConstructionPlan, Phase, Task, Material } from '@/data/mock/generatedPlan/planData'
+import { PhaseFormModal, TaskFormModal, MaterialModal, DateEditModal, Phase, Task, BaseMaterial } from '@/components/shared/modals'
+import { mockConstructionPlan, ConstructionPlan, Material } from '@/data/mock/generatedPlan/planData'
 import { toast } from 'sonner'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { PageHeader } from '@/components/shared/PageHeader'
@@ -132,11 +129,21 @@ export default function GeneratedPlan() {
 
   // Functions for phase management
   const handleEditPhase = (phaseId: string) => {
-    const phase = plan.phases.find(p => p.id === phaseId)
+    const phase = plan.phases.find(p => p.id === phaseId);
     if (phase) {
-      setCurrentPhase(phase)
-      setIsNewItem(false)
-      setShowPhaseModal(true)
+      // Convert to shared modal Phase type
+      setCurrentPhase({
+        id: phase.id,
+        name: phase.name,
+        description: phase.description,
+        order: phase.order,
+        startDate: phase.startDate || '',
+        endDate: phase.endDate || '',
+        status: phase.status,
+        progress: phase.progress
+      });
+      setIsNewItem(false);
+      setShowPhaseModal(true);
     }
   }
 
@@ -194,14 +201,26 @@ export default function GeneratedPlan() {
   }
 
   const handleEditTask = (phaseId: string, taskId: string) => {
-    const phase = plan.phases.find(p => p.id === phaseId)
+    const phase = plan.phases.find(p => p.id === phaseId);
     if (phase) {
-      const task = phase.tasks.find(t => t.id === taskId)
+      const task = phase.tasks.find(t => t.id === taskId);
       if (task) {
-        setCurrentTask(task)
-        setCurrentPhaseId(phaseId)
-        setIsNewItem(false)
-        setShowTaskModal(true)
+        // Convert to shared modal Task type
+        setCurrentTask({
+          id: task.id,
+          name: task.name,
+          description: task.description,
+          duration: typeof task.duration === 'string' ? parseInt(task.duration) || 1 : task.duration || 1,
+          startDate: task.startDate || '',
+          endDate: task.endDate || '',
+          status: task.status,
+          assignedTo: task.assignedTo,
+          progress: task.progress,
+          phaseId: phaseId
+        });
+        setCurrentPhaseId(phaseId);
+        setIsNewItem(false);
+        setShowTaskModal(true);
       }
     }
   }
@@ -467,48 +486,58 @@ export default function GeneratedPlan() {
   };
 
   const handleEditPhaseDates = (phaseId: string) => {
+    setDateEditType('phase');
     const phase = plan.phases.find(p => p.id === phaseId);
     if (phase) {
-      setCurrentPhase(phase);
-      setDateEditType('phase');
+      setCurrentPhase({
+        id: phase.id,
+        name: phase.name,
+        description: phase.description,
+        order: phase.order,
+        startDate: phase.startDate || '',
+        endDate: phase.endDate || '',
+        status: phase.status,
+        progress: phase.progress
+      });
       setShowDateEditModal(true);
     }
   };
 
-  const handleSaveDates = (startDate: string, endDate: string) => {
-    if (dateEditType === 'project') {
-      // Update project dates
-      setPlan(prev => ({
-        ...prev,
-        startDate,
-        endDate,
-        lastUpdated: new Date().toISOString()
-      }));
-      toast.success('Project dates updated successfully');
-    } else if (dateEditType === 'phase' && currentPhase) {
-      // Update phase dates
-      setPlan(prev => {
-        const updatedPhases = prev.phases.map(phase => {
-          if (phase.id === currentPhase.id) {
-            return {
-              ...phase,
-              startDate,
-              endDate
-            };
-          }
-          return phase;
-        });
-        
-        return {
-          ...prev,
-          phases: updatedPhases,
-          lastUpdated: new Date().toISOString()
-        };
-      });
-      toast.success('Phase dates updated successfully');
-    }
+  const handleSaveDates = (dateRange: { startDate: string, endDate: string }) => {
+    setSaving(true);
     
-    setShowDateEditModal(false);
+    // Simulate API call delay
+    setTimeout(() => {
+      if (dateEditType === 'project') {
+        setPlan(prev => ({
+          ...prev,
+          startDate: dateRange.startDate,
+          endDate: dateRange.endDate,
+          lastUpdated: new Date().toISOString()
+        }));
+        
+        toast.success('Project timeline updated');
+      } else if (dateEditType === 'phase' && currentPhase) {
+        setPlan(prev => ({
+          ...prev,
+          phases: prev.phases.map(phase => 
+            phase.id === currentPhase.id 
+              ? { 
+                  ...phase, 
+                  startDate: dateRange.startDate,
+                  endDate: dateRange.endDate
+                }
+              : phase
+          ),
+          lastUpdated: new Date().toISOString()
+        }));
+        
+        toast.success('Phase timeline updated');
+      }
+      
+      setSaving(false);
+      setShowDateEditModal(false);
+    }, 1500);
   };
 
   // Render the active view component
@@ -708,26 +737,59 @@ export default function GeneratedPlan() {
         show={showPhaseModal}
         onClose={() => setShowPhaseModal(false)}
         onSave={handleSavePhase}
-        phase={currentPhase}
+        phase={currentPhase ? {
+          id: currentPhase.id,
+          name: currentPhase.name,
+          description: currentPhase.description,
+          order: currentPhase.order,
+          startDate: currentPhase.startDate || '',
+          endDate: currentPhase.endDate || '',
+          status: currentPhase.status,
+          progress: currentPhase.progress
+        } : undefined}
         isNew={isNewItem}
-        maxOrder={plan.phases.length}
+        currentOrder={plan.phases.length}
+        statuses={['planning', 'in-progress', 'on-hold', 'completed']}
       />
       
       <TaskFormModal
         show={showTaskModal}
         onClose={() => setShowTaskModal(false)}
         onSave={handleSaveTask}
-        task={currentTask}
+        task={currentTask ? {
+          id: currentTask.id,
+          name: currentTask.name,
+          description: currentTask.description,
+          duration: typeof currentTask.duration === 'string' ? parseInt(currentTask.duration) || 1 : currentTask.duration || 1,
+          startDate: currentTask.startDate || '',
+          endDate: currentTask.endDate || '',
+          status: currentTask.status,
+          assignedTo: currentTask.assignedTo,
+          progress: currentTask.progress,
+          phaseId: currentPhaseId
+        } : undefined}
         isNew={isNewItem}
-        teamMembers={plan.team.map(member => ({ id: member.id, name: member.name }))}
+        teamMembers={plan.team.map(member => member.name)}
+        phaseId={currentPhaseId}
       />
       
-      <MaterialFormModal
+      <MaterialModal
         show={showMaterialModal}
         onClose={() => setShowMaterialModal(false)}
         onSave={handleSaveMaterial}
-        material={currentMaterial}
+        material={currentMaterial ? {
+          id: currentMaterial.id,
+          name: currentMaterial.name,
+          quantity: currentMaterial.quantity,
+          unit: currentMaterial.unit,
+          unitPrice: currentMaterial.unitPrice,
+          totalPrice: currentMaterial.totalPrice,
+          supplier: currentMaterial.supplier,
+          status: currentMaterial.status,
+          deliveryDate: currentMaterial.deliveryDate
+        } : undefined}
         isNew={isNewItem}
+        modalType="plan"
       />
       
       <DateEditModal
@@ -735,9 +797,13 @@ export default function GeneratedPlan() {
         onClose={() => setShowDateEditModal(false)}
         onSave={handleSaveDates}
         title={dateEditType === 'project' ? 'Edit Project Timeline' : 'Edit Phase Timeline'}
-        startDate={dateEditType === 'project' ? plan.startDate : currentPhase?.startDate}
-        endDate={dateEditType === 'project' ? plan.endDate : currentPhase?.endDate}
-        saving={saving}
+        description={dateEditType === 'project' ? 'Update the project start and end dates' : 'Update the phase start and end dates'}
+        dateRange={{
+          startDate: dateEditType === 'project' ? plan.startDate : currentPhase?.startDate || '',
+          endDate: dateEditType === 'project' ? plan.endDate : currentPhase?.endDate || '',
+          type: dateEditType
+        }}
+        isLoading={saving}
       />
       
       {/* Distribute Modal */}

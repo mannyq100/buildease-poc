@@ -2,9 +2,9 @@ import React from 'react';
 import { ConstructionPlan, Phase } from '@/data/mock/generatedPlan/planData';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, Clock, Package, Tag, CheckSquare, Users, Layers, FileText, Plus, Edit, Calendar } from 'lucide-react';
+import { CalendarDays, Clock, Package, Tag, CheckSquare, Users, Layers, FileText, Plus, Edit, Calendar, BarChart } from 'lucide-react';
 import { PhaseCard } from './PhaseCard';
-import { motion as m } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 interface OverviewViewProps {
   plan: ConstructionPlan;
@@ -55,161 +55,200 @@ export function OverviewView({
   
   // Calculate completed tasks
   const completedTasks = plan.phases.reduce((sum, phase) => sum + phase.tasks.filter(task => task.status === 'completed').length, 0);
+  
+  // Calculate overall project progress
+  const overallProgress = totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+  // Animation variants for staggered animations
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.4 } }
+  };
 
   return (
-    <div className="space-y-3">
-      {/* Project Stats - Enhanced compact layout */}
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-2">
-        <m.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-          className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-white dark:from-blue-900/10 dark:to-gray-800/30 p-2.5 rounded-md border border-blue-100 dark:border-blue-900/50 shadow-sm hover:shadow transition-all duration-200 group cursor-pointer col-span-1 sm:col-span-2"
-        >
-          <div className="bg-blue-100 dark:bg-blue-900/50 p-1.5 rounded-md group-hover:bg-[#2B6CB0]/20 transition-all duration-200">
-            <Layers className="h-4 w-4 text-[#2B6CB0] dark:text-blue-200" />
-          </div>
-          <div>
-            <p className="text-xs text-blue-500 dark:text-blue-300 font-medium">Phases</p>
-            <p className="text-base font-semibold text-gray-900 dark:text-white">{plan.phases.length}</p>
-          </div>
-        </m.div>
-
-        <m.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-          className="flex items-center gap-2 bg-gradient-to-r from-emerald-50 to-white dark:from-emerald-900/10 dark:to-gray-800/30 p-2.5 rounded-md border border-emerald-100 dark:border-emerald-900/50 shadow-sm hover:shadow transition-all duration-200 group cursor-pointer col-span-2 sm:col-span-2"
-        >
-          <div className="bg-emerald-100 dark:bg-emerald-900/50 p-1.5 rounded-md group-hover:bg-emerald-600/20 transition-all duration-200">
-            <CheckSquare className="h-4 w-4 text-emerald-600 dark:text-emerald-200" />
-          </div>
-          <div>
-            <p className="text-xs text-emerald-600 dark:text-emerald-300 font-medium">Tasks</p>
-            <p className="text-base font-semibold text-gray-900 dark:text-white">
-              {completedTasks}/{totalTasks}
-            </p>
-          </div>
-        </m.div>
-
-        <m.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.3 }}
-          className="flex items-center gap-2 bg-gradient-to-r from-amber-50 to-white dark:from-amber-900/10 dark:to-gray-800/30 p-2.5 rounded-md border border-amber-100 dark:border-amber-900/50 shadow-sm hover:shadow transition-all duration-200 group cursor-pointer col-span-3 sm:col-span-2"
-        >
-          <div className="bg-amber-100 dark:bg-amber-900/50 p-1.5 rounded-md group-hover:bg-amber-600/20 transition-all duration-200">
-            <Package className="h-4 w-4 text-amber-600 dark:text-amber-200" />
-          </div>
-          <div>
-            <p className="text-xs text-amber-600 dark:text-amber-300 font-medium">Materials</p>
-            <p className="text-base font-semibold text-gray-900 dark:text-white">{totalMaterials}</p>
-          </div>
-        </m.div>
-      </div>
-
-      {/* Timeline and Project Description - Combined in a more compact card */}
-      <Card className="border-0 shadow-sm hover:shadow transition-all duration-200 overflow-hidden mb-3">
-        <CardContent className="p-0">
-          <div className="flex justify-between items-center bg-gradient-to-r from-blue-50 to-white dark:from-blue-900/10 dark:to-gray-800/30 p-2.5 rounded-t-md border-b border-blue-100 dark:border-blue-900/50">
-            <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Calendar className="h-3.5 w-3.5 text-[#2B6CB0]" />
-              Project Timeline
-            </h4>
-            {onEditProjectDates && (
+    <motion.div 
+      initial="hidden"
+      animate="show"
+      variants={containerVariants}
+      className="space-y-6"
+    >
+      {/* Project Overview Card */}
+      <motion.div variants={itemVariants}>
+        <Card className="overflow-hidden border-none shadow-md">
+          <div className="bg-gradient-to-r from-[#2B6CB0]/80 to-[#2B6CB0] px-6 py-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-semibold text-white">{plan.name}</h2>
+                <p className="text-blue-100 text-sm mt-1 max-w-2xl line-clamp-1">{plan.description}</p>
+              </div>
               <Button 
-                variant="ghost" 
+                onClick={onEditProjectDates} 
+                variant="outline" 
                 size="sm" 
-                className="h-7 px-2 text-xs text-gray-500 hover:text-[#2B6CB0] hover:bg-blue-50"
-                onClick={onEditProjectDates}
+                className="bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-sm"
               >
-                <Edit className="h-3.5 w-3.5 mr-1" />
+                <Calendar className="h-4 w-4 mr-1" />
                 Edit Dates
               </Button>
-            )}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 border-b border-gray-200 dark:border-gray-700">
-            <div className="p-2.5 md:border-r border-gray-200 dark:border-gray-700">
-              <div className="flex items-center gap-2">
-                <div className="rounded-md bg-blue-50 dark:bg-blue-900/20 p-1.5">
-                  <CalendarDays className="h-4 w-4 text-[#2B6CB0]" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500">Start</div>
-                  <div className="font-medium text-sm text-gray-900 dark:text-white">{formatDate(plan.startDate)}</div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="p-2.5 md:border-r border-gray-200 dark:border-gray-700">
-              <div className="flex items-center gap-2">
-                <div className="rounded-md bg-blue-50 dark:bg-blue-900/20 p-1.5">
-                  <CalendarDays className="h-4 w-4 text-[#2B6CB0]" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500">End</div>
-                  <div className="font-medium text-sm text-gray-900 dark:text-white">{formatDate(plan.endDate)}</div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="p-2.5">
-              <div className="flex items-center gap-2">
-                <div className="rounded-md bg-blue-50 dark:bg-blue-900/20 p-1.5">
-                  <Clock className="h-4 w-4 text-[#2B6CB0]" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500">Updated</div>
-                  <div className="font-medium text-sm text-gray-900 dark:text-white">{formatDate(plan.lastUpdated)}</div>
-                </div>
-              </div>
             </div>
           </div>
           
-          {/* Project Description - More compact */}
-          <div className="p-2.5 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-800/30">
-            <div className="flex gap-2">
-              <div className="rounded-md bg-blue-50 dark:bg-blue-900/20 p-1.5 self-start shrink-0">
-                <FileText className="h-4 w-4 text-[#2B6CB0]" />
+          <CardContent className="p-0">
+            {/* Project Stats */}
+            <div className="grid grid-cols-4 divide-x divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
+              {/* Progress */}
+              <div className="p-4 flex flex-col items-center justify-center">
+                <div className="flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 dark:bg-blue-900/20 mb-2 relative">
+                  <span className="text-lg font-bold text-[#2B6CB0] dark:text-blue-300">{overallProgress}%</span>
+                  <svg className="absolute inset-0" width="64" height="64" viewBox="0 0 64 64">
+                    <circle 
+                      cx="32" 
+                      cy="32" 
+                      r="28" 
+                      fill="none" 
+                      stroke="#E2E8F0" 
+                      strokeWidth="4" 
+                    />
+                    <circle 
+                      cx="32" 
+                      cy="32" 
+                      r="28" 
+                      fill="none" 
+                      stroke="#2B6CB0" 
+                      strokeWidth="4" 
+                      strokeDasharray="175.9" 
+                      strokeDashoffset={175.9 - (175.9 * overallProgress / 100)} 
+                      strokeLinecap="round" 
+                      transform="rotate(-90 32 32)" 
+                    />
+                  </svg>
+                </div>
+                <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Overall Progress</span>
               </div>
-              <div>
-                <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Description</h4>
-                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{plan.description || 'No description available'}</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Phases list - More compact header */}
-      <div>
-        <div className="flex justify-between items-center mb-2">
-          <div className="flex items-center gap-2">
-            <h2 className="text-base font-medium text-gray-900 dark:text-white flex items-center gap-1.5">
-              <Tag className="h-4 w-4 text-[#2B6CB0]" />
-              Construction Phases
-            </h2>
-            <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
-              {plan.phases.length} {plan.phases.length === 1 ? 'phase' : 'phases'}
+              {/* Key stats with icons */}
+              <div className="p-4 flex flex-col space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="rounded-md bg-blue-50 dark:bg-blue-900/20 p-1.5">
+                    <Layers className="h-4 w-4 text-[#2B6CB0]" />
+                  </div>
+                  <div className="flex justify-between items-center w-full">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Phases</span>
+                    <span className="font-semibold text-sm">{plan.phases.length}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="rounded-md bg-emerald-50 dark:bg-emerald-900/20 p-1.5">
+                    <CheckSquare className="h-4 w-4 text-emerald-600" />
+                  </div>
+                  <div className="flex justify-between items-center w-full">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Tasks</span>
+                    <span className="font-semibold text-sm">{completedTasks}/{totalTasks}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="rounded-md bg-amber-50 dark:bg-amber-900/20 p-1.5">
+                    <Package className="h-4 w-4 text-amber-600" />
+                  </div>
+                  <div className="flex justify-between items-center w-full">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Materials</span>
+                    <span className="font-semibold text-sm">{totalMaterials}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Date Information */}
+              <div className="p-4 flex flex-col space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="rounded-md bg-blue-50 dark:bg-blue-900/20 p-1.5">
+                    <Calendar className="h-4 w-4 text-[#2B6CB0]" />
+                  </div>
+                  <div className="flex justify-between items-center w-full">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Start</span>
+                    <span className="font-medium text-sm">{formatDate(plan.startDate)}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="rounded-md bg-blue-50 dark:bg-blue-900/20 p-1.5">
+                    <CalendarDays className="h-4 w-4 text-[#2B6CB0]" />
+                  </div>
+                  <div className="flex justify-between items-center w-full">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">End</span>
+                    <span className="font-medium text-sm">{formatDate(plan.endDate)}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="rounded-md bg-gray-100 dark:bg-gray-800 p-1.5">
+                    <Clock className="h-4 w-4 text-gray-500" />
+                  </div>
+                  <div className="flex justify-between items-center w-full">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Updated</span>
+                    <span className="font-medium text-sm">{formatDate(plan.lastUpdated)}</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Project Description */}
+              <div className="p-4">
+                <div className="flex items-start gap-2 mb-1">
+                  <div className="rounded-md bg-blue-50 dark:bg-blue-900/20 p-1.5 mt-0.5">
+                    <FileText className="h-4 w-4 text-[#2B6CB0]" />
+                  </div>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">Description</span>
+                </div>
+                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed pl-8 line-clamp-3">
+                  {plan.description || 'No description available'}
+                </p>
+              </div>
             </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Phases Header with Add Phase Button */}
+      <motion.div variants={itemVariants} className="flex justify-between items-center mb-2">
+        <div className="flex items-center gap-2">
+          <h2 className="text-base font-medium text-gray-900 dark:text-white flex items-center gap-1.5">
+            <BarChart className="h-5 w-5 text-[#2B6CB0]" />
+            <span>Construction Phases</span>
+          </h2>
+          <div className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
+            {plan.phases.length} {plan.phases.length === 1 ? 'phase' : 'phases'}
           </div>
-          
-          {/* Add Phase button in the phases section */}
-          <Button
-            onClick={onAddPhase ? () => onAddPhase(plan.id) : undefined}
-            size="sm"
-            className="bg-[#2B6CB0] hover:bg-[#2B6CB0]/90 text-white h-7 text-xs px-2"
-            disabled={!onAddPhase}
-          >
-            <Plus className="h-3.5 w-3.5 mr-1" />
-            Add Phase
-          </Button>
         </div>
+        
+        {/* Add Phase button with accent color */}
+        <Button
+          onClick={onAddPhase ? () => onAddPhase(plan.id) : undefined}
+          size="sm"
+          className="bg-[#ED8936] hover:bg-[#ED8936]/90 text-white h-8 px-3 shadow-sm"
+          disabled={!onAddPhase}
+        >
+          <Plus className="h-4 w-4 mr-1" />
+          Add Phase
+        </Button>
+      </motion.div>
 
-        <div className="space-y-3">
-          {plan.phases.map(phase => (
+      {/* Phases List */}
+      <motion.div variants={itemVariants} className="space-y-4">
+        {plan.phases.map((phase, index) => (
+          <motion.div 
+            key={phase.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: index * 0.1 }}
+          >
             <PhaseCard 
-              key={phase.id} 
               phase={phase} 
               onDelete={onDeletePhase}
               onEdit={onEditPhase}
@@ -222,17 +261,28 @@ export function OverviewView({
               onReorderPhase={onReorderPhase}
               onEditPhaseDates={onEditPhaseDates}
             />
-          ))}
-          
-          {plan.phases.length === 0 && (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/20 rounded-lg border border-dashed border-gray-300 dark:border-gray-700">
-              <Users className="h-8 w-8 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
-              <p className="font-medium text-sm">No phases have been defined for this project.</p>
-              <p className="text-xs mt-1">Click the "Add Phase" button to get started.</p>
+          </motion.div>
+        ))}
+        
+        {plan.phases.length === 0 && (
+          <div className="text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/20 rounded-lg border border-dashed border-gray-300 dark:border-gray-700">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 mb-3">
+              <Layers className="h-8 w-8 text-gray-400 dark:text-gray-600" />
             </div>
-          )}
-        </div>
-      </div>
-    </div>
+            <p className="font-medium text-base mb-1">No phases have been defined</p>
+            <p className="text-sm mb-3">Start by adding your first construction phase</p>
+            <Button
+              onClick={onAddPhase ? () => onAddPhase(plan.id) : undefined}
+              size="sm"
+              className="bg-[#ED8936] hover:bg-[#ED8936]/90 text-white shadow-sm"
+              disabled={!onAddPhase}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add Your First Phase
+            </Button>
+          </div>
+        )}
+      </motion.div>
+    </motion.div>
   );
 }

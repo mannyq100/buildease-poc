@@ -15,6 +15,7 @@ export interface Material {
   lastOrdered: string
   project: string
   status: 'In Stock' | 'Low Stock' | 'Out of Stock' | 'On Order'
+  lastUpdated?: string
 }
 
 export interface NewMaterial {

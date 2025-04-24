@@ -3,16 +3,19 @@
  * Used for managing team members and their information
  */
 
+export type TeamMemberStatus = 'active' | 'inactive' | 'on-leave' | 'remote';
+
 export interface TeamMember {
   id: number | string
   name: string
-  role?: string
+  role: string
   position?: string
   email: string
-  phone: string
+  phone?: string
   department: string
   projects?: string[]
-  status: 'active' | 'inactive' | 'on-leave' | 'remote'
+  status: TeamMemberStatus
+  permissions?: 'Admin' | 'Editor' | 'Viewer' | 'Restricted'
   avatar?: string
   skills?: string[]
   workload?: number
@@ -50,4 +53,4 @@ export interface TeamMemberCardProps {
   className?: string
 }
 
-export type ViewMode = 'grid' | 'list' 
+export type ViewMode = 'grid' | 'list'

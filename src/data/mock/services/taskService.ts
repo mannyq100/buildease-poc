@@ -12,11 +12,15 @@ import tasksData from '../json/tasks.json';
 export function getTasks(): Promise<Task[]> {
   // Convert string IDs to numbers and ensure proper typing
   const typedTasks: Task[] = tasksData.list.map(t => ({
-    ...t,
-    id: Number(t.id),
-    phaseId: Number(t.phaseId),
-    status: t.status as 'completed' | 'in-progress' | 'pending',
-    priority: t.priority as 'low' | 'medium' | 'high' | undefined
+    id: Number(t.id), // Convert string ID to number
+    name: t.title, // Map title to name
+    description: t.description,
+    dueDate: t.dueDate,
+    assignee: t.assignedTo, // Map assignedTo to assignee
+    // Map status: 'not-started' -> 'pending'
+    status: t.status === 'not-started' ? 'pending' : (t.status as 'completed' | 'in-progress' | 'pending'), 
+    phaseId: Number(t.projectId), // Map projectId to phaseId (assuming relation for mock)
+    priority: t.priority as 'low' | 'medium' | 'high' | undefined,
   }));
   return Promise.resolve(typedTasks);
 }
@@ -29,13 +33,17 @@ export function getTasks(): Promise<Task[]> {
 export function getTaskById(id: string): Promise<Task | null> {
   const task = tasksData.list.find(t => t.id === id);
   if (!task) return Promise.resolve(null);
-  
+
   // Convert to Task type with proper typing
   const typedTask: Task = {
-    ...task,
-    id: Number(task.id),
-    phaseId: Number(task.phaseId),
-    status: task.status as 'completed' | 'in-progress' | 'pending',
+    id: Number(task.id), // Convert string ID to number
+    name: task.title, // Map title to name
+    description: task.description,
+    dueDate: task.dueDate,
+    assignee: task.assignedTo, // Map assignedTo to assignee
+    // Map status: 'not-started' -> 'pending'
+    status: task.status === 'not-started' ? 'pending' : (task.status as 'completed' | 'in-progress' | 'pending'), 
+    phaseId: Number(task.projectId), // Map projectId to phaseId
     priority: task.priority as 'low' | 'medium' | 'high' | undefined
   };
   return Promise.resolve(typedTask);
@@ -48,13 +56,16 @@ export function getTaskById(id: string): Promise<Task | null> {
  */
 export function getTasksByProject(projectId: string): Promise<Task[]> {
   const tasks = tasksData.list.filter(t => t.projectId === projectId);
-  
+
   // Convert to Task type with proper typing
   const typedTasks: Task[] = tasks.map(t => ({
-    ...t,
     id: Number(t.id),
-    phaseId: Number(t.phaseId),
-    status: t.status as 'completed' | 'in-progress' | 'pending',
+    name: t.title,
+    description: t.description,
+    dueDate: t.dueDate,
+    assignee: t.assignedTo,
+    status: t.status === 'not-started' ? 'pending' : (t.status as 'completed' | 'in-progress' | 'pending'),
+    phaseId: Number(t.projectId),
     priority: t.priority as 'low' | 'medium' | 'high' | undefined
   }));
   return Promise.resolve(typedTasks);
@@ -66,14 +77,17 @@ export function getTasksByProject(projectId: string): Promise<Task[]> {
  * @returns Promise that resolves to an array of tasks assigned to the specified user
  */
 export function getTasksByAssignee(userId: string): Promise<Task[]> {
-  const tasks = tasksData.list.filter(t => t.assignee === userId);
-  
+  const tasks = tasksData.list.filter(t => t.assignedTo === userId);
+
   // Convert to Task type with proper typing
   const typedTasks: Task[] = tasks.map(t => ({
-    ...t,
     id: Number(t.id),
-    phaseId: Number(t.phaseId),
-    status: t.status as 'completed' | 'in-progress' | 'pending',
+    name: t.title,
+    description: t.description,
+    dueDate: t.dueDate,
+    assignee: t.assignedTo,
+    status: t.status === 'not-started' ? 'pending' : (t.status as 'completed' | 'in-progress' | 'pending'),
+    phaseId: Number(t.projectId),
     priority: t.priority as 'low' | 'medium' | 'high' | undefined
   }));
   return Promise.resolve(typedTasks);
@@ -130,23 +144,50 @@ export function createTask(task: Omit<Task, 'id'>): Promise<Task> {
  */
 export function updateTask(id: string, updates: Partial<Task>): Promise<Task | null> {
   const taskIndex = tasksData.list.findIndex(t => t.id === id);
-  
+
   if (taskIndex === -1) {
     return Promise.resolve(null);
   }
-  
+
   const task = tasksData.list[taskIndex];
-  
-  // Create a properly typed Task
-  const updatedTask: Task = {
-    ...task,
-    ...updates,
+  const currentStatus = task.status === 'not-started' ? 'pending' : (task.status as 'completed' | 'in-progress' | 'pending');
+  const updatedStatus = updates.status ? updates.status : currentStatus;
+
+  // Create a properly typed Task, mapping updates carefully
+  // Start with the base properties from the original task, correctly mapped
+  const baseTask: Task = {
     id: Number(task.id),
-    phaseId: Number(task.phaseId),
-    status: (updates.status || task.status) as 'completed' | 'in-progress' | 'pending',
-    priority: (updates.priority || task.priority) as 'low' | 'medium' | 'high' | undefined
+    name: task.title,
+    description: task.description,
+    dueDate: task.dueDate,
+    assignee: task.assignedTo,
+    phaseId: Number(task.projectId),
+    priority: task.priority as 'low' | 'medium' | 'high' | undefined,
+    status: currentStatus,
   };
+
+  // Apply updates, ensuring type safety and correct mapping
+  const updatedTask: Task = {
+    ...baseTask, // Start with correctly mapped base task
+    ...updates, // Apply provided updates (might overwrite base props)
+    // Ensure final required fields are correctly typed and mapped, overriding anything from spread 'updates' if necessary
+    id: baseTask.id, // Keep original ID
+    phaseId: updates.phaseId !== undefined ? updates.phaseId : baseTask.phaseId, // Use updated phaseId if provided, else base
+    status: updatedStatus, // Use the calculated updated status
+    // If updates included 'name', it's already applied by the spread. 
+    // If updates didn't include 'name', baseTask.name is used.
+  };
+
+  // The spread ...updates might have included properties like 'title', 'assignedTo', 'projectId' 
+  // which are not part of the Task interface. We should ideally remove them, 
+  // but for this mock service, we'll rely on TypeScript catching mismatches 
+  // when this function is used elsewhere, as the return type is correctly Task.
   
+  // Remove potentially incorrect fields if spread from 'updates' directly
+  // delete (updatedTask as any).title;
+  // delete (updatedTask as any).projectId;
+  // delete (updatedTask as any).assignedTo;
+
   return Promise.resolve(updatedTask);
 }
 

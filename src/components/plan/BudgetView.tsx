@@ -1,8 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Budget, ConstructionPlan } from '@/data/mock/generatedPlan/planData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Banknote, TrendingUp, Package, Wrench, FileText, ShieldAlert } from 'lucide-react';
+import { Banknote, TrendingUp, Package, Wrench, FileText, ShieldAlert, Plus, Edit, Trash } from 'lucide-react';
 import { motion as m } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { BudgetModal } from '@/components/shared/modals/BudgetModal';
+import { BudgetItem as BudgetItemType } from '@/types/budget';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
+const mockBudgetItems: BudgetItemType[] = [
+  { id: 1, type: 'expense', description: 'Foundation Concrete', category: 'Materials', amount: 15000, date: '2025-04-10', status: 'paid' },
+  { id: 2, type: 'expense', description: 'Framing Labor', category: 'Labor', amount: 25000, date: '2025-04-15', status: 'incurred' },
+  { id: 3, type: 'income', description: 'Client Downpayment', category: 'Income Payment', amount: 50000, date: '2025-04-05', status: 'received' },
+  { id: 4, type: 'expense', description: 'Building Permit', category: 'Permits', amount: 2500, date: '2025-04-08', status: 'paid' },
+  { id: 5, type: 'expense', description: 'Excavator Rental', category: 'Equipment Rental', amount: 3000, date: '2025-04-12', status: 'planned' },
+];
 
 interface BudgetViewProps {
   plan: ConstructionPlan;
@@ -10,14 +22,17 @@ interface BudgetViewProps {
 
 export function BudgetView({ plan }: BudgetViewProps) {
   const budget = plan.budget;
-  
-  // Calculate percentages for the budget breakdown
+  const [budgetItems, setBudgetItems] = useState<BudgetItemType[]>(mockBudgetItems);
+  const [showBudgetModal, setShowBudgetModal] = useState(false);
+  const [currentItem, setCurrentItem] = useState<BudgetItemType | null>(null);
+  const [isNewItem, setIsNewItem] = useState(true);
+
   const total = budget.totalCost;
-  const laborPercentage = (budget.laborCost / total) * 100;
-  const materialsPercentage = (budget.materialsCost / total) * 100;
-  const equipmentPercentage = (budget.equipmentCost / total) * 100;
-  const permitsPercentage = (budget.permitsFees / total) * 100;
-  const contingencyPercentage = (budget.contingency / total) * 100;
+  const laborPercentage = total > 0 ? (budget.laborCost / total) * 100 : 0;
+  const materialsPercentage = total > 0 ? (budget.materialsCost / total) * 100 : 0;
+  const equipmentPercentage = total > 0 ? (budget.equipmentCost / total) * 100 : 0;
+  const permitsPercentage = total > 0 ? (budget.permitsFees / total) * 100 : 0;
+  const contingencyPercentage = total > 0 ? (budget.contingency / total) * 100 : 0;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -28,7 +43,36 @@ export function BudgetView({ plan }: BudgetViewProps) {
     }).format(amount);
   };
 
-  const BudgetItem = ({ 
+  function handleOpenAddModal() {
+    setCurrentItem(null);
+    setIsNewItem(true);
+    setShowBudgetModal(true);
+  }
+
+  function handleOpenEditModal(item: BudgetItemType) {
+    setCurrentItem(item);
+    setIsNewItem(false);
+    setShowBudgetModal(true);
+  }
+
+  function handleSaveBudgetItem(savedItem: Partial<BudgetItemType>) {
+    setBudgetItems(prevItems => {
+      if (isNewItem) {
+        const newItemWithId = { ...savedItem, id: Date.now() } as BudgetItemType;
+        return [...prevItems, newItemWithId];
+      } else {
+        return prevItems.map(item => item.id === savedItem.id ? { ...item, ...savedItem } : item);
+      }
+    });
+    setShowBudgetModal(false);
+    setCurrentItem(null);
+  }
+
+  function handleDeleteBudgetItem(id: number) {
+    setBudgetItems(prevItems => prevItems.filter(item => item.id !== id));
+  }
+
+  const BudgetItemSummary = ({ 
     icon, 
     title, 
     amount, 
@@ -60,7 +104,7 @@ export function BudgetView({ plan }: BudgetViewProps) {
         <span className="text-sm text-gray-500 dark:text-gray-400">{percentage.toFixed(1)}%</span>
         <div className="w-16 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mt-1">
           <div 
-            className={`h-full rounded-full ${color.replace('text-', 'bg-').replace('/10', '')}`} 
+            className={`h-full rounded-full ${color.replace('text-', 'bg-').replace('/10', '')}`}
             style={{ width: `${percentage}%` }}
           />
         </div>
@@ -76,11 +120,15 @@ export function BudgetView({ plan }: BudgetViewProps) {
         transition={{ duration: 0.3 }}
       >
         <Card className="border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden rounded-xl">
-          <CardHeader className="bg-gray-50 dark:bg-gray-800/30 border-b border-gray-200 dark:border-gray-700 pb-3">
+          <CardHeader className="bg-gray-50 dark:bg-gray-800/30 border-b border-gray-200 dark:border-gray-700 pb-3 flex flex-row items-center justify-between">
             <CardTitle className="text-lg font-semibold text-[#2B6CB0] dark:text-[#93C5FD] flex items-center">
               <Banknote className="h-5 w-5 mr-2" />
-              Budget Breakdown
+              Budget Summary
             </CardTitle>
+            <Button size="sm" onClick={handleOpenAddModal} className="bg-[#ED8936] hover:bg-[#ED8936]/90 text-white">
+              <Plus className="h-4 w-4 mr-1" />
+              Add Item
+            </Button>
           </CardHeader>
           <CardContent className="p-4">
             <div className="text-center mb-6">
@@ -91,28 +139,28 @@ export function BudgetView({ plan }: BudgetViewProps) {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <BudgetItem 
+              <BudgetItemSummary 
                 icon={<Banknote className="h-5 w-5 text-blue-600 dark:text-blue-400" />} 
                 title="Labor" 
                 amount={budget.laborCost} 
                 percentage={laborPercentage} 
                 color="text-blue-600/10 dark:text-blue-400/10"
               />
-              <BudgetItem 
+              <BudgetItemSummary 
                 icon={<Package className="h-5 w-5 text-green-600 dark:text-green-400" />} 
                 title="Materials" 
                 amount={budget.materialsCost} 
                 percentage={materialsPercentage} 
                 color="text-green-600/10 dark:text-green-400/10"
               />
-              <BudgetItem 
+              <BudgetItemSummary 
                 icon={<Wrench className="h-5 w-5 text-amber-600 dark:text-amber-400" />} 
                 title="Equipment" 
                 amount={budget.equipmentCost} 
                 percentage={equipmentPercentage} 
                 color="text-amber-600/10 dark:text-amber-400/10"
               />
-              <BudgetItem 
+              <BudgetItemSummary 
                 icon={<FileText className="h-5 w-5 text-purple-600 dark:text-purple-400" />} 
                 title="Permits & Fees" 
                 amount={budget.permitsFees} 
@@ -120,7 +168,7 @@ export function BudgetView({ plan }: BudgetViewProps) {
                 color="text-purple-600/10 dark:text-purple-400/10"
               />
               <div className="md:col-span-2">
-                <BudgetItem 
+                <BudgetItemSummary 
                   icon={<ShieldAlert className="h-5 w-5 text-orange-600 dark:text-orange-400" />} 
                   title="Contingency" 
                   amount={budget.contingency} 
@@ -132,6 +180,72 @@ export function BudgetView({ plan }: BudgetViewProps) {
           </CardContent>
         </Card>
       </m.div>
+
+      <m.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+      >
+        <Card className="border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden rounded-xl">
+          <CardHeader className="bg-gray-50 dark:bg-gray-800/30 border-b border-gray-200 dark:border-gray-700">
+            <CardTitle className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center">
+              <TrendingUp className="h-5 w-5 mr-2 text-gray-600 dark:text-gray-400" />
+              Budget Line Items
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {budgetItems.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      No budget items added yet.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  budgetItems.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium">{item.description}</TableCell>
+                      <TableCell>{item.category}</TableCell>
+                      <TableCell>{item.date}</TableCell>
+                      <TableCell className="capitalize">{item.status}</TableCell>
+                      <TableCell className={`text-right font-semibold ${item.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        {item.type === 'income' ? '+' : '-'}{formatCurrency(item.amount)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" onClick={() => handleOpenEditModal(item)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleDeleteBudgetItem(item.id)}>
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </m.div>
+
+      <BudgetModal
+        show={showBudgetModal}
+        onClose={() => setShowBudgetModal(false)}
+        onSave={handleSaveBudgetItem}
+        initialData={currentItem}
+        isNewItem={isNewItem}
+      />
     </div>
   );
 }
