@@ -1,78 +1,70 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Skeleton } from '@/components/ui/skeleton'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
-import { DistributeModal } from '@/components/plan/DistributeModal'
-import { ActionButtons } from '@/components/plan/ActionButtons'
-import { SAMPLE_PROJECT_PLAN } from '@/data/mock/project/sampleProjectPlan'
-import { markdownPlan } from '@/data/mock/generatedPlan/insights'
-import { InsightItemProps, Phase, PlanStatus, ProjectData } from '@/types/projectInputs'
+import { Helmet } from 'react-helmet-async'
+import { motion as m } from 'framer-motion'
 import { 
-  AlertCircle, 
-  Calendar, 
-  Check, 
-  ChevronDown, 
-  ChevronUp, 
-  Clock, 
-  Edit, 
-  Grip, 
-  Info, 
-  Loader2, 
-  Package, 
-  Pencil, 
+  FileText,
   Plus, 
   RefreshCw, 
   Save, 
-  Trash, 
-  X,
-  FileText,
-  Share2,
-  Download,
-  Printer,
-  Users,
   CheckCircle,
-  Code,
-  AlignLeft,
-  LayoutGrid
+  Share2,
+  Loader2,
+  Calendar,
+  Clock,
+  MapPin,
+  Home,
+  Edit,
+  MoreHorizontal,
+  Layers,
+  Package,
+  DollarSign,
+  Users,
+  Printer,
+  Download
 } from 'lucide-react'
 
+import { OverviewView } from '@/components/plan/OverviewView'
+import { TimelineView } from '@/components/plan/TimelineView'
+import { MaterialsView } from '@/components/plan/MaterialsView'
+import { BudgetView } from '@/components/plan/BudgetView'
+import { TeamView } from '@/components/plan/TeamView'
+import { DocumentsView } from '@/components/plan/DocumentsView'
+import { DistributeModal } from '@/components/plan/DistributeModal'
+import { PhaseFormModal } from '@/components/plan/PhaseFormModal'
+import { TaskFormModal } from '@/components/plan/TaskFormModal'
+import { MaterialFormModal } from '@/components/plan/MaterialFormModal'
+import { DateEditModal } from '@/components/plan/DateEditModal'
+import { mockConstructionPlan, ConstructionPlan, Phase, Task, Material } from '@/data/mock/generatedPlan/planData'
 import { toast } from 'sonner'
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem } from '@/components/ui/dropdown-menu'
+import { PageHeader } from '@/components/shared/PageHeader'
 import { v4 as uuidv4 } from 'uuid'
-
-import { ProjectPhaseManager, PlanInsights } from '@/components/plan/ProjectPhaseManager'
-import Markdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import { MarkdownEditor } from '@/components/plan/MarkdownEditor'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb'
-import { cn } from '@/utils/core/ui';
 
 export default function GeneratedPlan() {
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState('visual')
-  const [projectData, setProjectData] = useState<ProjectData>({
-    name: 'New Construction Project',
-    description: 'Complete renovation of a 2-story residential home including kitchen, bathrooms, and outdoor spaces.'
-  })
-  const [phases, setPhases] = useState<Phase[]>(SAMPLE_PROJECT_PLAN)
-  const [markdownContent, setMarkdownContent] = useState(markdownPlan)
+  
+  // State variables
+  const [plan, setPlan] = useState<ConstructionPlan>(mockConstructionPlan)
   const [isGenerating, setIsGenerating] = useState(false)
-  const [planStatus, setPlanStatus] = useState<PlanStatus>('draft')
+  const [isDarkMode, setIsDarkMode] = useState(false)
+  const [activeView, setActiveView] = useState('overview')
   const [showDistributeModal, setShowDistributeModal] = useState(false)
   const [isDistributing, setIsDistributing] = useState(false)
-  const [isDarkMode, setIsDarkMode] = useState(false)
-  const [editMode, setEditMode] = useState(false)
-  const [editablePlan, setEditablePlan] = useState(markdownPlan)
-  const [showActionMenu, setShowActionMenu] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [viewMode, setViewMode] = useState<'markdown' | 'text'>('markdown')
+  
+  // Form modal states
+  const [showPhaseModal, setShowPhaseModal] = useState(false)
+  const [showTaskModal, setShowTaskModal] = useState(false)
+  const [showMaterialModal, setShowMaterialModal] = useState(false)
+  const [showDateEditModal, setShowDateEditModal] = useState(false)
+  const [currentPhase, setCurrentPhase] = useState<Phase | undefined>(undefined)
+  const [currentTask, setCurrentTask] = useState<Task | undefined>(undefined)
+  const [currentMaterial, setCurrentMaterial] = useState<Material | undefined>(undefined)
+  const [currentPhaseId, setCurrentPhaseId] = useState<string>('')
+  const [isNewItem, setIsNewItem] = useState(true)
+  const [dateEditType, setDateEditType] = useState<'project' | 'phase'>('project')
   
   // Check system dark mode preference on component mount
   useEffect(() => {
@@ -87,20 +79,38 @@ export default function GeneratedPlan() {
     return () => darkModeMediaQuery.removeEventListener('change', handleChange)
   }, [])
 
+  // Regenerate plan function
   const handleRegenerate = () => {
     setIsGenerating(true)
     
     // Simulate API call delay
     setTimeout(() => {
-      // Refresh the phases with the sample data
-      setPhases([...SAMPLE_PROJECT_PLAN])
-      setMarkdownContent(markdownPlan)
+      // Reset to fresh mock data
+      setPlan({...mockConstructionPlan})
       setIsGenerating(false)
       
       toast.success('Plan regenerated successfully')
     }, 2000)
   }
 
+  // Save plan function
+  const handleSavePlan = (status: 'draft' | 'final' = 'draft') => {
+    setSaving(true)
+    
+    // Simulate API call delay
+    setTimeout(() => {
+      setPlan(prev => ({
+        ...prev,
+        status,
+        lastUpdated: new Date().toISOString()
+      }))
+      setSaving(false)
+      
+      toast.success(`Plan saved as ${status === 'draft' ? 'Draft' : 'Final'}`)
+    }, 1500)
+  }
+
+  // Distribute plan function
   const handleDistribute = () => {
     setIsDistributing(true)
     
@@ -108,296 +118,627 @@ export default function GeneratedPlan() {
     setTimeout(() => {
       setIsDistributing(false)
       setShowDistributeModal(false)
-      setPlanStatus('final')
       
-      toast.success('Plan distributed to project areas')
+      toast.success('Plan distributed to team members')
     }, 2000)
   }
 
-  const handleSavePlan = (status: PlanStatus = 'draft') => {
-    setSaving(true)
-    
-    // Simulate API call delay
-    setTimeout(() => {
-      setPlanStatus(status)
-      setSaving(false)
+  // Add a new phase
+  const handleAddPhase = () => {
+    setCurrentPhase(undefined)
+    setIsNewItem(true)
+    setShowPhaseModal(true)
+  }
+
+  // Functions for phase management
+  const handleEditPhase = (phaseId: string) => {
+    const phase = plan.phases.find(p => p.id === phaseId)
+    if (phase) {
+      setCurrentPhase(phase)
+      setIsNewItem(false)
+      setShowPhaseModal(true)
+    }
+  }
+
+  const handleDeletePhase = (phaseId: string) => {
+    // Confirm deletion
+    if (window.confirm(`Are you sure you want to delete this phase?`)) {
+      // Update the plan by removing the phase with the given ID
+      setPlan(prev => ({
+        ...prev,
+        phases: prev.phases.filter(phase => phase.id !== phaseId)
+      }))
       
-      if (status === 'final') {
-        toast.success('Plan finalized and saved')
-      } else {
-        toast.success('Plan saved as draft')
+      toast.success('Phase deleted successfully')
+    }
+  }
+
+  const handleReorderPhase = (phaseId: string, direction: 'up' | 'down') => {
+    // Find the phase and its current index
+    const phaseIndex = plan.phases.findIndex(phase => phase.id === phaseId)
+    if (phaseIndex === -1) return
+    
+    // Calculate new index based on direction
+    const newIndex = direction === 'up' ? phaseIndex - 1 : phaseIndex + 1
+    
+    // Check if the new index is valid
+    if (newIndex < 0 || newIndex >= plan.phases.length) return
+    
+    // Create a copy of the phases array
+    const newPhases = [...plan.phases]
+    
+    // Swap the phases
+    const temp = newPhases[phaseIndex]
+    newPhases[phaseIndex] = newPhases[newIndex]
+    newPhases[newIndex] = temp
+    
+    // Update the order property of the swapped phases
+    newPhases[phaseIndex].order = phaseIndex + 1
+    newPhases[newIndex].order = newIndex + 1
+    
+    // Update the plan with the new phases array
+    setPlan(prev => ({
+      ...prev,
+      phases: newPhases
+    }))
+    
+    toast.success(`Phase moved ${direction}`)
+  }
+
+  // Task management functions
+  const handleAddTask = (phaseId: string) => {
+    setCurrentTask(undefined)
+    setCurrentPhaseId(phaseId)
+    setIsNewItem(true)
+    setShowTaskModal(true)
+  }
+
+  const handleEditTask = (phaseId: string, taskId: string) => {
+    const phase = plan.phases.find(p => p.id === phaseId)
+    if (phase) {
+      const task = phase.tasks.find(t => t.id === taskId)
+      if (task) {
+        setCurrentTask(task)
+        setCurrentPhaseId(phaseId)
+        setIsNewItem(false)
+        setShowTaskModal(true)
+      }
+    }
+  }
+
+  const handleDeleteTask = (phaseId: string, taskId: string) => {
+    // Confirm deletion
+    if (window.confirm(`Are you sure you want to delete this task?`)) {
+      // Update the plan by removing the task from the specified phase
+      setPlan(prev => {
+        const updatedPhases = prev.phases.map(phase => {
+          if (phase.id === phaseId) {
+            return {
+              ...phase,
+              tasks: phase.tasks.filter(task => task.id !== taskId)
+            }
+          }
+          return phase
+        })
+        
+        return {
+          ...prev,
+          phases: updatedPhases
+        }
+      })
+      
+      toast.success('Task deleted successfully')
+    }
+  }
+
+  // Material management functions
+  const handleAddMaterial = (phaseId: string) => {
+    setCurrentMaterial(undefined)
+    setCurrentPhaseId(phaseId)
+    setIsNewItem(true)
+    setShowMaterialModal(true)
+  }
+
+  const handleEditMaterial = (phaseId: string, materialId: string) => {
+    const phase = plan.phases.find(p => p.id === phaseId)
+    if (phase) {
+      const material = phase.materials.find(m => m.id === materialId)
+      if (material) {
+        setCurrentMaterial(material)
+        setCurrentPhaseId(phaseId)
+        setIsNewItem(false)
+        setShowMaterialModal(true)
+      }
+    }
+  }
+
+  const handleDeleteMaterial = (phaseId: string, materialId: string) => {
+    // Confirm deletion
+    if (window.confirm(`Are you sure you want to delete this material?`)) {
+      // Update the plan by removing the material from the specified phase
+      setPlan(prev => {
+        const updatedPhases = prev.phases.map(phase => {
+          if (phase.id === phaseId) {
+            return {
+              ...phase,
+              materials: phase.materials.filter(material => material.id !== materialId)
+            }
+          }
+          return phase
+        })
+        
+        return {
+          ...prev,
+          phases: updatedPhases
+        }
+      })
+      
+      toast.success('Material deleted successfully')
+    }
+  }
+
+  // Save handlers for modals
+  const handleSavePhase = (phaseData: Partial<Phase>) => {
+    if (isNewItem) {
+      // Add new phase
+      const newPhase: Phase = {
+        id: phaseData.id || uuidv4(),
+        name: phaseData.name || '',
+        description: phaseData.description || '',
+        order: phaseData.order || plan.phases.length + 1,
+        duration: phaseData.duration || '',
+        startDate: phaseData.startDate,
+        endDate: phaseData.endDate,
+        status: phaseData.status as 'pending' | 'in-progress' | 'completed' | 'delayed',
+        progress: phaseData.progress || 0,
+        tasks: [],
+        materials: []
       }
       
-      setEditMode(false)
-    }, 1500)
-  }
-
-  const handleEditPlan = () => {
-    setEditMode(true)
-    setEditablePlan(markdownContent)
-  }
-
-  const handleCancelEdit = () => {
-    setEditMode(false)
-    setEditablePlan(markdownContent)
-  }
-
-  const handleSaveEdit = () => {
-    setMarkdownContent(editablePlan)
-    setEditMode(false)
-    toast.success('Plan content updated')
-  }
-
-  const handlePhaseClick = (phaseId: string) => {
-    // Navigate to phase details page with the phase ID
-    console.log(`Navigating to phase details for phase: ${phaseId}`);
-    navigate(`/phase-details/${phaseId}`);
-    toast.success(`Viewing details for phase ${phaseId}`);
-  }
-
-  // Toggle view mode between markdown and plain text
-  const handleViewModeChange = (value: string) => {
-    if (value === 'markdown' || value === 'text') {
-      setViewMode(value)
+      setPlan(prev => ({
+        ...prev,
+        phases: [...prev.phases, newPhase].sort((a, b) => a.order - b.order)
+      }))
+      
+      toast.success('New phase added successfully')
+    } else {
+      // Update existing phase
+      setPlan(prev => {
+        const updatedPhases = prev.phases.map(phase => {
+          if (phase.id === phaseData.id) {
+            return {
+              ...phase,
+              ...phaseData,
+              status: phaseData.status as 'pending' | 'in-progress' | 'completed' | 'delayed'
+            }
+          }
+          return phase
+        })
+        
+        return {
+          ...prev,
+          phases: updatedPhases
+        }
+      })
+      
+      toast.success('Phase updated successfully')
     }
   }
 
-  const handleAddPhase = () => {
-    const newPhase: Phase = {
-      id: uuidv4(),
-      title: 'New Phase',
-      description: 'Description of this phase',
-      duration: '2-3 weeks',
-      tasks: [],
-      materials: []
+  const handleSaveTask = (taskData: Partial<Task>) => {
+    if (isNewItem) {
+      // Add new task to the current phase
+      const newTask: Task = {
+        id: taskData.id || uuidv4(),
+        name: taskData.name || '',
+        description: taskData.description || '',
+        duration: taskData.duration || '',
+        startDate: taskData.startDate,
+        endDate: taskData.endDate,
+        status: taskData.status as 'pending' | 'in-progress' | 'completed' | 'delayed',
+        assignedTo: taskData.assignedTo,
+        progress: taskData.progress || 0,
+        dependencies: taskData.dependencies || []
+      }
+      
+      setPlan(prev => {
+        const updatedPhases = prev.phases.map(phase => {
+          if (phase.id === currentPhaseId) {
+            return {
+              ...phase,
+              tasks: [...phase.tasks, newTask]
+            }
+          }
+          return phase
+        })
+        
+        return {
+          ...prev,
+          phases: updatedPhases
+        }
+      })
+      
+      toast.success('New task added successfully')
+    } else {
+      // Update existing task
+      setPlan(prev => {
+        const updatedPhases = prev.phases.map(phase => {
+          if (phase.id === currentPhaseId) {
+            const updatedTasks = phase.tasks.map(task => {
+              if (task.id === taskData.id) {
+                return {
+                  ...task,
+                  ...taskData,
+                  status: taskData.status as 'pending' | 'in-progress' | 'completed' | 'delayed'
+                }
+              }
+              return task
+            })
+            
+            return {
+              ...phase,
+              tasks: updatedTasks
+            }
+          }
+          return phase
+        })
+        
+        return {
+          ...prev,
+          phases: updatedPhases
+        }
+      })
+      
+      toast.success('Task updated successfully')
+    }
+  }
+
+  const handleSaveMaterial = (materialData: Partial<Material>) => {
+    if (isNewItem) {
+      // Add new material to the current phase
+      const newMaterial: Material = {
+        id: materialData.id || uuidv4(),
+        name: materialData.name || '',
+        quantity: materialData.quantity || 0,
+        unit: materialData.unit || '',
+        unitPrice: materialData.unitPrice || 0,
+        totalPrice: materialData.totalPrice || 0,
+        supplier: materialData.supplier,
+        status: materialData.status as 'ordered' | 'delivered' | 'pending',
+        deliveryDate: materialData.deliveryDate
+      }
+      
+      setPlan(prev => {
+        const updatedPhases = prev.phases.map(phase => {
+          if (phase.id === currentPhaseId) {
+            return {
+              ...phase,
+              materials: [...phase.materials, newMaterial]
+            }
+          }
+          return phase
+        })
+        
+        return {
+          ...prev,
+          phases: updatedPhases
+        }
+      })
+      
+      toast.success('New material added successfully')
+    } else {
+      // Update existing material
+      setPlan(prev => {
+        const updatedPhases = prev.phases.map(phase => {
+          if (phase.id === currentPhaseId) {
+            const updatedMaterials = phase.materials.map(material => {
+              if (material.id === materialData.id) {
+                return {
+                  ...material,
+                  ...materialData,
+                  status: materialData.status as 'ordered' | 'delivered' | 'pending'
+                }
+              }
+              return material
+            })
+            
+            return {
+              ...phase,
+              materials: updatedMaterials
+            }
+          }
+          return phase
+        })
+        
+        return {
+          ...prev,
+          phases: updatedPhases
+        }
+      })
+      
+      toast.success('Material updated successfully')
+    }
+  }
+
+  // Date editing handlers
+  const handleEditProjectDates = () => {
+    setDateEditType('project');
+    setShowDateEditModal(true);
+  };
+
+  const handleEditPhaseDates = (phaseId: string) => {
+    const phase = plan.phases.find(p => p.id === phaseId);
+    if (phase) {
+      setCurrentPhase(phase);
+      setDateEditType('phase');
+      setShowDateEditModal(true);
+    }
+  };
+
+  const handleSaveDates = (startDate: string, endDate: string) => {
+    if (dateEditType === 'project') {
+      // Update project dates
+      setPlan(prev => ({
+        ...prev,
+        startDate,
+        endDate,
+        lastUpdated: new Date().toISOString()
+      }));
+      toast.success('Project dates updated successfully');
+    } else if (dateEditType === 'phase' && currentPhase) {
+      // Update phase dates
+      setPlan(prev => {
+        const updatedPhases = prev.phases.map(phase => {
+          if (phase.id === currentPhase.id) {
+            return {
+              ...phase,
+              startDate,
+              endDate
+            };
+          }
+          return phase;
+        });
+        
+        return {
+          ...prev,
+          phases: updatedPhases,
+          lastUpdated: new Date().toISOString()
+        };
+      });
+      toast.success('Phase dates updated successfully');
     }
     
-    setPhases([...phases, newPhase])
+    setShowDateEditModal(false);
+  };
+
+  // Render the active view component
+  const renderActiveView = () => {
+    switch (activeView) {
+      case 'overview':
+        return <OverviewView plan={plan} onAddPhase={handleAddPhase} onEditPhase={handleEditPhase} onDeletePhase={handleDeletePhase} onReorderPhase={handleReorderPhase} onAddTask={handleAddTask} onEditTask={handleEditTask} onDeleteTask={handleDeleteTask} onAddMaterial={handleAddMaterial} onEditMaterial={handleEditMaterial} onDeleteMaterial={handleDeleteMaterial} onEditProjectDates={handleEditProjectDates} onEditPhaseDates={handleEditPhaseDates} />
+      case 'timeline':
+        return <TimelineView plan={plan} />
+      case 'materials':
+        return <MaterialsView plan={plan} onAddMaterial={handleAddMaterial} onEditMaterial={handleEditMaterial} onDeleteMaterial={handleDeleteMaterial} />
+      case 'budget':
+        return <BudgetView plan={plan} />
+      case 'team':
+        return <TeamView plan={plan} />
+      case 'documents':
+        return <DocumentsView plan={plan} />
+      default:
+        return <OverviewView plan={plan} onAddPhase={handleAddPhase} onEditPhase={handleEditPhase} onDeletePhase={handleDeletePhase} onReorderPhase={handleReorderPhase} onAddTask={handleAddTask} onEditTask={handleEditTask} onDeleteTask={handleDeleteTask} onAddMaterial={handleAddMaterial} onEditMaterial={handleEditMaterial} onDeleteMaterial={handleDeleteMaterial} onEditProjectDates={handleEditProjectDates} onEditPhaseDates={handleEditPhaseDates} />
+    }
   }
 
-  const handleEditablePlanChange = (value: string) => {
-    setEditablePlan(value)
-  }
-
-  const addNewPhase = () => {
-    handleAddPhase()
-    setShowActionMenu(false)
-  }
-
-  const forceRefresh = () => {
-    handleRegenerate()
-    setShowActionMenu(false)
-  }
-
-  const setShowCollaborateModal = (value: boolean) => {
-    // Implementation of setShowCollaborateModal
-  }
-
-  return (
-    <div className="container py-6 max-w-7xl">
-      {/* Blue gradient header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-xl mb-6 shadow-md">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="bg-white/20 p-3 rounded-lg mr-4">
-              <FileText className="h-6 w-6" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">Construction Plan</h1>
-              <p className="text-white/80 mt-1">
-                AI-generated construction plan with customizable phases, tasks, and materials
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={handleRegenerate}
-              disabled={isGenerating}
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-            >
-              {isGenerating ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4 mr-2" />
-              )}
-              Regenerate
-            </Button>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-                >
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Actions
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => setShowCollaborateModal(true)}>
-                  <Users className="h-4 w-4 mr-2" />
-                  <span>Collaborate</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/create-project')}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  <span>Edit Source Data</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <Download className="h-4 w-4 mr-2" />
-                  <span>Download PDF</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Printer className="h-4 w-4 mr-2" />
-                  <span>Print</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={forceRefresh}
-              className="text-white/80 hover:text-white hover:bg-white/10"
-              title="Force refresh page"
-            >
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-      
-      {/* Add Phase and Save Plan buttons */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
+  // Header actions for the PageHeader component
+  const headerActions = (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
           <Button 
             variant="outline" 
-            size="default"
-            className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 hover:text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/30"
-            onClick={addNewPhase}
+            size="sm"
+            className="bg-white hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-[#2B6CB0] dark:text-[#93C5FD] transition-all duration-200 shadow-sm"
           >
-            <Plus className="h-4 w-4 mr-1.5" />
-            Add Phase
+            <Save className="h-4 w-4 mr-1" />
+            Save
           </Button>
-          
-          <Button 
-            variant="outline" 
-            size="default"
-            className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/30 relative"
-            onClick={() => setShowActionMenu(!showActionMenu)}
-          >
-            <Save className="h-4 w-4 mr-1.5" />
-            Save Plan
-            {showActionMenu && (
-              <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 z-10 border border-gray-200 dark:border-gray-700 w-48">
-                <div className="flex flex-col gap-1">
-                  <Button
-                    onClick={() => {
-                      handleSavePlan('draft');
-                      setShowActionMenu(false);
-                    }}
-                    variant="ghost"
-                    size="sm"
-                    className="justify-start"
-                    disabled={saving}
-                  >
-                    {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
-                    Save as Draft
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      handleSavePlan('final');
-                      setShowActionMenu(false);
-                    }}
-                    variant="ghost"
-                    size="sm"
-                    className="justify-start text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20"
-                    disabled={saving}
-                  >
-                    {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-2" />}
-                    Finalize Plan
-                  </Button>
-                </div>
-              </div>
-            )}
-          </Button>
-        </div>
-        
-        {/* Project name display */}
-        <div className="text-gray-500 dark:text-gray-400">
-          Project: <span className="font-medium text-gray-700 dark:text-gray-300">{projectData?.name || 'New Construction Project'}</span>
-        </div>
-      </div>
-      
-      {/* Main Content - Timeline focused */}
-      <div className="space-y-6">
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuItem onClick={() => handleSavePlan('draft')}>
+            <Save className="h-4 w-4 mr-2 text-[#2B6CB0]" />
+            Save as Draft
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleSavePlan('final')}>
+            <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
+            Save as Final
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleRegenerate}
+        disabled={isGenerating}
+        className="bg-white hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-[#2B6CB0] dark:text-[#93C5FD] transition-all duration-200 shadow-sm"
+      >
         {isGenerating ? (
-          <div className="flex flex-col items-center justify-center py-10">
-            <Loader2 className="h-10 w-10 text-blue-500 animate-spin mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">Loading your project timeline...</p>
-          </div>
+          <>
+            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            Regenerating...
+          </>
         ) : (
           <>
-            {/* Timeline View */}
-            <Card className="border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow transition-shadow duration-300">
-              <CardHeader className="bg-blue-50 dark:bg-blue-900/10 p-4 border-b border-gray-200 dark:border-gray-800">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center">
-                      <Calendar className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
-                      <CardTitle className="text-blue-700 dark:text-blue-400">
-                        Proposed plan for your construction project
-                      </CardTitle>
-                    </div>
-                    <CardDescription className="mt-1 ml-7">
-                      Construction phases with timeline, tasks, and material requirements
-                    </CardDescription>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setEditMode(!editMode)}
-                    className="flex items-center gap-2"
-                  >
-                    {editMode ? (
-                      <>
-                        <Check className="h-4 w-4" />
-                        <span>Exit Edit Mode</span>
-                      </>
-                    ) : (
-                      <>
-                        <Pencil className="h-4 w-4" />
-                        <span>Edit Plan</span>
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                {editMode ? (
-                  <div className="p-6">
-                    <MarkdownEditor 
-                      value={editablePlan} 
-                      onChange={handleEditablePlanChange}
-                      isDarkMode={isDarkMode}
-                    />
-                  </div>
-                ) : (
-                  <div className="p-6">
-                    <ProjectPhaseManager phases={phases} setPhases={setPhases} isDarkMode={isDarkMode} />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-            
-            {/* Insight Cards */}
-            <PlanInsights />
+            <RefreshCw className="h-4 w-4 mr-1" />
+            Regenerate
+          </>
+        )}
+      </Button>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="bg-white hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-[#2B6CB0] dark:text-[#93C5FD] transition-all duration-200 shadow-sm"
+          >
+            <MoreHorizontal className="h-4 w-4 mr-1" />
+            More
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setShowDistributeModal(true)}>
+            <Share2 className="h-4 w-4 mr-2 text-[#2B6CB0]" />
+            Distribute Plan
+          </DropdownMenuItem>
+          <DropdownMenuItem>
+            <Printer className="h-4 w-4 mr-2 text-[#2B6CB0]" />
+            Print Plan
+          </DropdownMenuItem>
+          <DropdownMenuItem>
+            <Download className="h-4 w-4 mr-2 text-[#2B6CB0]" />
+            Export as PDF
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <Helmet>
+        <title>Generated Plan | BuildEase</title>
+      </Helmet>
+      
+      <PageHeader
+        title={plan.name}
+        description="AI generated construction phases with timeline, tasks, and material requirements."
+        icon={<FileText className="h-6 w-6" />}
+        status={plan.status}
+        actions={headerActions}
+      />
+
+      {/* Tab navigation */}
+      <div className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-10 shadow-sm">
+        <div className="container mx-auto px-4 sm:px-6 flex items-center overflow-x-auto hide-scrollbar">
+          <Button
+            onClick={() => setActiveView('overview')}
+            variant="ghost"
+            size="sm"
+            className={`${activeView === 'overview' ? 'border-b-2 border-[#2B6CB0] text-[#2B6CB0] font-medium' : 'text-gray-600 hover:text-[#2B6CB0]'} px-3 py-3 rounded-none text-sm transition-all`}
+          >
+            <Home className="h-4 w-4 mr-2" />
+            Overview
+          </Button>
+          <Button
+            onClick={() => setActiveView('timeline')}
+            variant="ghost"
+            size="sm"
+            className={`${activeView === 'timeline' ? 'border-b-2 border-[#2B6CB0] text-[#2B6CB0] font-medium' : 'text-gray-600 hover:text-[#2B6CB0]'} px-3 py-3 rounded-none text-sm transition-all`}
+          >
+            <Calendar className="h-4 w-4 mr-2" />
+            Timeline
+          </Button>
+          <Button
+            onClick={() => setActiveView('materials')}
+            variant="ghost"
+            size="sm"
+            className={`${activeView === 'materials' ? 'border-b-2 border-[#2B6CB0] text-[#2B6CB0] font-medium' : 'text-gray-600 hover:text-[#2B6CB0]'} px-3 py-3 rounded-none text-sm transition-all`}
+          >
+            <Package className="h-4 w-4 mr-2" />
+            Materials
+          </Button>
+          <Button
+            onClick={() => setActiveView('budget')}
+            variant="ghost"
+            size="sm"
+            className={`${activeView === 'budget' ? 'border-b-2 border-[#2B6CB0] text-[#2B6CB0] font-medium' : 'text-gray-600 hover:text-[#2B6CB0]'} px-3 py-3 rounded-none text-sm transition-all`}
+          >
+            <DollarSign className="h-4 w-4 mr-2" />
+            Budget
+          </Button>
+          <Button
+            onClick={() => setActiveView('team')}
+            variant="ghost"
+            size="sm"
+            className={`${activeView === 'team' ? 'border-b-2 border-[#2B6CB0] text-[#2B6CB0] font-medium' : 'text-gray-600 hover:text-[#2B6CB0]'} px-3 py-3 rounded-none text-sm transition-all`}
+          >
+            <Users className="h-4 w-4 mr-2" />
+            Team
+          </Button>
+          <Button
+            onClick={() => setActiveView('documents')}
+            variant="ghost"
+            size="sm"
+            className={`${activeView === 'documents' ? 'border-b-2 border-[#2B6CB0] text-[#2B6CB0] font-medium' : 'text-gray-600 hover:text-[#2B6CB0]'} px-3 py-3 rounded-none text-sm transition-all`}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Documents
+          </Button>
+        </div>
+      </div>
+
+      {/* Content area */}
+      <div className="container mx-auto px-4 sm:px-6 py-6">
+        {isGenerating ? (
+          <m.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex flex-col items-center justify-center py-10 bg-white dark:bg-gray-800 rounded-xl shadow-md p-6"
+          >
+            <Loader2 className="h-10 w-10 text-[#2B6CB0] animate-spin mb-4" />
+            <p className="text-gray-500 dark:text-gray-400">Regenerating your construction plan...</p>
+          </m.div>
+        ) : (
+          <>
+            {/* Render main content */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 sm:p-6">
+              {renderActiveView()}
+            </div>
           </>
         )}
       </div>
+
+      {/* Modals */}
+      <PhaseFormModal
+        show={showPhaseModal}
+        onClose={() => setShowPhaseModal(false)}
+        onSave={handleSavePhase}
+        phase={currentPhase}
+        isNew={isNewItem}
+        maxOrder={plan.phases.length}
+      />
+      
+      <TaskFormModal
+        show={showTaskModal}
+        onClose={() => setShowTaskModal(false)}
+        onSave={handleSaveTask}
+        task={currentTask}
+        isNew={isNewItem}
+        teamMembers={plan.team.map(member => ({ id: member.id, name: member.name }))}
+      />
+      
+      <MaterialFormModal
+        show={showMaterialModal}
+        onClose={() => setShowMaterialModal(false)}
+        onSave={handleSaveMaterial}
+        material={currentMaterial}
+        isNew={isNewItem}
+      />
+      
+      <DateEditModal
+        show={showDateEditModal}
+        onClose={() => setShowDateEditModal(false)}
+        onSave={handleSaveDates}
+        title={dateEditType === 'project' ? 'Edit Project Timeline' : 'Edit Phase Timeline'}
+        startDate={dateEditType === 'project' ? plan.startDate : currentPhase?.startDate}
+        endDate={dateEditType === 'project' ? plan.endDate : currentPhase?.endDate}
+        saving={saving}
+      />
       
       {/* Distribute Modal */}
       <DistributeModal

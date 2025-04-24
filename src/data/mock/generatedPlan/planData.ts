@@ -1,0 +1,627 @@
+import { v4 as uuidv4 } from 'uuid';
+
+export interface Task {
+  id: string;
+  name: string;
+  description: string;
+  duration: string;
+  startDate?: string;
+  endDate?: string;
+  status: 'pending' | 'in-progress' | 'completed' | 'delayed';
+  assignedTo?: string;
+  dependencies?: string[];
+  progress: number;
+}
+
+export interface Material {
+  id: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  totalPrice: number;
+  supplier?: string;
+  status: 'ordered' | 'delivered' | 'pending';
+  deliveryDate?: string;
+}
+
+export interface Phase {
+  id: string;
+  name: string;
+  description: string;
+  order: number;
+  duration: string;
+  startDate?: string;
+  endDate?: string;
+  status: 'pending' | 'in-progress' | 'completed' | 'delayed';
+  progress: number;
+  tasks: Task[];
+  materials: Material[];
+}
+
+export interface Budget {
+  laborCost: number;
+  materialsCost: number;
+  equipmentCost: number;
+  permitsFees: number;
+  contingency: number;
+  totalCost: number;
+}
+
+export interface TeamMember {
+  id: string;
+  name: string;
+  role: string;
+  email: string;
+  phone?: string;
+  avatar?: string;
+}
+
+export interface Document {
+  id: string;
+  name: string;
+  type: string;
+  url: string;
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface ConstructionPlan {
+  id: string;
+  name: string;
+  description: string;
+  projectType: string;
+  clientName: string;
+  location: string;
+  estimatedDuration: string;
+  startDate?: string;
+  endDate?: string;
+  status: 'draft' | 'final';
+  phases: Phase[];
+  budget: Budget;
+  team: TeamMember[];
+  documents: Document[];
+  lastUpdated: string;
+  createdAt: string;
+}
+
+// Generate mock construction plan data
+export const mockConstructionPlan: ConstructionPlan = {
+  id: uuidv4(),
+  name: 'New Construction Project',
+  description: 'Complete renovation of a 2-story residential home including kitchen, bathrooms, and outdoor spaces.',
+  projectType: 'Residential Renovation',
+  clientName: 'Johnson Family',
+  location: '123 Maple Street, Springfield, IL',
+  estimatedDuration: '6 months',
+  startDate: '2025-06-01',
+  endDate: '2025-12-15',
+  status: 'draft',
+  lastUpdated: new Date().toISOString(),
+  createdAt: '2025-04-15T14:32:00Z',
+  
+  // Define the phases
+  phases: [
+    {
+      id: uuidv4(),
+      name: 'Pre-Construction Phase',
+      description: 'Initial planning, design, and preparation before construction begins',
+      order: 1,
+      duration: '4-6 weeks',
+      startDate: '2025-06-01',
+      endDate: '2025-07-15',
+      status: 'pending',
+      progress: 0,
+      tasks: [
+        {
+          id: uuidv4(),
+          name: 'Site Assessment',
+          description: 'Evaluate existing conditions and identify potential issues',
+          duration: '1 week',
+          startDate: '2025-06-01',
+          endDate: '2025-06-08',
+          status: 'pending',
+          assignedTo: 'Mike Peters',
+          progress: 0,
+        },
+        {
+          id: uuidv4(),
+          name: 'Finalize Architectural Plans',
+          description: 'Complete detailed architectural drawings and specifications',
+          duration: '2 weeks',
+          startDate: '2025-06-08',
+          endDate: '2025-06-22',
+          status: 'pending',
+          assignedTo: 'Sarah Johnson',
+          progress: 0,
+        },
+        {
+          id: uuidv4(),
+          name: 'Obtain Building Permits',
+          description: 'Submit plans and secure necessary permits from local authorities',
+          duration: '3 weeks',
+          startDate: '2025-06-22',
+          endDate: '2025-07-13',
+          status: 'pending',
+          assignedTo: 'David Williams',
+          progress: 0,
+        },
+        {
+          id: uuidv4(),
+          name: 'Hire Subcontractors',
+          description: 'Select and contract specialized tradespeople',
+          duration: '2 weeks',
+          startDate: '2025-06-15',
+          endDate: '2025-06-29',
+          status: 'pending',
+          assignedTo: 'Robert Miller',
+          progress: 0,
+        },
+      ],
+      materials: [
+        {
+          id: uuidv4(),
+          name: 'Blueprint Copies',
+          quantity: 10,
+          unit: 'sets',
+          unitPrice: 75,
+          totalPrice: 750,
+          supplier: 'PrintMaster Services',
+          status: 'pending',
+          deliveryDate: '2025-06-10',
+        },
+        {
+          id: uuidv4(),
+          name: 'Permit Application Fees',
+          quantity: 1,
+          unit: 'package',
+          unitPrice: 1200,
+          totalPrice: 1200,
+          supplier: 'City Planning Department',
+          status: 'pending',
+          deliveryDate: '2025-06-22',
+        },
+      ],
+    },
+    {
+      id: uuidv4(),
+      name: 'Foundation Phase',
+      description: 'Establishing the structural foundation of the building',
+      order: 2,
+      duration: '3-4 weeks',
+      startDate: '2025-07-15',
+      endDate: '2025-08-12',
+      status: 'pending',
+      progress: 0,
+      tasks: [
+        {
+          id: uuidv4(),
+          name: 'Site Preparation',
+          description: 'Clear site, set up temporary facilities, and mark foundation layout',
+          duration: '1 week',
+          startDate: '2025-07-15',
+          endDate: '2025-07-22',
+          status: 'pending',
+          assignedTo: 'Construction Team A',
+          progress: 0,
+        },
+        {
+          id: uuidv4(),
+          name: 'Excavation',
+          description: 'Excavate foundation area to required depth',
+          duration: '1 week',
+          startDate: '2025-07-22',
+          endDate: '2025-07-29',
+          status: 'pending',
+          assignedTo: 'Excavation Specialists',
+          progress: 0,
+        },
+        {
+          id: uuidv4(),
+          name: 'Foundation Formwork',
+          description: 'Install forms for concrete foundation',
+          duration: '4 days',
+          startDate: '2025-07-29',
+          endDate: '2025-08-02',
+          status: 'pending',
+          assignedTo: 'Form Crew',
+          progress: 0,
+        },
+        {
+          id: uuidv4(),
+          name: 'Concrete Pouring and Curing',
+          description: 'Pour concrete foundation and allow proper curing time',
+          duration: '10 days',
+          startDate: '2025-08-02',
+          endDate: '2025-08-12',
+          status: 'pending',
+          assignedTo: 'Concrete Specialists',
+          progress: 0,
+        },
+      ],
+      materials: [
+        {
+          id: uuidv4(),
+          name: 'Concrete Mix',
+          quantity: 30,
+          unit: 'cubic yards',
+          unitPrice: 125,
+          totalPrice: 3750,
+          supplier: 'ConcretePro Supply',
+          status: 'pending',
+          deliveryDate: '2025-08-01',
+        },
+        {
+          id: uuidv4(),
+          name: 'Rebar',
+          quantity: 2500,
+          unit: 'linear feet',
+          unitPrice: 1.5,
+          totalPrice: 3750,
+          supplier: 'Steel Solutions Inc.',
+          status: 'pending',
+          deliveryDate: '2025-07-28',
+        },
+        {
+          id: uuidv4(),
+          name: 'Foundation Formwork Materials',
+          quantity: 1,
+          unit: 'package',
+          unitPrice: 2200,
+          totalPrice: 2200,
+          supplier: 'BuildRight Materials',
+          status: 'pending',
+          deliveryDate: '2025-07-25',
+        },
+      ],
+    },
+    {
+      id: uuidv4(),
+      name: 'Framing Phase',
+      description: `Construction of the building's frame and structure`,
+      order: 3,
+      duration: '4-5 weeks',
+      startDate: '2025-08-12',
+      endDate: '2025-09-16',
+      status: 'pending',
+      progress: 0,
+      tasks: [
+        {
+          id: uuidv4(),
+          name: 'First Floor Framing',
+          description: 'Construct floor joists and subfloor',
+          duration: '1 week',
+          startDate: '2025-08-12',
+          endDate: '2025-08-19',
+          status: 'pending',
+          assignedTo: 'Framing Crew A',
+          progress: 0,
+        },
+        {
+          id: uuidv4(),
+          name: 'Wall Framing',
+          description: 'Construct exterior and interior wall frames',
+          duration: '2 weeks',
+          startDate: '2025-08-19',
+          endDate: '2025-09-02',
+          status: 'pending',
+          assignedTo: 'Framing Crew B',
+          progress: 0,
+        },
+        {
+          id: uuidv4(),
+          name: 'Roof Framing',
+          description: 'Install roof trusses and sheathing',
+          duration: '10 days',
+          startDate: '2025-09-02',
+          endDate: '2025-09-12',
+          status: 'pending',
+          assignedTo: 'Roof Framing Specialists',
+          progress: 0,
+        },
+        {
+          id: uuidv4(),
+          name: 'Window and Door Installation',
+          description: 'Install window and door frames',
+          duration: '4 days',
+          startDate: '2025-09-12',
+          endDate: '2025-09-16',
+          status: 'pending',
+          assignedTo: 'Installation Team',
+          progress: 0,
+        },
+      ],
+      materials: [
+        {
+          id: uuidv4(),
+          name: 'Lumber Package',
+          quantity: 1,
+          unit: 'package',
+          unitPrice: 12500,
+          totalPrice: 12500,
+          supplier: 'TimberWorks Lumber',
+          status: 'pending',
+          deliveryDate: '2025-08-10',
+        },
+        {
+          id: uuidv4(),
+          name: 'Roof Trusses',
+          quantity: 24,
+          unit: 'pieces',
+          unitPrice: 220,
+          totalPrice: 5280,
+          supplier: 'Truss Builders Inc.',
+          status: 'pending',
+          deliveryDate: '2025-08-30',
+        },
+        {
+          id: uuidv4(),
+          name: 'Windows',
+          quantity: 14,
+          unit: 'units',
+          unitPrice: 350,
+          totalPrice: 4900,
+          supplier: 'Clear View Windows',
+          status: 'pending',
+          deliveryDate: '2025-09-01',
+        },
+        {
+          id: uuidv4(),
+          name: 'Exterior Doors',
+          quantity: 3,
+          unit: 'units',
+          unitPrice: 650,
+          totalPrice: 1950,
+          supplier: 'Security Doors Co.',
+          status: 'pending',
+          deliveryDate: '2025-09-01',
+        },
+      ],
+    },
+    {
+      id: uuidv4(),
+      name: 'Finishing Phase',
+      description: 'Interior and exterior finishing work',
+      order: 4,
+      duration: '6-8 weeks',
+      startDate: '2025-09-16',
+      endDate: '2025-11-11',
+      status: 'pending',
+      progress: 0,
+      tasks: [
+        {
+          id: uuidv4(),
+          name: 'Plumbing Rough-In',
+          description: 'Install water supply and drainage pipes',
+          duration: '1 week',
+          startDate: '2025-09-16',
+          endDate: '2025-09-23',
+          status: 'pending',
+          assignedTo: 'Plumbing Team',
+          progress: 0,
+        },
+        {
+          id: uuidv4(),
+          name: 'Electrical Rough-In',
+          description: 'Install electrical wiring, outlets, and switches',
+          duration: '1 week',
+          startDate: '2025-09-23',
+          endDate: '2025-09-30',
+          status: 'pending',
+          assignedTo: 'Electrical Team',
+          progress: 0,
+        },
+        {
+          id: uuidv4(),
+          name: 'HVAC Installation',
+          description: 'Install heating, ventilation, and air conditioning systems',
+          duration: '10 days',
+          startDate: '2025-09-30',
+          endDate: '2025-10-10',
+          status: 'pending',
+          assignedTo: 'HVAC Specialists',
+          progress: 0,
+        },
+        {
+          id: uuidv4(),
+          name: 'Drywall Installation',
+          description: 'Install and finish drywall on interior walls and ceilings',
+          duration: '2 weeks',
+          startDate: '2025-10-10',
+          endDate: '2025-10-24',
+          status: 'pending',
+          assignedTo: 'Drywall Crew',
+          progress: 0,
+        },
+        {
+          id: uuidv4(),
+          name: 'Interior Painting',
+          description: 'Prime and paint interior walls and ceilings',
+          duration: '10 days',
+          startDate: '2025-10-24',
+          endDate: '2025-11-03',
+          status: 'pending',
+          assignedTo: 'Painting Team',
+          progress: 0,
+        },
+        {
+          id: uuidv4(),
+          name: 'Flooring Installation',
+          description: 'Install hardwood, tile, and carpet flooring',
+          duration: '1 week',
+          startDate: '2025-11-03',
+          endDate: '2025-11-10',
+          status: 'pending',
+          assignedTo: 'Flooring Specialists',
+          progress: 0,
+        },
+      ],
+      materials: [
+        {
+          id: uuidv4(),
+          name: 'Plumbing Supplies',
+          quantity: 1,
+          unit: 'package',
+          unitPrice: 4800,
+          totalPrice: 4800,
+          supplier: 'PlumbRight Supplies',
+          status: 'pending',
+          deliveryDate: '2025-09-14',
+        },
+        {
+          id: uuidv4(),
+          name: 'Electrical Materials',
+          quantity: 1,
+          unit: 'package',
+          unitPrice: 5200,
+          totalPrice: 5200,
+          supplier: 'Electra Supplies',
+          status: 'pending',
+          deliveryDate: '2025-09-21',
+        },
+        {
+          id: uuidv4(),
+          name: 'HVAC System',
+          quantity: 1,
+          unit: 'system',
+          unitPrice: 7500,
+          totalPrice: 7500,
+          supplier: 'Climate Control Inc.',
+          status: 'pending',
+          deliveryDate: '2025-09-28',
+        },
+        {
+          id: uuidv4(),
+          name: 'Drywall Sheets',
+          quantity: 120,
+          unit: 'sheets',
+          unitPrice: 18,
+          totalPrice: 2160,
+          supplier: 'BuildRight Materials',
+          status: 'pending',
+          deliveryDate: '2025-10-08',
+        },
+        {
+          id: uuidv4(),
+          name: 'Interior Paint',
+          quantity: 25,
+          unit: 'gallons',
+          unitPrice: 45,
+          totalPrice: 1125,
+          supplier: 'ColorMaster Paints',
+          status: 'pending',
+          deliveryDate: '2025-10-22',
+        },
+        {
+          id: uuidv4(),
+          name: 'Hardwood Flooring',
+          quantity: 1200,
+          unit: 'sq. feet',
+          unitPrice: 8.5,
+          totalPrice: 10200,
+          supplier: 'Premium Flooring Co.',
+          status: 'pending',
+          deliveryDate: '2025-11-01',
+        },
+      ],
+    },
+  ],
+  
+  // Budget information
+  budget: {
+    laborCost: 85000,
+    materialsCost: 67065,
+    equipmentCost: 12500,
+    permitsFees: 3500,
+    contingency: 16800,
+    totalCost: 184865,
+  },
+  
+  // Team members
+  team: [
+    {
+      id: uuidv4(),
+      name: 'Robert Miller',
+      role: 'Project Manager',
+      email: 'robert.miller@buildease.com',
+      phone: '(555) 123-4567',
+      avatar: '/avatars/robert-miller.jpg',
+    },
+    {
+      id: uuidv4(),
+      name: 'Sarah Johnson',
+      role: 'Architect',
+      email: 'sarah.johnson@buildease.com',
+      phone: '(555) 234-5678',
+      avatar: '/avatars/sarah-johnson.jpg',
+    },
+    {
+      id: uuidv4(),
+      name: 'Mike Peters',
+      role: 'Lead Contractor',
+      email: 'mike.peters@buildease.com',
+      phone: '(555) 345-6789',
+      avatar: '/avatars/mike-peters.jpg',
+    },
+    {
+      id: uuidv4(),
+      name: 'David Williams',
+      role: 'Permits Specialist',
+      email: 'david.williams@buildease.com',
+      phone: '(555) 456-7890',
+      avatar: '/avatars/david-williams.jpg',
+    },
+    {
+      id: uuidv4(),
+      name: 'Emily Chen',
+      role: 'Interior Designer',
+      email: 'emily.chen@buildease.com',
+      phone: '(555) 567-8901',
+      avatar: '/avatars/emily-chen.jpg',
+    },
+  ],
+  
+  // Documents
+  documents: [
+    {
+      id: uuidv4(),
+      name: 'Architectural Plans',
+      type: 'PDF',
+      url: '/documents/architectural-plans.pdf',
+      createdAt: '2025-04-18T10:30:00Z',
+      createdBy: 'Sarah Johnson',
+    },
+    {
+      id: uuidv4(),
+      name: 'Building Permit Application',
+      type: 'PDF',
+      url: '/documents/permit-application.pdf',
+      createdAt: '2025-04-20T14:45:00Z',
+      createdBy: 'David Williams',
+    },
+    {
+      id: uuidv4(),
+      name: 'Structural Engineering Report',
+      type: 'PDF',
+      url: '/documents/engineering-report.pdf',
+      createdAt: '2025-04-22T09:15:00Z',
+      createdBy: 'James Thompson',
+    },
+    {
+      id: uuidv4(),
+      name: 'Interior Design Concepts',
+      type: 'PPT',
+      url: '/documents/interior-design.ppt',
+      createdAt: '2025-04-23T16:30:00Z',
+      createdBy: 'Emily Chen',
+    },
+    {
+      id: uuidv4(),
+      name: 'Budget Estimate',
+      type: 'XLSX',
+      url: '/documents/budget-estimate.xlsx',
+      createdAt: '2025-04-25T11:20:00Z',
+      createdBy: 'Robert Miller',
+    },
+  ],
+};

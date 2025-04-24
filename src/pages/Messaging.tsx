@@ -381,14 +381,13 @@ const Messaging: React.FC = () => {
             title="Messages"
             description="Communicate with your team and clients in real-time"
             icon={<MessagesSquare className="h-7 w-7 text-white" />}
-            className="bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-700 dark:to-blue-800 border-none shadow-lg"
             actions={
               <m.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <Button 
                   variant="secondary" 
                   size="sm"
                   onClick={() => setIsNewConversationDialogOpen(true)}
-                  className="text-sm font-medium shadow-sm hover:shadow transition-all bg-white text-blue-600 hover:bg-blue-50 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700 px-4"
+                  className="text-sm font-medium shadow-sm hover:shadow transition-all bg-white text-[#2B6CB0] hover:bg-gray-50 dark:bg-slate-800 dark:text-[#93C5FD] dark:hover:bg-slate-700 px-4"
                 >
                   <Plus className="h-4 w-4 mr-1.5" />
                   New Conversation

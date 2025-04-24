@@ -126,9 +126,11 @@ const PageHeader = memo(function PageHeader({
           disabled={action.disabled}
           className={cn(
             action.variant === "default"
-              ? "bg-white hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-blue-700 dark:text-blue-400"
+              ? "bg-white hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-[#2B6CB0] dark:text-[#93C5FD]"
+              : action.variant === "secondary"
+              ? "bg-[#ED8936] hover:bg-[#DD6B20] text-white" 
               : "",
-            "transition-all duration-200"
+            "transition-all duration-200 shadow-sm"
           )}
         >
           {action.icon && <span className="mr-1">{action.icon}</span>}
@@ -143,8 +145,8 @@ const PageHeader = memo(function PageHeader({
   return (
     <div
       className={cn(
-        "relative rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-900/90 dark:to-indigo-900/90 text-white p-4 mb-6",
-        "shadow-lg border border-blue-500/20 dark:border-blue-800/30 overflow-hidden",
+        "relative rounded-xl bg-gradient-to-r from-[#2B6CB0] to-[#2B6CB0]/80 dark:from-[#1A4971] dark:to-[#1A365D] text-white p-4 mb-6",
+        "shadow-lg border border-[#2B6CB0]/20 dark:border-[#1A4971]/30 overflow-hidden",
         "transition-all duration-300",
         className,
       )}
@@ -186,7 +188,7 @@ const PageHeader = memo(function PageHeader({
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div className="flex items-center gap-3">
             {icon && (
-              <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-white/10 dark:bg-white/5 backdrop-blur-sm p-2 text-white shadow-sm transition-all duration-200">
+              <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-white/10 dark:bg-white/20 backdrop-blur-sm p-2 text-white shadow-sm transition-all duration-200">
                 {icon}
               </div>
             )}
@@ -214,13 +216,13 @@ const PageHeader = memo(function PageHeader({
 
         {/* Metadata */}
         {metadata && metadata.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mt-4 bg-white/10 dark:bg-slate-800/20 backdrop-blur-sm rounded-lg p-3 transition-all duration-200">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mt-4 bg-white/15 dark:bg-slate-800/30 backdrop-blur-sm rounded-lg p-3 shadow-sm transition-all duration-200">
             {metadata.map((item, index) => (
               <div key={index} className="flex flex-col">
-                <span className="text-xs text-white/70 dark:text-white/60">
+                <span className="text-xs text-white/80 dark:text-white/70">
                   {item.label}
                 </span>
-                <span className="text-sm font-medium">{item.value}</span>
+                <span className="text-sm font-medium text-white dark:text-white/90">{item.value}</span>
               </div>
             ))}
           </div>
