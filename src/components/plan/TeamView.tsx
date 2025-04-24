@@ -4,7 +4,7 @@ import { TeamMember as PlanTeamMember } from '@/data/mock/generatedPlan/planData
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Users, Mail, Phone, Plus, Edit, Trash } from 'lucide-react'; // Added Plus, Edit, Trash
-import { motion as m } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button'; // Import Button
 import { TeamModal } from '@/components/shared/modals/TeamModal'; // Import TeamModal
 import { TeamMember } from '@/types/team'; // Import the type from types/team.ts
@@ -81,68 +81,71 @@ export function TeamView({ plan }: TeamViewProps) {
           email: savedItem.email || 'unknown@example.com',
           phone: savedItem.phone || '', // Optional phone
           status: savedItem.status || 'active',
-          department: 'Unassigned', // Default required field
-          joinDate: new Date().toISOString(), // Default required field
-          availability: 'Unknown', // Default required field
+          department: savedItem.department || 'Unassigned', // Default required field
+          joinDate: savedItem.joinDate || new Date().toISOString(), // Default required field
+          availability: savedItem.availability || 'Full-time', // Default required field
           permissions: savedItem.permissions || 'Viewer', // Provide default permissions
           avatar: undefined, // Default avatar if not handled
-          // --- Other optional fields from TeamMember can default to undefined or empty arrays ---
-          projects: [], 
-          skills: [],
-          certifications: [],
-          tags: [],
-          location: undefined,
-          workload: undefined,
-          completedTasks: undefined,
-          totalTasks: undefined,
-          performance: undefined,
-          isTopPerformer: undefined,
         };
         return [...prevItems, newItemWithDefaults];
       } else {
         // Update existing item
-        return prevItems.map(item => item.id === savedItem.id ? { ...item, ...savedItem } : item);
+        return prevItems.map(item => 
+          item.id === currentItem?.id 
+            ? { ...item, ...savedItem }
+            : item
+        );
       }
     });
-    setShowTeamModal(false); // Close modal after save
-    setCurrentItem(null);
+    
+    // Close modal after save
+    setShowTeamModal(false);
   }
-  
+
   function handleDeleteTeamMember(id: number | string) {
-    // Add confirmation dialog in real app
     setTeamMembers(prevItems => prevItems.filter(item => item.id !== id));
   }
-  // --- End Modal Handling ---
-
 
   return (
     <div className="space-y-6">
-      <m.div
+      <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <Card className="border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden rounded-xl">
-          <CardHeader className="bg-gray-50 dark:bg-gray-800/30 border-b border-gray-200 dark:border-gray-700 pb-3 flex flex-row items-center justify-between">
-            <CardTitle className="text-lg font-semibold text-[#2B6CB0] dark:text-[#93C5FD] flex items-center">
-              <Users className="h-5 w-5 mr-2" />
+        <Card className="border-none shadow-md overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-[#2B6CB0]/80 to-[#2B6CB0] p-4">
+            <CardTitle className="text-white flex items-center gap-2">
+              <Users className="h-5 w-5" />
               Project Team
             </CardTitle>
             {/* Add Member Button */}
-            <Button size="sm" onClick={handleOpenAddModal} className="bg-[#ED8936] hover:bg-[#ED8936]/90 text-white">
+            <Button size="sm" onClick={handleOpenAddModal} className="bg-[#ED8936] hover:bg-[#ED8936]/90 text-white shadow-sm">
               <Plus className="h-4 w-4 mr-1" />
               Add Member
             </Button>
           </CardHeader>
           <CardContent className="p-4">
              {teamMembers.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No team members added yet.
+              <div className="text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/20 rounded-lg border border-dashed border-gray-300 dark:border-gray-700">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 mb-3">
+                  <Users className="h-8 w-8 text-gray-400 dark:text-gray-600" />
+                </div>
+                <p className="font-medium text-base mb-1">No team members</p>
+                <p className="text-sm mb-3">Start by adding your first team member</p>
+                <Button
+                  onClick={handleOpenAddModal}
+                  size="sm"
+                  className="bg-[#ED8936] hover:bg-[#ED8936]/90 text-white shadow-sm"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Your First Member
+                </Button>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {teamMembers.map((member, index) => (
-                  <m.div
+                  <motion.div
                     key={member.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -188,13 +191,13 @@ export function TeamView({ plan }: TeamViewProps) {
                         </div>
                       )}
                     </div>
-                  </m.div>
+                  </motion.div>
                 ))}
               </div>
              )}
           </CardContent>
         </Card>
-      </m.div>
+      </motion.div>
 
       {/* Render the TeamModal */}
       <TeamModal

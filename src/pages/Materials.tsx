@@ -45,7 +45,7 @@ import {
 import { Grid } from '@/components/layout/Grid'
 import { PageHeader } from '@/components/shared'
 import { usePageActions } from '@/hooks/usePageActions'
-import { MaterialModal } from '@/components/shared/modals';
+import { MaterialModal, Material as EnhancedMaterial } from '@/components/shared/modals';
 
 // Custom Components
 import { StatCard } from '@/components/shared/StatCard'
@@ -73,7 +73,7 @@ export function Materials() {
   const [projectFilter, setProjectFilter] = useState('All Projects')
   const [statusFilter, setStatusFilter] = useState('All Statuses')
   const [showMaterialModal, setShowMaterialModal] = useState(false);
-  const [currentMaterial, setCurrentMaterial] = useState<Material | null>(null);
+  const [currentMaterial, setCurrentMaterial] = useState<Partial<EnhancedMaterial> | null>(null);
   const [isNewItem, setIsNewItem] = useState(true);
 
   // Filter materials based on search query and filters
@@ -108,20 +108,20 @@ export function Materials() {
 
   // Function to open the modal for adding a new material
   function handleOpenAddModal() {
+    // Convert to the enhanced Material type format
     setCurrentMaterial({
-      id: 0, // Temporary ID for new item
+      id: '',
       name: '',
-      category: '',
-      unit: '',
+      type: '',
+      quantity: 1,
+      unit: 'ea',
       unitPrice: 0,
-      inStock: 0,
-      minStock: 0,
+      totalPrice: 0,
       supplier: '',
-      project: '',
-      status: 'In Stock', // Default status
-      lastUpdated: new Date().toISOString(),
-      lastOrdered: '', // Added missing lastOrdered
-      onOrder: 0
+      status: 'pending',
+      purchaseDate: '',
+      deliveryDate: '',
+      notes: ''
     });
     setIsNewItem(true);
     setShowMaterialModal(true);
@@ -129,205 +129,235 @@ export function Materials() {
 
   // Function to open the modal for editing an existing material
   function handleOpenEditModal(material: Material) {
-    setCurrentMaterial(material);
+    // Convert from old Material type to enhanced Material format
+    setCurrentMaterial({
+      id: String(material.id),
+      name: material.name,
+      type: material.category,
+      quantity: material.inStock,
+      unit: material.unit,
+      unitPrice: material.unitPrice,
+      totalPrice: material.unitPrice * material.inStock,
+      supplier: material.supplier,
+      status: material.status === 'In Stock' ? 'delivered' : 
+              material.status === 'Low Stock' ? 'pending' : 
+              material.status === 'Out of Stock' ? 'pending' : 
+              material.status === 'On Order' ? 'ordered' : 'pending',
+      purchaseDate: material.lastOrdered || '',
+      deliveryDate: '',
+      notes: `Min Stock: ${material.minStock}. ${material.onOrder > 0 ? `On Order: ${material.onOrder}` : ''}`
+    });
     setIsNewItem(false);
     setShowMaterialModal(true);
   }
 
-  /**
-   * Adds or updates a material in the inventory using the shared modal data
-   */
-  function handleSaveMaterial(savedMaterial: Material) {
+  // Adds or updates a material in the inventory using the shared modal data
+  function handleSaveMaterial(savedMaterial: EnhancedMaterial) {
+    // Convert from enhanced Material format back to page's Material type
+    const convertedMaterial: Material = {
+      id: parseInt(savedMaterial.id) || Date.now(),
+      name: savedMaterial.name,
+      category: savedMaterial.type,
+      unit: savedMaterial.unit,
+      unitPrice: savedMaterial.unitPrice,
+      inStock: savedMaterial.quantity,
+      minStock: 10, // Default value 
+      supplier: savedMaterial.supplier || '',
+      project: projectFilter !== 'All Projects' ? projectFilter : 'General',
+      status: savedMaterial.status === 'delivered' ? 'In Stock' : 
+              savedMaterial.status === 'ordered' ? 'On Order' : 
+              savedMaterial.status === 'pending' ? 'Low Stock' : 'In Stock',
+      lastUpdated: new Date().toISOString(),
+      lastOrdered: savedMaterial.purchaseDate || '',
+      onOrder: savedMaterial.status === 'ordered' ? savedMaterial.quantity : 0
+    };
+
     if (isNewItem) {
-      // Add new material
-      const newId = Math.max(0, ...materials.map(m => m.id)) + 1;
-      const status = 
-        savedMaterial.inStock === 0 ? 'Out of Stock' :
-        savedMaterial.inStock < savedMaterial.minStock ? 'Low Stock' :
-        'In Stock';
-      
-      const materialToAdd: Material = {
-        ...savedMaterial,
-        id: newId,
-        status: status,
-        lastUpdated: new Date().toISOString(),
-        onOrder: 0, // Assuming onOrder is 0 initially for new materials
-      };
-      setMaterials(prev => [...prev, materialToAdd]);
+      setMaterials([...materials, convertedMaterial]);
     } else {
-      // Update existing material
-      setMaterials(prev => prev.map(m => 
-        m.id === savedMaterial.id ? { ...savedMaterial, lastUpdated: new Date().toISOString() } : m
+      setMaterials(materials.map(m => 
+        m.id === convertedMaterial.id ? convertedMaterial : m
       ));
     }
-    setShowMaterialModal(false); // Close modal after save
-    setCurrentMaterial(null); // Reset current material
+
+    setShowMaterialModal(false);
+    setCurrentMaterial(null);
   }
 
-  /**
-   * Places an order for a material
-   */
+  // Places an order for a material
   function handleOrderMaterial(id: number, quantity: number) {
-    setMaterials(materials.map(material => 
-      material.id === id ? { 
-        ...material, 
-        onOrder: material.onOrder + quantity,
-        lastOrdered: new Date().toISOString().split('T')[0],
-        status: 'On Order'
-      } : material
-    ))
+    setMaterials(materials.map(material => {
+      if (material.id === id) {
+        return {
+          ...material,
+          status: 'On Order',
+          onOrder: quantity,
+          lastOrdered: new Date().toISOString()
+        }
+      }
+      return material
+    }))
   }
 
-  /**
-   * Deletes a material from the inventory
-   */
+  // Deletes a material from the inventory
   function handleDeleteMaterial(id: number) {
     setMaterials(materials.filter(material => material.id !== id))
   }
 
-  /**
-   * Handles exporting materials data
-   */
+  // Handles exporting materials data
   function handleExportMaterials() {
-    // In a real application, this would create and download a file
-    // For now, just show an alert
-    alert('Materials data exported successfully')
+    // In a real app, this would generate a CSV or Excel file
+    console.log('Exporting materials', filteredMaterials)
+    // Show toast notification
+    alert('Materials exported successfully!')
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <PageHeader
-          title="Materials Management"
-          description="Track and manage construction materials and inventory"
-          icon={<Package className="h-8 w-8" />}
-          actions={
-            <div className="flex items-center gap-2">
-              <Button
-                variant="default"
-                className="bg-white hover:bg-gray-100 text-blue-700 border border-white/20"
-                onClick={handleOpenAddModal}
-              >
-                <Plus className="mr-2 h-4 w-4" /> Add Material
-              </Button>
-              <Button
-                variant="outline"
-                className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
-                onClick={handleExportMaterials}
-              >
-                <Download className="mr-2 h-4 w-4" /> Export
-              </Button>
-            </div>
+    <div className="container mx-auto py-6 max-w-7xl">
+      <PageHeader
+        title="Materials Inventory"
+        description="Track and manage materials across all construction projects"
+        icon={<Package />}
+        actions={[
+          {
+            label: 'Add Material',
+            icon: <Plus size={16} />,
+            onClick: handleOpenAddModal,
+            variant: "default"
+          },
+          {
+            label: 'Export',
+            icon: <Download size={16} />,
+            onClick: handleExportMaterials
           }
+        ]}
+      />
+
+      {/* Key metrics */}
+      <Grid cols={4} className="mt-6">
+        <StatCard
+          title="Total Materials"
+          value={totalMaterials}
+          icon={<Package className="text-blue-500" />}
+          description="Unique materials in inventory"
+          trend={{
+            value: 0,
+            isPositive: true,
+          }}
         />
+        <StatCard
+          title="Total Value"
+          value={`$${totalValue.toLocaleString()}`}
+          icon={<DollarSign className="text-green-500" />}
+          description="Current inventory value"
+          trend={{
+            value: 5.2,
+            isPositive: true,
+          }}
+        />
+        <StatCard
+          title="Low Stock"
+          value={lowStockCount}
+          icon={<AlertTriangle className="text-amber-500" />}
+          description="Materials below minimum"
+          trend={{
+            value: -2,
+            isPositive: true,
+          }}
+        />
+        <StatCard
+          title="Pending Orders"
+          value={onOrderCount}
+          icon={<Truck className="text-indigo-500" />}
+          description="Orders awaiting delivery"
+          trend={{
+            value: 1,
+            isPositive: false,
+          }}
+        />
+      </Grid>
 
-        {/* Materials Statistics */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard
-            title="Total Materials"
-            value={materials.length}
-            icon={<Package className="h-6 w-6" />}
-            colorScheme="blue"
-            subtitle="items"
-          />
-          <StatCard
-            title="Low Stock Items"
-            value={materials.filter(m => m.status === 'Low Stock').length}
-            icon={<AlertCircle className="h-6 w-6" />}
-            colorScheme="red"
-            subtitle="need ordering"
-          />
-          <StatCard
-            title="Value in Stock"
-            value={`$${totalValue.toLocaleString()}`}
-            icon={<DollarSign className="h-6 w-6" />}
-            colorScheme="green"
-            subtitle="total inventory"
-          />
-          <StatCard
-            title="Categories"
-            value={uniqueCategories.length}
-            icon={<Layers className="h-6 w-6" />}
-            colorScheme="purple"
-            subtitle="material types"
-          />
-        </div>
+      {/* Filters and table */}
+      <div className="mt-6 space-y-6">
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex flex-col sm:flex-row justify-between gap-4">
+              <CardTitle className="flex items-center gap-2 text-[#2B6CB0]">
+                <Layers className="h-5 w-5" />
+                Materials List
+              </CardTitle>
 
-        {/* Filters and Controls */}
-        <Card className="mb-6 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700">
-          <CardContent className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <Input
-                  placeholder="Search materials..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full"
-                  icon={<Search className="h-4 w-4" />}
-                />
-              </div>
-              <div>
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES.map(category => (
-                      <SelectItem key={category} value={category}>{category}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Select value={projectFilter} onValueChange={setProjectFilter}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Project" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PROJECTS.map(project => (
-                      <SelectItem key={project} value={project}>{project}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUSES.map(status => (
-                      <SelectItem key={status} value={status}>{status}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 dark:text-gray-400" />
+                  <Input
+                    type="search"
+                    placeholder="Search materials..."
+                    className="pl-9 w-full sm:w-[250px] h-9"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                
+                <div className="flex gap-2">
+                  <Select
+                    value={categoryFilter}
+                    onValueChange={setCategoryFilter}
+                  >
+                    <SelectTrigger className="w-[160px] h-9">
+                      <SelectValue placeholder="All Categories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="All Categories">All Categories</SelectItem>
+                      {CATEGORIES.map(category => (
+                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-        {/* Materials Table */}
-        <Card className="overflow-hidden bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 mb-8">
-          <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-900 border-b border-gray-200 dark:border-gray-700 py-4">
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-lg text-gray-900 dark:text-white">Inventory</CardTitle>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Manage Categories
-                </Button>
+                  <Select
+                    value={projectFilter}
+                    onValueChange={setProjectFilter}
+                  >
+                    <SelectTrigger className="w-[160px] h-9">
+                      <SelectValue placeholder="All Projects" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="All Projects">All Projects</SelectItem>
+                      {PROJECTS.map(project => (
+                        <SelectItem key={project} value={project}>{project}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select
+                    value={statusFilter}
+                    onValueChange={setStatusFilter}
+                  >
+                    <SelectTrigger className="w-[160px] h-9">
+                      <SelectValue placeholder="All Statuses" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="All Statuses">All Statuses</SelectItem>
+                      {STATUSES.map(status => (
+                        <SelectItem key={status} value={status}>{status}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
           </CardHeader>
+
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50 dark:bg-slate-800">
+                <TableRow>
                   <TableHead>Material</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Supplier</TableHead>
                   <TableHead className="text-right">Unit Price</TableHead>
-                  <TableHead className="text-right">Stock Level</TableHead>
+                  <TableHead className="text-right">Quantity</TableHead>
                   <TableHead className="text-center">Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -415,8 +445,9 @@ export function Materials() {
             setCurrentMaterial(null);
           }}
           onSave={handleSaveMaterial}
-          initialData={currentMaterial}
-          isNewItem={isNewItem}
+          material={currentMaterial}
+          isNew={isNewItem}
+          materialTypes={CATEGORIES}
         />
       )}
     </div>

@@ -1,109 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { PageHeader } from '@/components/shared';
+import { ExpenseModal, ExpenseFormData } from '@/components/shared/modals';
+
+// Icons
 import { 
   DollarSign, 
-  Plus, 
-  Search, 
-  Filter, 
-  MoreHorizontal, 
-  PieChart,
-  TrendingUp,
-  Calendar,
-  Building,
-  Wallet,
-  CreditCard,
+  Download, 
+  FileText, 
+  BarChart3,
   Receipt,
-  FileText,
-  Edit,
-  Trash,
-  Download,
-  ArrowDown,
-  ArrowUp,
-  AlertCircle,
-  Upload,
-  CheckCircle,
-  FilePlus,
-  Save,
-  FileDown,
-  HelpCircle,
-  Image,
-  ChevronUp,
-  ChevronDown,
-  XCircle,
-  Eye,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  Clock,
-  AlertTriangle,
+  Plus
 } from 'lucide-react';
-import { StatCard } from '@/components/shared/StatCard';
-import { PageHeader } from '@/components/shared';
-import { Form } from '@/components/ui/form';
-
-import { Label } from '@/components/ui/label';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 
 // Types
 import { 
   Expense, 
-  TopCategory, 
-  BudgetData, 
-  TimeSeriesDataPoint,
   ExpenseInsight 
 } from '@/types/expenses';
 
@@ -114,8 +30,7 @@ import {
   EXPENSE_PROJECTS,
   EXPENSE_PHASES,
   EXPENSE_STATUSES,
-  EXPORT_OPTIONS,
-  CHART_COLORS
+  EXPORT_OPTIONS
 } from '@/data/mock/expenses/expensesData';
 import { getProjectBudget } from '@/data/mock/expenses/budgetData';
 
@@ -125,20 +40,16 @@ import {
   formatDate,
   calculateExpensesByCategory,
   findTopCategory,
-  prepareTimeSeriesData,
-  prepareProjectChartData,
   calculateGrowthInsights
 } from '@/utils/expenseUtils';
 
-// Import the new components
+// Import the components
 import {
   ExpensesFilters,
   ExpenseMetricsGrid,
   ExpensesTable, 
   BatchActionsBar,
-  ExpenseDialog
 } from '@/components/expenses';
-import { cn } from '@/utils/core/ui';
 
 /**
  * Expenses page component
@@ -149,708 +60,390 @@ function Expenses() {
   
   // State management
   const [expenses, setExpenses] = useState<Expense[]>(initialExpenses);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState(EXPENSE_CATEGORIES[0]);
-  const [projectFilter, setProjectFilter] = useState(EXPENSE_PROJECTS[0]);
-  const [phaseFilter, setPhaseFilter] = useState(EXPENSE_PHASES[0]);
-  const [statusFilter, setStatusFilter] = useState(EXPENSE_STATUSES[0]);
-  const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
-  const [viewExpenseDialogOpen, setViewExpenseDialogOpen] = useState(false);
-  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
-  const [dateRange, setDateRange] = useState('all');
+  const [filteredExpenses, setFilteredExpenses] = useState<Expense[]>(initialExpenses);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  
+  // Selection states
+  const [selectedExpenses, setSelectedExpenses] = useState<number[]>([]);
+  const [isAllSelected, setIsAllSelected] = useState(false);
+  
+  // Modal states
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [currentExpense, setCurrentExpense] = useState<Expense | null>(null);
+  const [isNewExpense, setIsNewExpense] = useState(false);
+  const [isReceiptPreviewOpen, setIsReceiptPreviewOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [expenseToDelete, setExpenseToDelete] = useState<number | null>(null);
-  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
-  const [exportFormat, setExportFormat] = useState('csv');
-  const [isReceiptPreviewOpen, setIsReceiptPreviewOpen] = useState(false);
-  const [isAllSelected, setIsAllSelected] = useState(false);
-  const [selectedExpenses, setSelectedExpenses] = useState<number[]>([]);
   const [isBatchActionDialogOpen, setIsBatchActionDialogOpen] = useState(false);
   const [batchAction, setBatchAction] = useState<'approve' | 'reject' | 'delete' | ''>('');
-  const [budgetViewMode, setBudgetViewMode] = useState<'overview' | 'breakdown'>('overview');
-  const [exportExtraOptions, setExportExtraOptions] = useState({
-    includeReceipts: false,
-    includeVendorInfo: true,
-    dateFormat: 'YYYY-MM-DD',
+  
+  // Filter states
+  const [activeFilters, setActiveFilters] = useState({
+    searchQuery: '',
+    category: 'all',
+    project: 'all',
+    phase: 'all',
+    status: 'all',
+    dateRange: 'all'
   });
-  const [newExpense, setNewExpense] = useState({
-    description: '',
-    category: '',
-    amount: '',
-    date: new Date().toISOString().split('T')[0],
-    project: '',
-    phase: '',
-    paymentMethod: '',
-    vendor: '',
-    receiptUploaded: false,
-    status: 'pending' as const
-  });
-  const [dateFilter, setDateFilter] = useState('all');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-
-  // Filter expenses based on search query and filters
-  const filteredExpenses = expenses.filter(expense => {
-    const matchesSearch = 
-      expense.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      expense.vendor.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCategory = 
-      categoryFilter === EXPENSE_CATEGORIES[0] || 
-      expense.category === categoryFilter;
-    
-    const matchesProject = 
-      projectFilter === EXPENSE_PROJECTS[0] || 
-      expense.project === projectFilter;
-    
-    const matchesPhase = 
-      phaseFilter === EXPENSE_PHASES[0] || 
-      expense.phase === phaseFilter;
-    
-    const matchesStatus = 
-      statusFilter === EXPENSE_STATUSES[0] || 
-      expense.status === statusFilter;
-    
-    // Handle date range filtering
-    let matchesDateRange = true;
-    const expenseDate = new Date(expense.date);
-    const today = new Date();
-    
-    if (dateRange === 'last7') {
-      const last7Days = new Date(today);
-      last7Days.setDate(today.getDate() - 7);
-      matchesDateRange = expenseDate >= last7Days;
-    } else if (dateRange === 'last30') {
-      const last30Days = new Date(today);
-      last30Days.setDate(today.getDate() - 30);
-      matchesDateRange = expenseDate >= last30Days;
-    } else if (dateRange === 'thisMonth') {
-      matchesDateRange = 
-        expenseDate.getMonth() === today.getMonth() && 
-        expenseDate.getFullYear() === today.getFullYear();
-    }
-    
-    return matchesSearch && matchesCategory && matchesProject && matchesPhase && matchesStatus && matchesDateRange;
-  });
-
-  // Calculate derived data
-  const totalExpenses = filteredExpenses.reduce((total, expense) => total + expense.amount, 0);
-  const expensesByCategory = calculateExpensesByCategory(filteredExpenses);
-  const topCategory = findTopCategory(expensesByCategory);
-  const categoryChartData = Object.entries(expensesByCategory).map(([category, amount]) => ({
-    name: category,
-    value: amount
-  }));
-  const timeSeriesData = prepareTimeSeriesData(filteredExpenses);
-  const projectChartData = prepareProjectChartData(filteredExpenses);
-  const growthInsights = calculateGrowthInsights(expenses);
-
-  // Update selected state when isAllSelected changes
+  
+  // Calculate total pages
+  const totalPages = Math.ceil(filteredExpenses.length / itemsPerPage);
+  
+  // Get current expenses for table
+  const getCurrentExpenses = () => {
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    return filteredExpenses.slice(indexOfFirstItem, indexOfLastItem);
+  };
+  
+  // Filter expenses based on active filters
   useEffect(() => {
-    setExpenses(prevExpenses => 
-      prevExpenses.map(expense => ({
-        ...expense,
-        selected: isAllSelected
-      }))
-    );
+    let result = expenses;
     
-    if (isAllSelected) {
-      setSelectedExpenses(filteredExpenses.map(e => e.id));
-    } else {
-      setSelectedExpenses([]);
+    // Apply search query filter
+    if (activeFilters.searchQuery) {
+      const query = activeFilters.searchQuery.toLowerCase();
+      result = result.filter(expense => 
+        expense.description.toLowerCase().includes(query) || 
+        expense.category.toLowerCase().includes(query) ||
+        expense.project.toLowerCase().includes(query)
+      );
     }
-
-  }, [isAllSelected, filteredExpenses]);
-
+    
+    // Apply category filter
+    if (activeFilters.category !== 'all') {
+      result = result.filter(expense => expense.category === activeFilters.category);
+    }
+    
+    // Apply project filter
+    if (activeFilters.project !== 'all') {
+      result = result.filter(expense => expense.project === activeFilters.project);
+    }
+    
+    // Apply phase filter
+    if (activeFilters.phase !== 'all') {
+      result = result.filter(expense => expense.phase === activeFilters.phase);
+    }
+    
+    // Apply status filter
+    if (activeFilters.status !== 'all') {
+      result = result.filter(expense => expense.status === activeFilters.status);
+    }
+    
+    // Apply date range filter
+    if (activeFilters.dateRange !== 'all') {
+      const now = new Date();
+      let startDate = new Date();
+      
+      if (activeFilters.dateRange === 'today') {
+        startDate.setHours(0, 0, 0, 0);
+      } else if (activeFilters.dateRange === 'week') {
+        startDate.setDate(now.getDate() - 7);
+      } else if (activeFilters.dateRange === 'month') {
+        startDate.setMonth(now.getMonth() - 1);
+      } else if (activeFilters.dateRange === 'quarter') {
+        startDate.setMonth(now.getMonth() - 3);
+      } else if (activeFilters.dateRange === 'year') {
+        startDate.setFullYear(now.getFullYear() - 1);
+      }
+      
+      result = result.filter(expense => new Date(expense.date) >= startDate);
+    }
+    
+    setFilteredExpenses(result);
+    setCurrentPage(1); // Reset to first page when filters change
+  }, [expenses, activeFilters]);
+  
+  // Handle filter changes
+  const handleFilterChange = (filterType: string, value: string) => {
+    setActiveFilters(prev => ({
+      ...prev,
+      [filterType]: value
+    }));
+  };
+  
   // View expense details
   const viewExpenseDetails = (expense: Expense) => {
-    setSelectedExpense(expense);
-    setViewExpenseDialogOpen(true);
+    setCurrentExpense(expense);
+    setIsNewExpense(false);
+    setShowExpenseModal(true);
   };
-
+  
   // Toggle expense selection
   const toggleExpenseSelection = (id: number, selected: boolean) => {
-    setExpenses(prevExpenses => 
-      prevExpenses.map(expense => 
-        expense.id === id ? { ...expense, selected } : expense
-      )
-    );
+    if (selected) {
+      setSelectedExpenses(prev => [...prev, id]);
+    } else {
+      setSelectedExpenses(prev => prev.filter(expenseId => expenseId !== id));
+    }
     
-    setSelectedExpenses(prevSelectedExpenses => {
-      if (selected) {
-        return [...prevSelectedExpenses, id];
-      } else {
-        return prevSelectedExpenses.filter(expenseId => expenseId !== id);
-      }
-    });
+    // Update the all selected state
+    if (!selected && isAllSelected) {
+      setIsAllSelected(false);
+    } else if (selected && selectedExpenses.length + 1 === getCurrentExpenses().length) {
+      setIsAllSelected(true);
+    }
   };
-
-  // Handle adding a new expense
+  
+  // Handler for opening the add expense modal
   const handleAddExpense = () => {
-    const id = Math.max(...expenses.map(e => e.id)) + 1;
-    
-    const newExpenseItem: Expense = {
-      ...newExpense,
-      id,
-      amount: parseFloat(newExpense.amount),
+    const newExpense: Expense = {
+      id: Math.max(...expenses.map(e => e.id), 0) + 1,
+      description: '',
+      amount: 0,
+      category: EXPENSE_CATEGORIES[1], // Default to first category after 'All'
+      project: EXPENSE_PROJECTS[1], // Default to first project
+      phase: EXPENSE_PHASES[1], // Default to first phase
+      date: new Date().toISOString().split('T')[0],
       status: 'pending',
-      receiptUploaded: newExpense.receiptUploaded,
-      receiptUrl: newExpense.receiptUploaded ? '/api/placeholder/500/300' : undefined
+      receiptUploaded: false,
+      receiptUrl: '',
+      vendor: '',
+      notes: ''
     };
     
-    setExpenses([newExpenseItem, ...expenses]);
-    setNewExpense({
-      description: '',
-      category: '',
-      amount: '',
-      date: new Date().toISOString().split('T')[0],
-      project: '',
-      phase: '',
-      paymentMethod: '',
-      vendor: '',
-      receiptUploaded: false,
-      status: 'pending' as const
-    });
-    setIsAddExpenseOpen(false);
+    setCurrentExpense(newExpense);
+    setIsNewExpense(true);
+    setShowExpenseModal(true);
   };
-
-  // Handle updating expense status
+  
+  // Handler for saving an expense from the modal
+  const handleSaveExpense = (expenseData: ExpenseFormData) => {
+    if (isNewExpense) {
+      // Add new expense
+      const newExpense: Expense = {
+        ...currentExpense!,
+        ...expenseData
+      };
+      
+      setExpenses(prev => [...prev, newExpense]);
+    } else {
+      // Update existing expense
+      setExpenses(prev => 
+        prev.map(expense => 
+          expense.id === currentExpense?.id 
+            ? { ...expense, ...expenseData }
+            : expense
+        )
+      );
+    }
+    
+    // Close the modal
+    setShowExpenseModal(false);
+    setCurrentExpense(null);
+  };
+  
+  // Handle updating an expense status
   const handleUpdateExpenseStatus = (id: number, newStatus: 'approved' | 'pending' | 'rejected') => {
-    setExpenses(expenses.map(expense => 
-      expense.id === id ? { ...expense, status: newStatus } : expense
-    ));
+    setExpenses(prev => 
+      prev.map(expense => 
+        expense.id === id 
+          ? { ...expense, status: newStatus }
+          : expense
+      )
+    );
   };
-
+  
   // Handle deleting an expense
   const handleDeleteExpense = (id: number) => {
     setExpenseToDelete(id);
     setIsDeleteDialogOpen(true);
   };
-
+  
   // Confirm expense deletion
   const confirmDeleteExpense = () => {
     if (expenseToDelete) {
-      setExpenses(expenses.filter(expense => expense.id !== expenseToDelete));
+      setExpenses(prev => prev.filter(expense => expense.id !== expenseToDelete));
       setIsDeleteDialogOpen(false);
       setExpenseToDelete(null);
     }
   };
-
+  
   // Handle batch actions
   const handleBatchAction = (action: 'approve' | 'reject' | 'delete') => {
     setBatchAction(action);
     setIsBatchActionDialogOpen(true);
   };
-
+  
   // Confirm batch action
   const confirmBatchAction = () => {
     if (batchAction === 'delete') {
-      setExpenses(expenses.filter(expense => !selectedExpenses.includes(expense.id)));
-    } else if (batchAction === 'approve' || batchAction === 'reject') {
-      setExpenses(expenses.map(expense => 
-        selectedExpenses.includes(expense.id) 
-          ? { ...expense, status: batchAction === 'approve' ? 'approved' : 'rejected' } 
-          : expense
-      ));
+      // Delete selected expenses
+      setExpenses(prev => prev.filter(expense => !selectedExpenses.includes(expense.id)));
+    } else {
+      // Update status of selected expenses
+      setExpenses(prev => 
+        prev.map(expense => 
+          selectedExpenses.includes(expense.id)
+            ? { ...expense, status: batchAction }
+            : expense
+        )
+      );
     }
     
-    setIsBatchActionDialogOpen(false);
-    setBatchAction('');
+    // Reset selection
     setSelectedExpenses([]);
     setIsAllSelected(false);
+    setIsBatchActionDialogOpen(false);
+    setBatchAction('');
   };
-
+  
   // Export data
   const handleExport = () => {
     // In a real application, this would create and download a file
-    setIsExportDialogOpen(false);
-    
-    // Simulating export success
-    setTimeout(() => {
-      alert(`Data exported successfully as ${exportFormat.toUpperCase()}`);
-    }, 1000);
+    alert(`Exporting expense data as CSV...`);
+    // Here you would typically trigger a download of the CSV file
   };
-
-  // Get budget data for the current project
-  const budget = getProjectBudget(projectFilter);
-  const budgetProgress = (budget.spent / budget.total) * 100;
-
-  // Generate budget allocation chart data
-  const budgetAllocationChartData = budget.allocations?.map(allocation => ({
-    name: allocation.category,
-    budget: allocation.amount,
-    spent: allocation.spent,
-    remaining: allocation.amount - allocation.spent
-  }));
-
+  
   // Generate spending insights
   const generateCategoryInsights = (): ExpenseInsight[] => {
+    const categoryCounts = calculateExpensesByCategory(expenses);
+    const topCategory = findTopCategory(categoryCounts);
     const insights: ExpenseInsight[] = [];
     
-    // Get categories with highest spending
-    const sortedCategories = Object.entries(expensesByCategory)
-      .sort(([, amountA], [, amountB]) => amountB - amountA);
-    
-    if (sortedCategories.length > 0) {
-      const [topCategory, topAmount] = sortedCategories[0];
+    // Top spending category
+    if (topCategory) {
       insights.push({
-        title: 'Highest Spending',
-        description: `${topCategory} accounts for ${((topAmount / totalExpenses) * 100).toFixed(1)}% of your expenses`,
-        icon: <TrendingUp className="w-6 h-6 text-blue-500" />,
+        title: 'Top Spending Category',
+        description: `${topCategory.category} represents ${Math.round(topCategory.percentage)}% of your expenses`,
+        icon: <BarChart3 className="w-6 h-6 text-blue-500" />,
         color: 'blue'
       });
     }
     
-    // Check for categories with no spending
-    const unusedCategories = EXPENSE_CATEGORIES
-      .filter(c => c !== EXPENSE_CATEGORIES[0])
-      .filter(category => !Object.keys(expensesByCategory).includes(category));
-    
-    if (unusedCategories.length > 0) {
+    // Check for unusual patterns
+    const growthInsights = calculateGrowthInsights(expenses);
+    if (growthInsights.growthRate > 15) {
       insights.push({
-        title: 'Unused Categories',
-        description: `No expenses in ${unusedCategories.length} categories including ${unusedCategories[0]}`,
-        icon: <AlertCircle className="w-6 h-6 text-yellow-500" />,
+        title: 'Spending Increase',
+        description: `Expenses increased by ${Math.round(growthInsights.growthRate)}% compared to last period`,
+        icon: <BarChart3 className="w-6 h-6 text-amber-500" />,
         color: 'amber'
-      });
-    }
-    
-    // Check for rapid growth
-    if (growthInsights.growthRate > 20) {
-      insights.push({
-        title: 'Rapid Spending Growth',
-        description: `Spending increased by ${growthInsights.growthRate.toFixed(1)}% compared to last month`,
-        icon: <AlertTriangle className="w-6 h-6 text-red-500" />,
-        color: 'red'
       });
     }
     
     return insights;
   };
 
-  const categoryInsights = generateCategoryInsights();
-
-  // Pagination
-  const totalPages = Math.ceil(filteredExpenses.length / itemsPerPage);
-  const paginatedExpenses = filteredExpenses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-      <PageHeader 
+        <PageHeader 
           title="Expenses"
           description="Track, analyze and manage project expenses"
           icon={<DollarSign className="h-8 w-8" />}
           actions={
-            <div className="flex items-center gap-2">
-              <Button
-                variant="default"
-                className="bg-white hover:bg-gray-100 text-blue-700 border border-white/20"
-                onClick={() => setIsAddExpenseOpen(true)}
+            <div className="flex gap-2">
+              <Button 
+                className="bg-[#2B6CB0] hover:bg-blue-700 text-white" 
+                onClick={handleAddExpense}
               >
                 <Plus className="mr-2 h-4 w-4" /> Add Expense
               </Button>
               <Button
                 variant="outline"
-                className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
-                onClick={() => handleExport()}
+                className="border-[#2B6CB0] text-[#2B6CB0]"
+                onClick={handleExport}
               >
                 <Download className="mr-2 h-4 w-4" /> Export
               </Button>
             </div>
           }
         />
-      
-        {/* Metrics Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard
-            title="Total Expenses"
-            value={formatCurrency(totalExpenses)}
-            icon={<DollarSign className="h-6 w-6" />}
-            color="green"
-            subtitle={growthInsights.increasing 
-              ? `+${growthInsights.growthRate.toFixed(1)}% vs last month` 
-              : `-${Math.abs(growthInsights.growthRate).toFixed(1)}% vs last month`}
+        
+        {/* Expense Metrics Grid */}
+        <div className="mb-6">
+          <ExpenseMetricsGrid 
+            totalExpenses={expenses.reduce((sum, exp) => sum + exp.amount, 0)}
+            budget={getProjectBudget(activeFilters.project !== 'all' ? activeFilters.project : EXPENSE_PROJECTS[1])}
+            topCategory={findTopCategory(calculateExpensesByCategory(expenses))}
+            pendingCount={expenses.filter(exp => exp.status === 'pending').length}
+            growthInsights={calculateGrowthInsights(expenses)}
+            formatCurrency={formatCurrency}
           />
+        </div>
+        
+        <Tabs defaultValue="list" className="mb-6">
+          <TabsList className="mb-4">
+            <TabsTrigger value="list">List View</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          </TabsList>
           
-          <StatCard
-            title="Budget Status"
-            value={`${Math.round((budget.spent / budget.total) * 100)}%`}
-            icon={<Building className="h-6 w-6" />}
-            color="blue"
-            subtitle={`${formatCurrency(budget.spent)} of ${formatCurrency(budget.total)}`}
-          />
-          
-          <StatCard
-            title="Pending Approval"
-            value={expenses.filter(e => e.status === 'pending').length}
-            icon={<Clock className="h-6 w-6" />}
-            color="amber"
-            subtitle="expenses"
-          />
-          
-          <StatCard
-            title="Top Category"
-            value={topCategory?.category || "None"}
-            icon={<PieChart className="h-6 w-6" />}
-            color="purple"
-            subtitle={topCategory?.amount ? formatCurrency(topCategory.amount) : ""}
-          />
-                </div>
-
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Rest of the content... */}
-          <Card className="col-span-1 lg:col-span-3 shadow-md">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">Expense Transactions</h3>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4 mr-1" />
-                    Previous
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages}
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
-                </div>
-                  </div>
-              
-              {/* Filter and Search Controls */}
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input 
-                    placeholder="Search expenses..." 
-                    className="pl-10"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+          <TabsContent value="list" className="space-y-4">
+            <Card className="shadow-sm border border-gray-100 dark:border-gray-800">
+              <div className="p-4 lg:p-6">
+                {/* Filters Row */}
+                <ExpensesFilters 
+                  activeFilters={activeFilters} 
+                  onFilterChange={handleFilterChange} 
+                  categories={EXPENSE_CATEGORIES}
+                  projects={EXPENSE_PROJECTS}
+                  phases={EXPENSE_PHASES}
+                  statuses={EXPENSE_STATUSES}
+                />
+                
+                {/* Batch Actions Bar (shown when items are selected) */}
+                {selectedExpenses.length > 0 && (
+                  <BatchActionsBar 
+                    selectedExpenses={selectedExpenses} 
+                    onBatchAction={handleBatchAction} 
                   />
-          </div>
-
-                <div>
-                  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                      {EXPENSE_CATEGORIES.map(category => (
-                        <SelectItem key={category} value={category}>{category}</SelectItem>
-                      ))}
-              </SelectContent>
-            </Select>
-                </div>
-                
-                <div>
-                  <Select value={projectFilter} onValueChange={setProjectFilter}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Project" />
-              </SelectTrigger>
-              <SelectContent>
-                      {EXPENSE_PROJECTS.map(project => (
-                  <SelectItem key={project} value={project}>{project}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-                </div>
-                
-                <div>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                      {EXPENSE_STATUSES.map(status => (
-                        <SelectItem key={status} value={status}>{status}</SelectItem>
-                      ))}
-              </SelectContent>
-            </Select>
-                </div>
-                
-                <div>
-                  <Select value={dateRange} onValueChange={setDateRange}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Date Range" />
-              </SelectTrigger>
-              <SelectContent>
-                      <SelectItem value="all">All Time</SelectItem>
-                      <SelectItem value="thisMonth">This Month</SelectItem>
-                      <SelectItem value="last30">Last 30 Days</SelectItem>
-                      <SelectItem value="last7">Last 7 Days</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-              </div>
-              
-              {/* Batch Actions */}
-              {selectedExpenses.length > 0 && (
-                <div className="flex items-center gap-2 mb-4 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md">
-                  <span className="text-sm font-medium text-blue-600 dark:text-blue-300">
-                    {selectedExpenses.length} expense{selectedExpenses.length !== 1 ? 's' : ''} selected
-                  </span>
-                  <div className="ml-auto flex gap-2">
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      className="border-green-600 text-green-600 hover:bg-green-50"
-                      onClick={() => handleBatchAction('approve')}
-                    >
-                      <CheckCircle className="h-3.5 w-3.5 mr-1" />
-                      Approve
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      className="border-red-600 text-red-600 hover:bg-red-50"
-                      onClick={() => handleBatchAction('reject')}
-                    >
-                      <XCircle className="h-3.5 w-3.5 mr-1" />
-                      Reject
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      className="border-gray-600 text-gray-600 hover:bg-gray-50"
-                      onClick={() => handleBatchAction('delete')}
-                    >
-                      <Trash className="h-3.5 w-3.5 mr-1" />
-                      Delete
-                    </Button>
-                </div>
-              </div>
                 )}
-
-        {/* Expenses Table */}
-              <div className="overflow-x-auto border rounded-md">
-            <Table>
-              <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[50px]">
-                      <Checkbox 
-                          checked={isAllSelected && filteredExpenses.length > 0} 
-                          onCheckedChange={(checked: boolean) => setIsAllSelected(checked)}
-                          aria-label="Select all expenses"
-                    />
-                  </TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Project</TableHead>
-                  <TableHead>Status</TableHead>
-                      <TableHead className="w-[150px] text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                    {paginatedExpenses.length === 0 ? (
-                  <TableRow>
-                        <TableCell colSpan={8} className="text-center py-6 text-gray-500">
-                          No expenses found matching your filters.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                      paginatedExpenses.map(expense => (
-                        <TableRow key={expense.id} className="group hover:bg-gray-50 dark:hover:bg-slate-800/30">
-                      <TableCell>
-                        <Checkbox 
-                          checked={selectedExpenses.includes(expense.id)}
-                              onCheckedChange={(checked: boolean) => 
-                                toggleExpenseSelection(expense.id, checked as boolean)
-                              }
-                              aria-label={`Select expense ${expense.description}`}
-                        />
-                      </TableCell>
-                      <TableCell className="font-medium">
-                            <div className="flex items-center gap-2">
-                          {expense.receiptUploaded && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-5 w-5 p-0 text-blue-500">
-                                      <Receipt className="h-4 w-4" />
-                                    </Button>
-                              </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Receipt available</p>
-                                  </TooltipContent>
-                            </Tooltip>
-                          )}
-                              <span className="truncate max-w-[200px]">{expense.description}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                            <Badge variant="outline" className="font-normal text-xs">
-                          {expense.category}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                            {formatCurrency(expense.amount)}
-                      </TableCell>
-                      <TableCell>
-                            {formatDate(expense.date)}
-                      </TableCell>
-                      <TableCell>
-                            <Badge variant="outline" className="font-normal text-xs">
-                          {expense.project}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                          <Badge 
-                              className={cn(
-                                "font-normal",
-                                expense.status === 'approved' && "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border-green-200",
-                                expense.status === 'pending' && "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200",
-                                expense.status === 'rejected' && "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border-red-200"
-                              )}
-                            >
-                              {expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
-                          </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                            <div className="flex justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => viewExpenseDetails(expense)}
-                                className="h-8 w-8 text-gray-500 hover:text-gray-700"
-                              >
-                                <Eye className="h-4 w-4" />
-                                <span className="sr-only">View expense</span>
-                              </Button>
-                              
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-gray-500 hover:text-gray-700"
-                                  >
-                                <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">Open menu</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                  <DropdownMenuItem onClick={() => expense.receiptUploaded && setIsReceiptPreviewOpen(true)}>
-                                    <Receipt className="h-4 w-4 mr-2" />
-                                    View Receipt
-                            </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleUpdateExpenseStatus(expense.id, 'approved')}>
-                                    <CheckCircle className="h-4 w-4 mr-2" />
-                                Approve
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleUpdateExpenseStatus(expense.id, 'rejected')}>
-                                    <XCircle className="h-4 w-4 mr-2" />
-                                Reject
-                                </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                                  <DropdownMenuItem 
-                                    onClick={() => handleDeleteExpense(expense.id)}
-                                    className="text-red-600"
-                                  >
-                                    <Trash className="h-4 w-4 mr-2" />
-                                Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-              )}
-              </TableBody>
-            </Table>
-            </div>
-              
-              {/* Pagination */}
-              <div className="flex items-center justify-between mt-4">
-                <div className="text-sm text-gray-500">
-                  Showing {Math.min(1 + (currentPage - 1) * itemsPerPage, filteredExpenses.length)} to {Math.min(currentPage * itemsPerPage, filteredExpenses.length)} of {filteredExpenses.length} expenses
-                </div>
-                <div className="flex items-center gap-2">
-                  <Select value={itemsPerPage.toString()} onValueChange={(value) => {
-                    setItemsPerPage(parseInt(value));
-                    setCurrentPage(1);
-                  }}>
-                    <SelectTrigger className="w-[110px]">
-                      <SelectValue placeholder="Per page" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="10">10 per page</SelectItem>
-                      <SelectItem value="25">25 per page</SelectItem>
-                      <SelectItem value="50">50 per page</SelectItem>
-                      <SelectItem value="100">100 per page</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  
-                  <div className="flex items-center justify-center text-sm gap-1">
-              <Button 
-                variant="outline"
-                      size="icon"
-                      onClick={() => setCurrentPage(1)}
-                      disabled={currentPage === 1}
-                      className="h-8 w-8"
-                    >
-                      <ChevronsLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                      className="h-8 w-8"
-              >
-                      <ChevronLeft className="h-4 w-4" />
-              </Button>
-                    
-                    <span className="mx-2">Page {currentPage} of {totalPages}</span>
-                    
-                  <Button 
-                variant="outline"
-                      size="icon"
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-                      className="h-8 w-8"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setCurrentPage(totalPages)}
-                      disabled={currentPage === totalPages}
-                      className="h-8 w-8"
-                    >
-                      <ChevronsRight className="h-4 w-4" />
-                  </Button>
+                
+                {/* Expenses Table */}
+                <ExpensesTable 
+                  expenses={getCurrentExpenses()} 
+                  selectedExpenses={selectedExpenses}
+                  toggleExpenseSelection={toggleExpenseSelection}
+                  isAllSelected={isAllSelected}
+                  setIsAllSelected={setIsAllSelected}
+                  formatCurrency={formatCurrency}
+                  formatDate={formatDate}
+                  viewExpenseDetails={viewExpenseDetails}
+                  handleUpdateExpenseStatus={handleUpdateExpenseStatus}
+                  handleDeleteExpense={handleDeleteExpense}
+                  setIsReceiptPreviewOpen={setIsReceiptPreviewOpen}
+                  filteredExpenses={filteredExpenses}
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  setCurrentPage={setCurrentPage}
+                />
+                
+                {/* Pagination */}
+                <div className="flex items-center justify-between mt-4">
+                  <div className="text-sm text-gray-500">
+                    Showing {Math.min(1 + (currentPage - 1) * itemsPerPage, filteredExpenses.length)} to {Math.min(currentPage * itemsPerPage, filteredExpenses.length)} of {filteredExpenses.length} expenses
                   </div>
                 </div>
-                  </div>
-                  </div>
+              </div>
             </Card>
-                  </div>
-
-      {/* Add Expense Dialog */}
-      <ExpenseDialog
-        mode="add"
-        open={isAddExpenseOpen}
-        setOpen={setIsAddExpenseOpen}
-        newExpense={newExpense}
-        setNewExpense={setNewExpense}
-        handleAddExpense={handleAddExpense}
-        EXPENSE_CATEGORIES={EXPENSE_CATEGORIES.filter(c => c !== 'All Categories')}
-        EXPENSE_PROJECTS={EXPENSE_PROJECTS.filter(p => p !== 'All Projects')}
-      />
+          </TabsContent>
+          
+          <TabsContent value="analytics">
+            <Card className="p-6">
+              <h3 className="text-xl font-bold mb-4">Expense Analytics</h3>
+              <p className="text-muted-foreground mb-4">Detailed expense analytics will be displayed here.</p>
+            </Card>
+          </TabsContent>
+        </Tabs>
+        
+        {/* Expense Modal */}
+        {currentExpense && (
+          <ExpenseModal
+            show={showExpenseModal}
+            onClose={() => {
+              setShowExpenseModal(false);
+              setCurrentExpense(null);
+            }}
+            onSave={handleSaveExpense}
+            expense={currentExpense}
+            isNew={isNewExpense}
+            categories={EXPENSE_CATEGORIES}
+            projects={EXPENSE_PROJECTS}
+          />
+        )}
         
         {/* Delete Confirmation Dialog */}
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -889,32 +482,8 @@ function Expenses() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        
-        {/* Receipt Preview Dialog */}
-        {selectedExpense?.receiptUploaded && (
-          <Dialog open={isReceiptPreviewOpen} onOpenChange={setIsReceiptPreviewOpen}>
-            <DialogContent className="sm:max-w-lg">
-              <DialogHeader>
-                <DialogTitle>Receipt Preview</DialogTitle>
-                <DialogDescription>
-                  {selectedExpense.description} - {formatCurrency(selectedExpense.amount)}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="flex justify-center">
-                <img 
-                  src={selectedExpense.receiptUrl} 
-                  alt="Receipt" 
-                  className="max-h-[500px] object-contain border rounded-md"
-                />
-              </div>
-              <DialogFooter>
-                <Button onClick={() => setIsReceiptPreviewOpen(false)}>Close</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        )}
       </div>
-          </div>
+    </div>
   );
 }
 

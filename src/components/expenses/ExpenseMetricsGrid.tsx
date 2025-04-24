@@ -32,7 +32,7 @@ export function ExpenseMetricsGrid({
         title="Total Expenses"
         value={formatCurrency(totalExpenses)}
         icon={<DollarSign className="h-6 w-6" />}
-        colorScheme="emerald"
+        colorScheme="green"
         subtitle={growthInsights.increasing 
           ? `+${growthInsights.growthRate.toFixed(1)}% vs last month` 
           : `-${Math.abs(growthInsights.growthRate).toFixed(1)}% vs last month`}

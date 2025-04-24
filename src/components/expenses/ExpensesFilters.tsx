@@ -10,38 +10,31 @@ import {
 } from '@/components/ui/select';
 
 interface ExpensesFiltersProps {
-  searchQuery: string;
-  setSearchQuery: (query: string) => void;
-  categoryFilter: string;
-  setCategoryFilter: (category: string) => void;
-  projectFilter: string;
-  setProjectFilter: (project: string) => void;
-  statusFilter: string;
-  setStatusFilter: (status: string) => void;
-  dateRange: string;
-  setDateRange: (range: string) => void;
-  EXPENSE_CATEGORIES: string[];
-  EXPENSE_PROJECTS: string[];
-  EXPENSE_STATUSES: string[];
+  activeFilters: {
+    searchQuery: string;
+    category: string;
+    project: string;
+    phase: string;
+    status: string;
+    dateRange: string;
+  };
+  onFilterChange: (filterType: string, value: string) => void;
+  categories: string[];
+  projects: string[];
+  phases: string[];
+  statuses: string[];
 }
 
 /**
  * ExpensesFilters component for filtering expense data
  */
 export function ExpensesFilters({
-  searchQuery,
-  setSearchQuery,
-  categoryFilter,
-  setCategoryFilter,
-  projectFilter,
-  setProjectFilter,
-  statusFilter,
-  setStatusFilter,
-  dateRange,
-  setDateRange,
-  EXPENSE_CATEGORIES,
-  EXPENSE_PROJECTS,
-  EXPENSE_STATUSES,
+  activeFilters,
+  onFilterChange,
+  categories,
+  projects,
+  phases,
+  statuses
 }: ExpensesFiltersProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
@@ -50,18 +43,22 @@ export function ExpensesFilters({
         <Input 
           placeholder="Search expenses..." 
           className="pl-10"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          value={activeFilters.searchQuery}
+          onChange={(e) => onFilterChange('searchQuery', e.target.value)}
         />
       </div>
 
       <div>
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+        <Select 
+          value={activeFilters.category} 
+          onValueChange={(value) => onFilterChange('category', value)}
+        >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
-            {EXPENSE_CATEGORIES.map(category => (
+            <SelectItem value="all">All Categories</SelectItem>
+            {categories.slice(1).map(category => (
               <SelectItem key={category} value={category}>{category}</SelectItem>
             ))}
           </SelectContent>
@@ -69,12 +66,16 @@ export function ExpensesFilters({
       </div>
       
       <div>
-        <Select value={projectFilter} onValueChange={setProjectFilter}>
+        <Select 
+          value={activeFilters.project} 
+          onValueChange={(value) => onFilterChange('project', value)}
+        >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Project" />
           </SelectTrigger>
           <SelectContent>
-            {EXPENSE_PROJECTS.map(project => (
+            <SelectItem value="all">All Projects</SelectItem>
+            {projects.slice(1).map(project => (
               <SelectItem key={project} value={project}>{project}</SelectItem>
             ))}
           </SelectContent>
@@ -82,12 +83,16 @@ export function ExpensesFilters({
       </div>
       
       <div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select 
+          value={activeFilters.status} 
+          onValueChange={(value) => onFilterChange('status', value)}
+        >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            {EXPENSE_STATUSES.map(status => (
+            <SelectItem value="all">All Statuses</SelectItem>
+            {statuses.slice(1).map(status => (
               <SelectItem key={status} value={status}>{status}</SelectItem>
             ))}
           </SelectContent>
@@ -95,18 +100,23 @@ export function ExpensesFilters({
       </div>
       
       <div>
-        <Select value={dateRange} onValueChange={setDateRange}>
+        <Select 
+          value={activeFilters.dateRange} 
+          onValueChange={(value) => onFilterChange('dateRange', value)}
+        >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Date Range" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Time</SelectItem>
-            <SelectItem value="thisMonth">This Month</SelectItem>
-            <SelectItem value="last30">Last 30 Days</SelectItem>
-            <SelectItem value="last7">Last 7 Days</SelectItem>
+            <SelectItem value="today">Today</SelectItem>
+            <SelectItem value="week">Last 7 Days</SelectItem>
+            <SelectItem value="month">Last 30 Days</SelectItem>
+            <SelectItem value="quarter">Last 90 Days</SelectItem>
+            <SelectItem value="year">Last Year</SelectItem>
           </SelectContent>
         </Select>
       </div>
     </div>
   );
-} 
+}

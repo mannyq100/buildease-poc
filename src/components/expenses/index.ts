@@ -7,4 +7,3 @@ export * from './ExpensesFilters';
 export * from './ExpenseMetricsGrid';
 export * from './ExpensesTable';
 export * from './BatchActionsBar';
-export * from './ExpenseDialog'; 

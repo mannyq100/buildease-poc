@@ -6,3 +6,4 @@ export * from './PhaseFormModal';
 export * from './TaskFormModal';
 export * from './BudgetModal';
 export * from './DateEditModal';
+export * from './ExpenseModal';
