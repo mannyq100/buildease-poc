@@ -100,17 +100,16 @@ export function useUserProfile(): {
         } else {
           console.error('useUserProfile queryFn caught non-Error:', error);
         }
-        throw error; // Re-throw to let React Query handle the error state
+        throw error; // Re-throw to let React Query handle it
       }
     },
-    enabled: isAuthenticated && !!auth0User, // Only run query when authenticated
+    enabled: isAuthenticated && !!auth0User, // Only run if authenticated
     staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
   });
 
-  // Update user settings mutation
+  // Mutation for updating user settings
   const updateSettingsMutation = useMutation({
     mutationFn: async (data: Partial<UserProfile>) => {
-      // Get current profile data from cache to build full payload
       const currentProfile = queryClient.getQueryData<UserProfile>(USER_PROFILE_QUERY_KEY);
 
       if (!currentProfile) {
@@ -124,15 +123,76 @@ export function useUserProfile(): {
 
       const [_, providerIdentifier] = auth0User.sub.split('|');
 
+      // Handle profile picture data - if it's a blob URL, we need to convert it to base64
+      let pictureUrl = data.settings?.pictureUrl || currentProfile.settings.pictureUrl;
+      
+      // Check if the picture URL is a blob URL (from a file upload)
+      if (pictureUrl && pictureUrl.startsWith('blob:')) {
+        try {
+          // Convert blob URL to base64 data URL
+          const response = await fetch(pictureUrl);
+          const blob = await response.blob();
+          
+          return new Promise<UserProfile>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+              try {
+                // Now we have the base64 data URL
+                const base64Data = reader.result as string;
+                
+                // Construct the full payload with the base64 image data
+                const fullPayload: RegisterUserPayload = {
+                  // Fields typically derived from auth or stable
+                  id: currentProfile.id,
+                  email: currentProfile.email,
+                  provider: currentProfile.provider,
+                  providerIdentifier: providerIdentifier,
+                  tier: currentProfile.tier,
+                  status: currentProfile.status,
+
+                  // Fields potentially updated from the partial 'data' input
+                  name: data.name !== undefined ? data.name : currentProfile.name,
+                  phone: data.phone !== undefined ? data.phone : currentProfile.phone,
+
+                  // Update settings with the base64 image data
+                  settings: {
+                    ...currentProfile.settings,
+                    ...data.settings,
+                    pictureUrl: base64Data
+                  },
+                  notifications: currentProfile.settings.notifications
+                };
+
+                // Get fresh token before making the request
+                const token = await getAccessTokenSilently();
+                setToken(token);
+
+                // Call the service function with the full payload
+                const result = await updateUserFullProfile(fullPayload);
+                resolve(result);
+              } catch (error) {
+                reject(error);
+              }
+            };
+            reader.onerror = () => {
+              reject(new Error('Failed to read the image file'));
+            };
+            reader.readAsDataURL(blob);
+          });
+        } catch (error) {
+          console.error('Error processing profile picture:', error);
+          throw error;
+        }
+      }
+
+      // If we're not dealing with a blob URL, proceed normally
       // Construct the full payload required by updateUserFullProfile
-      // Merge incoming partial data with existing profile data
-      // Important: Ensure all required fields for RegisterUserPayload are present
-      const fullPayload: RegisterUserPayload = { // Explicitly type the payload
+      const fullPayload: RegisterUserPayload = {
         // Fields typically derived from auth or stable
-        id: currentProfile.id, // Include ID if needed by backend for update
-        email: currentProfile.email, // Email is usually read-only
+        id: currentProfile.id,
+        email: currentProfile.email,
         provider: currentProfile.provider,
-        providerIdentifier: providerIdentifier, // Correctly sourced from auth0User.sub
+        providerIdentifier: providerIdentifier,
         tier: currentProfile.tier,
         status: currentProfile.status,
 
@@ -140,10 +200,12 @@ export function useUserProfile(): {
         name: data.name !== undefined ? data.name : currentProfile.name,
         phone: data.phone !== undefined ? data.phone : currentProfile.phone,
 
-        // Settings and Notifications might need merging too if they are editable elsewhere
-        // Assuming they are not part of this specific update for now
-        settings: currentProfile.settings, 
-        notifications: currentProfile.settings.notifications, // Correctly sourced from nested settings
+        // Settings and Notifications might need merging
+        settings: {
+          ...currentProfile.settings,
+          ...data.settings
+        },
+        notifications: currentProfile.settings.notifications
       };
 
       console.log('useUserProfile updateMutation: Calling updateUserFullProfile with payload:', fullPayload);
@@ -152,7 +214,7 @@ export function useUserProfile(): {
       const token = await getAccessTokenSilently();
       setToken(token);
 
-      // Call the new service function with the full payload
+      // Call the service function with the full payload
       return updateUserFullProfile(fullPayload);
     },
     onSuccess: (updatedProfile) => {

@@ -33,10 +33,22 @@ export interface RegisterUserPayload {
  * Assumes the backend identifies the user via the authentication token.
  */
 export async function updateUserFullProfile(data: RegisterUserPayload): Promise<UserProfile> {
-  // Use PUT method as we are replacing/updating the full user resource representation
+  // Check if we have a profile picture in the payload
+  const hasProfilePicture = data.settings?.pictureUrl && data.settings.pictureUrl.length > 0;
+  
+  // Create a copy of the data to avoid mutating the original
+  const payload = { ...data };
+  
+  // Log the update operation (without the image data to keep logs clean)
+  console.log('Updating user profile:', { 
+    ...payload, 
+    settings: payload.settings ? { ...payload.settings, pictureUrl: hasProfilePicture ? '[IMAGE DATA]' : undefined } : undefined 
+  });
+  
+  // Use POST method as we are sending potentially large image data
   return apiRequest<UserProfile>(API_ENDPOINTS.USER_UPDATE, {
     method: 'POST', 
-    body: data,
+    body: payload,
     includeAuth: true
   });
 }

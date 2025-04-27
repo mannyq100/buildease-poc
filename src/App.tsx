@@ -143,8 +143,7 @@ function App() {
                         <Route path="/expenses" element={<Expenses />} />
                         <Route path="/documents" element={<Documents />} />
                         <Route path="/messaging" element={<Messaging />} />
-                        {/* Account page removed; using settings */}
-                         <Route path="/settings" element={<Settings />} />
+                        <Route path="/settings" element={<Settings />} />
                         
                         {/* Admin routes with role-based protection */}
                         <Route path="/settings/admin" element={
