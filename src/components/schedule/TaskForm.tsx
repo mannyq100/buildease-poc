@@ -67,11 +67,11 @@ const priorityOptions = [
 ];
 
 interface TaskFormProps {
-  isOpen: boolean;
+  open: boolean;
   onClose: () => void;
   onSubmit: (data: NewTaskForm) => void;
   task?: Task;
-  allTasks?: Task[];
+  teamMembers: TeamMember[];
 }
 
 // Form schema
@@ -89,7 +89,7 @@ const taskFormSchema = z.object({
   dependencies: z.array(z.number()).optional(),
 });
 
-export const TaskForm = ({ isOpen, onClose, onSubmit, task, allTasks = [] }: TaskFormProps) => {
+export const TaskForm = ({ open, onClose, onSubmit, task, teamMembers }: TaskFormProps) => {
   const isEditing = !!task;
   const [phases, setPhases] = useState<string[]>([]);
   const [selectedProject, setSelectedProject] = useState<string | undefined>(task?.project);
@@ -140,7 +140,7 @@ export const TaskForm = ({ isOpen, onClose, onSubmit, task, allTasks = [] }: Tas
   };
   
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Task' : 'Create New Task'}</DialogTitle>
@@ -471,79 +471,7 @@ export const TaskForm = ({ isOpen, onClose, onSubmit, task, allTasks = [] }: Tas
             />
             
             {/* Dependencies */}
-            {allTasks.length > 0 && (
-              <FormField
-                control={form.control}
-                name="dependencies"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Dependencies</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            className={cn(
-                              "justify-between w-full",
-                              !field.value?.length && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value?.length > 0
-                              ? `${field.value.length} dependenc${field.value.length > 1 ? 'ies' : 'y'} selected`
-                              : "No dependencies"}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-full p-0">
-                        <Command>
-                          <CommandInput placeholder="Search tasks..." />
-                          <CommandList>
-                            <CommandEmpty>No tasks found.</CommandEmpty>
-                            <CommandGroup>
-                              {allTasks
-                                // Can't depend on itself or future tasks
-                                .filter(t => t.id !== task?.id)
-                                .map((dependencyTask) => (
-                                  <CommandItem
-                                    key={dependencyTask.id}
-                                    value={dependencyTask.title}
-                                    onSelect={() => {
-                                      const current = new Set(field.value || []);
-                                      if (current.has(dependencyTask.id)) {
-                                        current.delete(dependencyTask.id);
-                                      } else {
-                                        current.add(dependencyTask.id);
-                                      }
-                                      field.onChange(Array.from(current));
-                                    }}
-                                  >
-                                    <Check
-                                      className={cn(
-                                        "mr-2 h-4 w-4",
-                                        field.value?.includes(dependencyTask.id) ? "opacity-100" : "opacity-0"
-                                      )}
-                                    />
-                                    {dependencyTask.title}
-                                    <Badge className="ml-2" variant="outline">
-                                      {dependencyTask.status}
-                                    </Badge>
-                                  </CommandItem>
-                                ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                    <FormDescription>
-                      Select tasks that must be completed before this task can start.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+            {/* Removed allTasks prop */}
             
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose}>

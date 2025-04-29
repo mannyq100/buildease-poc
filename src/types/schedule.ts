@@ -67,6 +67,21 @@ export interface NewTaskForm {
   dependencies?: number[]; // Optional array of dependency task IDs
 }
 
+// Define task filters type
+export interface TaskFiltersType {
+  project?: string;
+  phase?: string;
+  status?: string;
+  priority?: string;
+  assignedTo?: number;
+  startDateFrom?: string;
+  startDateTo?: string;
+  dueDateFrom?: string;
+  dueDateTo?: string;
+  completionMin?: number;
+  completionMax?: number;
+}
+
 // Define task metrics type
 export interface TaskMetrics {
   total: number;

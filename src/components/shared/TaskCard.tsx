@@ -2,7 +2,7 @@
  * Unified TaskCard component for displaying task details across the application
  * This component consolidates functionality from separate task cards in phases and schedule
  */
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -15,11 +15,13 @@ import {
   Clock,
   Link2,
   UserRound,
-  MoreVertical
+  MoreVertical,
+  ArrowRight
 } from 'lucide-react';
 
 import { Task, TeamMember } from '@/types/schedule';
 import { cn } from '@/utils/core/ui';
+import { format, parseISO, differenceInDays } from 'date-fns';
 
 // Interface for assignees if passed directly (not via Task object)
 export interface Assignee {
@@ -74,11 +76,11 @@ export interface TaskCardProps {
 
 /**
  * Enhanced TaskCard component that works for both phase and schedule views.
- * Follows Buildese UI design principles:
+ * Follows BuildEase UI design principles:
  * - Card-based UI with subtle shadows
  * - Clear visual feedback
  * - Consistent spacing
- * - Modern, aesthetic look
+ * - Modern, aesthetic look with warm blue primary color (#2B6CB0)
  */
 export function TaskCard({
   task,
@@ -103,268 +105,314 @@ export function TaskCard({
   // Determine if we're using a Task object or individual props
   const usingTaskObject = !!task;
   
-  // Extract values from task object if provided
-  const taskTitle = usingTaskObject ? task.title : title;
-  const taskDescription = usingTaskObject ? task.description : description;
-  const taskDueDate = usingTaskObject ? task.dueDate : dueDate;
-  const taskStatus = usingTaskObject ? task.status : status;
-  const taskPriority = usingTaskObject ? task.priority : priority;
-  const taskProgress = usingTaskObject ? task.completion : (completion ?? progress);
-  const taskProject = usingTaskObject ? task.project : project;
-  const taskPhase = usingTaskObject ? task.phase : phase;
-  
-  // Extract assignees/team members from task if needed
-  // Support both assignees and assignedTo for backward compatibility
-  const taskAssignees = usingTaskObject ? task.assignedTo : (assignedTo.length > 0 ? assignedTo : assignees);
-  const commentsCount = usingTaskObject ? (task.comments?.length || 0) : comments;
-  const attachmentsCount = usingTaskObject ? (task.attachments?.length || 0) : attachments;
-  const dependenciesCount = usingTaskObject ? (task.dependencies?.length || 0) : dependencies;
-  
-  // Check for dark mode
-  const isDarkMode = document.documentElement.classList.contains('dark');
-  
+  // Extract values from task object if provided with useMemo to prevent recalculations
+  const taskValues = useMemo(() => {
+    return {
+      title: usingTaskObject ? task.title : title,
+      description: usingTaskObject ? task.description : description,
+      dueDate: usingTaskObject ? task.dueDate : dueDate,
+      status: usingTaskObject ? task.status : status,
+      priority: usingTaskObject ? task.priority : priority,
+      completion: usingTaskObject ? task.completion : (completion ?? progress),
+      assignees: usingTaskObject ? 
+        (task.assignedTo?.map(member => ({
+          id: member.id,
+          name: member.name,
+          avatar: member.avatar
+        })) || []) : 
+        assignees,
+      commentsCount: usingTaskObject ? (typeof task.comments === 'number' ? task.comments : 0) : comments,
+      attachmentsCount: usingTaskObject ? (typeof task.attachments === 'number' ? task.attachments : 0) : attachments,
+      dependenciesCount: usingTaskObject ? (task.dependencies?.length || 0) : dependencies,
+      project: usingTaskObject ? task.project : project,
+      phase: usingTaskObject ? task.phase : phase
+    };
+  }, [
+    task, 
+    title, 
+    description, 
+    dueDate, 
+    status, 
+    priority, 
+    progress, 
+    completion, 
+    assignees, 
+    assignedTo, 
+    comments, 
+    attachments, 
+    dependencies,
+    project,
+    phase,
+    usingTaskObject
+  ]);
+
   // Helper functions for styling
   const getStatusColor = (status?: string) => {
-    if (!status) return '';
+    if (!status) return 'bg-gray-400';
     
-    const normalizedStatus = status.toLowerCase().replace(' ', '-');
-    
-    switch (normalizedStatus) {
+    switch(status.toLowerCase()) {
       case 'completed':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-      case 'in-progress':
+        return 'bg-green-500';
       case 'in progress':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
-      case 'not-started':
+        return 'bg-blue-500';
       case 'not started':
-      case 'pending':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+        return 'bg-gray-500';
       case 'delayed':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+        return 'bg-amber-500';
       case 'blocked':
-        return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400';
+        return 'bg-red-500';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+        return 'bg-gray-400';
     }
   };
   
+  const getStatusBadgeClass = (status?: string) => {
+    if (!status) return 'bg-gray-100 text-gray-800';
+    
+    switch(status.toLowerCase()) {
+      case 'completed':
+        return 'bg-green-100 text-green-800';
+      case 'in progress':
+        return 'bg-blue-100 text-blue-800';
+      case 'not started':
+        return 'bg-gray-100 text-gray-800';
+      case 'delayed':
+        return 'bg-amber-100 text-amber-800';
+      case 'blocked':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   const getPriorityColor = (priority?: string) => {
-    if (!priority) return '';
+    if (!priority) return 'text-gray-500';
     
-    const normalizedPriority = priority.toLowerCase();
-    
-    switch (normalizedPriority) {
+    switch(priority.toLowerCase()) {
       case 'high':
-        return isDarkMode ? 'text-red-400' : 'text-red-600';
+        return 'text-red-600 dark:text-red-400';
       case 'medium':
-        return isDarkMode ? 'text-amber-400' : 'text-amber-600';
+        return 'text-amber-600 dark:text-amber-400';
       case 'low':
-        return isDarkMode ? 'text-green-400' : 'text-green-600';
+        return 'text-green-600 dark:text-green-400';
       default:
-        return isDarkMode ? 'text-gray-400' : 'text-gray-600';
+        return 'text-gray-500 dark:text-gray-400';
     }
   };
   
+  const getPriorityBadgeClass = (priority?: string) => {
+    if (!priority) return 'text-gray-800 border-gray-300';
+    
+    switch(priority.toLowerCase()) {
+      case 'high':
+        return 'text-red-800 border-red-300';
+      case 'medium':
+        return 'text-amber-800 border-amber-300';
+      case 'low':
+        return 'text-green-800 border-green-300';
+      default:
+        return 'text-gray-800 border-gray-300';
+    }
+  };
+
   // Format due date as a more readable string
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
     
     try {
-      const date = new Date(dateString);
-      return new Intl.DateTimeFormat('en-US', { 
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      }).format(date);
-    } catch (e) {
-      return dateString; // Fallback to the original string if parsing fails
+      const date = parseISO(dateString);
+      return format(date, 'MMM d, yyyy');
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return dateString;
     }
   };
-  
-  // Calculate days remaining
+
+  // Calculate days remaining or overdue
   const getDaysRemaining = (dateString?: string) => {
-    if (!dateString) return 0;
+    if (!dateString) return null;
     
     try {
-      const dueDate = new Date(dateString);
+      const dueDate = parseISO(dateString);
       const today = new Date();
-      
-      // Set both dates to midnight for accurate day calculation
-      dueDate.setHours(0, 0, 0, 0);
-      today.setHours(0, 0, 0, 0);
-      
-      const diffTime = dueDate.getTime() - today.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
-      return diffDays;
-    } catch (e) {
-      return 0;
+      return differenceInDays(dueDate, today);
+    } catch (error) {
+      console.error('Error calculating days remaining:', error);
+      return null;
     }
   };
-  
+
+  // Calculate overdue days for display
+  const getOverdueDays = (dateString?: string) => {
+    const daysRemaining = getDaysRemaining(dateString);
+    if (daysRemaining === null) return '';
+    if (daysRemaining >= 0) return '';
+    return `${Math.abs(daysRemaining)}d overdue`;
+  };
+
   // Event handler for card click
   const handleClick = () => {
-    if (onClick) {
-      if (task) {
-        onClick(task);
-      } else {
-        onClick({
-          title: title || '',
-          description: description || '',
-          dueDate: dueDate || '',
-          status: status || 'pending',
-          priority: priority,
-          progress: progress,
-          completion: completion,
-          assignees: assignees,
-          comments: comments,
-          attachments: attachments,
-          dependencies: dependencies,
-          project: project || '',
-          phase: phase || ''
-        });
-      }
+    if (!onClick) return;
+    
+    if (usingTaskObject && task) {
+      onClick(task);
+    } else {
+      // Create a synthetic task/phase task object from props
+      const syntheticTask: PhaseTask = {
+        title: taskValues.title || '',
+        description: taskValues.description || '',
+        dueDate: taskValues.dueDate || '',
+        status: (taskValues.status as PhaseTask['status']) || 'pending',
+        priority: (taskValues.priority as PhaseTask['priority']) || 'medium',
+        progress: taskValues.completion,
+        assignees: taskValues.assignees,
+        comments: taskValues.commentsCount,
+        attachments: taskValues.attachmentsCount,
+        dependencies: taskValues.dependenciesCount,
+        project: taskValues.project,
+        phase: taskValues.phase
+      };
+      
+      onClick(syntheticTask);
     }
   };
+
+  // Get status and priority colors
+  const statusColor = getStatusColor(taskValues.status);
+  const statusBadgeClass = getStatusBadgeClass(taskValues.status);
+  const priorityColor = getPriorityColor(taskValues.priority);
+  const priorityBadgeClass = getPriorityBadgeClass(taskValues.priority);
   
-  const daysRemaining = taskDueDate ? getDaysRemaining(taskDueDate) : null;
-  const formattedDueDate = taskDueDate ? formatDate(taskDueDate) : null;
-  const statusColor = taskStatus ? getStatusColor(taskStatus) : '';
-  const priorityColor = taskPriority ? getPriorityColor(taskPriority) : '';
+  // Format date and calculate days remaining
+  const formattedDueDate = formatDate(taskValues.dueDate);
+  const daysRemaining = getDaysRemaining(taskValues.dueDate);
+  const overdueDays = getOverdueDays(taskValues.dueDate);
   
-  // Component rendering
+  // Card content
   const cardContent = (
     <Card 
       className={cn(
-        "border overflow-hidden transition-all duration-300",
-        onClick ? "hover:shadow-md cursor-pointer" : "",
+        'overflow-hidden border border-blue-200 hover:border-blue-300 dark:border-blue-800/30 dark:hover:border-blue-700/50',
+        'transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer',
         className
       )}
-      onClick={onClick ? handleClick : undefined}
+      onClick={handleClick}
     >
-      <CardContent className="p-4">
-        <div className="space-y-4">
-          {/* Header with Title and Status */}
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="font-semibold text-base md:text-lg line-clamp-2">{taskTitle}</h3>
-            {taskStatus && (
-              <Badge className={statusColor}>
-                {taskStatus}
-              </Badge>
+      <CardContent className="p-0">
+        {/* Status badge at top */}
+        <div className="flex justify-between items-center">
+          <Badge className={cn(
+            'rounded-none rounded-tr-none rounded-bl-none px-3 py-1 text-xs font-medium',
+            statusBadgeClass
+          )}>
+            {taskValues.status}
+          </Badge>
+          
+          {taskValues.priority && (
+            <Badge variant="outline" className={cn(
+              'rounded-none rounded-tl-none rounded-br-none border-t-0 border-r-0 px-3 py-1 text-xs font-medium',
+              priorityBadgeClass
+            )}>
+              {taskValues.priority.charAt(0).toUpperCase() + taskValues.priority.slice(1)} Priority
+            </Badge>
+          )}
+        </div>
+        
+        <div className="p-4 pt-3">
+          {/* Title and project/phase */}
+          <div className="mb-3">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
+              {taskValues.title}
+            </h3>
+            
+            {(taskValues.project || taskValues.phase) && (
+              <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                {taskValues.project && <span>{taskValues.project}</span>}
+                {taskValues.project && taskValues.phase && (
+                  <ArrowRight className="h-3 w-3 mx-1" />
+                )}
+                {taskValues.phase && <span>{taskValues.phase}</span>}
+              </div>
             )}
           </div>
-          
-          {/* Project and Phase Info (if available) */}
-          {(taskProject || taskPhase) && (
-            <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-              {taskProject && <span>{taskProject}</span>}
-              {taskProject && taskPhase && <span className="mx-2">&#8226;</span>}
-              {taskPhase && <span>{taskPhase}</span>}
-            </div>
-          )}
           
           {/* Description */}
-          {taskDescription && (
-            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{taskDescription}</p>
+          {taskValues.description && (
+            <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 line-clamp-2">
+              {taskValues.description}
+            </p>
           )}
           
-          {/* Progress Bar (if available) */}
-          {typeof taskProgress === 'number' && (
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs">
-                <span>Progress</span>
-                <span>{taskProgress}%</span>
-              </div>
-              <Progress value={taskProgress} className="h-2" />
+          {/* Progress bar */}
+          <div className="mb-2">
+            <div className="flex justify-between items-center text-xs text-gray-600 dark:text-gray-400 mb-1">
+              <span>Progress</span>
+              <span>{taskValues.completion || 0}%</span>
             </div>
-          )}
-          
-          {/* Due Date and Priority */}
-          <div className="flex flex-wrap items-center justify-between text-sm gap-2">
-            {formattedDueDate && (
-              <div className="flex items-center gap-1.5">
-                <Calendar className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                <span className="text-gray-700 dark:text-gray-300">{formattedDueDate}</span>
-                {daysRemaining !== null && (
-                  <span className={cn(
-                    "ml-1 text-xs",
-                    daysRemaining < 0 ? 'text-red-500 dark:text-red-400' :
-                    daysRemaining <= 3 ? 'text-amber-500 dark:text-amber-400' :
-                    'text-green-500 dark:text-green-400'
-                  )}>
-                    {daysRemaining < 0 ? `${Math.abs(daysRemaining)}d overdue` :
-                     daysRemaining === 0 ? 'Today' :
-                     daysRemaining === 1 ? 'Tomorrow' :
-                     `${daysRemaining}d left`}
-                  </span>
-                )}
-              </div>
-            )}
-            
-            {taskPriority && (
-              <div className={cn(
-                "text-xs font-medium",
-                priorityColor
-              )}>
-                {taskPriority.charAt(0).toUpperCase() + taskPriority.slice(1)} Priority
-              </div>
-            )}
+            <Progress 
+              value={taskValues.completion || 0} 
+              className="h-2 bg-gray-100 dark:bg-gray-700" 
+            />
           </div>
           
-          {/* Footer with assignees and metadata */}
-          <div className="flex items-center justify-between pt-1">
-            {/* Assignees */}
-            <div className="flex -space-x-2">
-              {taskAssignees && taskAssignees.length > 0 ? (
-                taskAssignees.slice(0, 3).map((assignee, index) => (
-                  <Avatar key={typeof assignee.id === 'string' ? assignee.id : `assignee-${index}`} className="h-6 w-6 border-2 border-white dark:border-slate-800">
+          {/* Due date and metadata */}
+          <div className="flex justify-between items-end mt-3">
+            {/* Due date */}
+            <div className="flex items-center text-sm">
+              <Calendar className="h-4 w-4 mr-2 text-gray-500" />
+              <span>{formattedDueDate}</span>
+              {overdueDays && (
+                <span className="ml-2 text-xs text-red-600 font-medium">
+                  {overdueDays}
+                </span>
+              )}
+            </div>
+            
+            {/* Comments and attachments */}
+            <div className="flex items-center space-x-3 text-gray-500">
+              {taskValues.commentsCount > 0 && (
+                <div className="flex items-center text-xs">
+                  <MessageSquare className="h-4 w-4 mr-1" />
+                  <span>{taskValues.commentsCount}</span>
+                </div>
+              )}
+              
+              {taskValues.attachmentsCount > 0 && (
+                <div className="flex items-center text-xs">
+                  <Paperclip className="h-4 w-4 mr-1" />
+                  <span>{taskValues.attachmentsCount}</span>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Assignees */}
+          {taskValues.assignees && taskValues.assignees.length > 0 && (
+            <div className="flex justify-end mt-3">
+              <div className="flex -space-x-2">
+                {taskValues.assignees.slice(0, 3).map((assignee, index) => (
+                  <Avatar 
+                    key={typeof assignee.id === 'string' ? assignee.id : `assignee-${index}`} 
+                    className="h-6 w-6 border-2 border-white dark:border-slate-800"
+                  >
                     {assignee.avatar ? (
                       <AvatarImage src={assignee.avatar} alt={assignee.name} />
                     ) : (
-                      <AvatarFallback className="text-xs">
+                      <AvatarFallback className="text-xs bg-blue-500 text-white">
                         {assignee.name.split(' ').map(n => n[0]).join('')}
                       </AvatarFallback>
                     )}
                   </Avatar>
-                ))
-              ) : (
-                <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-                  <UserRound className="h-4 w-4 mr-1" />
-                  <span>Unassigned</span>
-                </div>
-              )}
-              
-              {taskAssignees && taskAssignees.length > 3 && (
-                <Avatar className="h-6 w-6 border-2 border-white dark:border-slate-800 bg-gray-200 dark:bg-slate-700">
-                  <AvatarFallback className="text-xs">+{taskAssignees.length - 3}</AvatarFallback>
-                </Avatar>
-              )}
+                ))}
+                
+                {taskValues.assignees.length > 3 && (
+                  <Avatar className="h-6 w-6 border-2 border-white dark:border-slate-800 bg-gray-200 dark:bg-slate-700">
+                    <AvatarFallback className="text-xs">+{taskValues.assignees.length - 3}</AvatarFallback>
+                  </Avatar>
+                )}
+              </div>
             </div>
-            
-            {/* Metadata icons */}
-            <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400">
-              {attachmentsCount > 0 && (
-                <div className="flex items-center text-xs">
-                  <Paperclip className="h-3.5 w-3.5 mr-1" />
-                  <span>{attachmentsCount}</span>
-                </div>
-              )}
-              
-              {commentsCount > 0 && (
-                <div className="flex items-center text-xs">
-                  <MessageSquare className="h-3.5 w-3.5 mr-1" />
-                  <span>{commentsCount}</span>
-                </div>
-              )}
-              
-              {dependenciesCount > 0 && (
-                <div className="flex items-center text-xs">
-                  <Link2 className="h-3.5 w-3.5 mr-1" />
-                  <span>{dependenciesCount}</span>
-                </div>
-              )}
-            </div>
-          </div>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -377,7 +425,7 @@ export function TaskCard({
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        whileHover={{ y: -4, transition: { duration: 0.2 } }}
+        whileHover={{ y: -2, transition: { duration: 0.2 } }}
       >
         {cardContent}
       </m.div>

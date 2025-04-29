@@ -82,64 +82,8 @@ const badgeVariants = cva(
   }
 )
 
-// Add construction theme badge styles
-if (typeof document !== 'undefined') {
-  const style = document.createElement('style');
-  style.textContent = `
-    .dark .construction-glass-badge {
-      background-color: hsla(var(--deepblue), 0.3);
-      color: white;
-    }
-    
-    .construction-blueprint-badge {
-      border-color: hsl(var(--deepblue));
-      color: hsl(var(--deepblue));
-      font-weight: bold;
-    }
-    
-    .construction-steel-badge {
-      background-color: hsl(var(--deepblue-light));
-      font-weight: bold;
-    }
-    
-    .construction-wood-badge {
-      background-color: hsl(var(--burntorange-dark));
-      font-weight: bold;
-    }
-    
-    .construction-status-badge {
-      border-color: hsl(var(--deepblue));
-      color: hsl(var(--deepblue));
-      font-weight: medium;
-    }
-    
-    .dark .construction-status-badge {
-      color: white;
-      border-color: white;
-    }
-    
-    .construction-priority-badge {
-      border-color: hsl(var(--burntorange));
-      color: hsl(var(--burntorange));
-      font-weight: bold;
-    }
-    
-    .construction-phase-badge {
-      background: linear-gradient(to right, hsl(var(--deepblue)), hsl(var(--deepblue-light)));
-      font-weight: bold;
-    }
-  `;
-  document.head.appendChild(style);
-}
-
-export interface BadgeProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof badgeVariants> {
-  withDot?: boolean
-  dotColor?: string
-  withBorder?: boolean
-  borderColor?: string
-}
+// Prevent style injection on every render by using a flag
+let badgeStylesInitialized = false;
 
 function Badge({
   className,
@@ -153,7 +97,72 @@ function Badge({
   withBorder,
   borderColor,
   ...props
-}: BadgeProps) {
+}: React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof badgeVariants> & {
+  withDot?: boolean
+  dotColor?: string
+  withBorder?: boolean
+  borderColor?: string
+}) {
+  React.useEffect(() => {
+    if (typeof document !== 'undefined' && !badgeStylesInitialized) {
+      const style = document.createElement('style');
+      style.textContent = `
+        .dark .construction-glass-badge {
+          background-color: hsla(var(--deepblue), 0.3);
+          color: white;
+        }
+        
+        .construction-blueprint-badge {
+          border-color: hsl(var(--deepblue));
+          color: hsl(var(--deepblue));
+          font-weight: bold;
+        }
+        
+        .construction-steel-badge {
+          background-color: hsl(var(--slate));
+          color: white;
+          font-weight: bold;
+        }
+        
+        .construction-concrete-badge {
+          background-color: hsl(var(--slate));
+          color: white;
+          font-weight: bold;
+        }
+        
+        .construction-wood-badge {
+          background-color: hsl(var(--amber));
+          color: white;
+          font-weight: bold;
+        }
+        
+        .construction-status-badge {
+          border-color: hsl(var(--deepblue));
+          color: hsl(var(--deepblue));
+          font-weight: medium;
+        }
+        
+        .dark .construction-status-badge {
+          color: white;
+          border-color: white;
+        }
+        
+        .construction-priority-badge {
+          border-color: hsl(var(--burntorange));
+          color: hsl(var(--burntorange));
+          font-weight: bold;
+        }
+        
+        .construction-phase-badge {
+          background: linear-gradient(to right, hsl(var(--deepblue)), hsl(var(--deepblue-light)));
+          font-weight: bold;
+        }
+      `;
+      document.head.appendChild(style);
+      badgeStylesInitialized = true;
+    }
+  }, []);
+
   return (
     <div
       className={cn(
@@ -174,4 +183,43 @@ function Badge({
   )
 }
 
-export { Badge, badgeVariants }
+// This is a span-based version of Badge that can be safely used inside <p> elements like DialogDescription
+function SpanBadge({
+  className,
+  variant,
+  size,
+  animation,
+  rounded,
+  interactive,
+  withDot,
+  dotColor,
+  withBorder,
+  borderColor,
+  ...props
+}: React.HTMLAttributes<HTMLSpanElement> & VariantProps<typeof badgeVariants> & {
+  withDot?: boolean
+  dotColor?: string
+  withBorder?: boolean
+  borderColor?: string
+}) {
+  return (
+    <span
+      className={cn(
+        badgeVariants({ variant, size, animation, rounded, interactive }),
+        withBorder && "border-2",
+        withBorder && borderColor ? borderColor : "",
+        className
+      )}
+      {...props}
+    >
+      {withDot && (
+        <span 
+          className={`inline-block w-2 h-2 rounded-full mr-1.5 ${dotColor || "bg-current"}`}
+        />
+      )}
+      {props.children}
+    </span>
+  )
+}
+
+export { Badge, badgeVariants, SpanBadge }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Select, 
   SelectContent, 
@@ -40,7 +40,6 @@ const priorityOptions = [
 ];
 
 export const TaskFilters = ({ onFilterChange, onReset }: TaskFiltersProps) => {
-  const [filters, setFilters] = useState<TaskFilters>({});
   const [selectedProject, setSelectedProject] = useState<string | undefined>(undefined);
   const [phases, setPhases] = useState<string[]>([]);
   const [projectFilter, setProjectFilter] = useState('All Projects');
@@ -48,14 +47,12 @@ export const TaskFilters = ({ onFilterChange, onReset }: TaskFiltersProps) => {
   const [priorityFilter, setPriorityFilter] = useState('All Priorities');
   const [assigneeFilter, setAssigneeFilter] = useState('All Team Members');
   
-  useEffect(() => {
-    // Apply filters whenever they change
+  // Use useCallback to memoize the applyFilters function
+  const applyFilters = useCallback(() => {
     const activeFilters: TaskFilters = {};
     
     if (projectFilter !== 'All Projects') {
       activeFilters.project = projectFilter;
-      setSelectedProject(projectFilter);
-      setPhases(phasesByProject[projectFilter] || []);
     }
     
     if (statusFilter !== 'All Statuses') {
@@ -73,9 +70,24 @@ export const TaskFilters = ({ onFilterChange, onReset }: TaskFiltersProps) => {
       }
     }
     
-    setFilters(activeFilters);
     onFilterChange(activeFilters);
   }, [projectFilter, statusFilter, priorityFilter, assigneeFilter, onFilterChange]);
+  
+  // Update phases when project changes
+  useEffect(() => {
+    if (projectFilter !== 'All Projects') {
+      setSelectedProject(projectFilter);
+      setPhases(phasesByProject[projectFilter] || []);
+    } else {
+      setSelectedProject(undefined);
+      setPhases([]);
+    }
+  }, [projectFilter]);
+  
+  // Apply filters when filter values change
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
   
   const handleReset = () => {
     setProjectFilter('All Projects');
@@ -84,7 +96,6 @@ export const TaskFilters = ({ onFilterChange, onReset }: TaskFiltersProps) => {
     setAssigneeFilter('All Team Members');
     setSelectedProject(undefined);
     setPhases([]);
-    setFilters({});
     onReset();
   };
   
@@ -167,4 +178,4 @@ export const TaskFilters = ({ onFilterChange, onReset }: TaskFiltersProps) => {
       </div>
     </div>
   );
-}; 
+};

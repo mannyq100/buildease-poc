@@ -2,6 +2,7 @@
  * Hook for fetching and managing user profile data
  * Integrates Auth0 with BuildEase backend API
  */
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth0 } from '@auth0/auth0-react';
 import { 

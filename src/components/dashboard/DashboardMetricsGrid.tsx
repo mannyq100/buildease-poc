@@ -1,6 +1,6 @@
 import React from 'react'
 import { LazyMotion, domAnimation, m } from 'framer-motion'
-import { BarChart3 } from 'lucide-react'
+import { BarChart3, Briefcase, DollarSign, ListTodo, Users } from 'lucide-react'
 import { StatCard } from '@/components/shared/StatCard'
 import type { QuickStatCard } from '@/types/dashboard'
 
@@ -28,6 +28,24 @@ interface DashboardMetricsGridProps {
   className?: string
 }
 
+// Function to get the appropriate icon component
+const getIconComponent = (iconName: string | React.ReactNode) => {
+  if (React.isValidElement(iconName)) return iconName;
+  
+  switch(String(iconName).toLowerCase()) {
+    case 'briefcase':
+      return <Briefcase className="h-5 w-5" />;
+    case 'dollarsign':
+      return <DollarSign className="h-5 w-5" />;
+    case 'listtodo':
+      return <ListTodo className="h-5 w-5" />;
+    case 'users':
+      return <Users className="h-5 w-5" />;
+    default:
+      return <BarChart3 className="h-5 w-5" />;
+  }
+};
+
 /**
  * DashboardMetricsGrid component
  * Displays a grid of key metrics for the dashboard
@@ -52,9 +70,10 @@ export function DashboardMetricsGrid({ stats, className = '' }: DashboardMetrics
               <StatCard
                 title={stat.title}
                 value={stat.value}
-                icon={stat.icon}
+                icon={getIconComponent(stat.icon)}
                 colorScheme={stat.color}
                 subtitle={stat.subtitle}
+                trend={stat.trend}
               />
             </m.div>
           ))}
@@ -62,4 +81,4 @@ export function DashboardMetricsGrid({ stats, className = '' }: DashboardMetrics
       </LazyMotion>
     </div>
   )
-} 
+}

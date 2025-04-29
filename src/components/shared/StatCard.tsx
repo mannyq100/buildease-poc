@@ -1,16 +1,15 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
-
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { cn } from '@/utils/core/ui';
 
 /**
  * StatCard component for displaying statistics and metrics.
- * Follows Buildese UI design principles:
+ * Follows BuildEase UI design principles:
  * - Card-based UI with subtle shadows
  * - Clear visual feedback
  * - Consistent spacing
- * - Modern, aesthetic look
+ * - Modern, aesthetic look with warm blue primary color (#2B6CB0)
  */
 export interface StatCardProps {
   title: string;
@@ -18,10 +17,7 @@ export interface StatCardProps {
   description?: string;
   subtitle?: string;
   colorScheme?: 'blue' | 'green' | 'amber' | 'red' | 'gray' | 'purple';
-  trend?: {
-    value: number;
-    isPositive: boolean;
-  };
+  trend?: number | { value: number; isPositive: boolean };
   icon?: React.ReactNode;
   className?: string;
 }
@@ -36,15 +32,16 @@ export function StatCard({
   icon,
   className
 }: StatCardProps) {
+
   const colors = {
     blue: {
       iconBg: 'bg-blue-100 dark:bg-blue-900/40',
       iconColor: 'text-blue-600 dark:text-blue-400',
       valueColor: 'text-blue-700 dark:text-blue-300',
-      trendPositive: 'text-blue-600 dark:text-blue-400',
-      trendNegative: 'text-blue-600 dark:text-blue-400',
+      trendPositive: 'text-green-600 dark:text-green-400',
+      trendNegative: 'text-red-600 dark:text-red-400',
       trendBg: 'bg-blue-50 dark:bg-blue-900/20',
-      cardBg: 'bg-blue-50/50 dark:bg-blue-950/10 hover:bg-blue-50/70 dark:hover:bg-blue-950/20'
+      cardBg: 'bg-blue-50/50 dark:bg-blue-900/10'
     },
     green: {
       iconBg: 'bg-green-100 dark:bg-green-900/40',
@@ -53,16 +50,16 @@ export function StatCard({
       trendPositive: 'text-green-600 dark:text-green-400',
       trendNegative: 'text-red-600 dark:text-red-400',
       trendBg: 'bg-green-50 dark:bg-green-900/20',
-      cardBg: 'bg-green-50/50 dark:bg-green-950/10 hover:bg-green-50/70 dark:hover:bg-green-950/20'
+      cardBg: 'bg-green-50/50 dark:bg-green-900/10'
     },
     amber: {
       iconBg: 'bg-amber-100 dark:bg-amber-900/40',
       iconColor: 'text-amber-600 dark:text-amber-400',
       valueColor: 'text-amber-700 dark:text-amber-300',
-      trendPositive: 'text-amber-600 dark:text-amber-400',
-      trendNegative: 'text-amber-600 dark:text-amber-400',
+      trendPositive: 'text-green-600 dark:text-green-400',
+      trendNegative: 'text-red-600 dark:text-red-400',
       trendBg: 'bg-amber-50 dark:bg-amber-900/20',
-      cardBg: 'bg-amber-50/50 dark:bg-amber-950/10 hover:bg-amber-50/70 dark:hover:bg-amber-950/20'
+      cardBg: 'bg-amber-50/50 dark:bg-amber-900/10'
     },
     red: {
       iconBg: 'bg-red-100 dark:bg-red-900/40',
@@ -71,25 +68,25 @@ export function StatCard({
       trendPositive: 'text-green-600 dark:text-green-400',
       trendNegative: 'text-red-600 dark:text-red-400',
       trendBg: 'bg-red-50 dark:bg-red-900/20',
-      cardBg: 'bg-red-50/50 dark:bg-red-950/10 hover:bg-red-50/70 dark:hover:bg-red-950/20'
+      cardBg: 'bg-red-50/50 dark:bg-red-900/10'
     },
     gray: {
       iconBg: 'bg-gray-100 dark:bg-gray-800',
       iconColor: 'text-gray-600 dark:text-gray-400',
       valueColor: 'text-gray-700 dark:text-gray-300',
-      trendPositive: 'text-gray-600 dark:text-gray-400',
-      trendNegative: 'text-gray-600 dark:text-gray-400',
+      trendPositive: 'text-green-600 dark:text-green-400',
+      trendNegative: 'text-red-600 dark:text-red-400',
       trendBg: 'bg-gray-50 dark:bg-gray-800',
-      cardBg: 'bg-gray-50/50 dark:bg-gray-900/10 hover:bg-gray-50/70 dark:hover:bg-gray-900/20'
+      cardBg: 'bg-gray-50/50 dark:bg-gray-900/10'
     },
     purple: {
       iconBg: 'bg-purple-100 dark:bg-purple-900/40',
       iconColor: 'text-purple-600 dark:text-purple-400',
       valueColor: 'text-purple-700 dark:text-purple-300',
-      trendPositive: 'text-purple-600 dark:text-purple-400',
-      trendNegative: 'text-purple-600 dark:text-purple-400',
+      trendPositive: 'text-green-600 dark:text-green-400',
+      trendNegative: 'text-red-600 dark:text-red-400',
       trendBg: 'bg-purple-50 dark:bg-purple-900/20',
-      cardBg: 'bg-purple-50/50 dark:bg-purple-950/10 hover:bg-purple-50/70 dark:hover:bg-purple-950/20'
+      cardBg: 'bg-purple-50/50 dark:bg-purple-900/10'
     }
   };
 
@@ -102,7 +99,7 @@ export function StatCard({
         'p-4 h-full min-h-[140px] flex flex-col justify-between', 
         colorConfig.cardBg,
         'border-gray-200/70 dark:border-slate-700/30',
-        'transition-all duration-200 shadow-sm hover:shadow-md dark:shadow-slate-900/10'
+        'transition-all duration-200 shadow-sm shadow-md dark:shadow-slate-900/10'
       )}>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -118,15 +115,17 @@ export function StatCard({
               <div className={cn(
                 'flex items-center gap-1 px-2 py-1 rounded text-sm font-medium ml-2',
                 colorConfig.trendBg,
-                trend.isPositive ? colorConfig.trendPositive : colorConfig.trendNegative,
+                typeof trend === 'object' ? (trend.isPositive ? colorConfig.trendPositive : colorConfig.trendNegative) : colorConfig.trendPositive,
                 'transition-colors duration-200'
               )}>
-                {trend.isPositive ? (
+                {typeof trend === 'object' ? (trend.isPositive ? (
                   <ArrowUpRight className="w-4 h-4" />
                 ) : (
                   <ArrowDownRight className="w-4 h-4" />
+                )) : (
+                  <ArrowUpRight className="w-4 h-4" />
                 )}
-                {Math.abs(trend.value)}%
+                {typeof trend === 'object' ? Math.abs(trend.value) : trend}%
               </div>
             )}
           </div>

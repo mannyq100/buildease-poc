@@ -1,3 +1,4 @@
+import React, { useMemo } from 'react';
 import { Task, TaskViewLayout } from '@/types/schedule';
 import { TaskCard } from '@/components/shared/TaskCard';
 import { EmptyState } from '@/components/EmptyState';
@@ -14,6 +15,7 @@ interface TaskListProps {
   sortDirection?: 'asc' | 'desc';
   emptyStateMessage?: string;
   viewLayout?: TaskViewLayout;
+  isLoading?: boolean;
 }
 
 export const TaskList = ({
@@ -22,9 +24,23 @@ export const TaskList = ({
   sortBy = 'dueDate',
   sortDirection = 'asc',
   emptyStateMessage = 'No tasks found',
-  viewLayout = 'grid'
+  viewLayout = 'grid',
+  isLoading,
 }: TaskListProps) => {
-  const sortedTasks = sortTasks(tasks, sortBy, sortDirection);
+  // Use useMemo to prevent unnecessary re-sorting
+  const sortedTasks = useMemo(() => {
+    return sortTasks(tasks, sortBy, sortDirection);
+  }, [tasks, sortBy, sortDirection]);
+
+  if (isLoading) {
+    return (
+      <EmptyState
+        title="Loading..."
+        description="Please wait while we load your tasks"
+        icon="calendar"
+      />
+    );
+  }
 
   if (sortedTasks.length === 0) {
     return (
@@ -52,44 +68,50 @@ export const TaskList = ({
               </tr>
             </thead>
             <tbody className="divide-y">
-              {sortedTasks.map(task => (
-                <tr 
-                  key={task.id} 
-                  className="bg-card hover:bg-muted/50 cursor-pointer"
-                  onClick={() => onTaskClick(task)}
-                >
-                  <td className="px-4 py-3">
-                    <div className="font-medium">{task.title}</div>
-                    <div className="text-xs text-muted-foreground truncate max-w-[200px]">
-                      {task.description}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div>{task.project}</div>
-                    <div className="text-xs text-muted-foreground">{task.phase}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="text-xs text-muted-foreground">Start: {formatDate(task.startDate)}</div>
-                    <div>Due: {formatDate(task.dueDate)}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge className={`bg-${getTaskStatusColor(task.status)}-500`}>
-                      {task.status}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge variant="outline" className={`text-${getTaskPriorityColor(task.priority)}-500 border-${getTaskPriorityColor(task.priority)}-500`}>
-                      {task.priority}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <Progress value={task.completion} className="h-2 w-20" />
-                      <span className="text-xs">{task.completion}%</span>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {sortedTasks.map(task => {
+                // Memoize status and priority colors to prevent recalculation
+                const statusColor = getTaskStatusColor(task.status);
+                const priorityColor = getTaskPriorityColor(task.priority);
+                
+                return (
+                  <tr 
+                    key={task.id} 
+                    className="bg-card hover:bg-muted/50 cursor-pointer"
+                    onClick={() => onTaskClick(task)}
+                  >
+                    <td className="px-4 py-3">
+                      <div className="font-medium">{task.title}</div>
+                      <div className="text-xs text-muted-foreground truncate max-w-[200px]">
+                        {task.description}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div>{task.project}</div>
+                      <div className="text-xs text-muted-foreground">{task.phase}</div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="text-xs text-muted-foreground">Start: {formatDate(task.startDate)}</div>
+                      <div>Due: {formatDate(task.dueDate)}</div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge className={`bg-${statusColor}-500`}>
+                        {task.status}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge variant="outline" className={`text-${priorityColor}-500 border-${priorityColor}-500`}>
+                        {task.priority}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <Progress value={task.completion} className="h-2 w-20" />
+                        <span className="text-xs">{task.completion}%</span>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -109,4 +131,4 @@ export const TaskList = ({
       ))}
     </div>
   );
-}; 
+};

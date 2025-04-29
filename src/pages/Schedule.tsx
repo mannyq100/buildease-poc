@@ -2,37 +2,51 @@
  * Schedule.tsx - Task scheduling and management page
  * Allows users to create, view, and manage project tasks with different views
  */
-import { useState, useEffect } from 'react';
-import { Task, NewTaskForm, ViewMode, TeamMember, TaskViewLayout } from '@/types/schedule';
+import { useState, useEffect, useCallback } from 'react';
+import { Task, NewTaskForm, ViewMode, TeamMember, TaskViewLayout, TaskFiltersType } from '@/types/schedule';
 import { initialTasks, teamMembers } from '@/data/scheduleData';
 import { filterTasks, searchTasks } from '@/utils/scheduleUtils';
+
+// UI Components
+import { PageHeader } from '@/components/shared';
 import { TaskList } from '@/components/schedule/TaskList';
-import { TaskFilters, TaskFilters as TaskFiltersType } from '@/components/schedule/TaskFilters';
+import { TaskFilters } from '@/components/schedule/TaskFilters';
 import { TaskDetail } from '@/components/schedule/TaskDetail';
 import { TaskForm } from '@/components/schedule/TaskForm';
-import { TaskMetrics } from '@/components/schedule/TaskMetrics';
 import { TaskCalendar } from '@/components/schedule/TaskCalendar';
+import { TaskMetrics } from '@/components/schedule/TaskMetrics';
+import { StatCard } from '@/components/shared/StatCard';
+
+// UI Elements
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Plus, 
-  Search, 
-  Calendar,
-  BarChart2, 
-  List,
-  LayoutGrid,
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+// Icons
+import {
+  Plus,
+  Search,
   RefreshCw,
+  LayoutGrid,
+  List,
+  Calendar,
+  BarChart,
   Clock,
   Clipboard,
   CheckSquare,
-  Users
+  AlertTriangle,
+  Users,
+  Filter,
+  CalendarDays
 } from 'lucide-react';
-
-// Shared Components
-import { PageHeader } from '@/components/shared';
-import { StatCard } from '@/components/shared/StatCard'
-import { Card, CardContent } from '@/components/ui/card';
 
 /**
  * Schedule page component for task management
@@ -46,13 +60,13 @@ export function Schedule() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
+  const [editingTask, setEditingTask] = useState<Task | undefined>();
   const [viewMode, setViewMode] = useState<ViewMode>('tasks');
   const [taskViewLayout, setTaskViewLayout] = useState<TaskViewLayout>('grid');
   const [isLoading, setIsLoading] = useState(false);
   
-  // Apply filters and search
-  useEffect(() => {
+  // Apply filters and search - memoized to prevent infinite loops
+  const applyFiltersAndSearch = useCallback(() => {
     let result = [...tasks];
     
     // Apply search
@@ -61,12 +75,17 @@ export function Schedule() {
     }
     
     // Apply filters
-    if (Object.values(filters).some(value => value !== undefined)) {
+    if (Object.keys(filters).length > 0) {
       result = filterTasks(result, filters);
     }
     
     setFilteredTasks(result);
   }, [tasks, searchQuery, filters]);
+  
+  // Use the memoized function in useEffect
+  useEffect(() => {
+    applyFiltersAndSearch();
+  }, [applyFiltersAndSearch]);
   
   // Task handlers
   const handleTaskClick = (task: Task) => {
@@ -98,12 +117,12 @@ export function Schedule() {
     setTasks(prevTasks => 
       prevTasks.map(task => 
         task.id === taskId 
-          ? { 
-        ...task, 
-              status: newStatus as Task['status'],
-              // If marked as completed, set completion to 100%
-        completion: newStatus === 'Completed' ? 100 : task.completion
-            } 
+          ? {
+            ...task, 
+            status: newStatus as Task['status'],
+            // If marked as completed, set completion to 100%
+            completion: newStatus === 'Completed' ? 100 : task.completion
+          } 
           : task
       )
     );
@@ -111,261 +130,320 @@ export function Schedule() {
   
   // Helper function to get team members from IDs
   const getTeamMembersFromIds = (memberIds: number[]): TeamMember[] => {
-    return teamMembers.filter(member => memberIds.includes(member.id));
+    return memberIds.map(id => {
+      const member = teamMembers.find(m => m.id === id);
+      if (!member) {
+        throw new Error(`Team member with ID ${id} not found`);
+      }
+      return member;
+    });
   };
   
   const handleTaskSubmit = (data: NewTaskForm) => {
     // Check if we're editing an existing task
     if (data.id) {
-    setTasks(prevTasks =>
-      prevTasks.map(task =>
+      setTasks(prevTasks =>
+        prevTasks.map(task =>
           task.id === data.id 
-          ? {
-              ...task,
+            ? {
+                ...task,
                 title: data.title,
                 description: data.description,
                 project: data.project,
                 phase: data.phase,
                 startDate: data.startDate,
                 dueDate: data.dueDate,
-                status: data.status,
-                priority: data.priority,
-                completion: data.completion ?? task.completion,
-                assignedTo: getTeamMembersFromIds(data.assignedTo),
-                dependencies: data.dependencies ?? task.dependencies
-            }
-          : task
-      )
-    );
+                status: data.status as Task['status'],
+                priority: data.priority as Task['priority'],
+                completion: data.completion,
+                assignedTo: getTeamMembersFromIds(data.assignedTo)
+              }
+            : task
+        )
+      );
     } else {
       // Create a new task
       const newTask: Task = {
-        id: Date.now(), // Generate a simple ID
+        id: Math.max(...tasks.map(t => t.id), 0) + 1,
         title: data.title,
         description: data.description,
         project: data.project,
         phase: data.phase,
         startDate: data.startDate,
         dueDate: data.dueDate,
-        status: data.status,
-        priority: data.priority,
-        completion: data.completion ?? 0,
-        assignedTo: getTeamMembersFromIds(data.assignedTo),
-        dependencies: data.dependencies
+        status: data.status as Task['status'],
+        priority: data.priority as Task['priority'],
+        completion: data.completion,
+        assignedTo: getTeamMembersFromIds(data.assignedTo)
       };
       
-      setTasks([...tasks, newTask]);
+      setTasks(prevTasks => [...prevTasks, newTask]);
     }
     
     setIsTaskFormOpen(false);
   };
   
-  // Filter handlers
-  const handleFilterChange = (newFilters: TaskFiltersType) => {
+  // Filter handlers - memoized to prevent infinite loops
+  const handleFilterChange = useCallback((newFilters: TaskFiltersType) => {
     setFilters(newFilters);
-  };
+  }, []);
   
-  const handleResetFilters = () => {
+  const handleResetFilters = useCallback(() => {
     setFilters({});
-    setSearchQuery('');
-  };
+  }, []);
   
   const handleRefresh = () => {
     setIsLoading(true);
+    // Simulate refresh delay
     setTimeout(() => {
-      setTasks(initialTasks);
       setIsLoading(false);
-    }, 1000);
+    }, 800);
   };
   
   const toggleTaskViewLayout = () => {
     setTaskViewLayout(prev => prev === 'grid' ? 'list' : 'grid');
   };
   
-  // Calculate metrics for header
+  // Calculate task statistics
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter(task => task.status === 'Completed').length;
+  const inProgressTasks = tasks.filter(task => task.status === 'In Progress').length;
+  const delayedTasks = tasks.filter(task => task.status === 'Delayed').length;
   const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-  const upcomingDeadlines = tasks.filter(task => 
-    task.status !== 'Completed' && 
-    new Date(task.dueDate) > new Date() && 
-    new Date(task.dueDate) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-  ).length;
-
+  const upcomingDeadlines = tasks.filter(task => {
+    const dueDate = new Date(task.dueDate);
+    const today = new Date();
+    const oneWeek = new Date();
+    oneWeek.setDate(today.getDate() + 7);
+    return dueDate >= today && dueDate <= oneWeek && task.status !== 'Completed';
+  }).length;
+  const assignedToTeam = tasks.filter(task => task.assignedTo.length > 0).length;
+  
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-          <PageHeader
-          title="Schedule"
-          description="Manage and track project tasks and timelines"
-          icon={<Clock className="h-8 w-8" />}
-          actions={
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="default"
-                className="bg-white hover:bg-gray-100 text-blue-700 border border-white/20"
-                onClick={() => setIsTaskFormOpen(true)}
-              >
-                <Plus className="mr-2 h-4 w-4" /> New Task
-              </Button>
-              <Button 
-                variant="outline"
-                className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
-                onClick={handleRefresh}
-              >
-                <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} /> Refresh
-              </Button>
-            </div>
+    <div className="container mx-auto py-4 px-4 max-w-7xl">
+      <PageHeader 
+        title="Schedule" 
+        description="Manage and track project tasks and timelines"
+        icon={<Clock className="h-6 w-6 text-blue-600" />}
+        actions={[
+          {
+            label: "New Task",
+            icon: <Plus className="h-4 w-4" />,
+            onClick: handleCreateTask,
+            variant: "default"
+          },
+          {
+            label: "Refresh",
+            icon: <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />,
+            onClick: handleRefresh,
+            variant: "outline"
           }
-        />
-
+        ]}
+      />
+      
+      <div className="mt-4 space-y-4">
         {/* Task Statistics */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard
-            title="Total Tasks"
-            value={totalTasks}
-            icon={<Clipboard className="h-6 w-6" />}
-            color="blue"
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatCard 
+            title="Total Tasks" 
+            value={totalTasks.toString()} 
+            icon={<Clipboard className="h-5 w-5 text-blue-600" />}
             subtitle="tasks"
+            className="shadow-md hover:shadow-lg transition-shadow duration-300 border-blue-100"
           />
-          <StatCard
-            title="Completion Rate"
-            value={`${completionRate}%`}
-            icon={<CheckSquare className="h-6 w-6" />}
-            color="green"
-            subtitle={`${completedTasks} of ${totalTasks} tasks`}
+          <StatCard 
+            title="Completion Rate" 
+            value={`${completionRate}%`} 
+            icon={<CheckSquare className="h-5 w-5 text-green-600" />}
+            subtitle={`of ${totalTasks} tasks`}
+            colorScheme="green"
+            className="shadow-md hover:shadow-lg transition-shadow duration-300 border-green-100"
           />
-          <StatCard
-            title="Upcoming Deadlines"
-            value={upcomingDeadlines}
-            icon={<Calendar className="h-6 w-6" />}
-            color="amber"
+          <StatCard 
+            title="Upcoming Deadlines" 
+            value={upcomingDeadlines.toString()} 
+            icon={<CalendarDays className="h-5 w-5 text-amber-600" />}
             subtitle="this week"
+            colorScheme="amber"
+            className="shadow-md hover:shadow-lg transition-shadow duration-300 border-amber-100"
           />
-          <StatCard
-            title="Assigned Tasks"
-            value={tasks.filter(task => task.assignees && task.assignees.length > 0).length}
-            icon={<Users className="h-6 w-6" />}
-            color="purple"
+          <StatCard 
+            title="Assigned Tasks" 
+            value={assignedToTeam.toString()} 
+            icon={<Users className="h-5 w-5 text-blue-600" />}
             subtitle="with team members"
+            colorScheme="blue"
+            className="shadow-md hover:shadow-lg transition-shadow duration-300 border-blue-100"
           />
-                  </div>
-
-        <div className="mt-8">
-          {/* Filters and Controls */}
-          <Card className="mb-6 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700">
-            <CardContent className="p-4">
-              <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-                <div className="relative lg:col-span-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <Input 
-                placeholder="Search tasks..." 
-                    className="pl-10"
+        </div>
+        
+        {/* Search, Filters and View Controls */}
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap gap-3 items-center p-4 rounded-lg border border-gray-200 shadow-sm">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
+              <Input
+                placeholder="Search tasks..."
+                className="pl-10 h-9 w-full border-gray-200 focus:border-gray-400 focus:ring-gray-400"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-                
-                <div className="lg:col-span-3">
-                  <TaskFilters 
-                    onFilterChange={handleFilterChange}
-                    onReset={handleResetFilters}
-                  />
-                          </div>
-                
-                {viewMode === 'tasks' && (
-                  <div className="flex items-center justify-end lg:col-span-1 gap-2">
-                  <Button
-                      variant={taskViewLayout === 'grid' ? 'default' : 'outline'}
-                    size="sm"
-                      onClick={() => setTaskViewLayout('grid')}
-                      className="flex items-center"
-                  >
-                      <LayoutGrid className="h-4 w-4 mr-1" />
-                      Grid
-                  </Button>
-                  <Button 
-                      variant={taskViewLayout === 'list' ? 'default' : 'outline'}
-                    size="sm"
-                      onClick={() => setTaskViewLayout('list')}
-                      className="flex items-center"
-                    >
-                      <List className="h-4 w-4 mr-1" />
-                      List
-                  </Button>
-                </div>
-                )}
+            
+            <div className="flex flex-1 flex-wrap gap-2">
+              <div className="relative w-[150px]">
+                <Select defaultValue="all-projects">
+                  <SelectTrigger className="h-9 w-full">
+                    <SelectValue placeholder="All Projects" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all-projects">All Projects</SelectItem>
+                    <SelectItem value="villa-construction">Villa Construction</SelectItem>
+                    <SelectItem value="office-renovation">Office Renovation</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </CardContent>
-          </Card>
-
-          <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)}>
-            <div className="flex justify-between items-center">
-              <TabsList>
-                <TabsTrigger value="tasks" className="flex items-center">
-                  <List className="h-4 w-4 mr-1" />
-                  Tasks
-                </TabsTrigger>
-                <TabsTrigger value="calendar" className="flex items-center">
-                  <Calendar className="h-4 w-4 mr-1" />
-                  Calendar
-                </TabsTrigger>
-                <TabsTrigger value="metrics" className="flex items-center">
-                  <BarChart2 className="h-4 w-4 mr-1" />
-                  Metrics
-                </TabsTrigger>
-              </TabsList>
-                </div>
-                
-            <TabsContent value="tasks" className="mt-4">
-              <TaskList 
-                tasks={filteredTasks}
-                onTaskClick={handleTaskClick}
-                sortBy="dueDate"
-                viewLayout={taskViewLayout}
-                emptyStateMessage={
-                  searchQuery || Object.values(filters).some(Boolean)
-                    ? "No tasks match your search or filters"
-                    : "No tasks found. Create your first task to get started."
-                }
-              />
-            </TabsContent>
+              
+              <div className="relative w-[150px]">
+                <Select defaultValue="all-statuses">
+                  <SelectTrigger className="h-9 w-full">
+                    <SelectValue placeholder="All Statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all-statuses">All Statuses</SelectItem>
+                    <SelectItem value="in-progress">In Progress</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="delayed">Delayed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="relative w-[150px]">
+                <Select defaultValue="all-priorities">
+                  <SelectTrigger className="h-9 w-full">
+                    <SelectValue placeholder="All Priorities" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all-priorities">All Priorities</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="relative w-[180px]">
+                <Select defaultValue="all-members">
+                  <SelectTrigger className="h-9 w-full">
+                    <SelectValue placeholder="All Team Members" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all-members">All Team Members</SelectItem>
+                    <SelectItem value="john-smith">John Smith</SelectItem>
+                    <SelectItem value="sarah-johnson">Sarah Johnson</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             
-            <TabsContent value="calendar" className="mt-4">
-              <TaskCalendar 
-                tasks={filteredTasks}
-                onTaskClick={handleTaskClick}
-              />
-            </TabsContent>
-            
-            <TabsContent value="metrics" className="mt-4">
-              <TaskMetrics tasks={filteredTasks} />
-            </TabsContent>
-          </Tabs>
-                </div>
-                
-        {/* Task Detail Dialog */}
-        {selectedTask && (
-          <TaskDetail
-            task={selectedTask}
-            allTasks={tasks}
-            isOpen={isTaskDetailOpen}
-            onClose={handleCloseTaskDetail}
-            onEdit={handleEditTask}
-            onDelete={handleDeleteTask}
-            onStatusChange={handleStatusChange}
-          />
-        )}
+            <div className="flex gap-2 items-center ml-auto">
+              <Button
+                variant={taskViewLayout === 'grid' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTaskViewLayout('grid')}
+                className="h-9 px-3 flex items-center gap-1 bg-blue-600 hover:bg-blue-700 border-blue-600 hover:border-blue-700"
+              >
+                <LayoutGrid className="h-4 w-4" />
+                <span className="hidden sm:inline">Grid</span>
+              </Button>
+              
+              <Button
+                variant={taskViewLayout === 'list' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTaskViewLayout('list')}
+                className={`h-9 px-3 flex items-center gap-1 ${taskViewLayout === 'list' ? 'bg-blue-600 hover:bg-blue-700 border-blue-600 hover:border-blue-700' : 'border-blue-300 text-blue-700 hover:bg-blue-50'}`}
+              >
+                <List className="h-4 w-4" />
+                <span className="hidden sm:inline">List</span>
+              </Button>
+            </div>
+          </div>
+        </div>
         
-        {/* Task Form Dialog */}
-        <TaskForm
-          isOpen={isTaskFormOpen}
-          onClose={() => setIsTaskFormOpen(false)}
-          onSubmit={handleTaskSubmit}
-          task={editingTask}
-          allTasks={tasks}
-        />
+        {/* Main Content */}
+        <Tabs defaultValue="tasks" className="w-full">
+          <TabsList className="inline-flex h-10 items-center justify-center rounded-lg bg-gray-50 p-1 text-gray-700 mb-4 border border-gray-200 shadow-sm">
+            <TabsTrigger value="tasks" className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm hover:bg-gray-100/50 data-[state=active]:hover:bg-white">
+              <Clipboard className="h-4 w-4 mr-2" />
+              Tasks
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm hover:bg-gray-100/50 data-[state=active]:hover:bg-white">
+              <Calendar className="h-4 w-4 mr-2" />
+              Calendar
+            </TabsTrigger>
+            <TabsTrigger value="metrics" className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm hover:bg-gray-100/50 data-[state=active]:hover:bg-white">
+              <BarChart className="h-4 w-4 mr-2" />
+              Metrics
+            </TabsTrigger>
+          </TabsList>
+          
+          {/* Main Content Area */}
+          <div className="grid grid-cols-1 gap-4">
+            <TabsContent value="tasks" className="mt-0">
+              <Card className="overflow-hidden border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-300 bg-white">
+                <CardContent className="p-0">
+                  <TaskList 
+                    tasks={filteredTasks} 
+                    onTaskClick={handleTaskClick}
+                    viewLayout={taskViewLayout}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="calendar" className="mt-0">
+              <Card className="overflow-hidden border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-300 bg-white">
+                <CardContent className="p-0">
+                  <TaskCalendar tasks={filteredTasks} onTaskClick={handleTaskClick} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="metrics" className="mt-0">
+              <Card className="overflow-hidden border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-300 bg-white">
+                <CardContent className="p-4">
+                  <TaskMetrics tasks={filteredTasks} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </div>
+        </Tabs>
       </div>
+      
+      {/* Task Detail Modal */}
+      {selectedTask && (
+        <TaskDetail 
+          task={selectedTask} 
+          allTasks={tasks}
+          isOpen={isTaskDetailOpen} 
+          onClose={handleCloseTaskDetail}
+          onEdit={() => handleEditTask(selectedTask)}
+          onDelete={() => {
+            handleDeleteTask(selectedTask.id);
+            handleCloseTaskDetail();
+          }}
+          onStatusChange={(taskId, newStatus) => handleStatusChange(taskId, newStatus)}
+        />
+      )}
+      
+      {/* Task Form Modal */}
+      <TaskForm 
+        open={isTaskFormOpen} 
+        onClose={() => setIsTaskFormOpen(false)}
+        onSubmit={handleTaskSubmit}
+        task={editingTask}
+        teamMembers={teamMembers}
+      />
     </div>
   );
-} 
+}

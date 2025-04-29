@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth0 } from '@auth0/auth0-react';
 
@@ -19,6 +18,29 @@ interface Step {
 
 export function LandingPage() {
   const { loginWithRedirect, isAuthenticated, isLoading } = useAuth0();
+
+  // Handle login click with React 19 compatibility
+  const handleLogin = () => {
+    if (!isLoading && !isAuthenticated) {
+      loginWithRedirect();
+    }
+  };
+
+  // Handle signup click with React 19 compatibility
+  const handleSignup = () => {
+    if (!isLoading && !isAuthenticated) {
+      loginWithRedirect({ authorizationParams: { screen_hint: 'signup' } });
+    }
+  };
+
+  // Handle smooth scrolling for anchor links
+  const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
+    e.preventDefault();
+    const section = document.getElementById(sectionId);
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   // Features section data
   const features: Feature[] = [
@@ -127,10 +149,10 @@ export function LandingPage() {
 
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center space-x-6">
-            <Link to="#features" className="text-gray-600 hover:text-blue-600 transition-colors">Features</Link>
-            <Link to="#how-it-works" className="text-gray-600 hover:text-blue-600 transition-colors">How It Works</Link>
-            <Link to="#pricing" className="text-gray-600 hover:text-blue-600 transition-colors">Pricing</Link>
-            <Link to="#testimonials" className="text-gray-600 hover:text-blue-600 transition-colors">Testimonials</Link>
+            <a href="#features" className="text-gray-600 hover:text-blue-600 transition-colors" onClick={(e) => scrollToSection(e, 'features')}>Features</a>
+            <a href="#how-it-works" className="text-gray-600 hover:text-blue-600 transition-colors" onClick={(e) => scrollToSection(e, 'how-it-works')}>How It Works</a>
+            <a href="#pricing" className="text-gray-600 hover:text-blue-600 transition-colors" onClick={(e) => scrollToSection(e, 'pricing')}>Pricing</a>
+            <a href="#testimonials" className="text-gray-600 hover:text-blue-600 transition-colors" onClick={(e) => scrollToSection(e, 'testimonials')}>Testimonials</a>
           </nav>
 
           {/* Authentication Buttons */}
@@ -138,16 +160,14 @@ export function LandingPage() {
             <button
               type="button"
               className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-md font-medium text-center transition-colors"
-              onClick={() => loginWithRedirect({ authorizationParams: { screen_hint: 'signup' } })}
-              disabled={isLoading || isAuthenticated}
+              onClick={handleSignup}
             >
               Get Started Free
             </button>
             <button
               type="button"
               className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-md font-medium text-center transition-colors"
-              onClick={() => loginWithRedirect()}
-              disabled={isLoading || isAuthenticated}
+              onClick={handleLogin}
             >
               Log In
             </button>
@@ -178,22 +198,21 @@ export function LandingPage() {
                 <button
                   type="button"
                   className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-md font-medium text-center transition-colors"
-                  onClick={() => loginWithRedirect({ authorizationParams: { screen_hint: 'signup' } })}
-                  disabled={isLoading || isAuthenticated}
+                  onClick={handleSignup}
                 >
                   Get Started Free
                 </button>
                 <button
                   type="button"
                   className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-md font-medium text-center transition-colors"
-                  onClick={() => loginWithRedirect()}
-                  disabled={isLoading || isAuthenticated}
+                  onClick={handleLogin}
                 >
                   Log In
                 </button>
                 <a
                   href="#how-it-works"
                   className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-6 py-3 rounded-md font-medium text-center transition-colors"
+                  onClick={(e) => scrollToSection(e, 'how-it-works')}
                 >
                   Learn How It Works
                 </a>
@@ -340,8 +359,7 @@ export function LandingPage() {
             <button
               type="button"
               className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-md font-medium inline-block transition-colors"
-              onClick={() => loginWithRedirect({ authorizationParams: { screen_hint: 'signup' } })}
-              disabled={isLoading || isAuthenticated}
+              onClick={handleSignup}
             >
               Get Started Today
             </button>
@@ -366,26 +384,26 @@ export function LandingPage() {
             <div>
               <h3 className="text-lg font-semibold mb-4">Product</h3>
               <ul className="space-y-2">
-                <li><Link to="#features" className="text-gray-400 hover:text-white transition-colors">Features</Link></li>
-                <li><Link to="#pricing" className="text-gray-400 hover:text-white transition-colors">Pricing</Link></li>
-                <li><Link to="#testimonials" className="text-gray-400 hover:text-white transition-colors">Testimonials</Link></li>
+                <li><a href="#features" className="text-gray-400 hover:text-white transition-colors" onClick={(e) => scrollToSection(e, 'features')}>Features</a></li>
+                <li><a href="#pricing" className="text-gray-400 hover:text-white transition-colors" onClick={(e) => scrollToSection(e, 'pricing')}>Pricing</a></li>
+                <li><a href="#testimonials" className="text-gray-400 hover:text-white transition-colors" onClick={(e) => scrollToSection(e, 'testimonials')}>Testimonials</a></li>
               </ul>
             </div>
 
             <div>
               <h3 className="text-lg font-semibold mb-4">Company</h3>
               <ul className="space-y-2">
-                <li><Link to="#" className="text-gray-400 hover:text-white transition-colors">About Us</Link></li>
-                <li><Link to="#" className="text-gray-400 hover:text-white transition-colors">Careers</Link></li>
-                <li><Link to="#" className="text-gray-400 hover:text-white transition-colors">Contact</Link></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">About Us</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Careers</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Contact</a></li>
               </ul>
             </div>
 
             <div>
               <h3 className="text-lg font-semibold mb-4">Legal</h3>
               <ul className="space-y-2">
-                <li><Link to="#" className="text-gray-400 hover:text-white transition-colors">Privacy Policy</Link></li>
-                <li><Link to="#" className="text-gray-400 hover:text-white transition-colors">Terms of Service</Link></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Privacy Policy</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Terms of Service</a></li>
               </ul>
             </div>
           </div>

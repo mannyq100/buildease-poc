@@ -17,6 +17,9 @@ export interface InputProps
   loading?: boolean
 }
 
+// Prevent style injection on every render by using a flag
+let inputStylesInitialized = false;
+
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, variant = "default", icon, iconPosition = "left", error, errorMessage, helperText, label, required, validState = "none", showValidationIcon = true, loading = false, id, ...props }, ref) => {
     // Generate a unique ID for accessibility if none provided
@@ -65,9 +68,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       }
     };
     
-    // Add construction theme styles
+    // Initialize styles only once
     React.useEffect(() => {
-      if (typeof document !== 'undefined') {
+      if (typeof document !== 'undefined' && !inputStylesInitialized) {
         const style = document.createElement('style');
         style.textContent = `
           .dark .construction-modern-input {
@@ -123,6 +126,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           }
         `;
         document.head.appendChild(style);
+        inputStylesInitialized = true;
       }
     }, []);
     

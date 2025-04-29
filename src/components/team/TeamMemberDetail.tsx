@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
+import { Badge, SpanBadge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -94,9 +94,9 @@ export function TeamMemberDetail({
                 <DialogDescription className="flex items-center gap-2 mt-1">
                   <span>{member.role}</span>
                   <span className="text-gray-300">•</span>
-                  <Badge variant={member.status === 'active' ? 'success' : 'secondary'}>
+                  <SpanBadge variant={member.status === 'active' ? 'success' : 'secondary'}>
                     {member.status === 'active' ? 'Active' : 'Inactive'}
-                  </Badge>
+                  </SpanBadge>
                 </DialogDescription>
               </div>
             </div>

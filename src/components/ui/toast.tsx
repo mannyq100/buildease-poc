@@ -6,6 +6,7 @@ import { cn } from '@/utils/core/ui';
 
 const ToastProvider = ToastPrimitives.Provider
 
+// Optimized for React 19 with explicit ref handling
 const ToastViewport = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Viewport>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Viewport>
@@ -43,47 +44,56 @@ const toastVariants = cva(
   }
 )
 
-const Toast = React.forwardRef<
-  React.ElementRef<typeof ToastPrimitives.Root>,
-  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> &
-    VariantProps<typeof toastVariants> & {
-      progress?: number;
-    }
->(({ className, variant, progress, ...props }, ref) => {
-  return (
-    <ToastPrimitives.Root
-      ref={ref}
-      className={cn(toastVariants({ variant }), className)}
-      {...props}
-    >
-      <div className="flex items-start gap-3 w-full">
-        {variant === "success" && <CheckCircle className="h-5 w-5 text-green-500 dark:text-green-400 mt-0.5" />}
-        {variant === "destructive" && <AlertCircle className="h-5 w-5 text-red-500 dark:text-red-400 mt-0.5" />}
-        {variant === "warning" && <AlertTriangle className="h-5 w-5 text-yellow-500 dark:text-yellow-400 mt-0.5" />}
-        {variant === "info" && <Info className="h-5 w-5 text-blue-500 dark:text-blue-400 mt-0.5" />}
-        <div className="grid gap-1 flex-1">
-          {props.children}
+// Optimized for React 19 with memoization to prevent unnecessary re-renders
+const Toast = React.memo(
+  React.forwardRef<
+    React.ElementRef<typeof ToastPrimitives.Root>,
+    React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> &
+      VariantProps<typeof toastVariants> & {
+        progress?: number;
+      }
+  >(({ className, variant, progress, ...props }, ref) => {
+    // Use a stable reference for the progress style to prevent unnecessary re-renders
+    const progressStyle = React.useMemo(
+      () => (progress !== undefined ? { width: `${progress}%` } : undefined),
+      [progress]
+    );
+
+    return (
+      <ToastPrimitives.Root
+        ref={ref}
+        className={cn(toastVariants({ variant }), className)}
+        {...props}
+      >
+        <div className="flex items-start gap-3 w-full">
+          {variant === "success" && <CheckCircle className="h-5 w-5 text-green-500 dark:text-green-400 mt-0.5" />}
+          {variant === "destructive" && <AlertCircle className="h-5 w-5 text-red-500 dark:text-red-400 mt-0.5" />}
+          {variant === "warning" && <AlertTriangle className="h-5 w-5 text-yellow-500 dark:text-yellow-400 mt-0.5" />}
+          {variant === "info" && <Info className="h-5 w-5 text-blue-500 dark:text-blue-400 mt-0.5" />}
+          <div className="grid gap-1 flex-1">
+            {props.children}
+          </div>
         </div>
-      </div>
-      
-      {progress !== undefined && (
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-200 dark:bg-slate-700 -mx-4 rounded-b-md overflow-hidden">
-          <div 
-            className={cn(
-              "h-full transition-all duration-100",
-              variant === "success" && "bg-green-500 dark:bg-green-400",
-              variant === "destructive" && "bg-red-500 dark:bg-red-400",
-              variant === "warning" && "bg-yellow-500 dark:bg-yellow-400",
-              variant === "info" && "bg-blue-500 dark:bg-blue-400",
-              variant === "default" && "bg-slate-900 dark:bg-slate-50",
-            )}
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      )}
-    </ToastPrimitives.Root>
-  )
-})
+        
+        {progress !== undefined && (
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-200 dark:bg-slate-700 -mx-4 rounded-b-md overflow-hidden">
+            <div 
+              className={cn(
+                "h-full transition-all duration-100",
+                variant === "success" && "bg-green-500 dark:bg-green-400",
+                variant === "destructive" && "bg-red-500 dark:bg-red-400",
+                variant === "warning" && "bg-yellow-500 dark:bg-yellow-400",
+                variant === "info" && "bg-blue-500 dark:bg-blue-400",
+                variant === "default" && "bg-slate-900 dark:bg-slate-50",
+              )}
+              style={progressStyle}
+            />
+          </div>
+        )}
+      </ToastPrimitives.Root>
+    )
+  })
+)
 Toast.displayName = ToastPrimitives.Root.displayName
 
 const ToastAction = React.forwardRef<
@@ -108,7 +118,7 @@ const ToastClose = React.forwardRef<
   <ToastPrimitives.Close
     ref={ref}
     className={cn(
-      "absolute right-2 top-2 rounded-md p-1 text-slate-950/50 opacity-0 transition-opacity hover:text-slate-950 focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 group-[.destructive]:text-red-300 group-[.destructive]:hover:text-red-50 group-[.destructive]:focus:ring-red-400 group-[.destructive]:focus:ring-offset-red-600 dark:text-slate-50/50 dark:hover:text-slate-50",
+      "absolute right-2 top-2 rounded-md p-1 text-slate-500 opacity-0 transition-opacity hover:text-slate-900 focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 dark:text-slate-400 dark:hover:text-slate-50",
       className
     )}
     toast-close=""

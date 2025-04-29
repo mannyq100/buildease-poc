@@ -68,76 +68,92 @@ export interface CardProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof cardVariants> {}
 
+// Prevent style injection on every render by using a flag
+let cardStylesInitialized = false;
+
+// Update card dark mode handler
+const updateCardDarkMode = () => {
+  if (typeof document === 'undefined') return;
+  
+  const isDark = document.documentElement.classList.contains('dark');
+  const cards = document.querySelectorAll('[data-variant]');
+  
+  cards.forEach((card) => {
+    const variant = card.getAttribute('data-variant');
+    
+    if (isDark) {
+      if (variant === 'glass') {
+        card.classList.add('dark-glass');
+      } else if (['project', 'material', 'task', 'report'].includes(variant || '')) {
+        card.classList.add('dark-card-bg');
+      }
+    } else {
+      card.classList.remove('dark-glass', 'dark-card-bg');
+    }
+  });
+};
+
+// Card component with React 19 optimizations
 const Card = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "rounded-lg border border-gray-200 bg-white text-gray-950 shadow-sm dark:border-gray-800 dark:bg-gray-950 dark:text-gray-50",
-      // Add responsive padding - smaller on mobile
-      "overflow-hidden",
-      className
-    )}
-    {...props}
-  />
-))
-Card.displayName = "Card"
-
-// Add dark mode styling with JavaScript
-if (typeof document !== 'undefined') {
-  const updateCardDarkMode = () => {
-    const isDark = document.documentElement.classList.contains('dark');
-    const cards = document.querySelectorAll('[data-variant]');
-    
-    cards.forEach((card) => {
-      const variant = card.getAttribute('data-variant');
+  React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof cardVariants>
+>(({ className, variant, ...props }, ref) => {
+  // Initialize styles only once
+  React.useEffect(() => {
+    if (typeof document !== 'undefined' && !cardStylesInitialized) {
+      const style = document.createElement('style');
+      style.textContent = `
+        .dark-glass {
+          background-color: hsla(var(--deepblue), 0.7) !important;
+          border-color: hsla(var(--deepblue-light), 0.5) !important;
+        }
+        .dark-card-bg {
+          background-color: hsl(var(--deepblue-dark)) !important;
+        }
+        .dark .dark-card-bg.material {
+          background-color: hsl(var(--deepblue-darker)) !important;
+        }
+        .dark .dark-card-bg.task {
+          background-color: hsl(var(--deepblue-darker)) !important;
+        }
+        .dark .dark-card-bg.report {
+          background-color: hsl(var(--deepblue-darker)) !important;
+        }
+        .dark .dark-card-bg.project {
+          background-color: hsl(var(--deepblue-darker)) !important;
+        }
+      `;
+      document.head.appendChild(style);
       
-      if (isDark) {
-        if (variant === 'glass') {
-          card.classList.add('dark-glass');
-        } else if (['project', 'material', 'task', 'report'].includes(variant || '')) {
-          card.classList.add('dark-card-bg');
-        }
-      } else {
-        card.classList.remove('dark-glass', 'dark-card-bg');
-      }
-    });
-  };
-  
-  // Add the needed styles
-  if (typeof document !== 'undefined') {
-    const style = document.createElement('style');
-    style.textContent = `
-      .dark-glass {
-        background-color: hsla(var(--deepblue), 0.7) !important;
-        border-color: hsla(var(--deepblue-light), 0.5) !important;
-      }
-      .dark-card-bg {
-        background-color: hsl(var(--deepblue-dark)) !important;
-      }
-      .dark .dark-card-bg.material {
-        border-color: hsla(var(--burntorange), 0.5) !important;
-      }
-    `;
-    document.head.appendChild(style);
-    
-    // Set up listeners for theme changes
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.attributeName === 'class') {
-          updateCardDarkMode();
-        }
+      // Set up dark mode observer
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.attributeName === 'class' && 
+              mutation.target === document.documentElement) {
+            updateCardDarkMode();
+          }
+        });
       });
-    });
-    
-    observer.observe(document.documentElement, { attributes: true });
-    
-    // Initial update
-    updateCardDarkMode();
-  }
-}
+      
+      observer.observe(document.documentElement, { attributes: true });
+      
+      // Initial update
+      updateCardDarkMode();
+      
+      cardStylesInitialized = true;
+    }
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className={cn(cardVariants({ variant }), className)}
+      data-variant={variant}
+      {...props}
+    />
+  )
+})
+Card.displayName = "Card"
 
 const CardHeader = React.forwardRef<
   HTMLDivElement,

@@ -2,7 +2,7 @@
  * Settings component
  * Handles application settings and user preferences
  */
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, startTransition } from 'react';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -39,6 +39,7 @@ const Settings = () => {
   const { profile, auth0User, updateSettings, isUpdating, isLoading } = useUserProfile();
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showProgress, setShowProgress] = useState(false);
+  const [activeTab, setActiveTab] = useState('account');
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -164,10 +165,22 @@ const Settings = () => {
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!profile) return;
+    
     updateSettings({
       name: formData.name,
       phone: formData.phone,
-      pictureUrl: formData.pictureUrl
+      settings: {
+        ...profile.settings,  // Preserve existing settings
+        pictureUrl: formData.pictureUrl  // Update only the picture URL
+      }
+    });
+  };
+
+  // Handle tab change with React 19's startTransition for smoother UI updates
+  const handleTabChange = (value: string) => {
+    startTransition(() => {
+      setActiveTab(value);
     });
   };
 
@@ -182,7 +195,7 @@ const Settings = () => {
       />
 
       <div className="container mx-auto max-w-5xl">
-        <Tabs defaultValue="account" className="w-full">
+        <Tabs defaultValue={activeTab} value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="mb-6 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-lg">
             <TabsTrigger value="account" className="gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-sm rounded-md">
               <User size={16} />
@@ -377,7 +390,7 @@ const Settings = () => {
                           <Award className="h-5 w-5" />
                           <span>Subscription</span>
                         </h3>
-                        <Badge variant="outline" className="text-sm px-3 py-1 bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800">
+                        <Badge variant="outline" className="text-sm bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800">
                           <CheckCircle className="h-3.5 w-3.5 mr-1" />
                           <span>Active</span>
                         </Badge>

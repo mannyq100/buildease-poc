@@ -254,7 +254,9 @@ export const sortTasks = (
  * @param tasks Array of all tasks
  * @returns Array of dependency tasks
  */
-export const getTaskDependencies = (taskId: number, tasks: Task[]): Task[] => {
+export const getTaskDependencies = (taskId: number, tasks: Task[] = []): Task[] => {
+  if (!tasks || !tasks.length) return [];
+  
   const task = tasks.find(t => t.id === taskId);
   if (!task || !task.dependencies || task.dependencies.length === 0) {
     return [];

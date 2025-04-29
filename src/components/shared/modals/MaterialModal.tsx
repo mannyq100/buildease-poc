@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Package, DollarSign, CirclePlus, Truck, ShoppingCart, Calendar, ListMinus, ArrowUpDown, Hash } from 'lucide-react';
 import { useFormState } from '@/hooks/useFormState';
 import { BaseModal } from './BaseModal';
@@ -114,10 +114,13 @@ export function MaterialModal({
   );
 
   // Update total price when quantity or unit price changes
-  useMemo(() => {
+  useEffect(() => {
     if (formData.quantity && formData.unitPrice) {
-      const totalPrice = formData.quantity * formData.unitPrice;
-      setFormData(prev => ({ ...prev, totalPrice }));
+      const calculatedTotal = formData.quantity * formData.unitPrice;
+      // Only update if the difference is significant (fixes precision issues)
+      if (Math.abs(calculatedTotal - (formData.totalPrice || 0)) > 0.01) {
+        setFormData(prev => ({ ...prev, totalPrice: calculatedTotal }));
+      }
     }
   }, [formData.quantity, formData.unitPrice, setFormData]);
 

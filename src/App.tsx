@@ -26,7 +26,7 @@ import '@/styles/dark-theme.css';
 import { AppLayout } from "@/components/layout/AppLayout";
 
 // Page Components - Lazy load these for better performance
-import Dashboard from "./pages/Dashboard";
+import { Dashboard } from "./pages/Dashboard";
 import { ProjectDetails } from "./pages/ProjectDetails";
 import PhaseDetails from "./pages/PhaseDetails";
 import GeneratedPlan from "./pages/GeneratedPlan";
@@ -52,6 +52,8 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       retry: 1,
       staleTime: 5 * 60 * 1000, // 5 minutes
+      // Enable React 19 optimizations
+      gcTime: 10 * 60 * 1000, // 10 minutes
     },
   },
 });
@@ -64,6 +66,8 @@ if (isDevelopment()) {
       retry: false,
       staleTime: 1000, // 1 second in development for faster iteration
       refetchOnWindowFocus: true,
+      // React 19 development optimizations
+      networkMode: 'always',
     },
   });
 }

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { ToastProps, ToastActionElement, Toast, ToastTitle, ToastDescription, ToastProvider, ToastViewport } from './toast';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -36,9 +36,11 @@ export const useToast = () => {
   return context;
 };
 
+// Optimized for React 19 with improved state management
 export const ToastContextProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   const [toasts, setToasts] = useState<ToastInstance[]>([]);
-
+  
+  // Memoize toast function to prevent unnecessary re-renders
   const toast = useCallback((options: ToastOptions) => {
     const id = uuidv4();
     const duration = options.duration || 5000; // Default to 5 seconds
@@ -50,6 +52,7 @@ export const ToastContextProvider: React.FC<{children: React.ReactNode}> = ({ ch
         progress: 100, 
         open: true,
         duration,
+        startTime: Date.now(), // Set startTime immediately
         ...options 
       }
     ]);
@@ -62,6 +65,7 @@ export const ToastContextProvider: React.FC<{children: React.ReactNode}> = ({ ch
     
   }, []);
 
+  // Memoize dismiss function to prevent unnecessary re-renders
   const dismiss = useCallback((id: string) => {
     setToasts(prev => 
       prev.map(toast => 
@@ -74,15 +78,15 @@ export const ToastContextProvider: React.FC<{children: React.ReactNode}> = ({ ch
     }, 300);
   }, []);
 
-  // Update progress bars
+  // Update progress bars with optimized dependency array
   useEffect(() => {
     if (toasts.length === 0) return;
     
     const interval = setInterval(() => {
       setToasts(prev => 
         prev.map(toast => {
-          if (!toast.open) return toast;
-          const elapsed = 100 * (Date.now() - (toast.startTime || Date.now())) / toast.duration;
+          if (!toast.open || !toast.startTime) return toast;
+          const elapsed = 100 * (Date.now() - toast.startTime) / (toast.duration || 5000);
           return {
             ...toast,
             progress: Math.max(0, 100 - elapsed)
@@ -92,20 +96,17 @@ export const ToastContextProvider: React.FC<{children: React.ReactNode}> = ({ ch
     }, 100);
     
     return () => clearInterval(interval);
-  }, [toasts]);
+  }, [toasts.length]); // Only depend on toasts.length, not the entire toasts array
   
-  // Set start time for new toasts
-  useEffect(() => {
-    setToasts(prev => 
-      prev.map(toast => {
-        if (toast.startTime) return toast;
-        return { ...toast, startTime: Date.now() };
-      })
-    );
-  }, [toasts]);
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
+    toast,
+    dismiss,
+    toasts
+  }), [toast, dismiss, toasts]);
 
   return (
-    <ToastContext.Provider value={{ toast, dismiss, toasts }}>
+    <ToastContext.Provider value={contextValue}>
       <ToastProvider>
         {children}
         <ToastViewport>
@@ -128,4 +129,4 @@ export const ToastContextProvider: React.FC<{children: React.ReactNode}> = ({ ch
       </ToastProvider>
     </ToastContext.Provider>
   );
-}; 
+};
