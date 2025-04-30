@@ -57,7 +57,7 @@ export interface DashboardDataState {
   materialUsageData: ChartData[]
   taskStatusData: ChartData[]
   quickStats: QuickStatCard[]
-  quickActions: {id: string; title: string; icon: string}[]
+  quickActions: QuickAction[]
   activityItems: ActivityItem[]
   upcomingDeadlines: Deadline[]
   teamData: TeamMember[]
@@ -85,7 +85,7 @@ export function useDashboardData() {
   // Dashboard content state including stats, actions, activity, and deadlines
   const [dashboardContent, setDashboardContent] = useState({
     quickStats: [] as QuickStatCard[],
-    quickActions: [] as {id: string; title: string; icon: string}[],
+    quickActions: [] as QuickAction[],
     activityItems: [] as ActivityItem[],
     upcomingDeadlines: [] as Deadline[],
   })
@@ -163,10 +163,12 @@ export function useDashboardData() {
         // The dashboard service already returns QuickStatCard objects with the right structure
         const transformedStats = stats;
         
-        const transformedActions = actions.map((action, index) => ({
-          id: String(index + 1),
+        const transformedActions: QuickAction[] = actions.map((action) => ({
           title: action.title,
-          icon: action.icon.toString()
+          color: action.color,
+          route: action.route,
+          description: action.description,
+          icon: action.icon,
         }))
         
         // Convert activity data to expected format
@@ -295,10 +297,12 @@ export function useDashboardData() {
       // The dashboard service already returns QuickStatCard objects with the right structure
       const transformedStats = stats;
       
-      const transformedActions = actions.map((action, index) => ({
-        id: String(index + 1),
+      const transformedActions: QuickAction[] = actions.map((action) => ({
         title: action.title,
-        icon: action.icon.toString()
+        color: action.color,
+        route: action.route,
+        description: action.description,
+        icon: action.icon,
       }))
       
       const transformedActivities = activities.map((item, index) => ({

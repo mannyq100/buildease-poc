@@ -39,10 +39,10 @@ const cardVariants = cva(
       },
       padding: {
         default: "",
-        sm: "[&>*:not(:first-child)]:p-3 [&>*:first-child]:p-3",
-        md: "[&>*:not(:first-child)]:p-4 [&>*:first-child]:p-4",
-        lg: "[&>*:not(:first-child)]:p-6 [&>*:first-child]:p-6",
-        xl: "[&>*:not(:first-child)]:p-8 [&>*:first-child]:p-8",
+        sm: "[&>*:not(:first-child)]:p-2 sm:[&>*:not(:first-child)]:p-3 [&>*:first-child]:p-2 sm:[&>*:first-child]:p-3",
+        md: "[&>*:not(:first-child)]:p-3 sm:[&>*:not(:first-child)]:p-4 [&>*:first-child]:p-3 sm:[&>*:first-child]:p-4",
+        lg: "[&>*:not(:first-child)]:p-4 sm:[&>*:not(:first-child)]:p-6 [&>*:first-child]:p-4 sm:[&>*:first-child]:p-6",
+        xl: "[&>*:not(:first-child)]:p-6 sm:[&>*:not(:first-child)]:p-8 [&>*:first-child]:p-6 sm:[&>*:first-child]:p-8",
         none: "[&>*]:p-0",
       },
       rounded: {
@@ -161,7 +161,7 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col space-y-1.5 p-4 sm:p-6", className)}
+    className={cn("flex flex-col space-y-1 p-3 sm:p-4 md:p-6", className)}
     {...props}
   />
 ))
@@ -198,7 +198,7 @@ const CardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("p-4 sm:p-6 pt-0", className)} {...props} />
+  <div ref={ref} className={cn("p-3 sm:p-4 md:p-6 pt-0", className)} {...props} />
 ))
 CardContent.displayName = "CardContent"
 
@@ -208,7 +208,7 @@ const CardFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex items-center p-4 sm:p-6 pt-0", className)}
+    className={cn("flex items-center p-3 sm:p-4 md:p-6 pt-0", className)}
     {...props}
   />
 ))

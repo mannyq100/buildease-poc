@@ -4,7 +4,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from '@/utils/core/ui';
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 active:scale-95",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 active:scale-95 min-h-[44px] min-w-[44px]",
   {
     variants: {
       variant: {
@@ -30,12 +30,13 @@ const buttonVariants = cva(
         tool: "text-white shadow-md hover:shadow-lg hover:-translate-y-[1px] font-bold construction-tool-btn",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
-        icon: "h-10 w-10",
+        default: "h-10 sm:h-10 px-3 sm:px-4 py-2",
+        sm: "h-8 sm:h-9 rounded-md px-2 sm:px-3",
+        lg: "h-10 sm:h-11 rounded-md px-6 sm:px-8",
+        icon: "h-9 w-9 sm:h-10 sm:w-10",
         "icon-sm": "h-8 w-8",
-        "mobile": "h-11 rounded-md px-4 py-2",
+        "mobile": "h-11 w-full rounded-md px-4 py-2",
+        "touch": "h-12 rounded-md px-4 py-2 text-base",
       },
       rounded: {
         default: "rounded-md",
@@ -52,12 +53,17 @@ const buttonVariants = cva(
         float: "animate-float",
         glow: "animate-glow",
       },
+      fullWidth: {
+        true: "w-full",
+        false: "",
+      },
     },
     defaultVariants: {
       variant: "default",
       size: "default",
       rounded: "default",
       animation: "none",
+      fullWidth: false,
     },
   }
 )
@@ -101,6 +107,22 @@ if (typeof document !== 'undefined' && !styleInitialized) {
     .construction-tool-btn {
       background: linear-gradient(to right, hsl(var(--warning)), hsl(var(--warning-lighter)));
     }
+    
+    /* Mobile-first responsive styles */
+    @media (max-width: 640px) {
+      .sm\\:hidden {
+        display: none;
+      }
+      
+      .mobile-full-width {
+        width: 100%;
+      }
+      
+      .mobile-touch-target {
+        min-height: 44px;
+        min-width: 44px;
+      }
+    }
   `;
   document.head.appendChild(style);
   styleInitialized = true;
@@ -113,11 +135,13 @@ export interface ButtonProps
   isLoading?: boolean
   leftIcon?: React.ReactNode
   rightIcon?: React.ReactNode
+  fullWidth?: boolean
+  mobileFullWidth?: boolean
 }
 
 /**
  * Button component with various style variants
- * Updated for React 19 with direct ref passing
+ * Updated for React 19 with direct ref passing and mobile-first responsive design
  */
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>((
   {
@@ -130,6 +154,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>((
     isLoading,
     leftIcon,
     rightIcon,
+    fullWidth,
+    mobileFullWidth = false,
     children,
     ...props
   }, ref) => {
@@ -137,7 +163,17 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>((
   
   return (
     <Comp
-      className={cn(buttonVariants({ variant, size, rounded, animation, className }))}
+      className={cn(
+        buttonVariants({ 
+          variant, 
+          size, 
+          rounded, 
+          animation, 
+          fullWidth,
+          className 
+        }),
+        mobileFullWidth && "w-full sm:w-auto mobile-full-width"
+      )}
       disabled={isLoading || props.disabled}
       ref={ref}
       {...props}

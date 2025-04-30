@@ -10,7 +10,6 @@ import { filterTasks, searchTasks } from '@/utils/scheduleUtils';
 // UI Components
 import { PageHeader } from '@/components/shared';
 import { TaskList } from '@/components/schedule/TaskList';
-import { TaskFilters } from '@/components/schedule/TaskFilters';
 import { TaskDetail } from '@/components/schedule/TaskDetail';
 import { TaskForm } from '@/components/schedule/TaskForm';
 import { TaskCalendar } from '@/components/schedule/TaskCalendar';
@@ -19,7 +18,7 @@ import { StatCard } from '@/components/shared/StatCard';
 
 // UI Elements
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
@@ -42,9 +41,7 @@ import {
   Clock,
   Clipboard,
   CheckSquare,
-  AlertTriangle,
   Users,
-  Filter,
   CalendarDays
 } from 'lucide-react';
 

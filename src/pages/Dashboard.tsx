@@ -18,10 +18,10 @@ import {
   Package,
   ChevronRight,
   BarChart3,
-  Users,
   Clock,
   Activity,
-  Briefcase
+  Briefcase,
+  ChevronDown
 } from 'lucide-react'
 
 // UI Components
@@ -29,6 +29,7 @@ import { Button } from '@/components/ui/button'
 
 import { useToast } from '@/components/ui/toast-context'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 // Dashboard Components
 import {
@@ -36,7 +37,6 @@ import {
   ProjectsOverview,
   RecentActivity,
   UpcomingDeadlines,
-  TeamPerformance,
   DataVisualization,
 } from '@/components/dashboard'
 import LoadingState from '@/components/dashboard/LoadingState'
@@ -48,7 +48,7 @@ import { PageHeader } from '@/components/shared'
 import { useDashboardData } from '@/hooks/useDashboardData'
 
 // Import types from dashboard types file
-import { QuickStatCard, ActivityItem as DashboardActivityItem, QuickAction as DashboardQuickAction, TeamMemberPerformance, DeadlineItem } from '@/types/dashboard'
+import { QuickStatCard, ActivityItem as DashboardActivityItem, QuickAction as DashboardQuickAction, DeadlineItem } from '@/types/dashboard'
 
 // Local interface for activity items from API
 interface ActivityItem {
@@ -81,6 +81,7 @@ export function Dashboard() {
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [activeChartTab, setActiveChartTab] = useState("progress")
+  const [isMobile, setIsMobile] = useState(false)
   
   // Get dashboard data from custom hook
   const { 
@@ -93,7 +94,6 @@ export function Dashboard() {
     quickActions,
     activityItems,
     upcomingDeadlines,
-    teamData,
     projectsData,
     lastUpdated,
     refreshData
@@ -163,8 +163,6 @@ export function Dashboard() {
         return <Package className="h-5 w-5 text-purple-500" />
       case 'briefcase':
         return <Briefcase className="h-5 w-5 text-blue-500" />
-      case 'users':
-        return <Users className="h-5 w-5 text-green-500" />
       case 'chart':
         return <BarChart3 className="h-5 w-5 text-amber-500" />
       case 'dashboard':
@@ -222,20 +220,6 @@ export function Dashboard() {
     });
   }, [quickStats, getIconForType]);
 
-  // Team data for the team performance component
-  const formattedTeamData = useMemo(() => {
-    return teamData.map(member => ({
-      id: member.id,
-      name: member.name,
-      position: 'Team Member', // Default position since our interface doesn't have it
-      avatar: member.avatar,
-      completedTasks: 0, // Default value since our interface doesn't have it
-      totalTasks: 10,    // Default value since our interface doesn't have it
-      performance: member.performance,
-      isTopPerformer: member.performance > 85
-    }));
-  }, [teamData]);
-
   // Deadlines for the upcoming deadlines component
   const formattedDeadlines = useMemo(() => {
     return upcomingDeadlines.map(deadline => ({
@@ -245,9 +229,25 @@ export function Dashboard() {
       project: deadline.project,
       projectId: '1', // Default value since our interface might not have it
       priority: (deadline.priority || 'medium') as 'high' | 'medium' | 'low',
-      status: 'pending' as 'pending' | 'in-progress' | 'completed' // Default value
+      status: 'pending' as 'pending' | 'in-progress' | 'completed'
     }));
   }, [upcomingDeadlines]);
+
+  // Check if we're on a mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    // Initial check
+    checkMobile();
+    
+    // Add event listener for window resize
+    window.addEventListener('resize', checkMobile);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // If data is loading and not refreshing, show loading state
   if (isLoading && !isRefreshing) {
@@ -260,7 +260,7 @@ export function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-900/90">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* PageHeader with enhanced styling */}
         <m.div
           initial={{ opacity: 0, y: -20 }}
@@ -268,9 +268,10 @@ export function Dashboard() {
           transition={{ duration: 0.5 }}
         >
           <PageHeader
+            className="mb-6 sm:mb-8"
             title="Project Dashboard"
             description="Track your construction projects with real-time insights and analytics"
-            icon={<LayoutDashboard className="h-8 w-8 text-white" />}
+            icon={<LayoutDashboard className="h-10 w-10 text-white" />}
             actions={
               <div className="flex space-x-2">
                 <Button
@@ -306,47 +307,44 @@ export function Dashboard() {
         
         {/* Welcome Banner with Quick Actions */}
         <m.div 
-          className="mt-6 mb-6 p-6 rounded-xl shadow-md border border-gray-200 dark:border-slate-700/50 bg-white dark:bg-slate-800/80 backdrop-blur-sm hover:shadow-lg transition-all duration-300"
+          className="mt-6 mb-6 p-4 sm:p-6 lg:p-8 rounded-xl shadow-lg bg-gradient-to-r from-primary/5 to-primary/10 dark:from-primary-dark/10 dark:to-primary-dark/5 transform transition-transform hover:-translate-y-1 duration-300"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
           <div className="relative z-10">
-            {/* Quick Actions Row */}
-            <div className="flex flex-wrap gap-3">
-              {(quickActions as unknown as DashboardQuickAction[]).map((action, index) => (
-                <m.div
-                  key={index}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.1, duration: 0.3 }}
-                >
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate(action.route)}
-                    className="bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-blue-700 dark:text-blue-400 border border-gray-200 dark:border-slate-700/50 shadow-sm hover:shadow transition-all duration-200"
-                  >
-                    {typeof action.icon === 'string' ? getIconForType(action.icon) : action.icon}
-                    <span className="ml-2">{action.title}</span>
-                  </Button>
-                </m.div>
-              ))}
+            {/* Quick Actions Title */}
+            <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
+            
+            {/* Quick Actions Scrollable Row */}
+            <div className="relative">
+              {/* Scrollable Container */}
+              <div className="overflow-x-auto snap-x snap-mandatory pb-2 -mx-1 px-1 scrollbar-none sm:scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
+                <div className="flex gap-2 sm:gap-3 min-w-max">
+                  {(quickActions as DashboardQuickAction[]).map((action, index) => (
+                    <m.div className="snap-start" key={index} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: index * 0.1, duration: 0.3 }}>
+                      <Button variant="outline" size="mobile" mobileFullWidth onClick={() => navigate(action.route)}>
+                        {typeof action.icon === 'string' ? getIconForType(action.icon) : action.icon}
+                        <span className="ml-2">{action.title}</span>
+                      </Button>
+                    </m.div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </m.div>
         
         {/* Metrics Overview with enhanced styling */}
-        <m.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <DashboardMetricsGrid
-            stats={formattedStats}
-            className="mb-6"
-          />
-        </m.div>
+        <div className="mb-6 p-4 sm:p-6 lg:p-8 bg-white dark:bg-slate-800/80 rounded-xl shadow-lg transform transition-transform hover:-translate-y-1 duration-300">
+          <m.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <DashboardMetricsGrid stats={formattedStats} />
+          </m.div>
+        </div>
         
         {/* Loading Overlay for Refresh */}
         {isRefreshing && (
@@ -362,35 +360,57 @@ export function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
         >
-          <div className="bg-white dark:bg-slate-800/80 rounded-xl shadow-md border border-gray-200 dark:border-slate-700/50 p-5 backdrop-blur-sm hover:shadow-lg transition-all duration-300">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-              <BarChart3 className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
+          <div className="bg-white dark:bg-slate-800/80 rounded-xl shadow-lg p-4 sm:p-6 lg:p-8 transform transition-transform hover:-translate-y-1 duration-300">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4 flex items-center">
+              <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2 text-blue-600 dark:text-blue-400" />
               Analytics Overview
             </h2>
             
-            <Tabs defaultValue="progress" value={activeChartTab} onValueChange={setActiveChartTab} className="w-full">
-              <TabsList className="bg-gray-100/80 dark:bg-slate-800/50 p-1 rounded-lg mb-4">
-                <TabsTrigger 
-                  value="progress" 
-                  className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm rounded-md transition-all duration-200"
+            {/* Mobile Dropdown Selector for Tabs */}
+            {isMobile && (
+              <div className="mb-4">
+                <Select 
+                  value={activeChartTab} 
+                  onValueChange={setActiveChartTab}
                 >
-                  Project Progress
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="budget" 
-                  className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm rounded-md transition-all duration-200"
-                >
-                  Budget Overview
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="tasks" 
-                  className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm rounded-md transition-all duration-200"
-                >
-                  Task Status
-                </TabsTrigger>
-              </TabsList>
+                  <SelectTrigger className="w-full bg-gray-100/80 dark:bg-slate-800/50 border-gray-200 dark:border-slate-700">
+                    <SelectValue placeholder="Select chart" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="progress">Project Progress</SelectItem>
+                    <SelectItem value="budget">Budget Overview</SelectItem>
+                    <SelectItem value="tasks">Task Status</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+            <Tabs defaultValue="progress" value={activeChartTab} onValueChange={setActiveChartTab} className="w-full">
+              {/* Desktop Tabs - Hidden on Mobile */}
+              {!isMobile && (
+                <TabsList className="bg-gray-100/80 dark:bg-slate-800/50 p-1 rounded-lg mb-4 overflow-x-auto flex whitespace-nowrap">
+                  <TabsTrigger 
+                    value="progress" 
+                    className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm rounded-md transition-all duration-200 min-h-[44px]"
+                  >
+                    Project Progress
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="budget" 
+                    className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm rounded-md transition-all duration-200 min-h-[44px]"
+                  >
+                    Budget Overview
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="tasks" 
+                    className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm rounded-md transition-all duration-200 min-h-[44px]"
+                  >
+                    Task Status
+                  </TabsTrigger>
+                </TabsList>
+              )}
+            
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-6 mt-3 sm:mt-6">
                 <div className="lg:col-span-2">
                   <TabsContent value="progress" className="m-0">
                     <DataVisualization
@@ -400,7 +420,7 @@ export function Dashboard() {
                       xAxisKey="name"
                       yAxisKeys={["completed"]}
                       defaultChartType="bar"
-                      height={300}
+                      height={isMobile ? 250 : 300}
                       colorScheme="primary"
                     />
                   </TabsContent>
@@ -413,7 +433,7 @@ export function Dashboard() {
                       xAxisKey="name"
                       yAxisKeys={["Planned", "Actual"]}
                       defaultChartType="area"
-                      height={300}
+                      height={isMobile ? 250 : 300}
                       colorScheme="success"
                     />
                   </TabsContent>
@@ -426,7 +446,7 @@ export function Dashboard() {
                       pieKey="name"
                       pieValueKey="value"
                       defaultChartType="pie"
-                      height={300}
+                      height={isMobile ? 250 : 300}
                       colorScheme="accent"
                     />
                   </TabsContent>
@@ -440,7 +460,7 @@ export function Dashboard() {
                     pieKey="name"
                     pieValueKey="value"
                     defaultChartType="pie"
-                    height={300}
+                    height={isMobile ? 200 : 300}
                     showToggle={false}
                     colorScheme="warning"
                   />
@@ -451,51 +471,15 @@ export function Dashboard() {
         </m.div>
         
         {/* Dashboard Content Grid with enhanced styling */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Column */}
-          <m.div 
-            className="space-y-6"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            {/* Projects Overview */}
-            <ProjectsOverview projects={projectsData} />
-            
-            {/* Team Performance */}
-            <m.div
-              className="mb-8"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.6 }}
-            >
-              <TeamPerformance 
-                teamMembers={formattedTeamData}
-                className="h-96" />
-            </m.div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <m.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.4 }}>
+            <ProjectsOverview projects={projectsData} className="rounded-lg shadow-md transform transition-transform duration-300 hover:shadow-lg hover:-translate-y-1" />
           </m.div>
-          
-          {/* Right Column */}
-          <m.div 
-            className="space-y-6"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            {/* Upcoming Deadlines */}
-            <m.div
-              className="col-span-1 lg:col-span-1"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.8 }}
-            >
-              <UpcomingDeadlines 
-                deadlines={formattedDeadlines}
-              />
-            </m.div>
-            
-            {/* Recent Activity */}
-            <RecentActivity activities={enhancedActivityItems} />
+          <m.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.6 }}>
+            <UpcomingDeadlines deadlines={formattedDeadlines} className="h-auto sm:h-full rounded-lg shadow-md transform transition-transform duration-300 hover:shadow-lg hover:-translate-y-1" />
+          </m.div>
+          <m.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.8 }}>
+            <RecentActivity activities={enhancedActivityItems} className="h-auto sm:h-full rounded-lg shadow-md transform transition-transform duration-300 hover:shadow-lg hover:-translate-y-1" />
           </m.div>
         </div>
       </div>

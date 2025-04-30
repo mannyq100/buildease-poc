@@ -10,6 +10,7 @@ import { cn } from '@/utils/core/ui';
  * - Clear visual feedback
  * - Consistent spacing
  * - Modern, aesthetic look with warm blue primary color (#2B6CB0)
+ * - Mobile-first responsive design with touch-friendly elements
  */
 export interface StatCardProps {
   title: string;
@@ -96,55 +97,61 @@ export function StatCard({
   return (
     <div className={cn('w-full', className)}>
       <Card className={cn(
-        'p-4 h-full min-h-[140px] flex flex-col justify-between', 
+        'p-3 sm:p-4 h-full min-h-[120px] sm:min-h-[140px] flex flex-col justify-between', 
         colorConfig.cardBg,
         'border-gray-200/70 dark:border-slate-700/30',
-        'transition-all duration-200 shadow-sm shadow-md dark:shadow-slate-900/10'
+        'transition-all duration-200 shadow-sm hover:shadow-md dark:shadow-slate-900/10',
+        'touch-manipulation' // Improve touch behavior on mobile
       )}>
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           <div className="flex items-center justify-between">
             {icon && (
-              <div className={cn('p-2 rounded-lg transition-colors duration-200', colorConfig.iconBg)}>
+              <div className={cn(
+                'p-1.5 sm:p-2 rounded-lg transition-colors duration-200', 
+                colorConfig.iconBg,
+                'min-w-[36px] min-h-[36px] sm:min-w-[40px] sm:min-h-[40px] flex items-center justify-center' // Touch-friendly size
+              )}>
                 <span className={colorConfig.iconColor}>{icon}</span>
               </div>
             )}
-            <h3 className="text-sm font-medium text-muted-foreground flex-grow ml-2">
+            <h3 className="text-xs sm:text-sm font-medium text-muted-foreground flex-grow ml-2">
               {title}
             </h3>
             {trend && (
               <div className={cn(
-                'flex items-center gap-1 px-2 py-1 rounded text-sm font-medium ml-2',
+                'flex items-center gap-1 px-1.5 sm:px-2 py-1 rounded text-xs sm:text-sm font-medium ml-2',
                 colorConfig.trendBg,
                 typeof trend === 'object' ? (trend.isPositive ? colorConfig.trendPositive : colorConfig.trendNegative) : colorConfig.trendPositive,
-                'transition-colors duration-200'
+                'transition-colors duration-200',
+                'min-h-[24px] sm:min-h-[28px]' // Ensure touch-friendly height
               )}>
                 {typeof trend === 'object' ? (trend.isPositive ? (
-                  <ArrowUpRight className="w-4 h-4" />
+                  <ArrowUpRight className="w-3 h-3 sm:w-4 sm:h-4" />
                 ) : (
-                  <ArrowDownRight className="w-4 h-4" />
+                  <ArrowDownRight className="w-3 h-3 sm:w-4 sm:h-4" />
                 )) : (
-                  <ArrowUpRight className="w-4 h-4" />
+                  <ArrowUpRight className="w-3 h-3 sm:w-4 sm:h-4" />
                 )}
                 {typeof trend === 'object' ? Math.abs(trend.value) : trend}%
               </div>
             )}
           </div>
-          <div className="flex items-baseline gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
             <span className={cn(
-              'text-2xl font-semibold tracking-tight truncate max-w-[150px]',
+              'text-xl sm:text-2xl font-semibold tracking-tight truncate max-w-full sm:max-w-[150px]',
               colorConfig.valueColor,
               'transition-colors duration-200'
             )}>
               {value}
             </span>
             {subtitle && (
-              <span className="text-sm text-muted-foreground truncate">
+              <span className="text-xs sm:text-sm text-muted-foreground truncate mt-0.5 sm:mt-0">
                 {subtitle}
               </span>
             )}
           </div>
           {description && (
-            <p className="text-sm text-muted-foreground line-clamp-2">
+            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 mt-1">
               {description}
             </p>
           )}
