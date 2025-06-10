@@ -3,7 +3,6 @@
  */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
 
 // UI Components
 import { Button } from '@/components/ui/button';
@@ -16,15 +15,12 @@ import {
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 
 // Icons
 import {
   Calendar,
   CheckSquare,
-  Clock,
-  DollarSign,
   FileText,
   X,
   AlertTriangle,

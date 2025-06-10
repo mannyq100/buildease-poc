@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge'
-import { Material, StatusVariant, statusConfig } from '@/types/materials'
+import { Material, statusConfig } from '@/types/materials'
 
 interface StatusBadgeProps {
   status: Material['status']

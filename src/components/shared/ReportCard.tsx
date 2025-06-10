@@ -7,7 +7,6 @@ import {
   Download,
   Eye,
   Share2,
-  ArrowUpRight,
   Clock
 } from 'lucide-react';
 import { cn } from '@/utils/core/ui';

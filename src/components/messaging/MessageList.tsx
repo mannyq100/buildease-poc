@@ -6,13 +6,9 @@ import { format, isToday, isYesterday } from "date-fns";
 
 import { 
   CheckCheck, 
-  Check, 
-  Image as ImageIcon, 
-  Paperclip, 
-  FileText,
+  Check,
   Clock,
   Smile,
-  Send,
   Heart,
   ThumbsUp,
   MessageSquare,
@@ -30,11 +26,8 @@ import {
   TooltipProvider, 
   TooltipTrigger 
 } from "@/components/ui/tooltip";
-import { 
-  Popover, 
-  PopoverContent, 
-  PopoverTrigger 
-} from "@/components/ui/popover";
+
+
 import { 
   DropdownMenu, 
   DropdownMenuContent, 

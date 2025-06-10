@@ -21,7 +21,6 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
-import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Sample data for phases

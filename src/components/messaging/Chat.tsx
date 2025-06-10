@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { ConversationList } from "./ConversationList";
 import { MessageList } from "./MessageList";
 import { MessageInput } from "./MessageInput";
 import { 
@@ -12,10 +11,7 @@ import {
   Phone, 
   Video, 
   MoreVertical, 
-  Users, 
-  Info, 
-  ArrowLeft,
-  ChevronRight,
+  Users,
   Star,
   StarOff,
   Search,
@@ -40,14 +36,8 @@ import {
   TooltipProvider, 
   TooltipTrigger 
 } from "@/components/ui/tooltip";
-import { 
-  Sheet, 
-  SheetContent, 
-  SheetDescription, 
-  SheetHeader, 
-  SheetTitle, 
-  SheetTrigger 
-} from "@/components/ui/sheet";
+
+
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -56,7 +46,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 
 import { format } from "date-fns";
 import { m, AnimatePresence } from "framer-motion";

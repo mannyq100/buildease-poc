@@ -247,8 +247,8 @@ export function sortTasks(
   sortDirection: 'asc' | 'desc' = 'asc'
 ): Task[] {
   return [...tasks].sort((a, b) => {
-    let aValue = a[sortBy];
-    let bValue = b[sortBy];
+    const aValue = a[sortBy];
+    const bValue = b[sortBy];
     
     // Handle dates
     if (sortBy === 'dueDate') {

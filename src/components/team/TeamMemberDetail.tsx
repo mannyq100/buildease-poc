@@ -23,7 +23,6 @@ import {
   MessageSquare,
   FileText,
   Briefcase,
-  User,
   Activity,
   Info
 } from 'lucide-react';

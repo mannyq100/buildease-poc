@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { ToastProps, ToastActionElement, Toast, ToastTitle, ToastDescription, ToastProvider, ToastViewport } from './toast';
+import { ToastActionElement, Toast, ToastTitle, ToastDescription, ToastProvider, ToastViewport } from './toast';
 import { v4 as uuidv4 } from 'uuid';
 
 type ToastType = 'default' | 'destructive' | 'success' | 'warning' | 'info';

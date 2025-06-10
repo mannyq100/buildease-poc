@@ -2,7 +2,7 @@
  * Form navigation component for project creation
  * Provides Back and Continue buttons for multi-step form navigation
  */
-import { ArrowRight, ChevronRight, Loader2, Save } from 'lucide-react';
+import { ChevronRight, Loader2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface FormNavigationProps {

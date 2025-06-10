@@ -4,7 +4,7 @@
  */
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LazyMotion, domAnimation, m } from 'framer-motion'
+import { m } from 'framer-motion'
 import { cn } from '@/utils/core/ui';
 
 // Icons
@@ -16,12 +16,9 @@ import {
   ListTodo, 
   Calendar,
   Package,
-  ChevronRight,
   BarChart3,
-  Clock,
   Activity,
-  Briefcase,
-  ChevronDown
+  Briefcase
 } from 'lucide-react'
 
 // UI Components
@@ -48,7 +45,7 @@ import { PageHeader } from '@/components/shared'
 import { useDashboardData } from '@/hooks/useDashboardData'
 
 // Import types from dashboard types file
-import { QuickStatCard, ActivityItem as DashboardActivityItem, QuickAction as DashboardQuickAction, DeadlineItem } from '@/types/dashboard'
+import { ActivityItem as DashboardActivityItem, QuickAction as DashboardQuickAction } from '@/types/dashboard'
 
 // Local interface for activity items from API
 interface ActivityItem {

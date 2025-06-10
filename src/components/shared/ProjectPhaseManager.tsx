@@ -3,23 +3,9 @@
  * Displays and manages construction project phases with tasks and materials
  */
 import React, { useState, useEffect } from 'react';
-import { AnimatePresence, LazyMotion, domAnimation, m } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'framer-motion';
 import { 
-  ChevronRight, 
-  Clock, 
-  Pencil, 
-  Trash2, 
-  Plus, 
-  X, 
-  Calendar,
-  CheckCircle,
-  Sun,
-  Sparkles,
-  AlertCircle,
-  PlusCircle,
-  Edit2,
-  Package,
-  Users
+  Plus
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -28,7 +14,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { 
   Select, 
@@ -46,7 +31,6 @@ import {
   DialogTitle
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 import PhaseCard from './PhaseCard';
 import { v4 as uuidv4 } from 'uuid';

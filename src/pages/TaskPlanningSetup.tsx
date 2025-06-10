@@ -2,19 +2,12 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import {
   Sparkles,
   ChevronRight,
-  Calendar,
-  Users,
-  Package,
   DollarSign,
-  AlertCircle,
-  ArrowRight,
-  Ruler,
-  CheckCircle2
+  ArrowRight
 } from 'lucide-react';
 import {
   Select,

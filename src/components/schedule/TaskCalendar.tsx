@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { Task } from '@/types/schedule';
-import { formatDate, getStatusColor } from '@/utils/scheduleUtils';
+import { getStatusColor } from '@/utils/scheduleUtils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { 
   format, 

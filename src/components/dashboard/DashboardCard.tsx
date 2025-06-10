@@ -1,5 +1,4 @@
 import React, { ReactNode } from 'react';
-import { Card } from '@/components/ui/card';
 
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { H3, Small } from '@/components/ui/typography';

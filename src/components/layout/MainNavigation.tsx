@@ -2,10 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { 
-  Bell, 
   Settings,
   LogOut,
-  Search,
   X,
   LayoutDashboard,
   Briefcase,
@@ -16,11 +14,8 @@ import {
   FileText,
   Menu,
   MessagesSquare,
-  Home,
   ChevronRight,
-  ChevronLeft,
-  Moon,
-  Sun
+  ChevronLeft
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -31,10 +26,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import type { PermissionScope } from '@/types/user';
 import { getUserDisplayName } from '@/services/userService';
@@ -51,7 +44,7 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ className, onCollapseCh
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const { isAuthenticated, loginWithRedirect, logout: auth0Logout, isLoading, user: auth0User } = useAuth0();
+  const { isAuthenticated, isLoading, user, signOut } = useSupabaseAuth();
   
   // Use our custom hook to fetch user profile data from the BuildEase API
   const { 
@@ -144,8 +137,15 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ className, onCollapseCh
     </button>
   );
 
+  // Handle logout
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/');
+  };
+
   return (
     <>
+  
       {/* Mobile menu toggle button - fixed position when menu is closed */}
       {isMobile && !showMobileMenu && <MobileMenuToggle />}
       
@@ -271,14 +271,14 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ className, onCollapseCh
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <Avatar className="h-8 w-8 border border-gray-200 dark:border-slate-700">
-                    <AvatarImage src={profile?.settings?.pictureUrl || auth0User?.picture} />
+                    <AvatarImage src={profile?.settings?.picture_url || user?.user_metadata?.avatar_url} />
                     <AvatarFallback className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
                       {getUserDisplayName(profile)?.charAt(0).toUpperCase() || 'U'}
                     </AvatarFallback>
                   </Avatar>
                   <div className="ml-2">
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[150px]">
-                      {getUserDisplayName(profile)}
+                      {getUserDisplayName(profile) || user?.user_metadata?.full_name || user?.email}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[150px]">
                       {profile?.role || 'User'}
@@ -297,7 +297,7 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ className, onCollapseCh
                       <span>Settings</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => auth0Logout({ logoutParams: { returnTo: window.location.origin } })}>
+                    <DropdownMenuItem onClick={handleLogout}>
                       <LogOut className="mr-2 h-4 w-4" />
                       <span>Log out</span>
                     </DropdownMenuItem>
@@ -307,7 +307,7 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ className, onCollapseCh
             ) : (
               <div className="flex justify-center">
                 <Avatar className="h-8 w-8 border border-gray-200 dark:border-slate-700">
-                  <AvatarImage src={profile?.settings?.pictureUrl || auth0User?.picture} />
+                  <AvatarImage src={profile?.settings?.picture_url || user?.user_metadata?.avatar_url} />
                   <AvatarFallback className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
                     {getUserDisplayName(profile)?.charAt(0).toUpperCase() || 'U'}
                   </AvatarFallback>

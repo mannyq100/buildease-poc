@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Typography, H2, Paragraph } from './typography';
+import { H2, Paragraph } from './typography';
 import { cn } from '@/utils/core/ui';
 
 interface SectionProps extends React.HTMLAttributes<HTMLDivElement> {

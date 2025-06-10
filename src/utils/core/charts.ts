@@ -2,7 +2,6 @@
  * Chart utilities and constants for data visualization components
  */
 
-import { ReactNode } from 'react';
 import { darkModeDetector } from './ui';
 
 // Enhanced color palette for consistent visualization

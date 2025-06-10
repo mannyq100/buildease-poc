@@ -4,7 +4,6 @@ import { Badge } from '@/components/ui/badge';
 import {
   ShieldAlert,
   Calendar,
-  Building2,
   MapPin,
   FileText,
   AlertTriangle,

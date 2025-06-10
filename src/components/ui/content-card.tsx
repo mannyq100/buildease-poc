@@ -1,7 +1,7 @@
 import React from 'react';
 
-import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from '@/components/ui/card';
-import { H3, Paragraph, Small } from './typography';
+import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
+import { H3, Small } from './typography';
 import { cn } from '@/utils/core/ui';
 
 interface ContentCardProps {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
-import { motion, m, useMotionValue } from 'framer-motion';
+import { m } from 'framer-motion';
 import { 
   Tooltip, 
   TooltipContent, 

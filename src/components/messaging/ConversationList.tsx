@@ -1,7 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
 import { 
-  Plus, 
   Search,
   MessagesSquare,
   Users,
@@ -10,13 +8,10 @@ import {
   ChevronDown,
   Pin,
   Clock,
-  X,
   Check,
-  UserPlus,
   MoreVertical,
   Filter,
   Bell,
-  BellOff,
   Star,
   StarOff,
   ArchiveIcon,
@@ -32,7 +27,6 @@ import {
   DropdownMenuContent, 
   DropdownMenuItem, 
   DropdownMenuTrigger,
-  DropdownMenuGroup,
   DropdownMenuLabel,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
@@ -40,17 +34,14 @@ import {
   Dialog, 
   DialogContent, 
   DialogHeader, 
-  DialogTitle, 
-  DialogTrigger,
+  DialogTitle,
   DialogFooter,
   DialogDescription
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Conversation, ConversationType, ChatParticipant } from "@/types/messaging";
-import { formatDistanceToNow, isToday, format } from "date-fns";
+import { isToday, format } from "date-fns";
 
 import { m } from "framer-motion";
-import { teamMembers } from "@/data/mock/messaging";
 import { 
   Tooltip, 
   TooltipContent, 

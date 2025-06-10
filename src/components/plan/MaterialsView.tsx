@@ -1,7 +1,7 @@
 import React from 'react';
-import { Material, ConstructionPlan } from '@/data/mock/generatedPlan/planData';
+import { ConstructionPlan } from '@/data/mock/generatedPlan/planData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, Truck, Calendar, DollarSign, CheckCircle, Clock, AlertCircle, Plus } from 'lucide-react';
+import { Package, Calendar, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { motion as m } from 'framer-motion';

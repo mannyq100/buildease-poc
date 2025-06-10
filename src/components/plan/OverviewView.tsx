@@ -1,8 +1,8 @@
 import React from 'react';
-import { ConstructionPlan, Phase } from '@/data/mock/generatedPlan/planData';
+import { ConstructionPlan } from '@/data/mock/generatedPlan/planData';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, Clock, Package, Tag, CheckSquare, Users, Layers, FileText, Plus, Edit, Calendar, BarChart } from 'lucide-react';
+import { CalendarDays, Clock, Package, CheckSquare, Layers, FileText, Plus, Calendar, BarChart } from 'lucide-react';
 import { PhaseCard } from './PhaseCard';
 import { motion } from 'framer-motion';
 

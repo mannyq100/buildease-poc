@@ -3,7 +3,7 @@
  * Provides mock implementations of project-related services
  */
 import { Project, ProjectStatus } from '@/types/project';
-import { PlanPhase, PlanTask } from '@/types/projectInputs';
+import { PlanPhase } from '@/types/projectInputs';
 import projectsData from '../json/projects.json';
 
 /**

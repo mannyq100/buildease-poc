@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Building, Leaf, Sparkles, Info } from 'lucide-react';
+import { Building, Leaf, Sparkles } from 'lucide-react';
 
 interface ProjectFeaturesFormProps {
   specialFeatures: string[];

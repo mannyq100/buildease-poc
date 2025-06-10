@@ -1,13 +1,8 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
-  Bell,
-  Calendar,
-  Clock,
   CheckCircle2,
-  XCircle,
   AlertCircle,
   Info
 } from 'lucide-react';

@@ -7,10 +7,8 @@ import {
   CloudSnow,
   Sun,
   Wind,
-  Thermometer,
   Droplets,
-  AlertTriangle,
-  Calendar
+  AlertTriangle
 } from 'lucide-react';
 import { cn } from '@/utils/core/ui';
 

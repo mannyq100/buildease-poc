@@ -11,9 +11,7 @@ import { ExpenseModal, ExpenseFormData } from '@/components/shared/modals';
 import { 
   DollarSign, 
   Download, 
-  FileText, 
   BarChart3,
-  Receipt,
   Plus
 } from 'lucide-react';
 
@@ -29,8 +27,7 @@ import {
   EXPENSE_CATEGORIES,
   EXPENSE_PROJECTS,
   EXPENSE_PHASES,
-  EXPENSE_STATUSES,
-  EXPORT_OPTIONS
+  EXPENSE_STATUSES
 } from '@/data/mock/expenses/expensesData';
 import { getProjectBudget } from '@/data/mock/expenses/budgetData';
 
@@ -135,7 +132,7 @@ function Expenses() {
     // Apply date range filter
     if (activeFilters.dateRange !== 'all') {
       const now = new Date();
-      let startDate = new Date();
+      const startDate = new Date();
       
       if (activeFilters.dateRange === 'today') {
         startDate.setHours(0, 0, 0, 0);

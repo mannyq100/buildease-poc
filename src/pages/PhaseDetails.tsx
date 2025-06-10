@@ -2,20 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { TabsContent } from "@/components/ui/tabs";
 import {
   AlertCircle,
   ArrowLeft,
   Building2,
   Calendar,
   CheckCircle2,
-  ChevronDown,
   ChevronRight,
-  ChevronUp,
   Clock,
   Clipboard,
   DollarSign,
-  Download,
   FileText,
   Package,
   Plus,
@@ -25,17 +21,12 @@ import {
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { useTheme } from '@/contexts/ThemeContext';
 
 // Import common shared components
 import {
-  PageHeader,
-  StatCard,
-  DocumentItem,
-  TaskCard,
-  MaterialCard
+  TaskCard
 } from '@/components/shared';
 
 // Import phase-specific components

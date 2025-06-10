@@ -1,21 +1,19 @@
 import { useState, useRef } from 'react';
-import { Task, TeamMember, TaskComment, TaskAttachment } from '@/types/schedule';
-import { formatDate, formatDateTime, getStatusColor, getPriorityColor, getTaskDependencies } from '@/utils/scheduleUtils';
+import { Task, TaskComment, TaskAttachment } from '@/types/schedule';
+import { formatDate, formatDateTime, getStatusColor, getTaskDependencies } from '@/utils/scheduleUtils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { 
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-  DialogFooter
+  DialogDescription
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -37,8 +35,7 @@ import {
   MessageSquare, 
   Paperclip, 
   FileText, 
-  Link2, 
-  X,
+  Link2,
   CheckCircle,
   Clock,
   AlertTriangle,
@@ -55,7 +52,6 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/utils/core/ui';
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
 interface TaskDetailProps {
   task: Task;

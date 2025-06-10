@@ -3,7 +3,6 @@
  * Handles uploading, previewing, and managing project reference images
  */
 import React, { useState } from 'react';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { X, Upload, Camera, ImageIcon, FileImage, Trash2, RotateCcw } from 'lucide-react';

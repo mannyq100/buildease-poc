@@ -1,5 +1,4 @@
 import { ChatParticipant, Conversation, Message, MessageStatus } from "@/types/messaging";
-import { ChevronDown, GroupIcon, Home, MessagesSquare, User } from "lucide-react";
 
 // Mock current user
 export const currentUser: ChatParticipant = {

@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { cn } from '@/utils/core/ui';
 

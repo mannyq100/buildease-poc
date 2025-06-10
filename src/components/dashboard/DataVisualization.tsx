@@ -16,8 +16,7 @@ import {
   TooltipProps,
   Sector,
   Area,
-  AreaChart,
-  LabelList
+  AreaChart
 } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
@@ -26,8 +25,7 @@ import { BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon, Slider
 import DashboardCard from './DashboardCard';
 
 import { 
-  CHART_COLOR_ARRAY, 
-  CHART_COLORS,
+  CHART_COLOR_ARRAY,
   ChartType, 
   ColorScheme,
   getChartColors, 

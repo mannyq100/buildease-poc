@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, ConstructionPlan } from '@/data/mock/generatedPlan/planData';
+import { ConstructionPlan } from '@/data/mock/generatedPlan/planData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Download, Calendar, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';

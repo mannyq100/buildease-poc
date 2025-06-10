@@ -22,7 +22,6 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Phase } from '@/types/phase';
-import { Task } from '@/types/task';
 
 // For backward compatibility with existing code that might use these interfaces
 interface NewTask {

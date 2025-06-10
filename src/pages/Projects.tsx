@@ -8,7 +8,7 @@ import {
   ProjectFilters, 
   ProjectsList 
 } from '@/components/projects';
-import type { Project, ProjectStatus, ViewMode } from '@/types/project';
+import type { ProjectStatus, ViewMode } from '@/types/project';
 import { projectsData } from '@/data/mock/project/projectsData';
 
 /**

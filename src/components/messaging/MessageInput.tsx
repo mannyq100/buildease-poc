@@ -8,20 +8,11 @@ import {
   XCircle,
   Image as ImageIcon,
   FileText,
-  Link,
   Mic,
   Camera,
-  Gift,
-  Trash,
   Clock,
   ChevronDown,
-  Film,
-  Users,
-  X,
-  Plus,
-  Calendar,
-  FileUp,
-  Map
+  Calendar
 } from "lucide-react";
 import { 
   Popover, 

@@ -6,7 +6,7 @@ import React from 'react';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { LazyMotion, domAnimation, m } from 'framer-motion';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Home as HomeIcon, Building, Factory, Wrench } from 'lucide-react';
 
 // Import project type images

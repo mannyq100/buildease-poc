@@ -2,7 +2,7 @@
  * Unified TaskCard component for displaying task details across the application
  * This component consolidates functionality from separate task cards in phases and schedule
  */
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -12,10 +12,6 @@ import {
   Calendar,
   MessageSquare,
   Paperclip,
-  Clock,
-  Link2,
-  UserRound,
-  MoreVertical,
   ArrowRight
 } from 'lucide-react';
 

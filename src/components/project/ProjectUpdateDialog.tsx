@@ -2,8 +2,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { format } from 'date-fns';
-import { X, FileText, AlertCircle, CheckCircle, Info, Calendar } from 'lucide-react';
+import { FileText, AlertCircle, CheckCircle, Info, Calendar } from 'lucide-react';
 
 import {
   Dialog,

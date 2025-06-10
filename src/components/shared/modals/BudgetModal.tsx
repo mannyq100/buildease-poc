@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea'; // For notes
 import { BudgetItem } from '@/types/budget'; // Import the new type
-import { AlertCircle, Banknote, TrendingDown, TrendingUp, Calendar, Tag, CheckCircle, CircleDashed, Clock } from 'lucide-react'; // Icons
+import { AlertCircle, Banknote, TrendingDown, TrendingUp } from 'lucide-react'; // Icons
 
 // Define potential categories and statuses (can be passed as props later)
 const defaultCategories = ['Labor', 'Materials', 'Subcontractor', 'Permits', 'Equipment Rental', 'Income Payment', 'Other'];

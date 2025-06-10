@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Budget, ConstructionPlan } from '@/data/mock/generatedPlan/planData';
+import { ConstructionPlan } from '@/data/mock/generatedPlan/planData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Banknote, TrendingUp, Package, Wrench, FileText, ShieldAlert, Plus, Edit, Trash } from 'lucide-react';
 import { motion as m } from 'framer-motion';

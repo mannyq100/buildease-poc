@@ -1,4 +1,4 @@
-import { Task, TeamMember } from '@/types/schedule';
+import { Task } from '@/types/schedule';
 
 /**
  * Formats a date string to a localized date string

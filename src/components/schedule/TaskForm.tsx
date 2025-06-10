@@ -47,9 +47,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
-import { Badge } from '@/components/ui/badge';
 import { Task, NewTaskForm, TeamMember } from '@/types/schedule';
-import { availableProjects, phasesByProject, teamMembers } from '@/data/scheduleData';
+import { availableProjects, phasesByProject } from '@/data/scheduleData';
 import { cn } from '@/utils/core/ui';
 
 const statusOptions = [

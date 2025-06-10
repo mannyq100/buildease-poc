@@ -1,5 +1,5 @@
 import React from 'react';
-import { DollarSign, Calendar as CalendarIcon, FileBarChart, ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import { InsightItem } from '@/components/shared';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 

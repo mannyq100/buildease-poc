@@ -1,7 +1,6 @@
 // src/components/shared/modals/TeamModal.tsx
 import React, { useCallback } from 'react';
 import { User, Briefcase, Mail, Phone, Activity, ShieldQuestion } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { TeamMember, TeamMemberStatus } from '@/types/team';
 import { useFormState } from '@/hooks/useFormState';
 import { BaseModal } from './BaseModal';

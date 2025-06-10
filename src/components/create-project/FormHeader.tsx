@@ -2,7 +2,6 @@
  * Form header component for project creation
  * Includes language selector, progress indicator, and user controls
  */
-import { useState, useEffect } from 'react';
 import { Languages, User, Settings } from 'lucide-react';
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";

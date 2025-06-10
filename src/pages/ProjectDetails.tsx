@@ -3,67 +3,39 @@
  */
 import { format } from 'date-fns'
 import React, { useState, useEffect } from 'react'
-import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
-import { LazyMotion, domAnimation, m } from 'framer-motion'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { cn } from '@/utils/core/ui';
 
 // Icons
 import { 
-  Calendar, 
-  CheckSquare,
-  ChevronRight,
+  Calendar,
   DollarSign,
-  FileText,
-  Home,
-  Image,
-  MessageSquare,
   Package,
-  Plus,
   Settings,
   Users,
-  Building,
   ChartPie,
   FileBarChart,
   Calendar as CalendarIcon,
-  LayoutDashboard,
   Download,
   MapPin
 } from 'lucide-react'
 
 // UI Components
 import { Button } from '@/components/ui/button'
-import { Calendar as CalendarComponent } from '@/components/ui/calendar'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card'
+
+
 import { 
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+
+
 import { Badge } from '@/components/ui/badge'
 
 // Shared Components
-import { HorizontalNav } from '@/components/navigation/HorizontalNav'
 import {
   PageHeader,
   StatCard
@@ -83,7 +55,7 @@ import { Phase } from '@/types/phase'
 import { Task } from '@/types/task'
 
 // Mock data
-import { INITIAL_PHASES, BREADCRUMB_ITEMS, PROJECT_NAV_ITEMS, RECENT_ACTIVITY } from '@/data/projectData'
+import { INITIAL_PHASES, RECENT_ACTIVITY } from '@/data/projectData'
 
 // Types for new phase and task
 interface NewPhase {

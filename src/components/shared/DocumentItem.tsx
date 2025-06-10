@@ -7,9 +7,7 @@ import {
   FileImage, 
   FileSpreadsheet, 
   File,
-  ArrowUpRight,
-  Share2, 
-  Star, 
+  ArrowUpRight, 
   Trash2, 
   MoreVertical, 
   Download, 
@@ -19,7 +17,7 @@ import {
   Folder
 } from 'lucide-react';
 
-import type { DocumentItemProps, Document } from '@/types/documents';
+import type { DocumentItemProps } from '@/types/documents';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import {
   DropdownMenu,

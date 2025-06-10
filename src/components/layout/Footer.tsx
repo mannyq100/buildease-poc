@@ -11,8 +11,7 @@ import {
   Mail,
   Heart,
   ArrowUpRight,
-  MessageSquare,
-  ChevronRight
+  MessageSquare
 } from 'lucide-react';
 import { cn } from '@/utils/core/ui';
 

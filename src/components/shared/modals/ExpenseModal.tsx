@@ -1,8 +1,6 @@
 import React, { useCallback, useState } from 'react';
-import { Expense } from '@/types/expenses';
 import { BaseModal } from './BaseModal';
 import { FormField, ModalFooter, SelectField } from '@/components/ui/form-fields';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useFormState } from '@/hooks/useFormState';

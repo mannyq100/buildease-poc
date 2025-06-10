@@ -5,7 +5,7 @@ import MainNavigation from './MainNavigation';
 import Breadcrumb from '@/components/navigation/Breadcrumb';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { Bell, Search, Menu, X, ChevronDown } from 'lucide-react';
+import { Bell, Search, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/utils/core/ui';
 

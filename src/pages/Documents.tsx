@@ -8,7 +8,6 @@ import { toast } from '@/components/ui/use-toast'
 
 // Icons
 import {
-  CheckCircle2,
   Clock,
   Download,
   Eye,
@@ -41,10 +40,7 @@ import {
 import { 
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
-  DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog"
 import {
   DropdownMenu,
@@ -75,7 +71,7 @@ import { EmptyDocumentState } from '@/components/documents/EmptyDocumentState'
 
 // Types and Utilities
 import { Document, NewDocument } from '@/types/documents'
-import { filterDocuments, getFileIcon } from '@/utils/documentUtils'
+import { getFileIcon } from '@/utils/documentUtils'
 
 // Mock Data
 import {

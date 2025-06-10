@@ -1,7 +1,6 @@
 /**
  * Types for the messaging/chat feature
  */
-import { ReactNode } from "react";
 
 /**
  * Message status types

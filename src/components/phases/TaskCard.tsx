@@ -1,6 +1,5 @@
 import React from 'react';
 import { TaskCard as SharedTaskCard } from '@/components/shared/TaskCard';
-import type { Task } from '@/types/schedule';
 
 /**
  * Phase-specific TaskCard component that uses the unified TaskCard implementation

@@ -8,8 +8,7 @@ import {
   Reply,
   MoreHorizontal,
   Edit2,
-  Trash2,
-  Clock
+  Trash2
 } from 'lucide-react';
 import { cn } from '@/utils/core/ui';
 

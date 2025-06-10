@@ -1,26 +1,18 @@
-import React, { useEffect, useState, useCallback, useRef, ReactNode } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { Helmet } from "react-helmet-async";
 import { useLocation } from "react-router-dom";
 import { Chat } from "@/components/messaging/Chat";
 import { currentUser, mockConversations, mockMessages, teamMembers } from "@/data/mock/messaging";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
+
+
 import { 
   MessagesSquare, 
   Users, 
-  Bell, 
   UserPlus, 
   Plus,
   Search,
-  AlertCircle,
-  Settings,
-  Filter
+  AlertCircle
 } from "lucide-react";
 import { useToast } from "@/components/ui/toast-context";
 import { Conversation, ChatParticipant, Message, ConversationType } from "@/types/messaging";
@@ -32,26 +24,18 @@ import { Button } from "@/components/ui/button";
 import { 
   Dialog, 
   DialogContent, 
-  DialogTrigger, 
   DialogHeader, 
   DialogTitle, 
   DialogFooter,
   DialogDescription
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { User, Inbox, X, Check } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from '@/utils/core/ui';
 

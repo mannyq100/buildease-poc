@@ -9,7 +9,7 @@ import {
   getRecentActivity,
   getUpcomingDeadlines
 } from '@/services/dashboardService'
-import type { DeadlineItem, ActivityItem as DashboardActivityItem, PieChartItem, QuickStatCard, QuickAction } from '@/types/dashboard'
+import type { QuickStatCard, QuickAction } from '@/types/dashboard'
 import { getProjects } from '@/services/projectService'
 import { getTeamMembers } from '@/services/teamService'
 

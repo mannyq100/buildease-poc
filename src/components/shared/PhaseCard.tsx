@@ -10,32 +10,19 @@ import {
   ListTodo, 
   Edit2, 
   ChevronDown, 
-  ChevronUp, 
-  ChevronRight,
+  ChevronUp,
   Plus,
   Save,
   XCircle,
-  User,
-  AlertCircle,
-  CheckSquare,
-  Shield,
-  Clock3
+  AlertCircle
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
+
+
 import { TeamMember, MaterialItem } from '@/types/project';
 import { cn } from '@/utils/core/ui';
 

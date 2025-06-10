@@ -4,7 +4,7 @@
  */
 
 // User provider types
-export type AuthProvider = 'GOOGLE' | 'APPLE' | 'EMAIL' | 'GITHUB' | 'AUTH0' | 'FACEBOOK';
+export type AuthProvider = 'GOOGLE' | 'APPLE' | 'EMAIL' | 'GITHUB' | 'SUPABASE' | 'FACEBOOK' | 'LINKEDIN';
 
 // User status types
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'PENDING' | 'SUSPENDED';
@@ -28,7 +28,7 @@ export interface NotificationSettings {
 
 // User settings
 export interface UserSettings {
-  pictureUrl?: string;
+  picture_url?: string;
   emailVerified: boolean;
   phoneVerified: boolean;
   notifications: NotificationSettings;
@@ -57,8 +57,10 @@ export type PermissionScope =
 export interface UserProfile {
   id: string;
   email: string;
-  name: string;
+  firstName?: string;
+  lastName?: string;
   phone?: string;
+  companyName?: string;
   provider: AuthProvider;
   tier: UserTier;
   status: UserStatus;
@@ -74,10 +76,12 @@ export interface UserProfile {
 export interface RegisterUserPayload {
   id?: string; // Optional: Used by backend during update to find user if needed, but usually identified by token
   email: string;
-  name: string;
+  firstName?: string;
+  lastName?: string;
   phone?: string;
+  companyName?: string;
   provider: AuthProvider;
-  providerIdentifier: string; // Required from Auth0 user info
+  providerIdentifier: string; // Provider-specific identifier
   tier: UserTier; // Often set by backend logic, but might be needed
   status: UserStatus; // Often set by backend logic
   settings: UserSettings;

@@ -4,20 +4,15 @@ import { Button } from '@/components/ui/button'
 import { Helmet } from 'react-helmet-async'
 import { motion as m } from 'framer-motion'
 import { 
-  FileText,
-  Plus, 
+  FileText, 
   RefreshCw, 
   Save, 
   CheckCircle,
   Share2,
   Loader2,
   Calendar,
-  Clock,
-  MapPin,
   Home,
-  Edit,
   MoreHorizontal,
-  Layers,
   Package,
   DollarSign,
   Users,
@@ -32,7 +27,7 @@ import { BudgetView } from '@/components/plan/BudgetView'
 import { TeamView } from '@/components/plan/TeamView'
 import { DocumentsView } from '@/components/plan/DocumentsView'
 import { DistributeModal } from '@/components/plan/DistributeModal'
-import { PhaseFormModal, TaskFormModal, MaterialModal, DateEditModal, Phase, Task, BaseMaterial } from '@/components/shared/modals'
+import { PhaseFormModal, TaskFormModal, MaterialModal, DateEditModal, Phase, Task } from '@/components/shared/modals'
 import { mockConstructionPlan, ConstructionPlan, Material } from '@/data/mock/generatedPlan/planData'
 import { toast } from 'sonner'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem } from '@/components/ui/dropdown-menu'

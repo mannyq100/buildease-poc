@@ -8,9 +8,7 @@ import {
   MessageSquare,
   Package,
   Users,
-  LayoutDashboard,
-  DollarSign,
-  FileBarChart
+  LayoutDashboard
 } from 'lucide-react';
 import { Phase } from '@/types/phase';
 

@@ -30,7 +30,7 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 
-import { Phase, Task, Material } from '@/types/projectInputs';
+import { Phase } from '@/types/projectInputs';
 
 interface ProjectPhaseManagerProps {
   phases: Phase[];
