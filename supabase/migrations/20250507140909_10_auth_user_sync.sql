@@ -1,6 +1,9 @@
 -- Supabase Auth Integration for BuildEase Platform
 -- Simplified auth user sync - only creates new users, no updates
 
+-- Ensure the private schema exists first
+CREATE SCHEMA IF NOT EXISTS private;
+
 -- Drop any existing implementation
 DROP TRIGGER IF EXISTS auth_user_created ON auth.users;
 
@@ -51,6 +54,7 @@ DECLARE
     last_name TEXT;
     full_name TEXT;
     company_name TEXT;
+    phone TEXT;
     name_parts TEXT[];
     user_meta JSONB;
     app_meta JSONB;
@@ -71,11 +75,12 @@ BEGIN
         INSERT INTO construction_mgr.be_audit_log (
             action, entity_type, entity_id, details
         ) VALUES (
-            'AUTH_SYNC_WARNING', 'user', COALESCE(NEW.id, 'unknown')::text,
+            'AUTH_SYNC_WARNING', 'user', NEW.id,
             jsonb_build_object(
                 'error_code', SQLSTATE,
                 'error_message', 'Invalid raw_user_meta_data format: ' || SQLERRM,
-                'operation', 'PARSE_METADATA'
+                'operation', 'PARSE_METADATA',
+                'user_id', COALESCE(NEW.id::text, 'unknown')
             )
         );
     END;
@@ -90,11 +95,12 @@ BEGIN
         INSERT INTO construction_mgr.be_audit_log (
             action, entity_type, entity_id, details
         ) VALUES (
-            'AUTH_SYNC_WARNING', 'user', COALESCE(NEW.id, 'unknown')::text,
+            'AUTH_SYNC_WARNING', 'user', NEW.id,
             jsonb_build_object(
                 'error_code', SQLSTATE,
                 'error_message', 'Invalid raw_app_meta_data format: ' || SQLERRM,
-                'operation', 'PARSE_METADATA'
+                'operation', 'PARSE_METADATA',
+                'user_id', COALESCE(NEW.id::text, 'unknown')
             )
         );
     END;
@@ -130,6 +136,9 @@ BEGIN
             user_meta->'positions'->'values'->0->>'companyName',
             ''
         );
+        
+        -- Get phone from user metadata or use the phone from the auth user
+        phone := COALESCE(user_meta->>'phone', NEW.phone, '');
     ELSE
         -- Standard handling for other providers
         first_name := COALESCE(user_meta->>'first_name', user_meta->>'given_name', '');
@@ -137,6 +146,9 @@ BEGIN
         
         -- Get company name from user metadata
         company_name := COALESCE(user_meta->>'company_name', user_meta->>'organization', '');
+
+        -- Get phone from user metadata or use the phone from the auth user
+        phone := COALESCE(user_meta->>'phone', NEW.phone, '');
     END IF;
     
     -- Common full name handling for all providers
@@ -182,14 +194,22 @@ BEGIN
         first_name,
         last_name,
         company_name,
-        NEW.phone,
+        phone,
         provider::construction_mgr.auth_provider,
         COALESCE(user_meta->>'provider_id', user_meta->>'sub', app_meta->>'provider_id', NEW.id::text, 'unknown'),
         'ACTIVE'::construction_mgr.user_status,
         'BASIC'::construction_mgr.user_tier,
         jsonb_build_object(
-            'email_verified', COALESCE(user_meta->>'email_verified', NEW.email_confirmed_at IS NOT NULL),
-            'phone_verified', COALESCE(user_meta->>'phone_verified', NEW.phone_confirmed_at IS NOT NULL),
+            'email_verified', CASE 
+                WHEN user_meta->>'email_verified' = 'true' THEN true
+                WHEN user_meta->>'email_verified' = 'false' THEN false
+                ELSE NEW.email_confirmed_at IS NOT NULL
+            END,
+            'phone_verified', CASE 
+                WHEN user_meta->>'phone_verified' = 'true' THEN true
+                WHEN user_meta->>'phone_verified' = 'false' THEN false
+                ELSE NEW.phone_confirmed_at IS NOT NULL
+            END,
             'picture_url', COALESCE(
                 user_meta->>'avatar_url',
                 user_meta->>'picture',
@@ -225,12 +245,13 @@ EXCEPTION
         INSERT INTO construction_mgr.be_audit_log (
             action, entity_type, entity_id, details
         ) VALUES (
-            'AUTH_SYNC_ERROR', 'user', COALESCE(NEW.id, 'unknown')::text,
+            'AUTH_SYNC_ERROR', 'user', NEW.id,
             jsonb_build_object(
                 'error_code', SQLSTATE,
                 'error_message', SQLERRM,
                 'operation', 'INSERT',
-                'email', COALESCE(NEW.email, 'unknown')
+                'email', COALESCE(NEW.email, 'unknown'),
+                'user_id', COALESCE(NEW.id::text, 'unknown')
             )
         );
         RETURN NEW; -- Return normally even after error
@@ -257,17 +278,56 @@ GRANT INSERT ON construction_mgr.be_user TO service_role;
 -- Add comment to explain the last update
 COMMENT ON FUNCTION construction_mgr.sync_new_auth_user IS 'Syncs auth users to be_user table. Updated on Jun 9, 2025 to better handle different auth provider metadata formats.';
 
--- Grant necessary permissions for trigger execution to multiple roles
--- Supabase uses various service roles for trigger execution
-GRANT USAGE ON SCHEMA construction_mgr TO supabase_auth_admin, postgres, service_role;
-GRANT USAGE ON SCHEMA private TO supabase_auth_admin, postgres, service_role;
-GRANT INSERT, UPDATE, DELETE ON construction_mgr.be_user TO supabase_auth_admin, postgres, service_role;
-GRANT INSERT ON construction_mgr.be_audit_log TO supabase_auth_admin, postgres, service_role;
-GRANT EXECUTE ON FUNCTION private.get_auth_provider TO supabase_auth_admin, postgres, service_role;
-GRANT EXECUTE ON FUNCTION construction_mgr.sync_new_auth_user TO supabase_auth_admin, postgres, service_role;
+-- Grant comprehensive permissions to all Supabase internal roles
+-- These roles are used by Supabase for various operations including auth triggers
+
+-- Schema permissions
+GRANT USAGE ON SCHEMA construction_mgr TO postgres, service_role, supabase_auth_admin, supabase_admin;
+GRANT USAGE ON SCHEMA private TO postgres, service_role, supabase_auth_admin, supabase_admin;
+
+-- Table permissions for be_user
+GRANT ALL ON construction_mgr.be_user TO postgres, service_role, supabase_auth_admin, supabase_admin;
+
+-- Table permissions for audit log
+GRANT ALL ON construction_mgr.be_audit_log TO postgres, service_role, supabase_auth_admin, supabase_admin;
+
+-- Function permissions
+GRANT EXECUTE ON FUNCTION construction_mgr.sync_new_auth_user() TO postgres, service_role, supabase_auth_admin, supabase_admin;
+GRANT EXECUTE ON FUNCTION private.get_auth_provider(JSONB) TO postgres, service_role, supabase_auth_admin, supabase_admin;
+
+-- Sequence permissions (if any sequences exist for UUID generation)
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA construction_mgr TO postgres, service_role, supabase_auth_admin, supabase_admin;
 
 -- Grant permissions for application use
 GRANT EXECUTE ON FUNCTION private.get_auth_provider TO authenticated;
 
+-- Add explicit permissions for the trigger to bypass RLS when needed
+-- This is critical for the auth trigger to work properly
+
+-- Temporarily disable RLS to ensure clean policy creation
+ALTER TABLE construction_mgr.be_user DISABLE ROW LEVEL SECURITY;
+ALTER TABLE construction_mgr.be_audit_log DISABLE ROW LEVEL SECURITY;
+
+-- Re-enable RLS 
+ALTER TABLE construction_mgr.be_user ENABLE ROW LEVEL SECURITY;
+ALTER TABLE construction_mgr.be_audit_log ENABLE ROW LEVEL SECURITY;
+
+-- Create policies that allow the service_role to bypass RLS for inserts
+-- This is specifically for the auth trigger
+
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Allow service_role to insert users" ON construction_mgr.be_user;
+DROP POLICY IF EXISTS "Allow service_role to insert audit logs" ON construction_mgr.be_audit_log;
+
+-- Create new policies
+CREATE POLICY "Allow service_role to insert users" ON construction_mgr.be_user
+    FOR INSERT TO service_role
+    WITH CHECK (true);
+
+CREATE POLICY "Allow service_role to insert audit logs" ON construction_mgr.be_audit_log
+    FOR INSERT TO service_role
+    WITH CHECK (true);
+
 -- Add comprehensive comments
 COMMENT ON FUNCTION private.get_auth_provider IS 'Gets auth provider from raw_app_meta_data with fallback to email';
+COMMENT ON FUNCTION construction_mgr.sync_new_auth_user IS 'Syncs auth users to be_user table. Updated on Jun 9, 2025 with comprehensive permissions and RLS policies for proper auth trigger operation.';
