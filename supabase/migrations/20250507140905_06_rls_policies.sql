@@ -1,6 +1,10 @@
 -- Create Row Level Security (RLS) policies for all tables
+-- Updated with recursion-safe direct functions to prevent infinite loops
 
--- User table policies
+-- ==============================================================================
+-- USER TABLE POLICIES
+-- ==============================================================================
+
 CREATE POLICY "Users can view their own profile"
     ON construction_mgr.be_user
     FOR SELECT
@@ -14,14 +18,17 @@ CREATE POLICY "Users can update their own profile"
 CREATE POLICY "Admins can view all users"
     ON construction_mgr.be_user
     FOR SELECT
-    USING (private.is_admin());
+    USING (private.is_admin_direct(auth.uid()));
 
 CREATE POLICY "Admins can update all users"
     ON construction_mgr.be_user
     FOR UPDATE
-    USING (private.is_admin());
+    USING (private.is_admin_direct(auth.uid()));
 
--- Project table policies
+-- ==============================================================================
+-- PROJECT TABLE POLICIES
+-- ==============================================================================
+
 CREATE POLICY "Users can view projects they own"
     ON construction_mgr.be_project
     FOR SELECT
@@ -31,11 +38,7 @@ CREATE POLICY "Users can view projects they participate in"
     ON construction_mgr.be_project
     FOR SELECT
     USING (
-        id IN (
-            SELECT project_id
-            FROM construction_mgr.be_project_member
-            WHERE user_id = auth.uid()
-        )
+        private.has_project_access_direct(id, auth.uid())
     );
 
 CREATE POLICY "Users can create projects"
@@ -52,7 +55,7 @@ CREATE POLICY "Project participants with ADMIN role can update projects"
     ON construction_mgr.be_project
     FOR UPDATE
     USING (
-        private.check_user_project_role(
+        private.check_user_project_role_direct(
             id, 
             auth.uid(), 
             ARRAY['ADMIN']::construction_mgr.user_role[]
@@ -64,98 +67,127 @@ CREATE POLICY "Users can delete projects they own"
     FOR DELETE
     USING (owner_id = auth.uid());
 
--- Project Member table policies
-CREATE POLICY "Users can view project members for their projects"
+-- ==============================================================================
+-- PROJECT MEMBER TABLE POLICIES
+-- ==============================================================================
+
+CREATE POLICY "Users can view their own project memberships"
+    ON construction_mgr.be_project_member
+    FOR SELECT
+    USING (user_id = auth.uid());
+
+CREATE POLICY "Project owners can view their project members"
     ON construction_mgr.be_project_member
     FOR SELECT
     USING (
-        private.has_project_access(project_id)
+        private.is_project_owner_direct(project_id, auth.uid())
     );
 
-CREATE POLICY "Project owners can manage project members"
+CREATE POLICY "Project owners can manage their project members"
     ON construction_mgr.be_project_member
     FOR ALL
     USING (
-        project_id IN (
-            SELECT id 
-            FROM construction_mgr.be_project 
-            WHERE owner_id = auth.uid()
-        )
+        private.is_project_owner_direct(project_id, auth.uid())
     );
 
 CREATE POLICY "Admins can manage project members"
     ON construction_mgr.be_project_member
     FOR ALL
     USING (
-        private.check_user_project_role(
+        private.check_user_project_role_direct(
             project_id, 
             auth.uid(), 
             ARRAY['ADMIN']::construction_mgr.user_role[]
         )
     );
 
--- Material Transaction policies
+-- ==============================================================================
+-- MATERIAL TRANSACTION POLICIES
+-- ==============================================================================
+
 CREATE POLICY "Users can view material transactions for projects they have access to"
     ON construction_mgr.material_transaction
     FOR SELECT
-    USING (private.has_project_access(project_id));
+    USING (
+        private.has_project_access_direct(project_id, auth.uid())
+    );
 
 CREATE POLICY "Project members can create material transactions"
     ON construction_mgr.material_transaction
     FOR INSERT
-    WITH CHECK (private.has_project_access(project_id));
+    WITH CHECK (
+        private.has_project_access_direct(project_id, auth.uid())
+    );
 
--- Comment policies
+-- ==============================================================================
+-- COMMENT POLICIES
+-- ==============================================================================
+
 CREATE POLICY "Users can view comments for entities they have access to"
     ON construction_mgr.comment
     FOR SELECT
     USING (
-        (entity_type = 'project' AND private.has_project_access(entity_id::uuid)) OR
-        (entity_type = 'task' AND private.has_project_access(
-            (SELECT project_id FROM construction_mgr.be_task WHERE id = entity_id::uuid)
-        )) OR
-        (entity_type = 'phase' AND private.has_project_access(
-            (SELECT project_id FROM construction_mgr.be_phase WHERE id = entity_id::uuid)
-        ))
+        CASE entity_type
+            WHEN 'project' THEN 
+                private.has_project_access_direct(entity_id::uuid, auth.uid())
+            WHEN 'task' THEN EXISTS (
+                SELECT 1 FROM construction_mgr.be_task t 
+                WHERE t.id = entity_id::uuid 
+                AND private.has_project_access_direct(t.project_id, auth.uid())
+            )
+            WHEN 'phase' THEN EXISTS (
+                SELECT 1 FROM construction_mgr.be_phase p 
+                WHERE p.id = entity_id::uuid 
+                AND private.has_project_access_direct(p.project_id, auth.uid())
+            )
+            ELSE FALSE
+        END
     );
 
 CREATE POLICY "Users can create comments for entities they have access to"
     ON construction_mgr.comment
     FOR INSERT
     WITH CHECK (
-        (entity_type = 'project' AND private.has_project_access(entity_id::uuid)) OR
-        (entity_type = 'task' AND private.has_project_access(
-            (SELECT project_id FROM construction_mgr.be_task WHERE id = entity_id::uuid)
-        )) OR
-        (entity_type = 'phase' AND private.has_project_access(
-            (SELECT project_id FROM construction_mgr.be_phase WHERE id = entity_id::uuid)
-        ))
+        CASE entity_type
+            WHEN 'project' THEN 
+                private.has_project_access_direct(entity_id::uuid, auth.uid())
+            WHEN 'task' THEN EXISTS (
+                SELECT 1 FROM construction_mgr.be_task t 
+                WHERE t.id = entity_id::uuid 
+                AND private.has_project_access_direct(t.project_id, auth.uid())
+            )
+            WHEN 'phase' THEN EXISTS (
+                SELECT 1 FROM construction_mgr.be_phase p 
+                WHERE p.id = entity_id::uuid 
+                AND private.has_project_access_direct(p.project_id, auth.uid())
+            )
+            ELSE FALSE
+        END
     );
 
--- Phase table policies
+-- ==============================================================================
+-- PHASE TABLE POLICIES
+-- ==============================================================================
+
 CREATE POLICY "Users can view phases for projects they have access to"
     ON construction_mgr.be_phase
     FOR SELECT
     USING (
-        private.has_project_access(project_id)
+        private.has_project_access_direct(project_id, auth.uid())
     );
 
 CREATE POLICY "Project owners can manage phases"
     ON construction_mgr.be_phase
     FOR ALL
     USING (
-        project_id IN (
-            SELECT id 
-            FROM construction_mgr.be_project 
-            WHERE owner_id = auth.uid()
-        )
+        private.is_project_owner_direct(project_id, auth.uid())
     );
 
 CREATE POLICY "Project participants with ADMIN role can manage phases"
     ON construction_mgr.be_phase
     FOR ALL
     USING (
-        private.check_user_project_role(
+        private.check_user_project_role_direct(
             project_id, 
             auth.uid(), 
             ARRAY['ADMIN']::construction_mgr.user_role[]
@@ -166,7 +198,7 @@ CREATE POLICY "Project participants with CONTRACTOR role can update phases"
     ON construction_mgr.be_phase
     FOR UPDATE
     USING (
-        private.check_user_project_role(
+        private.check_user_project_role_direct(
             project_id, 
             auth.uid(), 
             ARRAY['CONTRACTOR']::construction_mgr.user_role[]
@@ -178,34 +210,33 @@ CREATE POLICY "Only members with VIEW_BUDGET permission can see phase budget det
     ON construction_mgr.be_phase
     FOR SELECT
     USING (
-        auth.uid() = (SELECT owner_id FROM construction_mgr.be_project WHERE id = project_id) OR
-        private.has_permission(project_id, auth.uid(), 'VIEW_BUDGET')
+        private.is_project_owner_direct(project_id, auth.uid()) OR
+        private.has_permission_direct(project_id, auth.uid(), 'VIEW_BUDGET')
     );
 
--- Material table policies
+-- ==============================================================================
+-- MATERIAL TABLE POLICIES
+-- ==============================================================================
+
 CREATE POLICY "Users can view materials for projects they have access to"
     ON construction_mgr.be_material
     FOR SELECT
     USING (
-        private.has_project_access(project_id)
+        private.has_project_access_direct(project_id, auth.uid())
     );
 
 CREATE POLICY "Project owners can manage materials"
     ON construction_mgr.be_material
     FOR ALL
     USING (
-        project_id IN (
-            SELECT id 
-            FROM construction_mgr.be_project 
-            WHERE owner_id = auth.uid()
-        )
+        private.is_project_owner_direct(project_id, auth.uid())
     );
 
 CREATE POLICY "Project participants with ADMIN role can manage materials"
     ON construction_mgr.be_material
     FOR ALL
     USING (
-        private.check_user_project_role(
+        private.check_user_project_role_direct(
             project_id, 
             auth.uid(), 
             ARRAY['ADMIN']::construction_mgr.user_role[]
@@ -216,38 +247,37 @@ CREATE POLICY "Project participants with SUPPLIER role can update materials"
     ON construction_mgr.be_material
     FOR UPDATE
     USING (
-        private.check_user_project_role(
+        private.check_user_project_role_direct(
             project_id, 
             auth.uid(), 
             ARRAY['SUPPLIER']::construction_mgr.user_role[]
         )
     );
 
--- Financial Transaction table policies
+-- ==============================================================================
+-- FINANCIAL TRANSACTION TABLE POLICIES
+-- ==============================================================================
+
 CREATE POLICY "Users can view financial transactions for projects they have access to"
     ON construction_mgr.financial_transaction
     FOR SELECT
     USING (
-        private.has_project_access(project_id) AND
-        private.has_permission(project_id, auth.uid(), 'VIEW_FINANCIALS')
+        private.has_project_access_direct(project_id, auth.uid()) AND
+        private.has_permission_direct(project_id, auth.uid(), 'VIEW_FINANCIALS')
     );
 
 CREATE POLICY "Project owners can manage financial transactions"
     ON construction_mgr.financial_transaction
     FOR ALL
     USING (
-        project_id IN (
-            SELECT id 
-            FROM construction_mgr.be_project 
-            WHERE owner_id = auth.uid()
-        )
+        private.is_project_owner_direct(project_id, auth.uid())
     );
 
 CREATE POLICY "Project participants with ADMIN role can manage financial transactions"
     ON construction_mgr.financial_transaction
     FOR ALL
     USING (
-        private.check_user_project_role(
+        private.check_user_project_role_direct(
             project_id, 
             auth.uid(), 
             ARRAY['ADMIN']::construction_mgr.user_role[]
@@ -258,7 +288,7 @@ CREATE POLICY "Project participants with CONTRACTOR role can create financial tr
     ON construction_mgr.financial_transaction
     FOR INSERT
     WITH CHECK (
-        private.check_user_project_role(
+        private.check_user_project_role_direct(
             project_id, 
             auth.uid(), 
             ARRAY['CONTRACTOR']::construction_mgr.user_role[]
@@ -269,37 +299,36 @@ CREATE POLICY "Project participants with CONTRACTOR role can update financial tr
     ON construction_mgr.financial_transaction
     FOR UPDATE
     USING (
-        private.check_user_project_role(
+        private.check_user_project_role_direct(
             project_id, 
             auth.uid(), 
             ARRAY['CONTRACTOR']::construction_mgr.user_role[]
         )
     );
 
--- Document table policies
+-- ==============================================================================
+-- DOCUMENT TABLE POLICIES
+-- ==============================================================================
+
 CREATE POLICY "Users can view documents for projects they have access to"
     ON construction_mgr.be_document
     FOR SELECT
     USING (
-        private.has_project_access(project_id)
+        private.has_project_access_direct(project_id, auth.uid())
     );
 
 CREATE POLICY "Project owners can manage documents"
     ON construction_mgr.be_document
     FOR ALL
     USING (
-        project_id IN (
-            SELECT id 
-            FROM construction_mgr.be_project 
-            WHERE owner_id = auth.uid()
-        )
+        private.is_project_owner_direct(project_id, auth.uid())
     );
 
 CREATE POLICY "Project participants with ADMIN role can manage documents"
     ON construction_mgr.be_document
     FOR ALL
     USING (
-        private.check_user_project_role(
+        private.check_user_project_role_direct(
             project_id, 
             auth.uid(), 
             ARRAY['ADMIN']::construction_mgr.user_role[]
@@ -310,10 +339,13 @@ CREATE POLICY "Project participants with any role can create documents"
     ON construction_mgr.be_document
     FOR INSERT
     WITH CHECK (
-        private.has_project_access(project_id)
+        private.has_project_access_direct(project_id, auth.uid())
     );
 
--- Notification table policies
+-- ==============================================================================
+-- NOTIFICATION TABLE POLICIES
+-- ==============================================================================
+
 CREATE POLICY "Users can view their own notifications"
     ON construction_mgr.be_notification
     FOR SELECT
@@ -324,47 +356,53 @@ CREATE POLICY "Users can update their own notifications"
     FOR UPDATE
     USING (user_id = auth.uid());
 
--- Audit Log table policies
+-- ==============================================================================
+-- AUDIT LOG TABLE POLICIES
+-- ==============================================================================
+
 CREATE POLICY "Users can view audit logs for their own projects"
     ON construction_mgr.be_audit_log
     FOR SELECT
     USING (
-        details->>'project_id' IN (
-            SELECT id::text 
-            FROM construction_mgr.be_project 
-            WHERE owner_id = auth.uid()
-        )
+        -- Check if the audit log relates to a project the user owns/participates in
+        CASE 
+            WHEN entity_type = 'project' THEN 
+                private.has_project_access_direct(entity_id::uuid, auth.uid())
+            WHEN details ? 'project_id' THEN 
+                private.has_project_access_direct((details->>'project_id')::uuid, auth.uid())
+            ELSE 
+                user_id = auth.uid()  -- Default to user's own actions
+        END
     );
 
 CREATE POLICY "Admins can view all audit logs"
     ON construction_mgr.be_audit_log
     FOR SELECT
-    USING (private.is_admin());
+    USING (private.is_admin_direct(auth.uid()));
 
--- Task table policies
+-- ==============================================================================
+-- TASK TABLE POLICIES
+-- ==============================================================================
+
 CREATE POLICY "Users can view tasks for projects they have access to"
     ON construction_mgr.be_task
     FOR SELECT
     USING (
-        private.has_project_access(project_id)
+        private.has_project_access_direct(project_id, auth.uid())
     );
 
 CREATE POLICY "Project owners can manage tasks"
     ON construction_mgr.be_task
     FOR ALL
     USING (
-        project_id IN (
-            SELECT id 
-            FROM construction_mgr.be_project 
-            WHERE owner_id = auth.uid()
-        )
+        private.is_project_owner_direct(project_id, auth.uid())
     );
 
 CREATE POLICY "Project participants with ADMIN role can manage tasks"
     ON construction_mgr.be_task
     FOR ALL
     USING (
-        private.check_user_project_role(
+        private.check_user_project_role_direct(
             project_id, 
             auth.uid(), 
             ARRAY['ADMIN']::construction_mgr.user_role[]
@@ -375,7 +413,7 @@ CREATE POLICY "Project participants with CONTRACTOR role can manage tasks"
     ON construction_mgr.be_task
     FOR ALL
     USING (
-        private.check_user_project_role(
+        private.check_user_project_role_direct(
             project_id, 
             auth.uid(), 
             ARRAY['CONTRACTOR']::construction_mgr.user_role[]
@@ -389,15 +427,19 @@ CREATE POLICY "Users can update tasks assigned to them"
         assigned_to = auth.uid()
     );
 
--- Quality Inspection table policies
+-- ==============================================================================
+-- QUALITY INSPECTION TABLE POLICIES
+-- ==============================================================================
+
 CREATE POLICY "Users can view quality inspections for phases they have access to"
     ON construction_mgr.be_quality_inspection
     FOR SELECT
     USING (
-        phase_id IN (
-            SELECT id
-            FROM construction_mgr.be_phase
-            WHERE private.has_project_access(project_id)
+        EXISTS (
+            SELECT 1
+            FROM construction_mgr.be_phase p
+            WHERE p.id = phase_id
+            AND private.has_project_access_direct(p.project_id, auth.uid())
         )
     );
 
@@ -408,8 +450,7 @@ CREATE POLICY "Project owners can manage quality inspections"
         phase_id IN (
             SELECT p.id
             FROM construction_mgr.be_phase p
-            JOIN construction_mgr.be_project pr ON p.project_id = pr.id
-            WHERE pr.owner_id = auth.uid()
+            WHERE private.is_project_owner_direct(p.project_id, auth.uid())
         )
     );
 
@@ -420,9 +461,8 @@ CREATE POLICY "Project participants with ADMIN role can manage quality inspectio
         phase_id IN (
             SELECT p.id
             FROM construction_mgr.be_phase p
-            JOIN construction_mgr.be_project pr ON p.project_id = pr.id
-            WHERE private.check_user_project_role(
-                pr.id,
+            WHERE private.check_user_project_role_direct(
+                p.project_id,
                 auth.uid(),
                 ARRAY['ADMIN']::construction_mgr.user_role[]
             )
@@ -443,14 +483,17 @@ CREATE POLICY "Project participants with CONTRACTOR role can create and update i
         phase_id IN (
             SELECT p.id
             FROM construction_mgr.be_phase p
-            JOIN construction_mgr.be_project pr ON p.project_id = pr.id
-            WHERE private.check_user_project_role(
-                pr.id,
+            WHERE private.check_user_project_role_direct(
+                p.project_id,
                 auth.uid(),
                 ARRAY['CONTRACTOR']::construction_mgr.user_role[]
             )
         )
     );
 
--- Note: Consolidated financial policies moved to dedicated permissions file
--- This policy is superseded by the more comprehensive budget access controls
+-- ==============================================================================
+-- MIGRATION COMPLETE
+-- ==============================================================================
+
+-- Add comment to track this change
+COMMENT ON SCHEMA construction_mgr IS 'RLS policies updated with recursion-safe direct functions to prevent infinite loops in policy evaluation.';

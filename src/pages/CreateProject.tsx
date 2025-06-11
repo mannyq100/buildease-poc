@@ -14,6 +14,9 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cn } from '@/utils/core/ui';
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabase";
+import { createProject, validateProjectData } from "@/services/projectCreationService";
+import { useProjectFormAutoSave } from "@/hooks/useProjectFormAutoSave";
+import { calculateFormProgress, validateStepData } from "@/utils/projectFormUtils";
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -202,7 +205,14 @@ export function CreateProject() {
     mode: 'onChange',
   });
   
-  const { handleSubmit, trigger, formState: { errors, isValid } } = methods;
+  const { handleSubmit, trigger, watch, formState: { isDirty } } = methods;
+  
+  // Auto-save functionality
+  const { clearSavedData } = useProjectFormAutoSave(watch, isDirty);
+  
+  // Calculate dynamic progress based on form completion
+  const formData = watch();
+  const formProgress = calculateFormProgress(formData);
   
   // Handle next step navigation
   const handleNext = async () => {
@@ -235,6 +245,17 @@ export function CreateProject() {
     
     // Validate the fields for the current step
     const isStepValid = await trigger(fieldsToValidate as any);
+    
+    // Additionally validate using our utility function
+    const stepErrors = validateStepData(formData, currentStep);
+    if (stepErrors.length > 0) {
+      toast({
+        title: "Please check your inputs",
+        description: stepErrors[0], // Show first error
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (isStepValid) {
       // If validation passes, move to next step
@@ -270,49 +291,39 @@ export function CreateProject() {
         throw new Error('User not authenticated');
       }
       
-      // Prepare project data
-      const projectData = {
-        ...data,
-        user_id: userData.user.id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        status: 'draft',
-        expected_start_date: data.expectedStartDate ? new Date(data.expectedStartDate).toISOString() : null,
-        // Convert array fields to PostgreSQL compatible format
-        special_features: data.specialFeatures || [],
-        sustainability_features: data.sustainabilityFeatures || [],
-        images: data.images || []
-      };
+      // Validate form data
+      const validation = validateProjectData(data);
+      if (!validation.isValid) {
+        throw new Error(validation.errors.join(', '));
+      }
       
-      // Insert project into database
-      const { data: insertedProject, error: insertError } = await supabase
-        .from('projects')
-        .insert([
-          projectData
-        ])
-        .select();
+      // Create project using the service
+      const result = await createProject(data, userData.user.id);
       
-      if (insertError) {
-        console.error('Error inserting project:', insertError);
-        throw new Error(`Database error: ${insertError.message}`);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create project');
       }
       
       // Show success toast
       toast({
         title: "Project created successfully!",
         description: "Your project has been saved and is ready for AI generation.",
-        variant: "success",
       });
+      
+      // Clear auto-saved data on successful submission
+      clearSavedData();
       
       // Navigate to dashboard or project details page
       navigate('/dashboard');
-    } catch (error: any) {
+      
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "There was a problem creating your project. Please try again.";
       console.error('Error submitting form:', error);
       
       // Show error toast
       toast({
         title: "Error creating project",
-        description: error.message || "There was a problem creating your project. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -428,9 +439,14 @@ export function CreateProject() {
           <div className="max-w-2xl mx-auto">
             <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-400 mb-3">
               <span className="font-medium font-inter">Step {currentStep} of {totalSteps}</span>
-              <span className="text-xs px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-full font-opensans">
-                {Math.round(progress)}% Complete
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-full font-opensans">
+                  {Math.round(progress)}% Steps
+                </span>
+                <span className="text-xs px-2 py-1 bg-[#2B6CB0]/10 dark:bg-[#2B6CB0]/20 text-[#2B6CB0] rounded-full font-opensans">
+                  {formProgress}% Complete
+                </span>
+              </div>
             </div>
             <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
               <div 

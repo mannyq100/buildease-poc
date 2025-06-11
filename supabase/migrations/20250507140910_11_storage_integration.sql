@@ -8,22 +8,16 @@ DROP TRIGGER IF EXISTS on_document_created ON storage.objects;
 CREATE OR REPLACE FUNCTION private.is_storage_member(project_id TEXT, user_id UUID, required_roles TEXT[] DEFAULT NULL)
 RETURNS BOOLEAN AS $$
 BEGIN
-    -- This function bypasses RLS because it's SECURITY DEFINER
-    -- It directly checks project membership without causing infinite recursion
+    -- Use our direct functions to avoid RLS recursion completely
     IF required_roles IS NULL THEN
-        RETURN EXISTS (
-            SELECT 1
-            FROM construction_mgr.be_project_member
-            WHERE project_id::TEXT = is_storage_member.project_id
-            AND user_id = is_storage_member.user_id
-        );
+        -- Check if user has any access to the project (owner or member)
+        RETURN private.has_project_access_direct(project_id::UUID, user_id);
     ELSE
-        RETURN EXISTS (
-            SELECT 1
-            FROM construction_mgr.be_project_member
-            WHERE project_id::TEXT = is_storage_member.project_id
-            AND user_id = is_storage_member.user_id
-            AND role = ANY(required_roles)
+        -- Check if user has specific roles on the project
+        RETURN private.check_user_project_role_direct(
+            project_id::UUID, 
+            user_id, 
+            required_roles::construction_mgr.user_role[]
         );
     END IF;
 END;
@@ -70,7 +64,10 @@ ON storage.objects FOR INSERT
 TO authenticated
 WITH CHECK (
   bucket_id = 'profiles' AND
-  (storage.foldername(name))[1] = auth.uid()::text
+  (storage.foldername(name))[1] = auth.uid()::text AND
+  -- Validate file path format: {user_id}/{filename}
+  array_length(storage.foldername(name), 1) = 1 AND
+  (storage.foldername(name))[1] ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
 );
 
 -- 3. Allow users to update their own files
@@ -106,6 +103,9 @@ CREATE POLICY "Project members can insert project documents"
 ON storage.objects FOR INSERT
 WITH CHECK (
     bucket_id = 'documents' AND
+    -- Validate file path format: {project_id}/{filename}
+    array_length(storage.foldername(name), 1) = 1 AND
+    (storage.foldername(name))[1] ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' AND
     -- Use the helper function that bypasses RLS
     private.is_storage_member((storage.foldername(name))[1], auth.uid())
 );

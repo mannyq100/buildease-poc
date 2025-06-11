@@ -96,8 +96,8 @@ CREATE TABLE construction_mgr.be_project_member (
     role construction_mgr.user_role NOT NULL,
     joined_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (project_id, user_id),
-    CONSTRAINT fk_project FOREIGN KEY (project_id) REFERENCES construction_mgr.be_project(id) ON DELETE CASCADE,
-    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES construction_mgr.be_user(id) ON DELETE CASCADE
+    CONSTRAINT fk_project_member_project FOREIGN KEY (project_id) REFERENCES construction_mgr.be_project(id) ON DELETE CASCADE,
+    CONSTRAINT fk_project_member_user FOREIGN KEY (user_id) REFERENCES construction_mgr.be_user(id) ON DELETE CASCADE
 );
 
 -- Enable RLS on be_project_member table
@@ -125,7 +125,7 @@ CREATE TABLE construction_mgr.be_phase (
     }',
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_project FOREIGN KEY (project_id) REFERENCES construction_mgr.be_project(id) ON DELETE CASCADE
+    CONSTRAINT fk_phase_project FOREIGN KEY (project_id) REFERENCES construction_mgr.be_project(id) ON DELETE CASCADE
 );
 
 -- Enable RLS on be_phase table
@@ -156,8 +156,8 @@ CREATE TABLE construction_mgr.be_material (
     lead_time_days INTEGER,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_project FOREIGN KEY (project_id) REFERENCES construction_mgr.be_project(id) ON DELETE CASCADE,
-    CONSTRAINT fk_supplier FOREIGN KEY (supplier_id) REFERENCES construction_mgr.be_user(id) ON DELETE SET NULL
+    CONSTRAINT fk_material_project FOREIGN KEY (project_id) REFERENCES construction_mgr.be_project(id) ON DELETE CASCADE,
+    CONSTRAINT fk_material_supplier FOREIGN KEY (supplier_id) REFERENCES construction_mgr.be_user(id) ON DELETE SET NULL
 );
 
 -- Enable RLS on be_material table
@@ -197,11 +197,13 @@ CREATE TABLE construction_mgr.financial_transaction (
     approved_at TIMESTAMPTZ,
     notes TEXT,
     details JSONB NOT NULL DEFAULT '{}',
+    created_by UUID,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_project FOREIGN KEY (project_id) REFERENCES construction_mgr.be_project(id) ON DELETE CASCADE,
-    CONSTRAINT fk_phase FOREIGN KEY (phase_id) REFERENCES construction_mgr.be_phase(id) ON DELETE SET NULL,
-    CONSTRAINT fk_approved_by FOREIGN KEY (approved_by) REFERENCES construction_mgr.be_user(id) ON DELETE SET NULL
+    CONSTRAINT fk_financial_project FOREIGN KEY (project_id) REFERENCES construction_mgr.be_project(id) ON DELETE CASCADE,
+    CONSTRAINT fk_financial_phase FOREIGN KEY (phase_id) REFERENCES construction_mgr.be_phase(id) ON DELETE SET NULL,
+    CONSTRAINT fk_financial_approved_by FOREIGN KEY (approved_by) REFERENCES construction_mgr.be_user(id) ON DELETE SET NULL,
+    CONSTRAINT fk_financial_created_by FOREIGN KEY (created_by) REFERENCES construction_mgr.be_user(id) ON DELETE SET NULL
 );
 
 -- Enable RLS on financial_transaction table
@@ -224,13 +226,13 @@ CREATE TABLE construction_mgr.material_transaction (
     notes TEXT,
     created_by UUID,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_material FOREIGN KEY (material_id) 
+    CONSTRAINT fk_material_transaction_material FOREIGN KEY (material_id) 
         REFERENCES construction_mgr.be_material(id) ON DELETE CASCADE,
-    CONSTRAINT fk_project FOREIGN KEY (project_id) 
+    CONSTRAINT fk_material_transaction_project FOREIGN KEY (project_id) 
         REFERENCES construction_mgr.be_project(id) ON DELETE SET NULL,
-    CONSTRAINT fk_created_by FOREIGN KEY (created_by) 
+    CONSTRAINT fk_material_transaction_created_by FOREIGN KEY (created_by) 
         REFERENCES construction_mgr.be_user(id) ON DELETE SET NULL,
-    CONSTRAINT fk_reference FOREIGN KEY (reference_id) 
+    CONSTRAINT fk_material_transaction_reference FOREIGN KEY (reference_id) 
         REFERENCES construction_mgr.financial_transaction(id) ON DELETE SET NULL
 );
 
@@ -280,7 +282,7 @@ CREATE TABLE construction_mgr.comment (
     content TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_user FOREIGN KEY (user_id) 
+    CONSTRAINT fk_comment_user FOREIGN KEY (user_id) 
         REFERENCES construction_mgr.be_user(id)
 );
 
@@ -305,8 +307,8 @@ CREATE TABLE construction_mgr.be_document (
     metadata JSONB NOT NULL DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_project FOREIGN KEY (project_id) REFERENCES construction_mgr.be_project(id) ON DELETE CASCADE,
-    CONSTRAINT fk_phase FOREIGN KEY (phase_id) REFERENCES construction_mgr.be_phase(id) ON DELETE SET NULL
+    CONSTRAINT fk_document_project FOREIGN KEY (project_id) REFERENCES construction_mgr.be_project(id) ON DELETE CASCADE,
+    CONSTRAINT fk_document_phase FOREIGN KEY (phase_id) REFERENCES construction_mgr.be_phase(id) ON DELETE SET NULL
 );
 
 -- Enable RLS on be_document table
@@ -328,7 +330,7 @@ CREATE TABLE construction_mgr.be_notification (
     is_read BOOLEAN NOT NULL DEFAULT FALSE,
     data JSONB NOT NULL DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES construction_mgr.be_user(id) ON DELETE CASCADE
+    CONSTRAINT fk_notification_user FOREIGN KEY (user_id) REFERENCES construction_mgr.be_user(id) ON DELETE CASCADE
 );
 
 -- Enable RLS on be_notification table
@@ -345,7 +347,7 @@ CREATE TABLE construction_mgr.be_audit_log (
     ip_address VARCHAR(45),
     user_agent TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES construction_mgr.be_user(id) ON DELETE SET NULL
+    CONSTRAINT fk_audit_user FOREIGN KEY (user_id) REFERENCES construction_mgr.be_user(id) ON DELETE SET NULL
 );
 
 -- Enable RLS on be_audit_log table
@@ -372,12 +374,12 @@ CREATE TABLE construction_mgr.be_task (
     comments JSONB DEFAULT '[]',
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT chk_task_dates CHECK (start_date <= due_date),
-    CONSTRAINT fk_project FOREIGN KEY (project_id) REFERENCES construction_mgr.be_project(id) ON DELETE CASCADE,
-    CONSTRAINT fk_phase FOREIGN KEY (phase_id) REFERENCES construction_mgr.be_phase(id) ON DELETE CASCADE,
-    CONSTRAINT fk_created_by FOREIGN KEY (created_by) REFERENCES construction_mgr.be_user(id),
-    CONSTRAINT fk_assigned_to FOREIGN KEY (assigned_to) REFERENCES construction_mgr.be_user(id),
-    CONSTRAINT fk_completed_by FOREIGN KEY (completed_by) REFERENCES construction_mgr.be_user(id)
+    CONSTRAINT chk_task_dates CHECK (start_date IS NULL OR due_date IS NULL OR start_date <= due_date),
+    CONSTRAINT fk_task_project FOREIGN KEY (project_id) REFERENCES construction_mgr.be_project(id) ON DELETE CASCADE,
+    CONSTRAINT fk_task_phase FOREIGN KEY (phase_id) REFERENCES construction_mgr.be_phase(id) ON DELETE CASCADE,
+    CONSTRAINT fk_task_created_by FOREIGN KEY (created_by) REFERENCES construction_mgr.be_user(id),
+    CONSTRAINT fk_task_assigned_to FOREIGN KEY (assigned_to) REFERENCES construction_mgr.be_user(id),
+    CONSTRAINT fk_task_completed_by FOREIGN KEY (completed_by) REFERENCES construction_mgr.be_user(id)
 );
 
 -- Enable RLS on be_task table
@@ -403,9 +405,9 @@ CREATE TABLE construction_mgr.be_quality_inspection (
     attachments JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_phase FOREIGN KEY (phase_id) REFERENCES construction_mgr.be_phase(id) ON DELETE CASCADE,
-    CONSTRAINT fk_task FOREIGN KEY (task_id) REFERENCES construction_mgr.be_task(id) ON DELETE CASCADE,
-    CONSTRAINT fk_inspector FOREIGN KEY (inspector_id) REFERENCES construction_mgr.be_user(id)
+    CONSTRAINT fk_inspection_phase FOREIGN KEY (phase_id) REFERENCES construction_mgr.be_phase(id) ON DELETE CASCADE,
+    CONSTRAINT fk_inspection_task FOREIGN KEY (task_id) REFERENCES construction_mgr.be_task(id) ON DELETE CASCADE,
+    CONSTRAINT fk_inspection_inspector FOREIGN KEY (inspector_id) REFERENCES construction_mgr.be_user(id)
 );
 
 -- Enable RLS on be_quality_inspection table
@@ -414,5 +416,29 @@ ALTER TABLE construction_mgr.be_quality_inspection ENABLE ROW LEVEL SECURITY;
 -- Create trigger for updating the updated_at column
 CREATE TRIGGER update_quality_inspection_modtime
     BEFORE UPDATE ON construction_mgr.be_quality_inspection
+    FOR EACH ROW
+    EXECUTE FUNCTION construction_mgr.update_updated_at_column();
+
+-- Project Permissions table (moved from 07_permissions.sql to fix dependency order)
+CREATE TABLE construction_mgr.be_project_permission (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    project_id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    permission construction_mgr.permission_type NOT NULL,
+    granted_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    granted_by UUID NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    CONSTRAINT fk_permission_project FOREIGN KEY (project_id) REFERENCES construction_mgr.be_project(id) ON DELETE CASCADE,
+    CONSTRAINT fk_permission_user FOREIGN KEY (user_id) REFERENCES construction_mgr.be_user(id) ON DELETE CASCADE,
+    CONSTRAINT fk_permission_granted_by FOREIGN KEY (granted_by) REFERENCES construction_mgr.be_user(id),
+    CONSTRAINT unique_user_project_permission UNIQUE (project_id, user_id, permission)
+);
+
+-- Enable RLS on be_project_permission table
+ALTER TABLE construction_mgr.be_project_permission ENABLE ROW LEVEL SECURITY;
+
+-- Create trigger for updating the updated_at column
+CREATE TRIGGER update_project_permission_modtime
+    BEFORE UPDATE ON construction_mgr.be_project_permission
     FOR EACH ROW
     EXECUTE FUNCTION construction_mgr.update_updated_at_column();

@@ -6,10 +6,9 @@
 import React from 'react';
 import { useFormContext } from 'react-hook-form';
 import { ProjectFormValues } from '../../pages/CreateProject';
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@/components/ui/form';
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MapPin, Ruler } from 'lucide-react';
 
@@ -203,7 +202,7 @@ export function LocationPlotForm() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {REGIONS_BY_COUNTRY[selectedCountry as keyof typeof REGIONS_BY_COUNTRY]?.map((region) => (
+                    {REGIONS_BY_COUNTRY[selectedCountry as keyof typeof REGIONS_BY_COUNTRY]?.map((region: { value: string; label: string }) => (
                       <SelectItem key={region.value} value={region.value}>
                         {region.label}
                       </SelectItem>

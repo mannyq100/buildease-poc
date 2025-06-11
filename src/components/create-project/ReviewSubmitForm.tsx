@@ -40,11 +40,8 @@ const formatCurrency = (value: string, currencyCode: string) => {
 };
 
 export function ReviewSubmitForm() {
-  const { getValues, watch } = useFormContext<ProjectFormValues>();
+  const { getValues } = useFormContext<ProjectFormValues>();
   const formValues = getValues();
-  
-  // Watch for any form changes to update the review
-  const watchAllFields = watch();
   
   // Format the expected start date
   const formattedStartDate = formValues.expectedStartDate ? 

@@ -61,17 +61,32 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isLoadingProfile, setIsLoadingProfile] = useState<boolean>(true);
   const [authError, setAuthError] = useState<Error | null>(null);
-  const [redirectToLogin, setRedirectToLogin] = useState<boolean>(false);
   
   // Use navigate for redirects
   const navigate = useNavigate();
 
-  // Fetch the user profile using the edge function
+  // Profile cache key with 5-minute expiration
+  const PROFILE_CACHE_KEY = 'buildease_profile_cache';
+  const CACHE_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
+
+  // Fetch the user profile using the edge function with caching
   const fetchUserProfile = async (userId: string) => {
     try {
       setIsLoadingProfile(true);
       
-      // Call the edge function to get complete user profile in one API call
+      // Check cache first for better performance
+      const cachedProfile = localStorage.getItem(`${PROFILE_CACHE_KEY}_${userId}`);
+      if (cachedProfile) {
+        const parsed = JSON.parse(cachedProfile);
+        // Only use cache if it's not expired
+        if (Date.now() - parsed.timestamp < CACHE_EXPIRY_MS) {
+          setProfile(parsed.profile);
+          setIsLoadingProfile(false);
+          return;
+        }
+      }
+      
+      // Call the edge function to get complete user profile
       const { data: profileData, error: profileError } = await supabase
         .schema('construction_mgr')
         .rpc('get_user_profile', { user_uuid: userId });
@@ -79,14 +94,12 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       if (profileError) {
         console.error('Error fetching user profile:', profileError);
         setProfile(null);
-        setIsLoadingProfile(false);
         return;
       }
 
       if (!profileData) {
         console.error('No user profile found');
         setProfile(null);
-        setIsLoadingProfile(false);
         return;
       }
 
@@ -110,12 +123,30 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       };
 
       setProfile(userProfile);
+      
+      // Cache the profile for future use
+      localStorage.setItem(
+        `${PROFILE_CACHE_KEY}_${userId}`,
+        JSON.stringify({
+          profile: userProfile,
+          timestamp: Date.now()
+        })
+      );
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
       setProfile(null);
     } finally {
       setIsLoadingProfile(false);
     }
+  };
+  
+  // Clear profile cache efficiently
+  const clearProfileCache = () => {
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith(PROFILE_CACHE_KEY)) {
+        localStorage.removeItem(key);
+      }
+    });
   };
 
   // Initialize auth state on component mount
@@ -136,6 +167,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
           if (isMounted) {
             setSession(null);
             setUser(null);
+            clearProfileCache();
           }
           return;
         }
@@ -162,12 +194,13 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       
       // Setup the auth state change listener
       const { data } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-        console.log('Auth state changed:', event);
-        
         if (!isMounted) return;
         
-        // Temporarily set loading to true during auth state changes
-        setIsLoading(true);
+        // Only set loading for critical auth events
+        const criticalEvents = ['SIGNED_IN', 'SIGNED_OUT', 'USER_UPDATED'];
+        if (criticalEvents.includes(event)) {
+          setIsLoading(true);
+        }
         
         try {
           setSession(newSession);
@@ -180,8 +213,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
             setProfile(null);
             
             if (event === 'SIGNED_OUT') {
-              // Additional cleanup for sign out
-              console.log('User signed out');
+              clearProfileCache();
             }
           }
         } catch (error) {
@@ -351,14 +383,14 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
 
   // Sign out
   const signOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      setProfile(null);
-      setSession(null);
-      setUser(null);
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
+    // Clear any auth errors before sign out
+    setAuthError(null);
+    
+    await supabase.auth.signOut();
+    setSession(null);
+    setUser(null);
+    setProfile(null);
+    clearProfileCache();
   };
 
   // Update user profile in construction_mgr.be_user
@@ -429,15 +461,24 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
           
           // Update the profile state
           setProfile(updatedProfile);
+          
+          // Update the profile cache with the latest data
+          if (user) {
+            localStorage.setItem(
+              `${PROFILE_CACHE_KEY}_${user.id}`,
+              JSON.stringify({
+                profile: updatedProfile,
+                timestamp: Date.now()
+              })
+            );
+          }
         }
       } else {
         // No fields to update
         return { error: null };
       }
 
-      // 4. Also refresh profile data from database to ensure consistency
-      // This includes any trigger-based updates or side effects
-      await fetchUserProfile(user.id);
+      // We've already updated the cache and local state, no need to fetch again
       return { error: null };
     } catch (error) {
       console.error('Error updating profile:', error);

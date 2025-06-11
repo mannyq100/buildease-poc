@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
-import { Building, Home, Factory, Wrench, Store, Hammer, User } from 'lucide-react';
+import { Building, Home, Store, Hammer, User } from 'lucide-react';
 
 
 // Project type options with better icons

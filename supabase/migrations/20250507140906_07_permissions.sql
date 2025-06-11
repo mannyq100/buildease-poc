@@ -22,27 +22,9 @@ ALTER TYPE construction_mgr.permission_type ADD VALUE IF NOT EXISTS 'MANAGE_CONT
 ALTER TYPE construction_mgr.permission_type ADD VALUE IF NOT EXISTS 'VIEW_SUPPLIERS';
 ALTER TYPE construction_mgr.permission_type ADD VALUE IF NOT EXISTS 'MANAGE_SUPPLIERS';
 ALTER TYPE construction_mgr.permission_type ADD VALUE IF NOT EXISTS 'GENERATE_REPORTS';
-ALTER TYPE construction_mgr.permission_type ADD VALUE IF NOT EXISTS 'VIEW_FINANCIALS';
-ALTER TYPE construction_mgr.permission_type ADD VALUE IF NOT EXISTS 'VIEW_BUDGET';
-ALTER TYPE construction_mgr.permission_type ADD VALUE IF NOT EXISTS 'MANAGE_USERS';
+-- Note: VIEW_FINANCIALS, VIEW_BUDGET, and MANAGE_USERS already exist in 03_enums.sql
 
--- Create project permissions table for granular access control
-CREATE TABLE construction_mgr.be_project_permission (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    project_id UUID NOT NULL,
-    user_id UUID NOT NULL,
-    permission construction_mgr.permission_type NOT NULL,
-    granted_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    granted_by UUID NOT NULL,
-    active BOOLEAN NOT NULL DEFAULT TRUE,
-    CONSTRAINT fk_project FOREIGN KEY (project_id) REFERENCES construction_mgr.be_project(id) ON DELETE CASCADE,
-    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES construction_mgr.be_user(id) ON DELETE CASCADE,
-    CONSTRAINT fk_granted_by FOREIGN KEY (granted_by) REFERENCES construction_mgr.be_user(id),
-    CONSTRAINT unique_user_project_permission UNIQUE (project_id, user_id, permission)
-);
-
--- Enable RLS on be_project_permission table
-ALTER TABLE construction_mgr.be_project_permission ENABLE ROW LEVEL SECURITY;
+-- Note: Project permissions table moved to 05_tables.sql to fix dependency order
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_permission_project ON construction_mgr.be_project_permission(project_id);
@@ -214,18 +196,8 @@ CREATE POLICY "Only members with VIEW_BUDGET permission can see project budget"
         private.has_permission(id, auth.uid(), 'VIEW_BUDGET')
     );
 
--- RLS policy for financial transaction data
-CREATE POLICY "Only members with VIEW_FINANCIALS permission can see financial transactions"
-    ON construction_mgr.financial_transaction
-    FOR SELECT
-    USING (
-        private.has_permission(project_id, auth.uid(), 'VIEW_FINANCIALS')
-    );
+-- Financial transaction RLS policy moved to 06_rls_policies.sql to avoid conflicts
+-- and updated to use recursion-safe direct functions
 
--- RLS policy for phase budget
-CREATE POLICY "Only members with VIEW_BUDGET permission can see phase budget"
-    ON construction_mgr.be_phase
-    FOR SELECT
-    USING (
-        private.has_permission(project_id, auth.uid(), 'VIEW_BUDGET')
-    );
+-- Phase budget RLS policy moved to 06_rls_policies.sql to avoid conflicts
+-- and updated to use recursion-safe direct functions

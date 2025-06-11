@@ -38,7 +38,7 @@ import { Materials } from "./pages/Materials";
 import Documents from "./pages/Documents";
 import Expenses from "./pages/Expenses";
 import { Projects } from "./pages/Projects";
-import CreateProject from "./pages/CreateProject";
+import{CreateProject} from "./pages/CreateProject";
 import Settings from './pages/Settings';
 import Messaging from './pages/Messaging';
 import LandingPage from './pages/LandingPage';

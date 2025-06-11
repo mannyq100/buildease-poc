@@ -16,11 +16,11 @@ CREATE INDEX IF NOT EXISTS idx_project_budget ON construction_mgr.be_project USI
 CREATE INDEX IF NOT EXISTS idx_project_search ON construction_mgr.be_project 
     USING gin (to_tsvector('english', coalesce(name, '') || ' ' || coalesce(description, '')));
 
--- Project Member table indexes (renamed from project_user)
+-- Project Member table indexes (renamed from project_user) - optimized for RLS performance
 CREATE INDEX IF NOT EXISTS idx_project_member_user ON construction_mgr.be_project_member (user_id);
 CREATE INDEX IF NOT EXISTS idx_project_member_project ON construction_mgr.be_project_member (project_id);
 CREATE INDEX IF NOT EXISTS idx_project_member_role ON construction_mgr.be_project_member (role);
--- Composite indexes for common queries
+-- Composite indexes for RLS policy performance
 CREATE INDEX IF NOT EXISTS idx_project_member_project_user ON construction_mgr.be_project_member (project_id, user_id);
 CREATE INDEX IF NOT EXISTS idx_project_member_user_role ON construction_mgr.be_project_member (user_id, role);
 
@@ -112,11 +112,11 @@ CREATE INDEX IF NOT EXISTS idx_audit_entity ON construction_mgr.be_audit_log (en
 CREATE INDEX IF NOT EXISTS idx_audit_action ON construction_mgr.be_audit_log (action);
 CREATE INDEX IF NOT EXISTS idx_audit_details ON construction_mgr.be_audit_log USING gin (details);
 
--- Project Permission indexes for financial permissions
--- Commented out as the table does not exist yet
--- CREATE INDEX IF NOT EXISTS idx_permission_financial ON construction_mgr.be_project_permission 
---     (project_id, user_id) 
---     WHERE permission IN ('VIEW_FINANCIALS', 'VIEW_BUDGET') AND active = TRUE;
+-- Project Permission indexes for RLS performance
+CREATE INDEX IF NOT EXISTS idx_project_permission_user_project ON construction_mgr.be_project_permission (user_id, project_id);
+CREATE INDEX IF NOT EXISTS idx_permission_financial ON construction_mgr.be_project_permission 
+    (project_id, user_id) 
+    WHERE permission IN ('VIEW_FINANCIALS', 'VIEW_BUDGET') AND active = TRUE;
 
 -- Task table indexes
 CREATE INDEX IF NOT EXISTS idx_task_project ON construction_mgr.be_task (project_id);
@@ -143,3 +143,15 @@ CREATE INDEX IF NOT EXISTS idx_inspection_status ON construction_mgr.be_quality_
 CREATE INDEX IF NOT EXISTS idx_inspection_checklist ON construction_mgr.be_quality_inspection USING gin (checklist_items);
 CREATE INDEX IF NOT EXISTS idx_inspection_results ON construction_mgr.be_quality_inspection USING gin (results);
 CREATE INDEX IF NOT EXISTS idx_inspection_attachments ON construction_mgr.be_quality_inspection USING gin (attachments);
+
+-- Additional foreign key indexes for performance
+CREATE INDEX IF NOT EXISTS idx_material_supplier ON construction_mgr.be_material (supplier_id);
+CREATE INDEX IF NOT EXISTS idx_financial_approved_by ON construction_mgr.financial_transaction (approved_by);
+CREATE INDEX IF NOT EXISTS idx_financial_created_by ON construction_mgr.financial_transaction (created_by);
+CREATE INDEX IF NOT EXISTS idx_task_created_by ON construction_mgr.be_task (created_by);
+CREATE INDEX IF NOT EXISTS idx_task_completed_by ON construction_mgr.be_task (completed_by);
+CREATE INDEX IF NOT EXISTS idx_permission_granted_by ON construction_mgr.be_project_permission (granted_by);
+
+-- Comment table indexes
+CREATE INDEX IF NOT EXISTS idx_comment_user_id ON construction_mgr.comment (user_id);
+CREATE INDEX IF NOT EXISTS idx_comment_entity ON construction_mgr.comment (entity_type, entity_id);
