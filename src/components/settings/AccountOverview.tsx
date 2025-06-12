@@ -7,18 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Briefcase, Clock, Award, CheckCircle, Shield, Key } from 'lucide-react';
+import type { UserProfile } from '@/types/user';
 
 interface AccountOverviewProps {
-  profile: {
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    projectMemberships?: Array<{
-      projectName: string;
-      role: string;
-      permissions?: string[];
-    }>;
-  } | null;
+  profile: UserProfile | null;
   className?: string;
 }
 
@@ -66,7 +58,9 @@ export function AccountOverview({ profile, className }: AccountOverviewProps) {
                 <span>Active</span>
               </Badge>
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-blue-700 dark:text-blue-400">Basic</p>
+            <p className="text-2xl sm:text-3xl font-bold text-blue-700 dark:text-blue-400">
+              {profile?.tier ? profile.tier.charAt(0).toUpperCase() + profile.tier.slice(1) : 'N/A'}
+            </p>
             <div className="flex items-center gap-1.5 text-xs sm:text-sm text-blue-600/70 dark:text-blue-400/70 mt-2">
               <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
               <span>Renews on {getRenewalDate()}</span>

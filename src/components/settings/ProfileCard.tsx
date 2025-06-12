@@ -14,16 +14,12 @@ import { createPreviewUrl, revokePreviewUrl } from '@/utils/core/fileUpload';
 import { uploadProfilePicture } from '@/utils/core/storageUtils';
 import { useToast } from '@/hooks/use-toast';
 import type { SettingsFormData, ProfileUploadState } from '@/types/settings';
+import type { UserProfile } from '@/types/user';
 
 interface ProfileCardProps {
   formData: SettingsFormData;
   uploadState: ProfileUploadState;
-  profile: {
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    avatarUrl?: string;
-  } | null;
+  profile: UserProfile | null;
   user: {
     id: string;
     email?: string;

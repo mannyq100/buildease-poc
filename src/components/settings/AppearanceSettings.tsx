@@ -11,8 +11,14 @@ import { Separator } from '@/components/ui/separator';
 import { Sun, Moon, Laptop } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import type { SettingsTabProps } from '@/types/settings';
+import type { UserProfile, UserSettings } from '@/types/user';
 
-export function AppearanceSettings({ className }: SettingsTabProps) {
+interface AppearanceSettingsProps extends SettingsTabProps {
+  profile: UserProfile | null;
+  onSave: (settings: Partial<UserSettings>) => void;
+}
+
+export function AppearanceSettings({ onSave, className }: AppearanceSettingsProps) {
   const { theme, setTheme } = useTheme();
 
   const themeOptions = [
@@ -180,6 +186,7 @@ export function AppearanceSettings({ className }: SettingsTabProps) {
             <Button 
               variant="default" 
               className="bg-blue-500 hover:bg-blue-600 text-white dark:bg-blue-600 dark:hover:bg-blue-700 w-full sm:w-auto"
+              onClick={() => onSave({ theme: theme as 'light' | 'dark' | 'system' })}
             >
               Save Appearance Settings
             </Button>

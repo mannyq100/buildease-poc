@@ -21,7 +21,8 @@ import {
   AppearanceSettings,
   SecuritySettings
 } from '@/components/settings';
-import type { SettingsFormData, ProfileUploadState, SettingsTab } from '@/types/settings';
+import type { SettingsFormData, ProfileUploadState, SettingsTab, NotificationSettings as NotificationSettingsType } from '@/types/settings';
+import type { UserSettings } from '@/types/user';
 
 export default function Settings() {
   const { profile, updateProfile, user, isLoadingProfile } = useSupabaseAuth();
@@ -107,20 +108,44 @@ export default function Settings() {
   };
 
   const handleReset = () => {
-    setFormData({
-      firstName: profile?.firstName || '',
-      lastName: profile?.lastName || '',
-      email: profile?.email || '',
-      phone: profile?.phone || '',
-      companyName: profile?.companyName || '',
-      pictureUrl: profile?.avatarUrl || user?.user_metadata?.avatar_url || ''
-    });
+    if (profile && user) {
+      setFormData({
+        firstName: profile.firstName || '',
+        lastName: profile.lastName || '',
+        email: user.email || '',
+        phone: profile.phone || '',
+        companyName: profile.companyName || '',
+        pictureUrl: profile.avatarUrl || user?.user_metadata?.avatar_url || ''
+      });
+    }
   };
 
   const handleTabChange = (value: string) => {
-    startTransition(() => {
-      setActiveTab(value as SettingsTab);
-    });
+    setActiveTab(value as SettingsTab);
+  };
+
+  const handleSaveSettings = async (newSettings: Partial<UserSettings>) => {
+    if (!profile) return;
+
+    const updatedSettings = {
+      ...profile.settings,
+      ...newSettings,
+    };
+
+    try {
+      await updateProfile({ settings: updatedSettings });
+      toast({
+        title: 'Settings Saved',
+        description: 'Your preferences have been updated successfully.',
+        variant: 'default',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error Saving Settings',
+        description: 'Could not save your preferences. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   if (isLoadingProfile) {
@@ -160,13 +185,13 @@ export default function Settings() {
       value: 'notifications',
       label: 'Notifications',
       icon: Bell,
-      component: <NotificationSettings profile={profile} />
+      component: <NotificationSettings profile={profile} onSave={handleSaveSettings} />
     },
     {
       value: 'appearance',
       label: 'Appearance',
       icon: Moon,
-      component: <AppearanceSettings />
+      component: <AppearanceSettings profile={profile} onSave={handleSaveSettings} />
     },
     {
       value: 'security',
@@ -193,25 +218,41 @@ export default function Settings() {
         >
           <TabsList className="mb-6 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-lg w-full sm:w-auto grid grid-cols-2 sm:grid-cols-4 gap-0">
             {tabConfig.map((tab) => {
-              const IconComponent = tab.icon;
+              const Icon = tab.icon;
               return (
-                <TabsTrigger 
-                  key={tab.value}
-                  value={tab.value} 
-                  className="gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-sm rounded-md text-xs sm:text-sm px-2 sm:px-4 py-2"
-                >
-                  <IconComponent size={16} className="hidden sm:block" />
-                  <span>{tab.label}</span>
+                <TabsTrigger key={tab.value} value={tab.value}>
+                  <Icon className="w-4 h-4 mr-2" />
+                  {tab.label}
                 </TabsTrigger>
               );
             })}
           </TabsList>
 
-          {tabConfig.map((tab) => (
-            <TabsContent key={tab.value} value={tab.value}>
-              {tab.component}
-            </TabsContent>
-          ))}
+          <TabsContent value="account">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <ProfileCard
+                formData={formData}
+                uploadState={uploadState}
+                profile={profile}
+                user={user}
+                isLoadingProfile={isLoadingProfile}
+                onFormDataChange={handleFormDataChange}
+                onUploadStateChange={handleUploadStateChange}
+                onSubmit={handleSubmit}
+                onReset={handleReset}
+              />
+              <AccountOverview profile={profile} className="lg:col-span-1" />
+            </div>
+          </TabsContent>
+          <TabsContent value="notifications">
+            <NotificationSettings profile={profile} onSave={handleSaveSettings} />
+          </TabsContent>
+          <TabsContent value="appearance">
+            <AppearanceSettings profile={profile} onSave={handleSaveSettings} />
+          </TabsContent>
+          <TabsContent value="security">
+            <SecuritySettings />
+          </TabsContent>
         </Tabs>
       </div>
     </div>

@@ -2,7 +2,7 @@
  * NotificationSettings component
  * Handles notification preferences and channel settings
  */
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -10,27 +10,43 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Bell, Mail } from 'lucide-react';
-import type { SettingsTabProps } from '@/types/settings';
+import type { SettingsTabProps, NotificationSettings as NotificationSettingsType } from '@/types/settings';
+import type { UserProfile, UserSettings } from '@/types/user';
 
 interface NotificationSettingsProps extends SettingsTabProps {
-  profile: {
-    settings?: {
-      notifications?: {
-        email?: boolean;
-        push?: boolean;
-      };
-    };
-  } | null;
+  profile: UserProfile | null;
+  onSave: (settings: Partial<UserSettings>) => void;
 }
 
-export function NotificationSettings({ profile, className }: NotificationSettingsProps) {
+const defaultSettings: NotificationSettingsType = {
+  email: true,
+  push: false,
+  projectUpdates: true,
+  taskAssignments: true,
+  phaseCompletions: true,
+  teamMessages: false,
+};
+
+export function NotificationSettings({ profile, onSave, className }: NotificationSettingsProps) {
+  const [settings, setSettings] = useState<NotificationSettingsType>(defaultSettings);
+
+  useEffect(() => {
+    if (profile?.settings?.notifications) {
+      setSettings(prev => ({ ...prev, ...profile.settings.notifications }));
+    }
+  }, [profile]);
+
+  const handleSettingChange = (key: keyof NotificationSettingsType, value: boolean) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+  };
+
   const notificationChannels = [
     {
       id: 'email',
       icon: Mail,
       title: 'Email Notifications',
       description: 'Receive email notifications for important updates',
-      checked: profile?.settings?.notifications?.email || false,
+      checked: settings.email,
       bgColor: 'bg-blue-50 dark:bg-blue-900/20',
       iconColor: 'text-blue-600 dark:text-blue-400'
     },
@@ -39,7 +55,7 @@ export function NotificationSettings({ profile, className }: NotificationSetting
       icon: Bell,
       title: 'Push Notifications',
       description: 'Receive push notifications in your browser',
-      checked: profile?.settings?.notifications?.push || false,
+      checked: settings.push,
       bgColor: 'bg-purple-50 dark:bg-purple-900/20',
       iconColor: 'text-purple-600 dark:text-purple-400'
     }
@@ -50,25 +66,21 @@ export function NotificationSettings({ profile, className }: NotificationSetting
       id: 'projectUpdates',
       title: 'Project Updates',
       description: 'Changes to your projects',
-      defaultChecked: true
     },
     {
       id: 'taskAssignments',
       title: 'Task Assignments',
       description: 'When you\'re assigned a new task',
-      defaultChecked: true
     },
     {
       id: 'phaseCompletions',
       title: 'Phase Completions',
       description: 'When a project phase is completed',
-      defaultChecked: true
     },
     {
       id: 'teamMessages',
       title: 'Team Messages',
       description: 'Messages from team members',
-      defaultChecked: true
     }
   ];
 
@@ -119,7 +131,11 @@ export function NotificationSettings({ profile, className }: NotificationSetting
                     {channel.description}
                   </p>
                 </div>
-                <Switch checked={channel.checked} className="ml-4" />
+                <Switch 
+                  checked={channel.checked} 
+                  onCheckedChange={(checked) => handleSettingChange(channel.id as keyof NotificationSettingsType, checked)}
+                  className="ml-4" 
+                />
               </div>
             );
           })}
@@ -148,7 +164,11 @@ export function NotificationSettings({ profile, className }: NotificationSetting
                     {type.description}
                   </p>
                 </div>
-                <Switch defaultChecked={type.defaultChecked} className="ml-4" />
+                <Switch 
+                  checked={settings[type.id as keyof NotificationSettingsType] || false} 
+                  onCheckedChange={(checked) => handleSettingChange(type.id as keyof NotificationSettingsType, checked)} 
+                  className="ml-4" 
+                />
               </div>
             ))}
           </div>
@@ -159,6 +179,7 @@ export function NotificationSettings({ profile, className }: NotificationSetting
           <Button 
             variant="default" 
             className="bg-blue-500 hover:bg-blue-600 text-white dark:bg-blue-600 dark:hover:bg-blue-700 w-full sm:w-auto"
+            onClick={() => onSave({ notifications: settings })}
           >
             Save Notification Preferences
           </Button>

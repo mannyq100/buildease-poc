@@ -37,6 +37,10 @@ export interface ProjectMembership {
 export interface NotificationSettings {
   email?: boolean;
   push?: boolean;
+  projectUpdates?: boolean;
+  taskAssignments?: boolean;
+  phaseCompletions?: boolean;
+  teamMessages?: boolean;
 }
 
 // User settings - Merged from both files
@@ -47,6 +51,7 @@ export interface UserSettings {
   notifications?: NotificationSettings;
   language?: string;
   currency?: string;
+  theme?: 'light' | 'dark' | 'system';
 }
 
 // Permission scopes for RBAC - may be deprecated
