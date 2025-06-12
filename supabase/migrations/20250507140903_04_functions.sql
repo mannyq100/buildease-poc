@@ -146,6 +146,20 @@ BEGIN
         RETURN TRUE;
     END IF;
 
+    -- Check if user has SUPER_EDIT permission (grants all permissions)
+    SELECT EXISTS (
+        SELECT 1
+        FROM construction_mgr.be_project_permission
+        WHERE project_id = has_permission_direct.project_id
+        AND user_id = has_permission_direct.user_id
+        AND permission = 'SUPER_EDIT'::construction_mgr.permission_type
+        AND active = TRUE
+    ) INTO result;
+    
+    IF result THEN
+        RETURN TRUE;
+    END IF;
+
     -- Check specific permission
     SELECT EXISTS (
         SELECT 1

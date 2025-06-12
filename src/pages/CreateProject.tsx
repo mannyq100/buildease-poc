@@ -17,6 +17,7 @@ import { supabase } from "@/lib/supabase";
 import { createProject, validateProjectData } from "@/services/projectCreationService";
 import { useProjectFormAutoSave } from "@/hooks/useProjectFormAutoSave";
 import { calculateFormProgress, validateStepData } from "@/utils/projectFormUtils";
+import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -188,6 +189,7 @@ const steps = [
 export function CreateProject() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useSupabaseAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -209,6 +211,20 @@ export function CreateProject() {
   
   // Auto-save functionality
   const { clearSavedData } = useProjectFormAutoSave(watch, isDirty);
+  
+  // Function to refresh user profile after project creation
+  const refreshUserProfile = async () => {
+    if (!user) return;
+    
+    try {
+      // Emit a custom event to trigger profile refresh in auth context
+      window.dispatchEvent(new CustomEvent('refreshUserProfile', {
+        detail: { userId: user.id, reason: 'projectCreated' }
+      }));
+    } catch (error) {
+      console.warn('Failed to refresh user profile:', error);
+    }
+  };
   
   // Calculate dynamic progress based on form completion
   const formData = watch();
@@ -312,6 +328,9 @@ export function CreateProject() {
       
       // Clear auto-saved data on successful submission
       clearSavedData();
+      
+      // Refresh user profile to include new project in permissions
+      await refreshUserProfile();
       
       // Navigate to dashboard or project details page
       navigate('/dashboard');

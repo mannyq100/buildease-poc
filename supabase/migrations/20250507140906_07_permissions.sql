@@ -1,4 +1,5 @@
 -- Update permission types enum with the new financial permissions
+ALTER TYPE construction_mgr.permission_type ADD VALUE IF NOT EXISTS 'SUPER_EDIT';
 ALTER TYPE construction_mgr.permission_type ADD VALUE IF NOT EXISTS 'VIEW_PROJECT';
 ALTER TYPE construction_mgr.permission_type ADD VALUE IF NOT EXISTS 'EDIT_PROJECT';
 ALTER TYPE construction_mgr.permission_type ADD VALUE IF NOT EXISTS 'DELETE_PROJECT';
@@ -97,12 +98,15 @@ BEGIN
     VALUES (p_project_id, p_user_id, 'VIEW_PROJECT', p_granted_by);
     
     -- Grant role-specific permissions
-    IF p_role = 'ADMIN' THEN
-        -- Admins get all permissions
+    IF p_role = 'OWNER' THEN
+        -- Owners get SUPER_EDIT permission (covers all actions)
         INSERT INTO construction_mgr.be_project_permission (project_id, user_id, permission, granted_by)
-        SELECT p_project_id, p_user_id, enum_range, p_granted_by
-        FROM (SELECT unnest(enum_range(NULL::construction_mgr.permission_type)) AS enum_range) AS permissions
-        WHERE enum_range != 'VIEW_PROJECT'; -- Already inserted above
+        VALUES (p_project_id, p_user_id, 'SUPER_EDIT', p_granted_by);
+    
+    ELSIF p_role = 'ADMIN' THEN
+        -- Admins get SUPER_EDIT permission (covers all actions)
+        INSERT INTO construction_mgr.be_project_permission (project_id, user_id, permission, granted_by)
+        VALUES (p_project_id, p_user_id, 'SUPER_EDIT', p_granted_by);
     
     ELSIF p_role = 'CONTRACTOR' THEN
         -- Contractors get project viewing and management permissions

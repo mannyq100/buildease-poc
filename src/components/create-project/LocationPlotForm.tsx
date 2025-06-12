@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MapPin, Ruler } from 'lucide-react';
+import { AreaUnit } from '../../utils/projectFormUtils';
 
 // Countries
 const COUNTRIES = [
@@ -89,11 +90,11 @@ const TERRAIN_TYPES = [
 ];
 
 // Size units
-const SIZE_UNITS = [
+const SIZE_UNITS: { value: AreaUnit; label: string }[] = [
   { value: 'sq-m', label: 'Square Meters' },
   { value: 'sq-ft', label: 'Square Feet' },
   { value: 'acres', label: 'Acres' },
-  { value: 'hectares', label: 'Hectares' }
+  { value: 'hectare', label: 'Hectares' },
 ];
 
 export function LocationPlotForm() {

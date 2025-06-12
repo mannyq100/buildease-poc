@@ -102,7 +102,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         setProfile(null);
         return;
       }
-
+  console.log("User profile fetched:", profileData);
       // Transform the edge function response to match our UserProfile interface
       const userProfile: UserProfile = {
         id: profileData.id,
@@ -153,6 +153,20 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     let isMounted = true;
     let authListener: { subscription: { unsubscribe: () => void } } | null = null;
+    
+    // Event listener for profile refresh requests
+    const handleProfileRefresh = async (event: CustomEvent) => {
+      console.log('Received profile refresh event:', event.detail);
+      const { userId, reason } = event.detail;
+      if (user?.id === userId && isMounted) {
+        console.log(`Refreshing user profile due to: ${reason}`);
+        clearProfileCache();
+        await fetchUserProfile(userId);
+      }
+    };
+    
+    // Listen for custom profile refresh events
+    window.addEventListener('refreshUserProfile', handleProfileRefresh as EventListener);
     
     const initAuth = async () => {
       // Set loading state while we initialize
@@ -239,6 +253,8 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       if (authListener?.subscription) {
         authListener.subscription.unsubscribe();
       }
+      // Remove event listener
+      window.removeEventListener('refreshUserProfile', handleProfileRefresh as EventListener);
     };
   }, []);
 

@@ -171,3 +171,111 @@ export function estimateProjectTimeline(data: ProjectFormValues): string {
   
   return `${Math.min(baseMonths, 24)} months (estimated)`;
 }
+
+// --- Area and Ratio Validation Utilities ---
+
+export type AreaUnit = 'sq-m' | 'sq-ft' | 'acres' | 'hectare';
+
+export const AREA_UNITS_CONVERSION_TO_SQM: Record<AreaUnit, number> = {
+  'sq-m': 1,
+  'sq-ft': 0.092903,
+  'acres': 4046.86,
+  'hectare': 10000,
+};
+
+interface ConversionResult {
+  valueInSqM?: number;
+  error?: string;
+}
+
+/**
+ * Converts an area value from a given unit to square meters.
+ */
+export function convertToSquareMeters(
+  valueStr: string | undefined,
+  unit: string | undefined,
+  fieldName: string // e.g., 'Plot Size', 'Building Size'
+): ConversionResult {
+  if (valueStr === undefined || valueStr.trim() === '') {
+    return { error: `${fieldName} value is missing.` };
+  }
+  if (unit === undefined || unit.trim() === '') {
+    return { error: `${fieldName} unit is missing.` };
+  }
+
+  const valueNum = parseFloat(valueStr);
+  if (isNaN(valueNum)) {
+    return { error: `${fieldName} must be a valid number.` };
+  }
+  if (valueNum <= 0) {
+    return { error: `${fieldName} must be a positive number.` };
+  }
+
+  const lowerUnit = unit.toLowerCase() as AreaUnit;
+  if (!AREA_UNITS_CONVERSION_TO_SQM[lowerUnit]) {
+    return {
+      error: `${fieldName} unit '${unit}' is not supported. Supported units: ${Object.keys(AREA_UNITS_CONVERSION_TO_SQM).join(', ')}.`,
+    };
+  }
+
+  return { valueInSqM: valueNum * AREA_UNITS_CONVERSION_TO_SQM[lowerUnit] };
+}
+
+/**
+ * Validates that the building size is not larger than the plot size.
+ */
+export function validateBuildingPlotSizeRatio(
+  formData: Pick<ProjectFormValues, 'buildingSize' | 'buildingSizeUnit' | 'plotSize' | 'plotSizeUnit'>,
+  errors: string[]
+): void {
+  const buildingConversion = convertToSquareMeters(formData.buildingSize, formData.buildingSizeUnit, 'Building Size');
+  const plotConversion = convertToSquareMeters(formData.plotSize, formData.plotSizeUnit, 'Plot Size');
+
+  if (buildingConversion.error) {
+    errors.push(buildingConversion.error);
+  }
+  if (plotConversion.error) {
+    errors.push(plotConversion.error);
+  }
+
+  if (buildingConversion.valueInSqM !== undefined && plotConversion.valueInSqM !== undefined) {
+    if (buildingConversion.valueInSqM > plotConversion.valueInSqM) {
+      errors.push('Building size cannot be larger than plot size when converted to common units.');
+    }
+  }
+}
+
+/**
+ * Validates the number of storeys against the building size.
+ * For example, a multi-storey building should have a reasonable minimum footprint.
+ */
+export function validateStoreysBuildingSizeRatio(
+  formData: Pick<ProjectFormValues, 'storeys' | 'buildingSize' | 'buildingSizeUnit'>,
+  errors: string[]
+): void {
+  if (formData.storeys && formData.buildingSize) {
+    const storeys = parseInt(formData.storeys);
+    if (isNaN(storeys) || storeys <= 0) {
+      errors.push('Number of storeys must be a valid positive number.');
+      return; // No further validation if storeys is invalid
+    }
+
+    const buildingConversion = convertToSquareMeters(formData.buildingSize, formData.buildingSizeUnit, 'Building Size');
+
+    if (buildingConversion.error) {
+      errors.push(buildingConversion.error);
+      return; // No further validation if building size is invalid
+    }
+
+    if (buildingConversion.valueInSqM !== undefined) {
+      // Example validation: Multi-storey buildings should have at least 50 sq-m footprint
+      if (storeys > 1 && buildingConversion.valueInSqM < 50) {
+        errors.push('Building size is too small for a multi-storey building (min 50 sq-m footprint).');
+      }
+      // Example validation: Very large buildings should likely be multi-storey
+      if (storeys === 1 && buildingConversion.valueInSqM > 500) {
+        errors.push('Single-storey building seems unusually large (over 500 sq-m). Consider if storeys count is correct.');
+      }
+    }
+  }
+}

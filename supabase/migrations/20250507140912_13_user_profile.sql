@@ -19,27 +19,7 @@ STABLE SECURITY INVOKER
 AS $$
 DECLARE
     permission_names jsonb := '[]'::jsonb;
-    all_permissions construction_mgr.permission_type[];
-    explicit_permissions jsonb;
 BEGIN
-    -- CASE 1: If user is the owner, they have all permissions
-    IF p_is_owner THEN
-        SELECT array_agg(t.enumlabel::construction_mgr.permission_type)
-        INTO all_permissions
-        FROM pg_enum t
-        JOIN pg_type pt ON pt.oid = t.enumtypid
-        WHERE pt.typname = 'permission_type';
-        
-        SELECT jsonb_agg(lower(permission::text))
-        INTO permission_names
-        FROM unnest(all_permissions) as permission;
-        
-        RETURN permission_names;
-    END IF;
-    
-    -- CASE 2: Get explicit permissions from be_project_permission table
-    -- View_project is implied for all project members
-    permission_names := jsonb_build_array('view_project');
     
     -- Add explicit permissions from be_project_permission table
     WITH explicit_perms AS (
@@ -50,30 +30,8 @@ BEGIN
           AND active = TRUE
     )
     SELECT jsonb_agg(DISTINCT perm_name)
-    INTO explicit_permissions
+    INTO permission_names
     FROM explicit_perms;
-    
-    -- Combine with existing permissions
-    IF explicit_permissions IS NOT NULL THEN
-        permission_names := permission_names || explicit_permissions;
-    END IF;
-    
-    -- CASE 3: If the user has ADMIN role but no explicit permissions, give them full access
-    -- except delete_project (which is owner only)
-    IF p_role = 'ADMIN' AND (permission_names IS NULL OR jsonb_array_length(permission_names) <= 1) THEN
-        -- Get all permission types from enum except DELETE_PROJECT
-        SELECT array_agg(t.enumlabel::construction_mgr.permission_type)
-        INTO all_permissions
-        FROM pg_enum t
-        JOIN pg_type pt ON pt.oid = t.enumtypid
-        WHERE pt.typname = 'permission_type'
-        AND t.enumlabel != 'DELETE_PROJECT';
-        
-        -- Convert to lowercase for consistency
-        SELECT jsonb_agg(lower(permission::text))
-        INTO permission_names
-        FROM unnest(all_permissions) as permission;
-    END IF;
     
     RETURN COALESCE(permission_names, '[]'::jsonb);
 END;
@@ -89,7 +47,6 @@ DECLARE
     result JSON;
     user_data RECORD;
     memberships JSON;
-    owned_projects JSON;
 BEGIN
     -- Check if the requesting user has permission to access this profile
     IF user_uuid != auth.uid() AND NOT private.is_admin() THEN
@@ -138,13 +95,6 @@ BEGIN
                     ) as elem
                 ),
                 'joinedAt', pm.joined_at,
-                'projectDetails', JSON_BUILD_OBJECT(
-                    'description', p.description,
-                    'budget', p.budget,
-                    'timeline', p.timeline,
-                    'location', p.details->'location',
-                    'specs', p.details->'specs'
-                ),
                 'isOwner', (p.owner_id = user_uuid)
             )
         ),
@@ -154,44 +104,6 @@ BEGIN
     JOIN construction_mgr.be_project p ON pm.project_id = p.id
     WHERE pm.user_id = user_uuid;
 
-    -- Get projects owned by user but not in members table
-    SELECT COALESCE(
-        JSON_AGG(
-            JSON_BUILD_OBJECT(
-                'projectId', p.id,
-                'projectName', p.name,
-                'projectStatus', p.status,
-                'role', 'OWNER',
-                'permissions', (
-                    SELECT jsonb_agg(elem)
-                    FROM jsonb_array_elements_text(
-                        construction_mgr.get_user_project_permissions(
-                            p.id, 
-                            user_uuid, 
-                            'OWNER'::construction_mgr.user_role, 
-                            true
-                        )
-                    ) as elem
-                ),
-                'joinedAt', p.created_at,
-                'projectDetails', JSON_BUILD_OBJECT(
-                    'description', p.description,
-                    'budget', p.budget,
-                    'timeline', p.timeline,
-                    'location', p.details->'location',
-                    'specs', p.details->'specs'
-                ),
-                'isOwner', true
-            )
-        ),
-        '[]'::JSON
-    ) INTO owned_projects
-    FROM construction_mgr.be_project p
-    WHERE p.owner_id = user_uuid
-    AND NOT EXISTS (
-        SELECT 1 FROM construction_mgr.be_project_member pm 
-        WHERE pm.project_id = p.id AND pm.user_id = user_uuid
-    );
 
     -- Build the complete profile response
     result := (
@@ -208,27 +120,12 @@ BEGIN
             'tier', user_data.tier,
             'createdAt', user_data.created_at,
             'updatedAt', user_data.updated_at,
-            'projects', COALESCE(
-                (SELECT jsonb_agg(project) FROM (
-                    SELECT * FROM jsonb_array_elements(memberships::jsonb)
-                    UNION ALL
-                    SELECT * FROM jsonb_array_elements(owned_projects::jsonb)
-                ) AS project),
-                '[]'::jsonb
-            ),
+            'projectMemberships', memberships,
             'metadata', jsonb_build_object(
                 'totalProjects', (
                     SELECT COUNT(*) 
                     FROM construction_mgr.be_project_member 
                     WHERE user_id = user_uuid
-                ) + (
-                    SELECT COUNT(*)
-                    FROM construction_mgr.be_project
-                    WHERE owner_id = user_uuid
-                    AND NOT EXISTS (
-                        SELECT 1 FROM construction_mgr.be_project_member pm 
-                        WHERE pm.project_id = be_project.id AND pm.user_id = user_uuid
-                    )
                 ),
                 'ownedProjects', (
                     SELECT COUNT(*) 
@@ -254,7 +151,7 @@ $$;
 
 -- Add comments for documentation
 COMMENT ON FUNCTION construction_mgr.get_user_project_permissions IS 
-'Gets all permissions for a user on a project based on their role, ownership status, and explicit permissions.';
+'Gets all permissions for a user on a project based on explicit permissions.';
 
 COMMENT ON FUNCTION construction_mgr.get_user_profile IS 
 'Fetches complete user profile including project memberships, roles, and permissions in a single call. 

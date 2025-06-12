@@ -4,6 +4,7 @@
  */
 import { supabase } from '@/lib/supabase';
 import { ProjectFormValues } from '@/pages/CreateProject';
+import { validateBuildingPlotSizeRatio, validateStoreysBuildingSizeRatio } from '@/utils/projectFormUtils';
 import { Currency, Project, ProjectInsert, TABLE_NAMES, UserRole } from '@/types/database';
 
 export interface CreateProjectResult {
@@ -110,10 +111,14 @@ export async function createProject(formData: ProjectFormValues, userId: string)
       }
     };
     
-    // Insert project into the database
-    const { data: insertedProject, error: insertError } = await supabase
+    // Generate a UUID for the project to ensure we can retrieve it reliably
+    const projectId = crypto.randomUUID();
+    const projectDataWithId = { ...projectData, id: projectId };
+    
+    // Insert project with known ID
+    const { error: insertError } = await supabase
       .from(TABLE_NAMES.PROJECTS)
-      .insert([projectData]);
+      .insert([projectDataWithId]);
       
     if (insertError) {
       console.error('Error inserting project:', insertError);
@@ -123,20 +128,19 @@ export async function createProject(formData: ProjectFormValues, userId: string)
       };
     }
     
-    // Fetch the newly created project with a separate query to avoid ambiguous column references
-    const { data: createdProject } = await supabase
+    // Fetch the project by the known ID
+    const { data: createdProject, error: fetchError } = await supabase
       .from(TABLE_NAMES.PROJECTS)
       .select('id, name, description, status, details, timeline, budget, owner_id, plan_approved, created_at, updated_at')
-      .eq('owner_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1)
+      .eq('id', projectId)
       .single();
       
     
-    if (!createdProject) {
+    if (fetchError || !createdProject) {
+      console.error('Error fetching created project:', fetchError);
       return {
         success: false,
-        error: 'No project was created'
+        error: fetchError?.message || 'Could not retrieve created project'
       };
     }
     
@@ -241,32 +245,11 @@ export function validateProjectData(formData: ProjectFormValues): { isValid: boo
   }
   
   // Logical validation
-  if (formData.buildingSize && formData.plotSize) {
-    const buildingArea = parseFloat(formData.buildingSize);
-    const plotArea = parseFloat(formData.plotSize);
-    
-    // Convert to same unit for comparison if needed
-    let adjustedBuildingArea = buildingArea;
-    if (formData.buildingSizeUnit === 'sq-ft' && formData.plotSizeUnit === 'sq-m') {
-      adjustedBuildingArea = buildingArea * 0.092903; // sq-ft to sq-m
-    } else if (formData.buildingSizeUnit === 'sq-m' && formData.plotSizeUnit === 'sq-ft') {
-      adjustedBuildingArea = buildingArea * 10.7639; // sq-m to sq-ft
-    }
-    
-    if (adjustedBuildingArea > plotArea) {
-      errors.push('Building size cannot be larger than plot size');
-    }
-  }
+  // Validate building size vs. plot size ratio
+  validateBuildingPlotSizeRatio(formData, errors);
   
-  // Validate storeys vs building size ratio
-  if (formData.storeys && formData.buildingSize) {
-    const storeys = parseInt(formData.storeys);
-    const buildingSize = parseFloat(formData.buildingSize);
-    
-    if (storeys > 1 && buildingSize < 50) {
-      errors.push('Multi-storey buildings should have larger building size');
-    }
-  }
+  // Validate storeys vs. building size ratio
+  validateStoreysBuildingSizeRatio(formData, errors);
   
   return {
     isValid: errors.length === 0,
