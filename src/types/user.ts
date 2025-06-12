@@ -20,29 +20,36 @@ export type ProjectPermission =
   | 'MANAGE_TEAM'
   | 'ADMIN';
 
-// User notification settings
-export interface NotificationSettings {
-  email: boolean;
-  push: boolean;
-}
-
-// User settings
-export interface UserSettings {
-  picture_url?: string;
-  emailVerified: boolean;
-  phoneVerified: boolean;
-  notifications: NotificationSettings;
-  language: string;
-  currency: string;
-}
-
-// Project permissions map (project ID to permissions array)
-export type ProjectPermissionsMap = Record<string, ProjectPermission[]>;
-
 // User role types for RBAC
 export type UserRole = 'admin' | 'owner' | 'manager' | 'contractor' | 'worker' | 'client';
 
-// Permission scopes for RBAC
+// Define Permission type based on construction_mgr.permission_type enum
+export type Permission = string; 
+
+export interface ProjectMembership {
+  projectId: string;
+  projectName: string;
+  role: UserRole;
+  permissions: Permission[];
+}
+
+// User notification settings
+export interface NotificationSettings {
+  email?: boolean;
+  push?: boolean;
+}
+
+// User settings - Merged from both files
+export interface UserSettings {
+  picture_url?: string;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
+  notifications?: NotificationSettings;
+  language?: string;
+  currency?: string;
+}
+
+// Permission scopes for RBAC - may be deprecated
 export type PermissionScope =
   | 'projects:read' | 'projects:write' | 'projects:delete'
   | 'team:read' | 'team:write' | 'team:delete'
@@ -52,6 +59,9 @@ export type PermissionScope =
   | 'schedule:read' | 'schedule:write'
   | 'messages:read' | 'messages:write'
   | 'users:read' | 'users:write' | 'users:delete';
+
+// Project permissions map (project ID to permissions array) - may be deprecated
+export type ProjectPermissionsMap = Record<string, ProjectPermission[]>;
 
 // User profile information from API
 export interface UserProfile {
@@ -64,12 +74,16 @@ export interface UserProfile {
   provider: AuthProvider;
   tier: UserTier;
   status: UserStatus;
-  settings: UserSettings;
+  settings?: UserSettings;
   createdAt: string;
   updatedAt: string;
   role: UserRole;
-  permissions: PermissionScope[];
-  projectPermissions: ProjectPermissionsMap;
+  avatarUrl?: string; // This will be derived from settings.picture_url
+  projectMemberships: ProjectMembership[]; // Updated structure
+  
+  // Deprecated properties, kept for transition.
+  permissions?: PermissionScope[];
+  projectPermissions?: ProjectPermissionsMap;
 }
 
 // Payload used for registering or fully updating a user profile
@@ -101,10 +115,11 @@ export function hasProjectPermission(
   projectId: string,
   permission: ProjectPermission
 ): boolean {
-  if (!profile || !profile.projectPermissions) return false;
+  if (!profile || !profile.projectMemberships) return false;
   
-  const projectPerms = profile.projectPermissions[projectId];
-  if (!projectPerms) return false;
+  const membership = profile.projectMemberships.find(m => m.projectId === projectId);
+  if (!membership) return false;
   
-  return projectPerms.includes(permission);
+  // The permissions in projectMemberships are strings. We assume they match ProjectPermission values.
+  return membership.permissions.includes(permission);
 }

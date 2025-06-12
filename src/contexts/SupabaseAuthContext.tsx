@@ -1,35 +1,10 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { Session, User, Provider } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-import { UserRole, UserProfile as UserProfileType } from '../types/user'; 
+import {
+  UserProfile
+} from '../types/user';
 import { useNavigate } from 'react-router-dom';
-
-// Define Permission type based on construction_mgr.permission_type enum
-export type Permission = string; 
-
-export interface ProjectMembership {
-  projectId: string;
-  projectName: string;
-  role: UserRole;
-  permissions: Permission[];
-}
-
-// Define UserSettings interface
-export interface UserSettings {
-  picture_url?: string;
-  notifications?: {
-    email?: boolean;
-    push?: boolean;
-  };
-  // Add other potential user settings here
-}
-
-// Use the main UserProfile type from types/user.ts but extend with additional fields
-interface UserProfile extends Omit<UserProfileType, 'settings' | 'projectPermissions' | 'permissions'> {
-  avatarUrl?: string; // This will be derived from settings.picture_url
-  settings?: UserSettings; // Keep the existing settings structure for backward compatibility
-  projectMemberships: ProjectMembership[]; // Updated structure
-}
 
 interface AuthContextType {
   session: Session | null;

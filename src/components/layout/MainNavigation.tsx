@@ -29,7 +29,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import type { PermissionScope } from '@/types/user';
 import { getUserDisplayName } from '@/services/userService';
 import { cn } from '@/utils/core/ui';
 
@@ -50,7 +49,6 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ className, onCollapseCh
   const { 
     profile,
     role,
-    permissions,
     isLoading: isProfileLoading
   } = useUserProfile();
 
@@ -86,33 +84,8 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ className, onCollapseCh
     return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };
 
-  // Get required project permission for nav item
-  const getPermissionForNavItem = (path: string): PermissionScope | undefined => {
-    const map: Record<string, PermissionScope> = {
-      '/dashboard': 'projects:read',
-      '/projects': 'projects:read',
-      '/team': 'team:read',
-      '/messaging': 'messages:read',
-      '/schedule': 'schedule:read',
-      '/materials': 'materials:read',
-      '/expenses': 'expenses:read',
-      '/documents': 'documents:read'
-    };
-    return map[path];
-  };
-
-  // Check if user has RBAC scope to access nav item
-  const hasAccessToNavItem = (path: string): boolean => {
-    // show all items until profile and permissions load
-    if (isProfileLoading || !profile) return true;
-    // if flat RBAC scopes not returned, show all by default
-    if (permissions.length === 0) return true;
-    const scope = getPermissionForNavItem(path);
-    return !scope || permissions.includes(scope);
-  };
-
-  // Main navigation items - will be filtered by permissions
-  const allNavItems = [
+  // Main navigation items
+  const navItems = [
     { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { label: 'Projects', path: '/projects', icon: Briefcase },
     { label: 'Team', path: '/team', icon: Users },
@@ -120,11 +93,8 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ className, onCollapseCh
     { label: 'Schedule', path: '/schedule', icon: Calendar },
     { label: 'Materials', path: '/materials', icon: Package },
     { label: 'Expenses', path: '/expenses', icon: DollarSign },
-    { label: 'Documents', path: '/documents', icon: FileText }
+    { label: 'Documents', path: '/documents', icon: FileText },
   ];
-  
-  // Main navigation items - temporarily show all
-  const sideNavItems = allNavItems;
 
   // Mobile menu toggle button - shown when menu is closed
   const MobileMenuToggle = () => (
@@ -214,15 +184,13 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ className, onCollapseCh
             </div>
           )}
           
-          <ul className="space-y-2 px-1">
-            {sideNavItems.map((item) => {
-              const Icon = item.icon;
+          <ul className="space-y-1.5">
+            {navItems.map((item, index) => {
               const isItemActive = isActive(item.path);
-              
-              if (!hasAccessToNavItem(item.path)) return null;
-              
+              const Icon = item.icon;
+
               return (
-                <li key={item.path} className="group">
+                <li key={index}>
                   <Button
                     variant="ghost"
                     className={cn(
