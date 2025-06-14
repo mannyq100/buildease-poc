@@ -82,7 +82,7 @@ export function getSocialLoginErrorMessage(provider: Provider, err: unknown): st
   return `Failed to initialize ${provider} login: ${err.message}`
 }
 
-export function parseRedirectParams(location: any) {
+export function parseRedirectParams(location: { search: string; state?: { from?: string } }) {
   const searchParams = new URLSearchParams(location.search)
   return {
     from: location.state?.from || searchParams.get('from') || '/dashboard',

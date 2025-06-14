@@ -25,6 +25,8 @@ export async function createProject(formData: ProjectFormValues, userId: string)
       status: 'PLANNING', // Match the enum from schema
       owner_id: userId,
       plan_approved: false,
+      profile_image: formData.profileImage || null,
+      images: formData.images || [],
       
       // Structure details in JSONB format according to schema
       details: {
@@ -131,7 +133,7 @@ export async function createProject(formData: ProjectFormValues, userId: string)
     // Fetch the project by the known ID
     const { data: createdProject, error: fetchError } = await supabase
       .from(TABLE_NAMES.PROJECTS)
-      .select('id, name, description, status, details, timeline, budget, owner_id, plan_approved, created_at, updated_at')
+      .select('id, name, description, status, details, timeline, budget, owner_id, plan_approved, profile_image, images, created_at, updated_at')
       .eq('id', projectId)
       .single();
       

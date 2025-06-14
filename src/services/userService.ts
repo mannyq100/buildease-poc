@@ -39,11 +39,7 @@ export async function updateUserFullProfile(data: RegisterUserPayload): Promise<
   // Create a copy of the data to avoid mutating the original
   const payload = { ...data };
   
-  // Log the update operation (without the image data to keep logs clean)
-  console.log('Updating user profile:', { 
-    ...payload, 
-    settings: payload.settings ? { ...payload.settings, pictureUrl: hasProfilePicture ? '[IMAGE DATA]' : undefined } : undefined 
-  });
+  // Profile update initiated with data validation
   
   // Use POST method as we are sending potentially large image data
   return apiRequest<UserProfile>(API_ENDPOINTS.USER_UPDATE, {

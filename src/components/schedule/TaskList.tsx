@@ -3,7 +3,7 @@ import { Task, TaskViewLayout } from '@/types/schedule';
 import { TaskCard } from '@/components/shared/TaskCard';
 import { EmptyState } from '@/components/EmptyState';
 import { sortTasks } from '@/utils/scheduleUtils';
-import { formatDate } from '@/utils/dateUtils';
+import { formatDate } from '@/utils/core/date';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { getTaskStatusColor, getTaskPriorityColor } from '@/utils/scheduleUtils';

@@ -7,17 +7,16 @@ import { HelmetProvider } from "react-helmet-async";
 
 // Libraries
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { LazyMotion, domAnimation } from "framer-motion";
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import { SupabaseAuthProvider } from '@/contexts/SupabaseAuthContext';
+import { SupabaseAuthProvider, useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 
 // Environment configuration
 import config, { isDevelopment, isProduction } from '@/lib/env-config';
+
 
 // Styles
 import '@/styles/dark-theme.css';
@@ -38,7 +37,7 @@ import { Materials } from "./pages/Materials";
 import Documents from "./pages/Documents";
 import Expenses from "./pages/Expenses";
 import { Projects } from "./pages/Projects";
-import{CreateProject} from "./pages/CreateProject";
+import { CreateProject } from "./pages/CreateProject";
 import Settings from './pages/Settings';
 import Messaging from './pages/Messaging';
 import LandingPage from './pages/LandingPage';
@@ -96,23 +95,24 @@ function AuthRedirector() {
 }
 
 function App() {
+
   return (
     <BrowserRouter>
-      <SupabaseAuthProvider>
-        <LazyMotion features={domAnimation}>
-          <QueryClientProvider client={queryClient}>
-            <ThemeProvider>
-              <HelmetProvider>
-                <TooltipProvider>
-                  <ToastContextProvider>
-                    <Toaster />
-                    <Sonner />
-                    {/* Display environment indicator in non-production environments */}
-                    {!isProduction() && (
-                      <div className="fixed top-0 right-0 z-50 px-2 py-1 text-xs font-bold text-white bg-blue-500 rounded-bl-md">
-                        {config.appTitle}
-                      </div>
-                    )}
+      <LazyMotion features={domAnimation}>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider>
+            <HelmetProvider>
+              <TooltipProvider>
+                <ToastContextProvider>
+                  <Toaster />
+                  <Sonner />
+                  {/* Display environment indicator in non-production environments */}
+                  {!isProduction() && (
+                    <div className="fixed top-0 right-0 z-50 px-2 py-1 text-xs font-bold text-white bg-blue-500 rounded-bl-md">
+                      {config.appTitle}
+                    </div>
+                  )}
+                  <SupabaseAuthProvider>
                     <AuthRedirector />
                     <Routes>
                       {/* Public routes - accessible without authentication */}
@@ -164,13 +164,13 @@ function App() {
                         <Route path="*" element={<NotFound />} />
                       </Route>
                     </Routes>
-                  </ToastContextProvider>
-                </TooltipProvider>
-              </HelmetProvider>
-            </ThemeProvider>
-          </QueryClientProvider>
-        </LazyMotion>
-      </SupabaseAuthProvider>
+                  </SupabaseAuthProvider>
+                </ToastContextProvider>
+              </TooltipProvider>
+            </HelmetProvider>
+          </ThemeProvider>
+        </QueryClientProvider>
+      </LazyMotion>
     </BrowserRouter>
   );
 }

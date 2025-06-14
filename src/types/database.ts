@@ -91,6 +91,8 @@ export interface Project {
   timeline: ProjectTimeline;
   budget: ProjectBudget;
   owner_id: string;
+  profile_image?: string | null;
+  images?: string[];
   ai_generated_plan?: Record<string, unknown> | null;
   plan_approved: boolean;
   created_at: string;

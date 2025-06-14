@@ -27,7 +27,8 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES 
   ('documents', 'documents', false, 52428800, '{"application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}'),
-  ('profiles', 'profiles', true, 10485760, '{"image/jpeg", "image/png", "image/gif", "image/webp"}')
+  ('profiles', 'profiles', true, 10485760, '{"image/jpeg", "image/png", "image/gif", "image/webp"}'),
+  ('project-inspiration', 'project-inspiration', true, 10485760, '{"image/jpeg", "image/png", "image/gif", "image/webp"}')
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
   public = EXCLUDED.public,
@@ -49,6 +50,10 @@ DROP POLICY IF EXISTS "Project owners can update project documents" ON storage.o
 DROP POLICY IF EXISTS "Project admin members can update project documents" ON storage.objects;
 DROP POLICY IF EXISTS "Project owners can delete project documents" ON storage.objects;
 DROP POLICY IF EXISTS "Project admin members can delete project documents" ON storage.objects;
+DROP POLICY IF EXISTS "Public read access for project inspiration images" ON storage.objects;
+DROP POLICY IF EXISTS "Users can upload project inspiration images" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update their project inspiration images" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete their project inspiration images" ON storage.objects;
 
 -- Enable RLS on storage.objects (Supabase already has this enabled by default, but included for completeness)
 -- ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
@@ -86,6 +91,42 @@ TO authenticated
 USING (
     bucket_id = 'profiles' AND
     (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- Project Inspiration bucket policies
+-- 1. Public read access for project inspiration images
+CREATE POLICY "Public read access for project inspiration images"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'project-inspiration');
+
+-- 2. Allow authenticated users to upload to their own project inspiration directory
+CREATE POLICY "Users can upload project inspiration images"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (
+  bucket_id = 'project-inspiration' AND
+  (storage.foldername(name))[1] = auth.uid()::text AND
+  -- Validate file path format: {user_id}/{project_id}/{filename}
+  array_length(storage.foldername(name), 1) = 2 AND
+  (storage.foldername(name))[1] ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+);
+
+-- 3. Allow users to update their own project inspiration images
+CREATE POLICY "Users can update their project inspiration images"
+ON storage.objects FOR UPDATE
+TO authenticated
+USING (
+  bucket_id = 'project-inspiration' AND
+  (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- 4. Allow users to delete their own project inspiration images
+CREATE POLICY "Users can delete their project inspiration images"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (
+  bucket_id = 'project-inspiration' AND
+  (storage.foldername(name))[1] = auth.uid()::text
 );
 
 -- Documents bucket policies

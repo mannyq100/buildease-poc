@@ -3,7 +3,7 @@
  * Third step of the project creation wizard
  * Collects building specifications information
  */
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { ProjectFormValues } from '../../pages/CreateProject';
 import { Input } from '@/components/ui/input';
@@ -18,7 +18,7 @@ const SIZE_UNITS = [
   { value: 'sq-ft', label: 'Square Feet' }
 ];
 
-// Number options for dropdowns
+// Memoized number options generator
 const generateNumberOptions = (max: number) => {
   return Array.from({ length: max }, (_, i) => ({
     value: String(i + 1),
@@ -38,8 +38,15 @@ const BUILDING_STYLES = [
   { value: 'african-contemporary', label: 'African Contemporary' }
 ];
 
-export function BuildingSpecsForm() {
+function BuildingSpecsFormComponent() {
   const { control } = useFormContext<ProjectFormValues>();
+  
+  // Memoize number options to prevent recreation on every render
+  const storeysOptions = useMemo(() => generateNumberOptions(10), []);
+  const bedroomOptions = useMemo(() => generateNumberOptions(15), []);
+  const bathroomOptions = useMemo(() => generateNumberOptions(10), []);
+  const kitchenOptions = useMemo(() => generateNumberOptions(5), []);
+  const livingAreaOptions = useMemo(() => generateNumberOptions(5), []);
 
   return (
     <div className="space-y-8">
@@ -138,7 +145,7 @@ export function BuildingSpecsForm() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {generateNumberOptions(10).map((option) => (
+                      {storeysOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>
@@ -176,7 +183,7 @@ export function BuildingSpecsForm() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {generateNumberOptions(15).map((option) => (
+                      {bedroomOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>
@@ -214,7 +221,7 @@ export function BuildingSpecsForm() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {generateNumberOptions(10).map((option) => (
+                      {bathroomOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>
@@ -253,7 +260,7 @@ export function BuildingSpecsForm() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {generateNumberOptions(5).map((option) => (
+                      {kitchenOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>
@@ -295,7 +302,7 @@ export function BuildingSpecsForm() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {generateNumberOptions(5).map((option) => (
+                      {livingAreaOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>
@@ -377,3 +384,6 @@ export function BuildingSpecsForm() {
     </div>
   );
 }
+
+// Memoized export to prevent unnecessary re-renders
+export const BuildingSpecsForm = React.memo(BuildingSpecsFormComponent);

@@ -30,6 +30,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Provider component that wraps the app and provides auth context
 export function SupabaseAuthProvider({ children }: { children: React.ReactNode }) {
+  // All hooks must be called at the top level of the component
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -37,7 +38,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const [isLoadingProfile, setIsLoadingProfile] = useState<boolean>(true);
   const [authError, setAuthError] = useState<Error | null>(null);
   
-  // Use navigate for redirects
+  // Use navigate for redirects - this must be called inside a Router context
   const navigate = useNavigate();
 
   // Profile cache key with 5-minute expiration

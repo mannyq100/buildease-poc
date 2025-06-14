@@ -26,6 +26,9 @@ export * from './error';
 // Export all formatting utilities
 export * from './format';
 
+// Export all comparison utilities
+export * from './comparison';
+
 // Export all performance utilities
 export * from './performance';
 

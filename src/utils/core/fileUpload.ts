@@ -103,6 +103,7 @@ export const uploadFile = async (
   const {
     bucket,
     userId,
+    projectId,
     allowedTypes = FILE_TYPE_PRESETS.all,
     maxSizeMB = 5,
     generateFileName = generateUniqueFileName,
@@ -138,9 +139,28 @@ export const uploadFile = async (
       };
     }
 
-    // Generate file path
+    // Generate file path based on bucket requirements
     const fileName = generateFileName(file.name);
-    const filePath = `${storageUserId}/${fileName}`;
+    let filePath: string;
+    
+    if (bucket === 'project-inspiration' && projectId) {
+      // Project inspiration bucket requires: {userId}/{projectId}/{filename}
+      filePath = `${storageUserId}/${projectId}/${fileName}`;
+    } else if (bucket === 'project-inspiration' && !projectId) {
+      // For temporary uploads without project ID, generate a valid UUID
+      const generateTempUUID = () => {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          const r = Math.random() * 16 | 0;
+          const v = c === 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
+      };
+      const tempProjectId = generateTempUUID();
+      filePath = `${storageUserId}/${tempProjectId}/${fileName}`;
+    } else {
+      // Default path structure for other buckets: {userId}/{filename}
+      filePath = `${storageUserId}/${fileName}`;
+    }
 
     // Start progress simulation if callback provided
     let progressSimulator: ProgressSimulator | null = null;

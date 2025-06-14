@@ -1,9 +1,9 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Building2, Calendar, Image as ImageIcon, Users } from 'lucide-react';
-
+import { Building2, Calendar, Users } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { ProjectImageDisplay } from '@/components/ui/project-image-display';
 import { cn } from '@/utils/core/ui';
 
 export interface TeamMember {
@@ -95,17 +95,12 @@ export function ProjectCard({
     >
       {/* Project Image */}
       <div className="relative w-full h-48 overflow-hidden">
-        {imageUrl ? (
-          <img 
-            src={imageUrl} 
-            alt={title} 
-            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-          />
-        ) : (
-          <div className="w-full h-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-            <ImageIcon className="h-12 w-12 text-slate-400 dark:text-slate-600" />
-          </div>
-        )}
+        <ProjectImageDisplay
+          src={imageUrl}
+          alt={title}
+          className="w-full h-full transition-transform duration-300 hover:scale-105"
+          aspectRatio="auto"
+        />
         
         {/* Status Badge Overlay */}
         <Badge 

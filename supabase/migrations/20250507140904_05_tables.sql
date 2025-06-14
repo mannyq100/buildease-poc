@@ -72,6 +72,8 @@ CREATE TABLE construction_mgr.be_project (
     owner_id UUID NOT NULL,
     ai_generated_plan JSONB,
     plan_approved BOOLEAN NOT NULL DEFAULT FALSE,
+    profile_image TEXT,
+    images TEXT[],
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_timeline CHECK (
@@ -88,6 +90,10 @@ CREATE TRIGGER update_project_modtime
     BEFORE UPDATE ON construction_mgr.be_project
     FOR EACH ROW
     EXECUTE FUNCTION construction_mgr.update_updated_at_column();
+    
+-- Add comments for project inspiration columns
+COMMENT ON COLUMN construction_mgr.be_project.profile_image IS 'URL to the project profile/inspiration image';
+COMMENT ON COLUMN construction_mgr.be_project.images IS 'Array of URLs to project inspiration images';
 
 -- Project Members (join table for users and projects) - RENAMED from be_project_user to be_project_member
 CREATE TABLE construction_mgr.be_project_member (

@@ -5,6 +5,7 @@
 export interface FileUploadOptions {
   bucket: string;
   userId?: string; // Optional - if not provided, will be determined automatically
+  projectId?: string; // Optional - for project-specific uploads (required for project-inspiration bucket)
   allowedTypes?: string[];
   maxSizeMB?: number;
   generateFileName?: (originalName: string) => string;

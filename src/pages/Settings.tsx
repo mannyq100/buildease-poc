@@ -2,7 +2,7 @@
  * Settings component
  * Handles application settings and user preferences
  */
-import React, { useState, useEffect, startTransition } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/shared';
 import { 
@@ -21,7 +21,7 @@ import {
   AppearanceSettings,
   SecuritySettings
 } from '@/components/settings';
-import type { SettingsFormData, ProfileUploadState, SettingsTab, NotificationSettings as NotificationSettingsType } from '@/types/settings';
+import type { SettingsFormData, ProfileUploadState, SettingsTab } from '@/types/settings';
 import type { UserSettings } from '@/types/user';
 
 export default function Settings() {

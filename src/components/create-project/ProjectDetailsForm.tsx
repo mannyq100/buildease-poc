@@ -13,9 +13,10 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/comp
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
 import { Building, Home, Store, Hammer, User } from 'lucide-react';
+import { ProjectInspirationImages } from './ProjectInspirationImages';
 
 
-// Project type options with better icons
+// Project type options with better icons (memoized to prevent re-creation)
 const PROJECT_TYPES = [
   {
     value: 'residential-single',
@@ -41,9 +42,9 @@ const PROJECT_TYPES = [
     description: 'Remodeling existing structure',
     icon: <Hammer className="h-5 w-5" />
   }
-];
+] as const;
 
-export function ProjectDetailsForm() {
+function ProjectDetailsFormComponent() {
   const { control, watch } = useFormContext<ProjectFormValues>();
   const [isDifferentOwner, setIsDifferentOwner] = useState(false);
   const selectedType = watch('type');
@@ -262,6 +263,25 @@ export function ProjectDetailsForm() {
           </div>
         )}
       </div>
+      
+      {/* Project Inspiration Images */}
+      <div className="border-t border-slate-200 dark:border-slate-600 pt-8 mt-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-8 h-8 bg-[#ED8936] rounded-lg flex items-center justify-center">
+            <Building className="h-4 w-4 text-white" />
+          </div>
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white font-inter">
+            Project Inspiration Images
+          </h3>
+        </div>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mb-6 font-opensans">
+          Upload images that inspire your project. These will help contractors understand your vision.
+        </p>
+        <ProjectInspirationImages control={control} />
+      </div>
     </div>
   );
 }
+
+// Memoized export to prevent unnecessary re-renders
+export const ProjectDetailsForm = React.memo(ProjectDetailsFormComponent);

@@ -3,7 +3,7 @@
  * Second step of the project creation wizard
  * Collects location and plot information
  */
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { ProjectFormValues } from '../../pages/CreateProject';
 import { Input } from '@/components/ui/input';
@@ -97,7 +97,7 @@ const SIZE_UNITS: { value: AreaUnit; label: string }[] = [
   { value: 'hectare', label: 'Hectares' },
 ];
 
-export function LocationPlotForm() {
+function LocationPlotFormComponent() {
   const { control, watch, setValue } = useFormContext<ProjectFormValues>();
   
   // Watch plot size unit to provide appropriate guidance
@@ -106,8 +106,8 @@ export function LocationPlotForm() {
   // Watch country to show conditional regions
   const selectedCountry = watch('country');
   
-  // Helper function to get size guidance based on unit
-  const getSizeGuidance = (unit: string) => {
+  // Memoize the size guidance function to prevent recreation
+  const getSizeGuidance = useMemo(() => (unit: string) => {
     switch(unit) {
       case 'sq-m':
         return 'Standard residential plot sizes in Ghana range from 370-740 sq meters';
@@ -120,7 +120,7 @@ export function LocationPlotForm() {
       default:
         return '';
     }
-  };
+  }, []);
 
   return (
     <div className="space-y-8">
@@ -373,3 +373,6 @@ export function LocationPlotForm() {
     </div>
   );
 }
+
+// Memoized export to prevent unnecessary re-renders
+export const LocationPlotForm = React.memo(LocationPlotFormComponent);

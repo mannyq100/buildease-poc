@@ -98,9 +98,12 @@ const realAuthService = {
     try {
       const response = await apiClient.get<User>('/auth/me')
       return response
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        return null
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'response' in error) {
+        const errorWithResponse = error as { response?: { status?: number } };
+        if (errorWithResponse.response?.status === 401) {
+          return null;
+        }
       }
       throw error
     }

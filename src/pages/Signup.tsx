@@ -91,10 +91,11 @@ export default function Signup() {
       if (signupError) throw signupError
       
       setFormState(prev => ({ ...prev, verificationSent: true }))
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred during signup';
       setFormState(prev => ({ 
         ...prev, 
-        error: err.message || 'An error occurred during signup' 
+        error: errorMessage 
       }))
     } finally {
       setFormState(prev => ({ ...prev, isLoading: false }))
@@ -106,7 +107,7 @@ export default function Signup() {
     
     try {
       await auth.signInWithProvider(provider as Provider)
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage = getSocialLoginErrorMessage(provider as Provider, err)
       setFormState(prev => ({ 
         ...prev, 

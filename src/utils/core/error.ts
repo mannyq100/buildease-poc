@@ -64,7 +64,8 @@ export function normalizeError(error: unknown): AppError {
   
   // If it's an HTTP error with a status code
   if (typeof error === 'object' && error !== null && 'status' in error) {
-    const status = (error as any).status;
+    const errorWithStatus = error as { status: number; message?: string };
+    const status = errorWithStatus.status;
     let code = ErrorCode.UNKNOWN;
     
     // Map HTTP status to error codes
@@ -80,7 +81,7 @@ export function normalizeError(error: unknown): AppError {
     
     return {
       code,
-      message: (error as any).message || `HTTP Error ${status}`,
+      message: errorWithStatus.message || `HTTP Error ${status}`,
       details: error
     };
   }

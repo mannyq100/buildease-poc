@@ -1,20 +1,21 @@
 /**
  * Auto-save hook for project creation form
- * Saves form data to localStorage periodically
+ * Uses enhanced storage system with proper size management
  */
 import { useEffect, useCallback } from 'react';
 import { UseFormWatch } from 'react-hook-form';
 import { ProjectFormValues } from '@/pages/CreateProject';
-
-const STORAGE_KEY = 'buildease_project_draft';
-const SAVE_INTERVAL = 30000; // 30 seconds
+import { useDebounce } from '@/utils/core/debounce';
+import { storageManager } from '@/utils/storage/StorageManager';
+import { STORAGE_KEYS, STORAGE_CONFIG } from '@/utils/storage/constants';
+const DEBOUNCE_DELAY = 2000; // 2 seconds - more responsive than 30s interval
 
 export function useProjectFormAutoSave(
   watch: UseFormWatch<ProjectFormValues>,
   isDirty: boolean
 ) {
-  // Save to localStorage
-  const saveToStorage = useCallback((data: ProjectFormValues) => {
+  // Save using storage manager
+  const saveToStorage = useCallback(async (data: ProjectFormValues) => {
     try {
       const timestamp = new Date().toISOString();
       const draftData = {
@@ -22,21 +23,27 @@ export function useProjectFormAutoSave(
         _savedAt: timestamp,
         _version: '1.0'
       };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(draftData));
-      console.log('Form auto-saved at:', timestamp);
+      
+      await storageManager.set(STORAGE_KEYS.FORM.PROJECT_DRAFT, draftData, {
+        expiresIn: STORAGE_CONFIG.CACHE_EXPIRY.FORM_DRAFT
+      });
+      
+      // Form auto-saved successfully
     } catch (error) {
       console.warn('Failed to auto-save form data:', error);
     }
   }, []);
 
-  // Load from localStorage
-  const loadFromStorage = useCallback((): Partial<ProjectFormValues> | null => {
+  // Create debounced save function
+  const debouncedSave = useDebounce(saveToStorage, DEBOUNCE_DELAY, [saveToStorage]);
+
+  // Load from storage manager
+  const loadFromStorage = useCallback(async (): Promise<Partial<ProjectFormValues> | null> => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = await storageManager.get(STORAGE_KEYS.FORM.PROJECT_DRAFT);
       if (saved) {
-        const parsed = JSON.parse(saved);
         // Remove metadata before returning
-        const { _savedAt, _version, ...formData } = parsed;
+        const { _savedAt, _version, ...formData } = saved;
         return formData;
       }
     } catch (error) {
@@ -46,40 +53,37 @@ export function useProjectFormAutoSave(
   }, []);
 
   // Clear saved data
-  const clearSavedData = useCallback(() => {
+  const clearSavedData = useCallback(async () => {
     try {
-      localStorage.removeItem(STORAGE_KEY);
-      console.log('Saved form data cleared');
+      await storageManager.remove(STORAGE_KEYS.FORM.PROJECT_DRAFT);
+      // Saved form data cleared successfully
     } catch (error) {
       console.warn('Failed to clear saved form data:', error);
     }
   }, []);
 
-  // Auto-save effect
+  // Auto-save effect with debouncing
   useEffect(() => {
     if (!isDirty) return;
 
     const subscription = watch((data) => {
-      saveToStorage(data as ProjectFormValues);
+      // Use debounced save to prevent excessive localStorage writes
+      debouncedSave(data as ProjectFormValues);
     });
-
-    // Also save on interval
-    const intervalId = setInterval(() => {
-      if (isDirty) {
-        const currentData = watch();
-        saveToStorage(currentData as ProjectFormValues);
-      }
-    }, SAVE_INTERVAL);
 
     return () => {
       subscription.unsubscribe();
-      clearInterval(intervalId);
+      // Flush any pending save when unmounting if form is dirty
+      if (isDirty) {
+        debouncedSave.flush();
+      }
     };
-  }, [watch, saveToStorage, isDirty]);
+  }, [watch, debouncedSave, isDirty]);
 
   return {
     loadFromStorage,
     clearSavedData,
-    saveToStorage
+    saveToStorage,
+    forceSave: debouncedSave.flush // Allow manual save triggering
   };
 }

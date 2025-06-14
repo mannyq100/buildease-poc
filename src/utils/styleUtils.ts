@@ -48,7 +48,7 @@ export function injectStyles(css: string, id?: string): () => void {
  * @param dynamicValues The dynamic values to interpolate
  * @returns A memoized class name string
  */
-export function cx(strings: TemplateStringsArray, ...dynamicValues: any[]): string {
+export function cx(strings: TemplateStringsArray, ...dynamicValues: unknown[]): string {
   return strings.reduce((acc, str, i) => {
     return acc + str + (dynamicValues[i] || '');
   }, '');

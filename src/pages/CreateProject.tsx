@@ -4,7 +4,7 @@
  * Core wizard for the project creation process
  * BuildEase-themed mobile-first design with shadcn-ui components
  */
-import { useState } from 'react';
+import React, { useState, lazy, Suspense, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,11 +13,21 @@ import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cn } from '@/utils/core/ui';
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/lib/supabase";
-import { createProject, validateProjectData } from "@/services/projectCreationService";
+import { FormStepErrorBoundary } from "@/components/ui/form-step-error-boundary";
+import { useStepValidation } from "@/hooks/useDebouncedValidation";
+import { 
+  ProjectDetailsFormSkeleton,
+  LocationPlotFormSkeleton,
+  BuildingSpecsFormSkeleton,
+  BudgetTimelineFormSkeleton,
+  MaterialsConstructionFormSkeleton,
+  FeaturesFormSkeleton,
+  ReviewSubmitFormSkeleton
+} from "@/components/ui/form-step-skeleton";
 import { useProjectFormAutoSave } from "@/hooks/useProjectFormAutoSave";
 import { calculateFormProgress, validateStepData } from "@/utils/projectFormUtils";
 import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
+import { ProjectCreationProvider, useProjectCreation } from "@/contexts/ProjectCreationContext";
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -33,14 +43,15 @@ import {
   Loader2
 } from 'lucide-react';
 
-// Import wizard steps
-import { ProjectDetailsForm } from '../components/create-project/ProjectDetailsForm';
-import { LocationPlotForm } from '../components/create-project/LocationPlotForm';
-import { BuildingSpecsForm } from '../components/create-project/BuildingSpecsForm';
-import { BudgetTimelineForm } from '../components/create-project/BudgetTimelineForm';
-import { MaterialsConstructionForm } from '../components/create-project/MaterialsConstructionForm';
-import { FeaturesForm } from '../components/create-project/FeaturesForm';
-import { ReviewSubmitForm } from '../components/create-project/ReviewSubmitForm';
+// Lazy load wizard steps for better performance
+
+const ProjectDetailsForm = lazy(() => import('../components/create-project/ProjectDetailsForm').then(module => ({ default: module.ProjectDetailsForm })));
+const LocationPlotForm = lazy(() => import('../components/create-project/LocationPlotForm').then(module => ({ default: module.LocationPlotForm })));
+const BuildingSpecsForm = lazy(() => import('../components/create-project/BuildingSpecsForm').then(module => ({ default: module.BuildingSpecsForm })));
+const BudgetTimelineForm = lazy(() => import('../components/create-project/BudgetTimelineForm').then(module => ({ default: module.BudgetTimelineForm })));
+const MaterialsConstructionForm = lazy(() => import('../components/create-project/MaterialsConstructionForm').then(module => ({ default: module.MaterialsConstructionForm })));
+const FeaturesForm = lazy(() => import('../components/create-project/FeaturesForm').then(module => ({ default: module.FeaturesForm })));
+const ReviewSubmitForm = lazy(() => import('../components/create-project/ReviewSubmitForm').then(module => ({ default: module.ReviewSubmitForm })));
 
 // Optimized Project form schema - Simplified for better UX
 export const projectFormSchema = z.object({
@@ -93,8 +104,9 @@ export const projectFormSchema = z.object({
   localRegulations: z.string().optional(),
   additionalNotes: z.string().optional(),
   
-  // References
+  // Inspiration Images
   images: z.array(z.string()).optional(),
+  profileImage: z.string().optional(), // Selected profile/display image
 });
 
 // Form data type
@@ -140,7 +152,18 @@ const defaultValues: Partial<ProjectFormValues> = {
   images: [],
 };
 
-// Step definitions
+// Step field validation mapping
+const STEP_FIELDS: Record<number, (keyof ProjectFormValues)[]> = {
+  1: ['name', 'type'], // Essential Details
+  2: ['location', 'country', 'region', 'plotSize', 'plotSizeUnit'], // Location
+  3: ['buildingSize', 'buildingSizeUnit', 'storeys', 'bedrooms', 'bathrooms'], // Building Specs
+  4: ['budget', 'currency'], // Budget
+  5: [], // Materials (optional)
+  6: [], // Features (optional)
+  7: [], // Review (no validation)
+};
+
+// Step definitions - constant array (no need to memoize static data)
 const steps = [
   { 
     id: 1, 
@@ -186,13 +209,15 @@ const steps = [
   },
 ];
 
-export function CreateProject() {
-  const navigate = useNavigate();
+// Main CreateProject component (now uses context)
+function CreateProjectContent() {
   const { toast } = useToast();
   const { user } = useSupabaseAuth();
   const [currentStep, setCurrentStep] = useState(1);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const isMobile = useMediaQuery('(max-width: 768px)');
+  
+  // Use context for form submission and image handling
+  const { handleFormSubmit, isSubmitting } = useProjectCreation();
   
   // Total number of steps
   const totalSteps = steps.length;
@@ -208,6 +233,24 @@ export function CreateProject() {
   });
   
   const { handleSubmit, trigger, watch, formState: { isDirty } } = methods;
+  
+  // Memoized validation options to prevent hook recreation
+  const validationOptions = useMemo(() => ({
+    delay: 300,
+    onValidationStart: () => {
+      // Could show loading indicator
+    },
+    onValidationEnd: (isValid: boolean) => {
+      // Could update UI based on validation result
+      // Validation result logged for debugging in development only
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Step validation completed:', isValid);
+      }
+    },
+  }), []);
+  
+  // Debounced validation for better performance
+  const stepValidation = useStepValidation(trigger, STEP_FIELDS, validationOptions);
   
   // Auto-save functionality
   const { clearSavedData } = useProjectFormAutoSave(watch, isDirty);
@@ -226,43 +269,27 @@ export function CreateProject() {
     }
   };
   
-  // Calculate dynamic progress based on form completion
+  // Watch form data for progress calculation
   const formData = watch();
-  const formProgress = calculateFormProgress(formData);
   
-  // Handle next step navigation
-  const handleNext = async () => {
-    // Get fields to validate based on current step
-    let fieldsToValidate: string[] = [];
-    
-    switch (currentStep) {
-      case 1: // Essential Details - Only validate always required fields
-        fieldsToValidate = ['name', 'type'];
-        break;
-      case 2: // Location Essentials
-        fieldsToValidate = ['location', 'country', 'region', 'plotSize', 'plotSizeUnit'];
-        break;
-      case 3: // Core Building Requirements
-        fieldsToValidate = ['buildingSize', 'buildingSizeUnit', 'storeys', 'bedrooms', 'bathrooms'];
-        break;
-      case 4: // Budget Essentials
-        fieldsToValidate = ['budget', 'currency'];
-        break;
-      case 5: // Materials (all optional - AI will suggest)
-        fieldsToValidate = [];
-        break;
-      case 6: // Features & Preferences (all optional)
-        fieldsToValidate = [];
-        break;
-      case 7: // Review & Submit
-        handleSubmit(onSubmit)();
-        return;
+  // Calculate dynamic progress based on form completion (memoized using string comparison for efficiency)
+  const formDataString = useMemo(() => JSON.stringify(formData), [formData]);
+  const formProgress = useMemo(() => {
+    return calculateFormProgress(formData);
+  }, [formDataString, formData]);
+  
+  // Handle next step navigation with improved validation (memoized)
+  const handleNext = useCallback(async () => {
+    // Handle final step submission
+    if (currentStep === 7) {
+      handleSubmit(onSubmit)();
+      return;
     }
     
-    // Validate the fields for the current step
-    const isStepValid = await trigger(fieldsToValidate as any);
+    // Use debounced validation for current step
+    const isStepValid = await stepValidation.validateStep(currentStep);
     
-    // Additionally validate using our utility function
+    // Additionally validate using our utility function for business logic
     const stepErrors = validateStepData(formData, currentStep);
     if (stepErrors.length > 0) {
       toast({
@@ -286,45 +313,20 @@ export function CreateProject() {
         variant: "destructive",
       });
     }
-  };
+  }, [currentStep, stepValidation, formData, totalSteps, toast, handleSubmit]);
   
-  // Handle back navigation
-  const handleBack = () => {
+  // Handle back navigation (memoized)
+  const handleBack = useCallback(() => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, []);
   
-  // Handle form submission
+
+  // Handle form submission using context
   const onSubmit = async (data: ProjectFormValues) => {
-    setIsSubmitting(true);
-    
     try {
-      // Get current user
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      
-      if (userError || !userData?.user) {
-        throw new Error('User not authenticated');
-      }
-      
-      // Validate form data
-      const validation = validateProjectData(data);
-      if (!validation.isValid) {
-        throw new Error(validation.errors.join(', '));
-      }
-      
-      // Create project using the service
-      const result = await createProject(data, userData.user.id);
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to create project');
-      }
-      
-      // Show success toast
-      toast({
-        title: "Project created successfully!",
-        description: "Your project has been saved and is ready for AI generation.",
-      });
+      await handleFormSubmit(data);
       
       // Clear auto-saved data on successful submission
       clearSavedData();
@@ -332,53 +334,64 @@ export function CreateProject() {
       // Refresh user profile to include new project in permissions
       await refreshUserProfile();
       
-      // Navigate to dashboard or project details page
-      navigate('/dashboard');
+      // Navigation is handled by the context through onProjectCreated callback
       
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "There was a problem creating your project. Please try again.";
+      // Error handling is done in the context
       console.error('Error submitting form:', error);
-      
-      // Show error toast
-      toast({
-        title: "Error creating project",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
     }
   };
   
-  // Render step content based on current step
+  // Render step content with error boundary and suspense protection
   const renderStepContent = () => {
-    switch (currentStep) {
-      case 1:
-        return <ProjectDetailsForm />;
-      case 2:
-        return <LocationPlotForm />;
-      case 3:
-        return <BuildingSpecsForm />;
-      case 4:
-        return <BudgetTimelineForm />;
-      case 5:
-        return <MaterialsConstructionForm />;
-      case 6:
-        return <FeaturesForm />;
-      case 7:
-        return <ReviewSubmitForm />;
-      default:
-        return <ProjectDetailsForm />;
-    }
+    const stepInfo = steps[currentStep - 1];
+    
+    // Map steps to their skeleton components for better loading UX
+    const getStepSkeleton = () => {
+      switch (currentStep) {
+        case 1: return <ProjectDetailsFormSkeleton />;
+        case 2: return <LocationPlotFormSkeleton />;
+        case 3: return <BuildingSpecsFormSkeleton />;
+        case 4: return <BudgetTimelineFormSkeleton />;
+        case 5: return <MaterialsConstructionFormSkeleton />;
+        case 6: return <FeaturesFormSkeleton />;
+        case 7: return <ReviewSubmitFormSkeleton />;
+        default: return <ProjectDetailsFormSkeleton />;
+      }
+    };
+    
+    return (
+      <div className="mt-8">
+        <FormStepErrorBoundary
+          stepNumber={currentStep}
+          stepTitle={stepInfo.title}
+          onRetry={() => {
+            // Force re-render by updating a state or key
+            window.location.reload(); // Simple approach for now
+          }}
+          onGoBack={currentStep > 1 ? handleBack : undefined}
+        >
+          <Suspense fallback={getStepSkeleton()}>
+            {currentStep === 1 && <ProjectDetailsForm />}
+            {currentStep === 2 && <LocationPlotForm />}
+            {currentStep === 3 && <BuildingSpecsForm />}
+            {currentStep === 4 && <BudgetTimelineForm />}
+            {currentStep === 5 && <MaterialsConstructionForm />}
+            {currentStep === 6 && <FeaturesForm />}
+            {currentStep === 7 && <ReviewSubmitForm />}
+          </Suspense>
+        </FormStepErrorBoundary>
+      </div>
+    );
   };
-  
-  // Jump to a specific step (only if it's a previous step)
-  const jumpToStep = (stepId: number) => {
+
+  // Jump to a specific step (only if it's a previous step) - memoized
+  const jumpToStep = useCallback((stepId: number) => {
     if (currentStep > stepId) {
       setCurrentStep(stepId);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  };
+  }, [currentStep]);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
@@ -567,4 +580,21 @@ export function CreateProject() {
     </div>
   );
 }
+
+// Wrapper component with ProjectCreationProvider
+export function CreateProject() {
+  const navigate = useNavigate();
+
+  const handleProjectCreated = useCallback((_projectId: string) => {
+    // Navigate to the project details or dashboard
+    navigate('/dashboard');
+  }, [navigate]);
+
+  return (
+    <ProjectCreationProvider onProjectCreated={handleProjectCreated}>
+      <CreateProjectContent />
+    </ProjectCreationProvider>
+  );
+}
+
 export default CreateProject;

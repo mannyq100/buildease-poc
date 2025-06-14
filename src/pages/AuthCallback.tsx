@@ -21,12 +21,12 @@ export default function AuthCallback() {
         
         if (session) {
           // Already have a session, redirect to dashboard
-          console.log('Session found, redirecting to dashboard')
+          // Session found, redirecting to dashboard
           navigate('/dashboard')
         } else {
           // No session yet, try to exchange the code if present
           if (hashParams.get('access_token') || queryParams.get('code')) {
-            console.log('Auth code or token found, exchanging...')
+            // Auth code or token found, exchanging...
             
             // Let Supabase handle the token exchange in the background
             const { data, error } = await supabase.auth.getUser()
@@ -44,7 +44,7 @@ export default function AuthCallback() {
             }
             
             // Successfully authenticated
-            console.log('Successfully authenticated, redirecting to return URL or dashboard')
+            // Successfully authenticated, redirecting
             
             // Get the return URL from localStorage if it exists
             const returnUrl = localStorage.getItem('returnUrl') || '/dashboard'
@@ -65,7 +65,7 @@ export default function AuthCallback() {
             }
             
             // No auth code or token found, redirect to login
-            console.warn('No auth code or token found in URL')
+            // No auth code or token found in URL, redirecting to login
             navigate('/login')
           }
         }

@@ -31,13 +31,13 @@ export function createService<T>(
  * @param apiClient The API client instance
  * @returns A function that will call either mock or real implementation
  */
-export function createMethod<TArgs extends any[], TReturn>(
+export function createMethod<TArgs extends unknown[], TReturn>(
   mockMethod: (...args: TArgs) => Promise<TReturn>,
   entityName: string,
   apiEndpoint: string | ((...args: TArgs) => string),
   apiMethod: 'get' | 'post' | 'put' | 'delete' | 'patch',
-  apiClient: any,
-  dataTransformer?: (data: any) => TReturn
+  apiClient: unknown,
+  dataTransformer?: (data: unknown) => TReturn
 ): (...args: TArgs) => Promise<TReturn> {
   return async (...args: TArgs): Promise<TReturn> => {
     // Check if we should use the mock implementation

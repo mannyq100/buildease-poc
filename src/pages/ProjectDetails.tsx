@@ -46,6 +46,7 @@ import {
   ProjectPhasesSection,
   ProjectActivitySection,
   ProjectInsightsSection,
+  ProjectInspirationSection,
   QuickActionsSection,
   ProjectEditDialog
 } from '@/components/project'
@@ -56,6 +57,8 @@ import { Task } from '@/types/task'
 
 // Mock data
 import { INITIAL_PHASES, RECENT_ACTIVITY } from '@/data/projectData'
+
+// Project images
 
 // Types for new phase and task
 interface NewPhase {
@@ -256,26 +259,27 @@ export function ProjectDetails() {
    * Handle updating project information
    */
   const handleProjectUpdate = (updatedProject) => {
-    setProjectInfo(updatedProject);
+    setProjectInfo({
+      ...projectInfo,
+      ...updatedProject
+    });
     
-    // Create a new activity entry for the project update
+    // Add activity log entry for the update
     const newActivity = {
-      id: Math.random().toString(36).substring(2, 9),
-      date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' (Today)',
-      title: 'Project Information Updated',
-      description: `Project details were updated by ${updatedProject.name}`,
-      type: 'project_update' as const,
+      id: `activity-${Date.now()}`,
+      date: new Date().toISOString(),
+      title: 'Project Details Updated',
+      description: `Project details were updated by ${localStorage.getItem('userName') || 'a team member'}.`,
+      type: 'project_update',
+      icon: <FileBarChart className="h-4 w-4" />,
       user: {
-        name: 'Current User',
+        name: localStorage.getItem('userName') || 'Team Member',
         avatar: null
       }
     };
     
-    // Add the new activity to the activities list
     setActivities([newActivity, ...activities]);
-    
-    // In a real app, this would make an API call to update the project
-    console.log('Project updated:', updatedProject);
+    setEditProjectDialogOpen(false);
   };
 
   // Calculate total progress across all phases
@@ -419,6 +423,11 @@ export function ProjectDetails() {
         
         {/* Sidebar - Column 3 */}
         <div className="space-y-6">
+          {/* Project Inspiration Images */}
+          <ProjectInspirationSection 
+            projectId={projectInfo.id}
+          />
+          
           {/* Quick Actions */}
           <QuickActionsSection 
             actions={[
@@ -443,7 +452,6 @@ export function ProjectDetails() {
           {/* Project Insights */}
           <ProjectInsightsSection 
             insights={projectInsights} 
-            isDarkMode={isDarkMode}
           />
           
           {/* Recent Activity Section - Moved to sidebar */}
