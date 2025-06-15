@@ -109,7 +109,9 @@ export class StorageManager {
       if (this.config.fallbackStrategy && strategy !== this.getFallbackStrategy()) {
         try {
           await this.getFallbackStrategy().set(key, value, options);
-          console.warn(`Fallback storage used for key: ${key}`);
+          if (process.env.NODE_ENV === 'development') {
+            console.warn(`Fallback storage used for key: ${key}`);
+          }
         } catch {
           throw error; // Throw original error
         }
@@ -260,7 +262,7 @@ export class StorageManager {
       errors.push(error instanceof Error ? error : new Error('IndexedDB cleanup failed'));
     }
     
-    if (errors.length > 0) {
+    if (errors.length > 0 && process.env.NODE_ENV === 'development') {
       console.warn('Storage cleanup completed with errors:', errors);
     }
   }
@@ -282,7 +284,9 @@ export class StorageManager {
 
     this.cleanupInterval = setInterval(() => {
       this.cleanup().catch(error => {
-        console.error('Automatic cleanup failed:', error);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Automatic cleanup failed:', error);
+        }
       });
     }, this.config.autoCleanup.interval);
   }
@@ -314,10 +318,13 @@ export class StorageManager {
       error: error instanceof Error ? error.message : error
     };
     
-    if (success) {
-      console.debug('Storage operation:', logData);
-    } else {
-      console.warn('Storage operation failed:', logData);
+    // Only log in development environment
+    if (process.env.NODE_ENV === 'development') {
+      if (success) {
+        console.debug('Storage operation:', logData);
+      } else {
+        console.warn('Storage operation failed:', logData);
+      }
     }
   }
 

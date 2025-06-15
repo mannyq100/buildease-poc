@@ -9,27 +9,9 @@ export { StorageManager, storageManager } from './StorageManager';
 export { IndexedDBStrategy } from './strategies/IndexedDBStrategy';
 export { LocalStorageStrategy } from './strategies/LocalStorageStrategy';
 
-// Auth storage service
-export { 
-  AuthStorageService, 
-  authStorage,
-  type UserProfile,
-  type AuthTokens,
-  type ProviderTokens,
-  type SessionData,
-  type AuthStorageInterface 
-} from './AuthStorageService';
+// Auth storage handled by LightweightStorageAdapter for Supabase integration
 
-// Cleanup utilities
-export {
-  cleanupLegacyStorage,
-  performStorageHealthCheck,
-  cleanupExpiredItems,
-  initializeStorageSystem,
-  schedulePeriodicCleanup,
-  type CleanupReport,
-  type HealthCheckReport
-} from './cleanupUtils';
+// Storage cleanup handled by individual strategies
 
 // Types and constants
 export {

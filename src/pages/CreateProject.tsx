@@ -58,7 +58,7 @@ export const projectFormSchema = z.object({
   // Essential Information - Step 1
   name: z.string().min(3, 'Project name must be at least 3 characters').max(100),
   description: z.string().optional(),
-  type: z.string().min(1, 'Please select a project type'),
+  projectType: z.string().min(1, 'Please select a project type'),
   owner: z.string().optional(), // Made optional - only required if different owner
   phoneNumber: z.string().optional(),
   email: z.string().optional(), // Made optional - only required if different owner
@@ -116,7 +116,7 @@ export type ProjectFormValues = z.infer<typeof projectFormSchema>;
 const defaultValues: Partial<ProjectFormValues> = {
   name: '',
   description: '',
-  type: '',
+  projectType: '',
   owner: '',
   phoneNumber: '',
   email: '',
@@ -154,7 +154,7 @@ const defaultValues: Partial<ProjectFormValues> = {
 
 // Step field validation mapping
 const STEP_FIELDS: Record<number, (keyof ProjectFormValues)[]> = {
-  1: ['name', 'type'], // Essential Details
+  1: ['name', 'projectType'], // Essential Details
   2: ['location', 'country', 'region', 'plotSize', 'plotSizeUnit'], // Location
   3: ['buildingSize', 'buildingSizeUnit', 'storeys', 'bedrooms', 'bathrooms'], // Building Specs
   4: ['budget', 'currency'], // Budget

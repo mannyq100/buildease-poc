@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -13,7 +13,6 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  TooltipProps,
   Sector,
   Area,
   AreaChart
@@ -604,4 +603,6 @@ export function DataVisualization({
       </div>
     </DashboardCard>
   );
-} 
+}
+
+export default DataVisualization;

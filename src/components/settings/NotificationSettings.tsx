@@ -10,8 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Bell, Mail } from 'lucide-react';
-import type { SettingsTabProps, NotificationSettings as NotificationSettingsType } from '@/types/settings';
-import type { UserProfile, UserSettings } from '@/types/user';
+import type { SettingsTabProps } from '@/types/settings';
+import type { UserProfile, UserSettings, NotificationSettings as NotificationSettingsType } from '@/types/user';
 
 interface NotificationSettingsProps extends SettingsTabProps {
   profile: UserProfile | null;

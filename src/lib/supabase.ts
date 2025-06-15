@@ -1,27 +1,50 @@
 /**
- * Supabase client configuration
- * Central point for Supabase service access
+ * Supabase client configuration with secure storage
+ * Central point for Supabase service access with optimized performance
  */
 import { createClient } from '@supabase/supabase-js'
+import { storageAdapter } from '../utils/auth/StorageAdapter'
+import { logger } from '../utils/core/logger'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables. Make sure to set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY')
+  logger.error('Missing Supabase environment variables. Make sure to set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY')
 }
+
+// Storage implementation for optimal performance
+const secureStorage = {
+  getItem: async (key: string): Promise<string | null> => {
+    return await storageAdapter.getItem(key);
+  },
+  setItem: async (key: string, value: string): Promise<void> => {
+    return await storageAdapter.setItem(key, value);
+  },
+  removeItem: async (key: string): Promise<void> => {
+    return await storageAdapter.removeItem(key);
+  },
+};
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   db: {
     schema: 'construction_mgr',
   },
   auth: {
-    // Auth operations should use the default schema (public/auth)
-    // Don't override this as it interferes with auth.users table operations
+    // Use our secure storage adapter
+    storage: secureStorage,
+    storageKey: 'buildease_supabase_auth',
+    // Enhanced security settings
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    // Construction-specific timeouts
+    flowType: 'pkce', // More secure for public clients
   },
   global: {
     headers: {
-      'X-Client-Info': 'buildease-construction-mgr'
+      'X-Client-Info': 'buildease-construction-mgr',
+      'X-Security-Version': '2.0'
     }
   }
 })

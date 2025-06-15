@@ -5,7 +5,7 @@
  * Allows users to upload, preview, and manage project images
  * Enhanced with local storage persistence for form state
  */
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import { X, Upload, Camera, AlertCircle } from 'lucide-react';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
@@ -43,17 +43,7 @@ function ProjectInspirationImagesComponent({ control, className = '' }: ProjectI
   // The localFiles from context already have previewUrl, so we can use them directly
   const previewImages = localFiles;
   
-  // Debug logging in development
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Preview images updated:', previewImages.length, previewImages.map(img => ({
-        id: img.id,
-        fileName: img.file?.name,
-        hasPreviewUrl: !!img.previewUrl,
-        previewUrl: img.previewUrl?.substring(0, 50) + '...'
-      })));
-    }
-  }, [previewImages]);
+  // Debug logging removed for production optimization
   
   // Form field connection is now handled by the context
   // No need for manual synchronization
@@ -69,7 +59,7 @@ function ProjectInspirationImagesComponent({ control, className = '' }: ProjectI
       try {
         await handleFileSelection(file);
       } catch (error) {
-        console.error('Failed to handle file selection:', error);
+        // Error handling is managed by the context with toast notifications
       }
     }
   }, [handleFileSelection]);
@@ -177,7 +167,6 @@ function ProjectInspirationImagesComponent({ control, className = '' }: ProjectI
                               alt={preview.file.name || "Project inspiration"} 
                               className="w-full h-full object-cover"
                               onError={(e) => {
-                                console.warn('Image preview failed to load:', preview.previewUrl);
                                 // Show a placeholder instead of hiding the image
                                 e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIEVycm9yPC90ZXh0Pjwvc3ZnPg==';
                               }}

@@ -1,9 +1,9 @@
 /**
  * API Client
- * Centralized HTTP client for making API requests with authentication support
+ * Centralized HTTP client for making API requests with Supabase authentication support
  */
-import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { getAuthHeader, removeToken, getProviderToken } from '@/lib/token';
+import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+import { supabase } from '@/lib/supabase';
 import { AuthProvider } from '@/types/user';
 import { API_CONFIG } from '@/config';
 
@@ -21,14 +21,20 @@ const axiosClient: AxiosInstance = axios.create({
   },
 });
 
-// Request interceptor for adding auth token
+// Request interceptor for adding Supabase auth token
 axiosClient.interceptors.request.use(
-  (config: AxiosRequestConfig): AxiosRequestConfig => {
-    // Get token from localStorage or auth header helper
-    const authHeader = getAuthHeader();
-    if (authHeader && authHeader.Authorization && config.headers) {
-      config.headers.Authorization = authHeader.Authorization;
+  async (config: InternalAxiosRequestConfig): Promise<InternalAxiosRequestConfig> => {
+    try {
+      // Get current session from Supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.access_token && config.headers) {
+        config.headers.Authorization = `Bearer ${session.access_token}`;
+      }
+    } catch (error) {
+      console.warn('Failed to get Supabase session for API request:', error);
     }
+    
     return config;
   },
   (error: AxiosError): Promise<AxiosError> => {
@@ -44,8 +50,8 @@ axiosClient.interceptors.response.use(
       // Handle specific HTTP status codes
       switch (error.response.status) {
         case 401: // Unauthorized
-          // Clear auth tokens and redirect to login
-          removeToken();
+          // Sign out from Supabase and redirect to login
+          supabase.auth.signOut().catch(console.error);
           window.location.href = '/login?session=expired';
           break;
           
@@ -115,15 +121,26 @@ export async function apiRequest<T>(
 
   // Add auth header if needed
   if (includeAuth) {
-    const authHeader = getAuthHeader();
-    Object.assign(requestHeaders, authHeader);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        requestHeaders.Authorization = `Bearer ${session.access_token}`;
+      }
+    } catch (error) {
+      console.warn('Failed to get Supabase session for API request:', error);
+    }
   }
 
   // Add provider-specific token if specified
   if (provider) {
-    const providerToken = getProviderToken(provider);
-    if (providerToken) {
-      requestHeaders[`X-${provider.toUpperCase()}-TOKEN`] = providerToken;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      // For OAuth providers, we can get provider tokens from session
+      if (session?.provider_token) {
+        requestHeaders[`X-${provider.toUpperCase()}-TOKEN`] = session.provider_token;
+      }
+    } catch (error) {
+      console.warn('Failed to get provider token from Supabase session:', error);
     }
   }
 
@@ -228,11 +245,15 @@ const apiClient = {
    * @param provider The auth provider
    * @param config The axios config to modify
    */
-  addProviderToken: (provider: AuthProvider, config: AxiosRequestConfig = {}): AxiosRequestConfig => {
-    const providerToken = getProviderToken(provider);
-    if (providerToken) {
-      if (!config.headers) config.headers = {};
-      config.headers[`X-${provider.toUpperCase()}-TOKEN`] = providerToken;
+  addProviderToken: async (provider: AuthProvider, config: AxiosRequestConfig = {}): Promise<AxiosRequestConfig> => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.provider_token) {
+        if (!config.headers) config.headers = {};
+        config.headers[`X-${provider.toUpperCase()}-TOKEN`] = session.provider_token;
+      }
+    } catch (error) {
+      console.warn('Failed to get provider token from Supabase session:', error);
     }
     return config;
   }

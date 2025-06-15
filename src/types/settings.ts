@@ -17,14 +17,8 @@ export interface ProfileUploadState {
   isUpdating: boolean;
 }
 
-export interface NotificationSettings {
-  email: boolean;
-  push: boolean;
-  projectUpdates: boolean;
-  taskAssignments: boolean;
-  phaseCompletions: boolean;
-  teamMessages: boolean;
-}
+// NotificationSettings moved to @/types/user to avoid duplication
+// Import with: import type { NotificationSettings } from '@/types/user';
 
 export interface AppearanceSettings {
   theme: 'light' | 'dark' | 'system';

@@ -43,3 +43,9 @@ export * from './fileUpload';
 
 // Export all storage utilities
 export * from './storageUtils';
+
+// Export logging utilities
+export * from './logger';
+
+// Export authentication utilities
+export * from '../auth';

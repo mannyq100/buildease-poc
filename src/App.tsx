@@ -12,10 +12,13 @@ import { LazyMotion, domAnimation } from "framer-motion";
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { SupabaseAuthProvider, useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
-import { useEffect } from 'react';
+import { useEffect, Suspense, lazy } from 'react';
 
 // Environment configuration
 import config, { isDevelopment, isProduction } from '@/lib/env-config';
+
+// Security initialization
+import { securityMonitor } from '@/utils/auth/SecurityMonitor';
 
 
 // Styles
@@ -24,27 +27,37 @@ import '@/styles/dark-theme.css';
 // Layout
 import { AppLayout } from "@/components/layout/AppLayout";
 
-// Page Components - Lazy load these for better performance
-import { Dashboard } from "./pages/Dashboard";
-import { ProjectDetails } from "./pages/ProjectDetails";
-import PhaseDetails from "./pages/PhaseDetails";
-import GeneratedPlan from "./pages/GeneratedPlan";
-import TaskPlanningSetup from "./pages/TaskPlanningSetup";
-import NotFound from "./pages/NotFound";
-import Team from "./pages/Team";
-import { Schedule } from "./pages/Schedule";
-import { Materials } from "./pages/Materials";
-import Documents from "./pages/Documents";
-import Expenses from "./pages/Expenses";
-import { Projects } from "./pages/Projects";
-import { CreateProject } from "./pages/CreateProject";
-import Settings from './pages/Settings';
-import Messaging from './pages/Messaging';
-import LandingPage from './pages/LandingPage';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import AuthCallback from './pages/AuthCallback';
-import { Unauthorized } from './pages/Unauthorized';
+// Page Components - Lazy loaded for better performance and code splitting
+const Dashboard = lazy(() => import("./pages/Dashboard").then(m => ({ default: m.Dashboard })));
+const ProjectDetails = lazy(() => import("./pages/ProjectDetails").then(m => ({ default: m.ProjectDetails })));
+const PhaseDetails = lazy(() => import("./pages/PhaseDetails"));
+const GeneratedPlan = lazy(() => import("./pages/GeneratedPlan"));
+const TaskPlanningSetup = lazy(() => import("./pages/TaskPlanningSetup"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Team = lazy(() => import("./pages/Team"));
+const Schedule = lazy(() => import("./pages/Schedule").then(m => ({ default: m.Schedule })));
+const Materials = lazy(() => import("./pages/Materials").then(m => ({ default: m.Materials })));
+const Documents = lazy(() => import("./pages/Documents"));
+const Expenses = lazy(() => import("./pages/Expenses"));
+const Projects = lazy(() => import("./pages/Projects").then(m => ({ default: m.Projects })));
+const CreateProject = lazy(() => import("./pages/CreateProject").then(m => ({ default: m.CreateProject })));
+const Settings = lazy(() => import('./pages/Settings'));
+const Messaging = lazy(() => import('./pages/Messaging'));
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const Login = lazy(() => import('./pages/Login'));
+const Signup = lazy(() => import('./pages/Signup'));
+const AuthCallback = lazy(() => import('./pages/AuthCallback'));
+const Unauthorized = lazy(() => import('./pages/Unauthorized').then(m => ({ default: m.Unauthorized })));
+
+// Loading component for Suspense fallback
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-[60vh]">
+    <div className="flex flex-col items-center gap-4">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2B6CB0]"></div>
+      <p className="text-sm text-slate-500">Loading...</p>
+    </div>
+  </div>
+);
 
 // Set up default query client options with better user feedback
 const queryClient = new QueryClient({
@@ -95,6 +108,19 @@ function AuthRedirector() {
 }
 
 function App() {
+  // Initialize security systems on app start
+  useEffect(() => {
+    try {
+      // Initialize security monitoring
+      securityMonitor;
+      
+      if (isDevelopment()) {
+        console.log('🛡️ Lightweight security systems initialized');
+      }
+    } catch (error) {
+      console.error('Failed to initialize security systems:', error);
+    }
+  }, []);
 
   return (
     <BrowserRouter>
@@ -114,13 +140,14 @@ function App() {
                   )}
                   <SupabaseAuthProvider>
                     <AuthRedirector />
-                    <Routes>
-                      {/* Public routes - accessible without authentication */}
-                      <Route path="/" element={<LandingPage />} />
-                      <Route path="/unauthorized" element={<Unauthorized />} />
-                      <Route path="/login" element={<Login />} />
-                      <Route path="/signup" element={<Signup />} />
-                      <Route path="/auth/callback" element={<AuthCallback />} />
+                    <Suspense fallback={<PageLoader />}>
+                      <Routes>
+                        {/* Public routes - accessible without authentication */}
+                        <Route path="/" element={<LandingPage />} />
+                        <Route path="/unauthorized" element={<Unauthorized />} />
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/signup" element={<Signup />} />
+                        <Route path="/auth/callback" element={<AuthCallback />} />
                       
                       {/* Protected routes wrapped in AppLayout */}
                       <Route path="/*" element={
@@ -164,6 +191,7 @@ function App() {
                         <Route path="*" element={<NotFound />} />
                       </Route>
                     </Routes>
+                    </Suspense>
                   </SupabaseAuthProvider>
                 </ToastContextProvider>
               </TooltipProvider>

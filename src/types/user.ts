@@ -3,14 +3,14 @@
  * Based on BuildEase API schema
  */
 
-// User provider types
-export type AuthProvider = 'GOOGLE' | 'APPLE' | 'EMAIL' | 'GITHUB' | 'SUPABASE' | 'FACEBOOK' | 'LINKEDIN';
+// User provider types - aligned with Supabase and database capabilities
+export type AuthProvider = 'GOOGLE' | 'FACEBOOK' | 'EMAIL' | 'GITHUB' | 'APPLE';
 
-// User status types
-export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'PENDING' | 'SUSPENDED';
+// User status types - aligned with database schema
+export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 
-// User tier types
-export type UserTier = 'BASIC' | 'PREMIUM' | 'ENTERPRISE';
+// User tier types - aligned with database schema including FREE tier
+export type UserTier = 'FREE' | 'BASIC' | 'PREMIUM' | 'ENTERPRISE';
 
 // Project permission types
 export type ProjectPermission = 
@@ -20,8 +20,14 @@ export type ProjectPermission =
   | 'MANAGE_TEAM'
   | 'ADMIN';
 
-// User role types for RBAC
-export type UserRole = 'admin' | 'owner' | 'manager' | 'contractor' | 'worker' | 'client';
+// Database user roles (from construction_mgr schema)
+export type DatabaseUserRole = 'OWNER' | 'CONTRACTOR' | 'ARCHITECT' | 'ENGINEER' | 'SUPPLIER' | 'INSPECTOR';
+
+// Application-level user roles for frontend logic and component access control
+export type AppUserRole = 'admin' | 'owner' | 'manager' | 'contractor' | 'worker' | 'client';
+
+// Main user role type for frontend components (keep app-level roles for UI logic)
+export type UserRole = AppUserRole;
 
 // Define Permission type based on construction_mgr.permission_type enum
 export type Permission = string; 
