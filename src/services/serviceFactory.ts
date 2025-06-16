@@ -4,6 +4,15 @@
  * Allows toggling between mock and real API implementations
  */
 import { USE_MOCK_API, DEFAULT_TO_MOCK } from '@/config';
+import { AxiosRequestConfig } from 'axios';
+
+interface ApiClient {
+  get: <T>(url: string, config?: AxiosRequestConfig) => Promise<T>;
+  post: <T>(url: string, data?: any, config?: AxiosRequestConfig) => Promise<T>;
+  put: <T>(url: string, data?: any, config?: AxiosRequestConfig) => Promise<T>;
+  patch: <T>(url: string, data?: any, config?: AxiosRequestConfig) => Promise<T>;
+  delete: <T>(url: string, config?: AxiosRequestConfig) => Promise<T>;
+}
 
 /**
  * Creates a service implementation based on configuration
@@ -36,7 +45,7 @@ export function createMethod<TArgs extends unknown[], TReturn>(
   entityName: string,
   apiEndpoint: string | ((...args: TArgs) => string),
   apiMethod: 'get' | 'post' | 'put' | 'delete' | 'patch',
-  apiClient: unknown,
+  apiClient: ApiClient,
   dataTransformer?: (data: unknown) => TReturn
 ): (...args: TArgs) => Promise<TReturn> {
   return async (...args: TArgs): Promise<TReturn> => {
@@ -62,7 +71,7 @@ export function createMethod<TArgs extends unknown[], TReturn>(
       }
       
       // Transform the response if a transformer was provided
-      return dataTransformer ? dataTransformer(response) : response;
+      return dataTransformer ? dataTransformer(response) : (response as TReturn);
     } catch (error) {
       console.error(`API error for ${entityName}:`, error);
       throw error;

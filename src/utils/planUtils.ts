@@ -9,6 +9,7 @@ export function createDefaultPhase(phaseNumber: number): Phase {
     id: uuidv4(),
     title: `Phase ${phaseNumber}`,
     description: 'Description of this phase',
+    duration: '2 weeks',
     tasks: [],
     materials: []
   };
@@ -39,7 +40,7 @@ export function parsePlanContentToPhases(content: string): Phase[] {
         id: uuidv4(),
         title: taskMatch[1].trim(),
         description: taskMatch[2]?.trim() || '',
-        status: 'pending'
+        completed: false
       });
     }
     
@@ -70,6 +71,7 @@ export function parsePlanContentToPhases(content: string): Phase[] {
       id: uuidv4(),
       title: `Phase ${phaseNumber}: ${phaseTitle}`,
       description: phaseContent,
+      duration: startDate && endDate ? `${startDate} - ${endDate}` : '2 weeks',
       tasks,
       materials,
       startDate,

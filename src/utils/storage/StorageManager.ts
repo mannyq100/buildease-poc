@@ -87,10 +87,15 @@ export class StorageManager {
    * Check if key is for small configuration data
    */
   private isSmallDataKey(key: string): boolean {
-    return Object.values(STORAGE_KEYS.AUTH).includes(key) ||
-           Object.values(STORAGE_KEYS.USER).includes(key) ||
+    const authValues = [STORAGE_KEYS.AUTH.TOKEN, STORAGE_KEYS.AUTH.REFRESH_TOKEN, STORAGE_KEYS.AUTH.USER_PROFILE];
+    const userValues = [STORAGE_KEYS.USER.NAME, STORAGE_KEYS.USER.PREFERENCES, STORAGE_KEYS.USER.SESSION];
+    const navigationValues = [STORAGE_KEYS.NAVIGATION.RETURN_URL, STORAGE_KEYS.NAVIGATION.LAST_ROUTE];
+    
+    return authValues.includes(key) ||
+           userValues.includes(key) ||
            key === STORAGE_KEYS.THEME ||
-           Object.values(STORAGE_KEYS.NAVIGATION).includes(key);
+           navigationValues.includes(key) ||
+           key.startsWith('buildease_profile_cache_'); // Handle dynamic profile cache keys
   }
 
   /**

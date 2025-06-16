@@ -4,7 +4,6 @@
  * A component for selecting project type with visual options
  * Part of the project creation workflow
  */
-import React from 'react';
 import { Building, Home, Store, Hammer } from 'lucide-react';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { CustomRadioGroup } from '@/components/ui/custom-radio-group';

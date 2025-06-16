@@ -28,8 +28,9 @@ const realProjectService = {
     try {
       const response = await apiClient.get<Project>(`/projects/${id}`)
       return response
-    } catch (error: any) {
-      if (error.response?.status === 404) {
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'response' in error && 
+          (error as any).response?.status === 404) {
         return null
       }
       throw error
@@ -83,8 +84,9 @@ const realProjectService = {
     try {
       const response = await apiClient.put<Project>(`/projects/${id}`, updates)
       return response
-    } catch (error: any) {
-      if (error.response?.status === 404) {
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'response' in error && 
+          (error as any).response?.status === 404) {
         return null
       }
       throw error

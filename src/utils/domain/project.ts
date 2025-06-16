@@ -181,7 +181,7 @@ export function calculateProjectProgress(project: Project): number {
   project.phases.forEach(phase => {
     if (phase.tasks && phase.tasks.length > 0) {
       totalTasks += phase.tasks.length;
-      completedTasks += phase.tasks.filter(task => task.status === 'completed').length;
+      completedTasks += phase.tasks.filter(task => task.status === 'Completed').length;
     }
   });
 

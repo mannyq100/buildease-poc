@@ -3,7 +3,6 @@
  * Sixth step of the project creation wizard
  * Collects special features and sustainability information
  */
-import React from 'react';
 import { useFormContext } from 'react-hook-form';
 import { ProjectFormValues } from '../../pages/CreateProject';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';

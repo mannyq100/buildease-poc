@@ -144,8 +144,8 @@ export function createNewTeamMember(
     completedTasks: 0,
     totalTasks: 0,
     performance: data.performance || 0,
-    availability: data.availability || 100,
-    isTopPerformer: Boolean(data.performance >= 90), // Fix the isTopPerformer property to be a boolean
+    availability: data.availability ? `${data.availability}%` : '100%',
+    isTopPerformer: Boolean(data.performance && data.performance >= 90), // Fix the isTopPerformer property to be a boolean
     joinDate: data.joinDate || formattedDate,
     skills: data.skills || [],
     certifications: data.certifications || [],

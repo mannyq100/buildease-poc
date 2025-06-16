@@ -10,7 +10,7 @@ import { logger } from '../core/logger';
 interface SecurityEvent {
   type: SecurityEventType;
   timestamp: number;
-  details: Record<string, any>;
+  details: Record<string, unknown>;
   severity: 'low' | 'medium' | 'high';
 }
 
@@ -54,7 +54,7 @@ export class SecurityMonitor {
   recordEvent(
     type: SecurityEventType,
     severity: SecurityEvent['severity'],
-    details: Record<string, any> = {}
+    details: Record<string, unknown> = {}
   ): void {
     const event: SecurityEvent = {
       type,
@@ -114,7 +114,7 @@ export class SecurityMonitor {
     // Trigger security lockout for multiple failed attempts
     if (event.type === SecurityEventType.MULTIPLE_FAILED_ATTEMPTS) {
       const clientId = event.details.clientId;
-      this.triggerSecurityLockout(clientId);
+      this.triggerSecurityLockout(clientId as string);
     }
   }
   

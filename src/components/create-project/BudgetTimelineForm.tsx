@@ -3,7 +3,6 @@
  * Fourth step of the project creation wizard
  * Collects budget and timeline information
  */
-import React from 'react';
 import { useFormContext } from 'react-hook-form';
 import { ProjectFormValues } from '../../pages/CreateProject';
 import { Input } from '@/components/ui/input';

@@ -15,7 +15,7 @@ export type DebouncedFunction<T extends (...args: unknown[]) => unknown> = {
  * @param delay The delay in milliseconds
  * @returns A debounced function with cancel and flush methods
  */
-export function debounce<T extends (...args: unknown[]) => unknown>(
+export function debounce<T extends (...args: any[]) => unknown>(
   func: T,
   delay: number
 ): DebouncedFunction<T> {

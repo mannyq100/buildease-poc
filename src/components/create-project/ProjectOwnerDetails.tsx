@@ -4,7 +4,6 @@
  * Handles the project owner information section
  * Includes toggle for different owner and conditional owner fields
  */
-import React from 'react';
 import { User } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';

@@ -34,7 +34,7 @@ export interface RegisterUserPayload {
  */
 export async function updateUserFullProfile(data: RegisterUserPayload): Promise<UserProfile> {
   // Check if we have a profile picture in the payload
-  const hasProfilePicture = data.settings?.pictureUrl && data.settings.pictureUrl.length > 0;
+  const _hasProfilePicture = data.settings?.picture_url && data.settings.picture_url.length > 0;
   
   // Create a copy of the data to avoid mutating the original
   const payload = { ...data };
@@ -122,5 +122,5 @@ export function getProjectsWithPermission(
  */
 export function getUserDisplayName(user: UserProfile | null): string {
   if (!user) return '';
-  return user.name || user.email.split('@')[0];
+  return [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email.split('@')[0];
 }

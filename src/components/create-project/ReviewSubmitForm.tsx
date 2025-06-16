@@ -80,7 +80,7 @@ export function ReviewSubmitForm() {
               Owner Information
             </h4>
             <div className="space-y-1 pl-5">
-              <ReviewItem label="Owner" value={formValues.owner} />
+              <ReviewItem label="Owner" value={formValues.owner || 'Not specified'} />
               <div className="flex items-center text-sm">
                 <Phone className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400 mr-1.5" />
                 <span className="text-gray-600 dark:text-gray-400 mr-1">Phone:</span>
@@ -89,7 +89,7 @@ export function ReviewSubmitForm() {
               <div className="flex items-center text-sm">
                 <Mail className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400 mr-1.5" />
                 <span className="text-gray-600 dark:text-gray-400 mr-1">Email:</span>
-                <span className="font-medium">{formValues.email}</span>
+                <span className="font-medium">{formValues.email || 'Not provided'}</span>
               </div>
             </div>
           </div>

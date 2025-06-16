@@ -51,7 +51,14 @@ const BuildingSpecsForm = lazy(() => import('../components/create-project/Buildi
 const BudgetTimelineForm = lazy(() => import('../components/create-project/BudgetTimelineForm').then(module => ({ default: module.BudgetTimelineForm })));
 const MaterialsConstructionForm = lazy(() => import('../components/create-project/MaterialsConstructionForm').then(module => ({ default: module.MaterialsConstructionForm })));
 const FeaturesForm = lazy(() => import('../components/create-project/FeaturesForm').then(module => ({ default: module.FeaturesForm })));
-const ReviewSubmitForm = lazy(() => import('../components/create-project/ReviewSubmitForm').then(module => ({ default: module.ReviewSubmitForm })));
+const ReviewSubmitForm = lazy(() => 
+  import('../components/create-project/ReviewSubmitForm').then(module => ({ 
+    default: module.ReviewSubmitForm 
+  })).catch(error => {
+    console.error('Failed to load ReviewSubmitForm:', error);
+    throw error;
+  })
+);
 
 // Optimized Project form schema - Simplified for better UX
 export const projectFormSchema = z.object({

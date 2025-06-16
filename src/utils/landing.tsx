@@ -1,4 +1,3 @@
-import React from 'react'
 import { Feature, FeatureData } from '@/types/landing'
 
 export function createFeatureWithIcon(featureData: FeatureData): Feature {

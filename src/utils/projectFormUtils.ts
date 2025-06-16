@@ -75,7 +75,7 @@ export function validateStepData(data: ProjectFormValues, step: number): string[
       if (!data.name || data.name.trim().length < 3) {
         errors.push('Project name must be at least 3 characters');
       }
-      if (!data.type) {
+      if (!data.projectType) {
         errors.push('Please select a project type');
       }
       break;

@@ -15,14 +15,14 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Linting - Gradual strict mode adoption */
-    "strict": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noImplicitAny": false,
+    /* Linting - Strict TypeScript */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitAny": true,
     "noFallthroughCasesInSwitch": true,
-    "strictNullChecks": false,
-    "allowJs": true,
+    "strictNullChecks": true,
+    "allowJs": false,
 
     /* Paths */
     "baseUrl": ".",

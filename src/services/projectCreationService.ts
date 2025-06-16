@@ -60,7 +60,7 @@ export async function createProject(formData: ProjectFormValues, userId: string)
         },
         
         // Project type and style
-        project_type: formData.type,
+        project_type: formData.projectType,
         building_style: formData.buildingStyle || null,
         
         // Materials and construction
@@ -189,7 +189,7 @@ export function validateProjectData(formData: ProjectFormValues): { isValid: boo
     errors.push('Project name must be at least 3 characters long');
   }
   
-  if (!formData.type) {
+  if (!formData.projectType) {
     errors.push('Project type is required');
   }
   

@@ -27,8 +27,9 @@ const realMaterialService = {
     try {
       const response = await apiClient.get<Material>(`/materials/${id}`)
       return response
-    } catch (error: any) {
-      if (error.response?.status === 404) {
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'response' in error && 
+          (error as any).response?.status === 404) {
         return null
       }
       throw error
@@ -92,8 +93,9 @@ const realMaterialService = {
     try {
       const response = await apiClient.put<Material>(`/materials/${id}`, updates)
       return response
-    } catch (error: any) {
-      if (error.response?.status === 404) {
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'response' in error && 
+          (error as any).response?.status === 404) {
         return null
       }
       throw error
@@ -127,8 +129,9 @@ const realMaterialService = {
         { quantity }
       )
       return response
-    } catch (error: any) {
-      if (error.response?.status === 404) {
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'response' in error && 
+          (error as any).response?.status === 404) {
         return null
       }
       throw error

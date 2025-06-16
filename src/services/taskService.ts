@@ -27,8 +27,9 @@ const realTaskService = {
     try {
       const response = await apiClient.get<Task>(`/tasks/${id}`)
       return response
-    } catch (error: any) {
-      if (error.response?.status === 404) {
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'response' in error && 
+          (error as any).response?.status === 404) {
         return null
       }
       throw error
@@ -102,8 +103,9 @@ const realTaskService = {
     try {
       const response = await apiClient.put<Task>(`/tasks/${id}`, updates)
       return response
-    } catch (error: any) {
-      if (error.response?.status === 404) {
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'response' in error && 
+          (error as any).response?.status === 404) {
         return null
       }
       throw error

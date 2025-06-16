@@ -9,7 +9,7 @@ import { TeamMember } from '@/types/team'
 export function calculateAverageWorkload(members: TeamMember[]): number {
   if (members.length === 0) return 0
   
-  const total = members.reduce((sum, member) => sum + member.workload, 0)
+  const total = members.reduce((sum, member) => sum + (member.workload || 0), 0)
   return Math.round(total / members.length)
 }
 

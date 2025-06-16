@@ -180,7 +180,7 @@ export function filterTasks(
     }
     
     // Check priority filter
-    if (filters.priority && task.priority.toLowerCase() !== filters.priority.toLowerCase()) {
+    if (filters.priority && task.priority && task.priority.toLowerCase() !== filters.priority.toLowerCase()) {
       return false;
     }
     

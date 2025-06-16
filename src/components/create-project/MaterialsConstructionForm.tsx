@@ -3,7 +3,6 @@
  * Fifth step of the project creation wizard
  * Collects materials and construction information
  */
-import React from 'react';
 import { useFormContext } from 'react-hook-form';
 import { ProjectFormValues } from '../../pages/CreateProject';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';

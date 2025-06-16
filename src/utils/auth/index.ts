@@ -23,7 +23,7 @@ export interface SecurityEventData {
   type: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
   timestamp: number;
-  details: Record<string, any>;
+  details: Record<string, unknown>;
   userId?: string;
   sessionId?: string;
 }

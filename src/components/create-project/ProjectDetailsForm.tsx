@@ -47,7 +47,7 @@ const PROJECT_TYPES = [
 function ProjectDetailsFormComponent() {
   const { control, watch } = useFormContext<ProjectFormValues>();
   const [isDifferentOwner, setIsDifferentOwner] = useState(false);
-  const selectedType = watch('type');
+  const selectedType = watch('projectType');
 
   return (
     <div className="space-y-8">
@@ -97,7 +97,7 @@ function ProjectDetailsFormComponent() {
       {/* Project Type */}
       <FormField
         control={control}
-        name="type"
+        name="projectType"
         render={({ field }) => (
           <FormItem className="space-y-5">
             <FormLabel className="text-lg font-semibold text-slate-900 dark:text-white font-inter">

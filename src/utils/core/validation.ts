@@ -189,7 +189,7 @@ export type Validator<T> = (value: T) => ValidationResult;
  * @returns First failed validation or success result
  */
 export function validateField<T>(
-  fieldName: string,
+  _fieldName: string,
   value: T,
   validators: Validator<T>[]
 ): ValidationResult {
