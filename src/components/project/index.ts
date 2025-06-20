@@ -1,5 +1,3 @@
-export * from './AddPhaseDialog';
-export * from './AddTaskDialog';
 export * from './PhaseDetailsPanel';
 export * from './ProjectPhasesSection';
 export * from './ProjectEditDialog';

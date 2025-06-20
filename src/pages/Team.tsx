@@ -36,13 +36,14 @@ import {
 
 // Custom components
 import { PageHeader } from '@/components/shared'
+import { TeamModal } from '@/components/shared/modals'
 import { TeamMemberCard } from '@/components/team/TeamMemberCard'
 import TeamFilters from '@/components/team/TeamFilters'
 import { TeamStatistics } from '@/components/team/TeamStatistics'
 import { TeamMemberDetail } from '@/components/team/TeamMemberDetail'
 
 // Types and utilities
-import type { TeamMember, NewTeamMember } from '@/types/team'
+import type { TeamMember } from '@/types/team'
 import type { ViewMode } from '@/types/common'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useTeamFilters } from '@/hooks/useTeamFilters'
@@ -70,15 +71,9 @@ export default function Team() {
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false)
   const [isViewProfileOpen, setIsViewProfileOpen] = useState(false)
   const [isConfirmRemoveOpen, setIsConfirmRemoveOpen] = useState(false)
+  const [isEditMemberOpen, setIsEditMemberOpen] = useState(false)
   const [currentMember, setCurrentMember] = useState<TeamMember | null>(null)
-  const [newMember, setNewMember] = useState<NewTeamMember>({
-    name: '',
-    role: '',
-    email: '',
-    phone: '',
-    department: '',
-    projects: []
-  })
+  const [isNewMember, setIsNewMember] = useState(true)
 
   // Load data from service
   const [departments, setDepartments] = useState<string[]>([])
@@ -143,54 +138,62 @@ export default function Team() {
     return () => clearTimeout(timer)
   }, [])
 
-  // Handle adding a new team member
-  const handleAddMember = () => {
-    // Validation
-    if (!newMember.name || !newMember.role || !newMember.email) {
+  // Handle opening add member modal
+  const handleOpenAddMember = () => {
+    setCurrentMember(null)
+    setIsNewMember(true)
+    setIsAddMemberOpen(true)
+  }
+
+  // Handle opening edit member modal
+  const handleOpenEditMember = (member: TeamMember) => {
+    setCurrentMember(member)
+    setIsNewMember(false)
+    setIsAddMemberOpen(true)
+  }
+
+  // Handle saving team member (add or edit)
+  const handleSaveTeamMember = (memberData: Partial<TeamMember>) => {
+    if (isNewMember) {
+      // Create new member with generated ID and default values
+      const member: TeamMember = {
+        id: `tm-${Date.now()}`,
+        name: memberData.name || '',
+        role: memberData.role || '',
+        email: memberData.email || '',
+        phone: memberData.phone || '',
+        department: memberData.department || 'Unassigned',
+        status: memberData.status || 'active',
+        workload: 0,
+        performance: 0,
+        completedTasks: 0,
+        totalTasks: 0,
+        joinDate: new Date().toLocaleDateString(),
+        availability: 'available',
+        projects: [],
+        permissions: memberData.permissions || 'Viewer'
+      }
+      
+      // Add to team members
+      setTeamData([...teamData, member])
+      
       toast({
-        title: 'Missing Information',
-        description: 'Please fill in all required fields',
-        variant: 'destructive'
+        title: 'Team Member Added',
+        description: `${member.name} has been added to the team`,
       })
-      return
+    } else if (currentMember) {
+      // Update existing member
+      const updatedMember = { ...currentMember, ...memberData }
+      setTeamData(teamData.map(m => m.id === currentMember.id ? updatedMember : m))
+      
+      toast({
+        title: 'Team Member Updated',
+        description: `${updatedMember.name} has been updated`,
+      })
     }
     
-    // Create new member with generated ID and default values
-    const member: TeamMember = {
-      id: `tm-${Date.now()}`,
-      name: newMember.name,
-      role: newMember.role,
-      email: newMember.email,
-      phone: newMember.phone,
-      department: newMember.department,
-      status: 'active',
-      workload: 0,
-      performance: 0,
-      completedTasks: 0,
-      totalTasks: 0,
-      joinDate: new Date().toLocaleDateString(),
-      availability: 'available',
-      projects: []
-    }
-    
-    // Add to team members
-    setTeamData([...teamData, member])
-    
-    // Reset form and close dialog
-    setNewMember({
-      name: '',
-      role: '',
-      email: '',
-      phone: '',
-      department: '',
-      projects: []
-    })
     setIsAddMemberOpen(false)
-    
-    toast({
-      title: 'Team Member Added',
-      description: `${member.name} has been added to the team`,
-    })
+    setCurrentMember(null)
   }
 
   // Handle viewing a team member's profile
@@ -204,8 +207,8 @@ export default function Team() {
     // Close the profile view
     setIsViewProfileOpen(false)
     
-    // Navigate to edit page
-    navigate(`/team/edit/${member.id}`)
+    // Open edit modal
+    handleOpenEditMember(member)
   }
 
   // Handle removing a team member
@@ -250,7 +253,7 @@ export default function Team() {
               <Button
                 variant="default"
                 className="bg-white hover:bg-gray-100 text-blue-700 border border-white/20"
-                onClick={() => setIsAddMemberOpen(true)}
+                onClick={handleOpenAddMember}
               >
                 <Plus className="mr-2 h-4 w-4" /> Add Team Member
               </Button>
@@ -355,7 +358,7 @@ export default function Team() {
               ) : filteredTeamMembers.length === 0 ? (
                 <EmptyTeamState 
                   hasFilters={searchQuery !== '' || filters.departments.length > 0 || filters.availability.length > 0 || filters.onlyTopPerformers}
-                  onAddMember={() => setIsAddMemberOpen(true)}
+                  onAddMember={handleOpenAddMember}
                 />
               ) : viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -456,96 +459,14 @@ export default function Team() {
         </div>
       </div>
 
-      {/* Add Team Member Dialog */}
-      <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Team Member</DialogTitle>
-            <DialogDescription>
-              Add a new member to your construction team.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name *
-              </Label>
-              <Input 
-                id="name" 
-                value={newMember.name}
-                onChange={(e) => setNewMember({...newMember, name: e.target.value})}
-                className="col-span-3" 
-              />
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="role" className="text-right">
-                Role *
-              </Label>
-              <Input 
-                id="role" 
-                value={newMember.role}
-                onChange={(e) => setNewMember({...newMember, role: e.target.value})}
-                className="col-span-3" 
-              />
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right">
-                Email *
-              </Label>
-              <Input 
-                id="email" 
-                type="email"
-                value={newMember.email}
-                onChange={(e) => setNewMember({...newMember, email: e.target.value})}
-                className="col-span-3" 
-              />
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="phone" className="text-right">
-                Phone
-              </Label>
-              <Input 
-                id="phone" 
-                value={newMember.phone}
-                onChange={(e) => setNewMember({...newMember, phone: e.target.value})}
-                className="col-span-3" 
-              />
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="department" className="text-right">
-                Department
-              </Label>
-              <Select 
-                value={newMember.department}
-                onValueChange={(value) => setNewMember({...newMember, department: value})}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select department" />
-                </SelectTrigger>
-                <SelectContent>
-                  {departments.map(dept => (
-                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddMemberOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddMember}>
-              Add Member
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Team Member Modal */}
+      <TeamModal
+        show={isAddMemberOpen}
+        onClose={() => setIsAddMemberOpen(false)}
+        onSave={handleSaveTeamMember}
+        initialData={currentMember}
+        isNewItem={isNewMember}
+      />
 
       {/* Team Member Detail Dialog */}
       <TeamMemberDetail
@@ -605,7 +526,7 @@ function EmptyTeamState({ hasFilters, onAddMember }: EmptyTeamStateProps) {
       </p>
       {!hasFilters && (
         <Button
-          onClick={onAddMember}
+          onClick={handleOpenAddMember}
           className="mt-4"
         >
           <Plus className="mr-2 h-4 w-4" /> Add Team Member
@@ -615,6 +536,3 @@ function EmptyTeamState({ hasFilters, onAddMember }: EmptyTeamStateProps) {
   )
 }
 
-// Import components from dedicated files to complete the page
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'

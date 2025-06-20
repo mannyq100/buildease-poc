@@ -41,8 +41,10 @@ import {
   StatCard
 } from '@/components/shared'
 import { 
-  AddPhaseDialog, 
-  AddTaskDialog, 
+  PhaseFormModal,
+  TaskFormModal
+} from '@/components/shared/modals'
+import { 
   ProjectPhasesSection,
   ProjectActivitySection,
   ProjectInsightsSection,
@@ -54,47 +56,10 @@ import {
 // Import types
 import { Phase } from '@/types/phase'
 import { Task } from '@/types/task'
+import { Phase as ModalPhase, Task as ModalTask } from '@/components/shared/modals'
 
 // Mock data
 import { INITIAL_PHASES, RECENT_ACTIVITY } from '@/data/projectData'
-
-// Project images
-
-// Types for new phase and task
-interface NewPhase {
-  name: string
-  startDate: Date
-  endDate: Date
-  budget: string
-  description?: string
-}
-
-interface NewTask {
-  name: string
-  description: string
-  dueDate: Date
-  phaseId: number
-  assignee?: string
-  priority?: 'low' | 'medium' | 'high'
-}
-
-// Initial values
-const INITIAL_NEW_PHASE: NewPhase = {
-  name: '',
-  startDate: new Date(),
-  endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-  budget: '',
-  description: ''
-}
-
-const INITIAL_NEW_TASK: NewTask = {
-  name: '',
-  description: '',
-  dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-  phaseId: 0, // Will be set when adding a task to a specific phase
-  priority: 'medium',
-  assignee: ''
-}
 
 /**
  * Main component for project details page
@@ -108,10 +73,12 @@ export function ProjectDetails() {
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [phases, setPhases] = useState<Phase[]>(INITIAL_PHASES)
   const [tasks, setTasks] = useState<Task[]>([])
-  const [showPhaseDialog, setShowPhaseDialog] = useState(false)
-  const [showTaskDialog, setShowTaskDialog] = useState(false)
-  const [newPhase, setNewPhase] = useState<NewPhase>(INITIAL_NEW_PHASE)
-  const [newTask, setNewTask] = useState<NewTask>(INITIAL_NEW_TASK)
+  const [showPhaseModal, setShowPhaseModal] = useState(false)
+  const [showTaskModal, setShowTaskModal] = useState(false)
+  const [currentPhase, setCurrentPhase] = useState<ModalPhase | null>(null)
+  const [currentTask, setCurrentTask] = useState<ModalTask | null>(null)
+  const [isNewItem, setIsNewItem] = useState(true)
+  const [currentPhaseId, setCurrentPhaseId] = useState<number>(0)
   const [expandedPhase, setExpandedPhase] = useState<number | null>(null)
   const [projectInfo, setProjectInfo] = useState({
     id: id || '1',
@@ -189,39 +156,72 @@ export function ProjectDetails() {
    * Handle adding a new phase to the project
    */
   function handleAddPhase() {
-    setShowPhaseDialog(true)
-    setNewPhase(INITIAL_NEW_PHASE)
+    setCurrentPhase({
+      id: '',
+      name: '',
+      description: '',
+      status: 'planning',
+      startDate: format(new Date(), 'yyyy-MM-dd'),
+      endDate: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+      order: (phases.length + 1).toString(),
+      tasks: []
+    })
+    setIsNewItem(true)
+    setShowPhaseModal(true)
   }
   
   /**
    * Save a new phase to the project
    */
-  function handleSavePhase() {
-    const newPhaseObj: Phase = {
-      id: phases.length + 1,
-      name: newPhase.name,
-      progress: 0,
-      startDate: format(newPhase.startDate, 'MMM d, yyyy'),
-      endDate: format(newPhase.endDate, 'MMM d, yyyy'),
-      status: 'upcoming',
-      budget: newPhase.budget,
-      spent: '$0',
-      description: newPhase.description || ''
+  function handleSavePhase(phaseData: Partial<ModalPhase>) {
+    if (isNewItem) {
+      const newPhaseObj: Phase = {
+        id: phases.length + 1,
+        name: phaseData.name || '',
+        progress: 0,
+        startDate: phaseData.startDate ? format(new Date(phaseData.startDate), 'MMM d, yyyy') : '',
+        endDate: phaseData.endDate ? format(new Date(phaseData.endDate), 'MMM d, yyyy') : '',
+        status: phaseData.status === 'planning' ? 'upcoming' : 'upcoming',
+        budget: '$50,000', // Default budget
+        spent: '$0',
+        description: phaseData.description || ''
+      }
+      
+      setPhases([...phases, newPhaseObj])
     }
-    
-    setPhases([...phases, newPhaseObj])
-    setShowPhaseDialog(false)
+    setShowPhaseModal(false)
+    setCurrentPhase(null)
   }
   
   /**
    * Handle adding a new task to a phase
    */
   function handleAddTask(phaseId: number) {
-    setShowTaskDialog(true)
-    setNewTask({
-      ...INITIAL_NEW_TASK,
-      phaseId
+    setCurrentTask({
+      id: '',
+      name: '',
+      description: '',
+      status: 'pending',
+      startDate: format(new Date(), 'yyyy-MM-dd'),
+      endDate: format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+      assignedTo: [],
+      phaseId: phaseId.toString(),
+      progress: 0,
+      dependencies: []
     })
+    setCurrentPhaseId(phaseId)
+    setIsNewItem(true)
+    setShowTaskModal(true)
+  }
+  
+  /**
+   * Save a new task to a phase
+   */
+  function handleSaveTask(taskData: Partial<ModalTask>) {
+    // In a real implementation, this would update the tasks for the specific phase
+    // For now, just close the modal
+    setShowTaskModal(false)
+    setCurrentTask(null)
   }
   
   /**
@@ -471,44 +471,37 @@ export function ProjectDetails() {
         />
       </div>
       
-      {/* Add Phase Dialog */}
-      <Dialog open={showPhaseDialog} onOpenChange={setShowPhaseDialog}>
-        <DialogContent className="sm:max-w-[550px]">
-          <DialogHeader>
-            <DialogTitle>Add New Phase</DialogTitle>
-            <DialogDescription>
-              Create a new phase for this construction project. Fill out the details below.
-            </DialogDescription>
-          </DialogHeader>
-          <AddPhaseDialog
-            phase={newPhase}
-            setPhase={setNewPhase}
-            onSave={handleSavePhase}
-            isOpen={showPhaseDialog}
-            onClose={() => setShowPhaseDialog(false)}
-          />
-        </DialogContent>
-      </Dialog>
+      {/* Phase Modal */}
+      {currentPhase && (
+        <PhaseFormModal
+          show={showPhaseModal}
+          onClose={() => {
+            setShowPhaseModal(false)
+            setCurrentPhase(null)
+          }}
+          onSave={handleSavePhase}
+          phase={currentPhase}
+          isNew={isNewItem}
+          currentOrder={phases.length}
+          statuses={['planning', 'in-progress', 'on-hold', 'completed']}
+        />
+      )}
       
-      {/* Add Task Dialog */}
-      <Dialog open={showTaskDialog} onOpenChange={setShowTaskDialog}>
-        <DialogContent className="sm:max-w-[550px]">
-          <DialogHeader>
-            <DialogTitle>Add New Task</DialogTitle>
-            <DialogDescription>
-              Create a new task for this phase. Fill out the details below.
-            </DialogDescription>
-          </DialogHeader>
-          <AddTaskDialog
-            task={newTask}
-            setTask={(task) => setNewTask(task as NewTask)} 
-            onSave={() => setShowTaskDialog(false)}
-            onClose={() => setShowTaskDialog(false)}
-            isOpen={showTaskDialog}
-            phases={phases}
-          />
-        </DialogContent>
-      </Dialog>
+      {/* Task Modal */}
+      {currentTask && (
+        <TaskFormModal
+          show={showTaskModal}
+          onClose={() => {
+            setShowTaskModal(false)
+            setCurrentTask(null)
+          }}
+          onSave={handleSaveTask}
+          task={currentTask}
+          isNew={isNewItem}
+          teamMembers={['John Smith', 'Jane Doe', 'Mike Johnson']} // Mock team members
+          phaseId={currentPhaseId.toString()}
+        />
+      )}
       
       {/* Project Edit Dialog */}
       <ProjectEditDialog 
