@@ -33,7 +33,7 @@ export function ExpensesFilters({
   onFilterChange,
   categories,
   projects,
-  phases,
+  phases: _phases,
   statuses
 }: ExpensesFiltersProps) {
   return (

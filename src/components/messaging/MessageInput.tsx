@@ -188,7 +188,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
   
-  const triggerAttachmentDialog = (type: string) => {
+  const _triggerAttachmentDialog = (type: string) => {
     setAttachmentType(type);
     // Trigger the file input click
     if (fileInputRef.current) {
@@ -251,7 +251,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   };
   
   // Placeholder for voice recording
-  const handleVoiceRecording = () => {
+  const _handleVoiceRecording = () => {
     setIsRecording(!isRecording);
     console.log(isRecording ? "Stopping recording" : "Starting recording");
   };

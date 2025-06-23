@@ -152,8 +152,9 @@ Limited font variations to maintain consistency
 
 10. **State & Data Management**
     - Use React Query for server-state management
-    - Implement context for shared state when appropriate
-    - Structure form handling with react-hook-form
+    - Use zustand for client-side state management
+    - Use react-hook-form for form handling
+    - Implement context or zustand for shared state when appropriate
     - Follow predictable state patterns
 
 11. **Implementation Guidelines**

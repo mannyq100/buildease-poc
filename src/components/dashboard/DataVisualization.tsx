@@ -35,7 +35,7 @@ import {
 import { cn } from '@/utils/core/ui';
 
 // Chart theme configurations for light and dark mode
-const chartTheme = {
+const _chartTheme = {
   light: {
     backgroundColor: 'white',
     textColor: '#374151',
@@ -77,7 +77,7 @@ interface DataVisualizationProps {
 
 type ChartDataItem = Record<string, string | number>;
 
-const formatData = (data: ChartDataItem[], keys: string[]) => {
+const _formatData = (_data: ChartDataItem[], _keys: string[]) => {
   // ... existing implementation
 };
 
@@ -96,7 +96,7 @@ interface TooltipProps {
 // Enhanced custom tooltip with better styling and formatting
 const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
   if (active && payload && payload.length) {
-    const theme = getCurrentTheme();
+    const _theme = getCurrentTheme();
     const darkMode = isDarkMode();
     
     return (

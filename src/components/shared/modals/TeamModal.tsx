@@ -1,10 +1,11 @@
 // src/components/shared/modals/TeamModal.tsx
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { User, Briefcase, Mail, Phone, Activity, ShieldQuestion } from 'lucide-react';
+import { useForm, Controller } from 'react-hook-form';
 import { TeamMember, TeamMemberStatus } from '@/types/team';
-import { useFormState } from '@/hooks/useFormState';
 import { BaseModal } from './BaseModal';
 import { FormField, SelectField, ModalFooter } from '@/components/ui/form-fields';
+import { v4 as uuidv4 } from 'uuid';
 
 interface TeamModalProps {
   show: boolean;
@@ -42,75 +43,56 @@ function isValidEmail(email: string): boolean {
 
 export function TeamModal({ show, onClose, initialData, isNewItem, onSave }: TeamModalProps) {
   // Default form values
-  const defaultValues: Partial<TeamMember> = {
-    name: '',
-    role: ROLES[0],
-    email: '',
-    phone: '',
-    status: STATUS_OPTIONS[0],
-    permissions: PERMISSIONS[2], // Default to 'Viewer'
-  };
+  const getDefaultValues = useCallback((): Partial<TeamMember> => ({
+    id: initialData?.id || uuidv4(),
+    name: initialData?.name || '',
+    role: initialData?.role || ROLES[0],
+    email: initialData?.email || '',
+    phone: initialData?.phone || '',
+    status: initialData?.status || STATUS_OPTIONS[0],
+    permissions: initialData?.permissions || PERMISSIONS[2], // Default to 'Viewer'
+  }), [initialData]);
 
-  // Validation function
-  const validateForm = useCallback((data: Partial<TeamMember>) => {
-    const errors: Partial<Record<keyof TeamMember, string>> = {};
-    
-    if (!data.name?.trim()) errors.name = 'Name is required';
-    if (!data.role?.trim()) errors.role = 'Role is required';
-    if (!data.email?.trim()) {
-      errors.email = 'Email is required';
-    } else if (!isValidEmail(data.email)) {
-      errors.email = 'Invalid email format';
-    }
-    if (!data.status) errors.status = 'Status is required';
-    
-    return errors;
-  }, []);
-
-  // Use our custom form state hook
+  // Initialize React Hook Form
   const {
-    formData,
-    errors,
-    saving,
-    setSaving,
-    handleChange,
-    handleSelectChange,
-    validate
-  } = useFormState<Partial<TeamMember>>(initialData, defaultValues, show, validateForm);
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting }
+  } = useForm<Partial<TeamMember>>({
+    defaultValues: getDefaultValues(),
+    mode: 'onBlur'
+  });
+
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (show) {
+      reset(getDefaultValues());
+    }
+  }, [show, reset, getDefaultValues]);
 
   // Handle form submission
-  const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-
-    setSaving(true);
-    
-    // Prepare data to save
-    const saveData: Partial<TeamMember> = {
-      id: formData.id,
-      name: formData.name,
-      role: formData.role,
-      email: formData.email,
-      phone: formData.phone,
-      status: formData.status,
-      permissions: formData.permissions,
-    };
-
-    // Simulate API call with slight delay
+  const onSubmit = useCallback((data: Partial<TeamMember>) => {
+    // Simulate API call delay
     setTimeout(() => {
-      onSave(saveData);
-      setSaving(false);
+      onSave(data);
       onClose();
     }, 300);
-  }, [formData, validate, onSave, onClose, setSaving]);
+  }, [onSave, onClose]);
+
+  // Handle form submit wrapper
+  const handleFormSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    handleSubmit(onSubmit)(e);
+  }, [handleSubmit, onSubmit]);
 
   // Create the footer component
   const modalFooter = (
     <ModalFooter
       onClose={onClose}
-      onSubmit={handleSubmit}
+      onSubmit={handleFormSubmit}
       isNew={isNewItem}
-      saving={saving}
+      saving={isSubmitting}
     />
   );
 
@@ -120,81 +102,132 @@ export function TeamModal({ show, onClose, initialData, isNewItem, onSave }: Tea
       onClose={onClose}
       title={isNewItem ? 'Add New Team Member' : 'Edit Team Member'}
       footer={modalFooter}
-      saving={saving}
+      saving={isSubmitting}
     >
-      <form id="team-member-form" onSubmit={handleSubmit} className="space-y-4">
+      <form id="team-member-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* Name Field */}
-        <FormField
-          label="Full Name"
+        <Controller
+          control={control}
           name="name"
-          value={formData.name || ''}
-          onChange={handleChange}
-          placeholder="e.g., Jane Doe"
-          required
-          icon={User}
-          error={errors.name}
+          rules={{ 
+            required: 'Name is required',
+            validate: (value) => value?.trim() ? true : 'Name cannot be empty'
+          }}
+          render={({ field, fieldState: { error } }) => (
+            <FormField
+              label="Full Name"
+              name="name"
+              value={field.value || ''}
+              onChange={field.onChange}
+              placeholder="e.g., Jane Doe"
+              required
+              icon={User}
+              error={error?.message}
+            />
+          )}
         />
 
         {/* Role Dropdown */}
-        <SelectField
-          label="Role"
+        <Controller
+          control={control}
           name="role"
-          value={formData.role || ''}
-          onValueChange={(value) => handleSelectChange('role', value)}
-          options={ROLES.map(role => ({ value: role, label: role }))}
-          required
-          icon={Briefcase}
-          error={errors.role}
+          rules={{ required: 'Role is required' }}
+          render={({ field, fieldState: { error } }) => (
+            <SelectField
+              label="Role"
+              name="role"
+              value={field.value || ''}
+              onValueChange={field.onChange}
+              options={ROLES.map(role => ({ value: role, label: role }))}
+              required
+              icon={Briefcase}
+              error={error?.message}
+            />
+          )}
         />
 
         {/* Permissions Dropdown */}
-        <SelectField
-          label="Permissions"
+        <Controller
+          control={control}
           name="permissions"
-          value={formData.permissions || ''}
-          onValueChange={(value) => handleSelectChange('permissions', value as TeamMember['permissions'])}
-          options={PERMISSIONS.map(perm => ({ value: perm, label: perm }))}
-          icon={ShieldQuestion}
+          render={({ field, fieldState: { error } }) => (
+            <SelectField
+              label="Permissions"
+              name="permissions"
+              value={field.value || ''}
+              onValueChange={(value) => field.onChange(value as TeamMember['permissions'])}
+              options={PERMISSIONS.map(perm => ({ value: perm, label: perm }))}
+              icon={ShieldQuestion}
+              error={error?.message}
+            />
+          )}
         />
 
         {/* Email Field */}
-        <FormField
-          label="Email Address"
+        <Controller
+          control={control}
           name="email"
-          type="email"
-          value={formData.email || ''}
-          onChange={handleChange}
-          placeholder="e.g., jane.doe@example.com"
-          required
-          icon={Mail}
-          error={errors.email}
+          rules={{ 
+            required: 'Email is required',
+            validate: (value) => {
+              if (!value?.trim()) return 'Email is required';
+              if (!isValidEmail(value)) return 'Invalid email format';
+              return true;
+            }
+          }}
+          render={({ field, fieldState: { error } }) => (
+            <FormField
+              label="Email Address"
+              name="email"
+              type="email"
+              value={field.value || ''}
+              onChange={field.onChange}
+              placeholder="e.g., jane.doe@example.com"
+              required
+              icon={Mail}
+              error={error?.message}
+            />
+          )}
         />
 
         {/* Phone Field */}
-        <FormField
-          label="Phone Number"
+        <Controller
+          control={control}
           name="phone"
-          type="tel"
-          value={formData.phone || ''}
-          onChange={handleChange}
-          placeholder="e.g., (555) 123-4567"
-          icon={Phone}
-          error={errors.phone}
+          render={({ field, fieldState: { error } }) => (
+            <FormField
+              label="Phone Number"
+              name="phone"
+              type="tel"
+              value={field.value || ''}
+              onChange={field.onChange}
+              placeholder="e.g., (555) 123-4567"
+              icon={Phone}
+              error={error?.message}
+            />
+          )}
         />
 
         {/* Status Dropdown */}
-        <SelectField
-          label="Status"
+        <Controller
+          control={control}
           name="status"
-          value={formData.status || ''}
-          onValueChange={(value) => handleSelectChange('status', value as TeamMemberStatus)}
-          options={STATUS_OPTIONS.map(status => ({
-            value: status,
-            label: status.replace('-', ' ').replace(/\b\w/g, char => char.toUpperCase())
-          }))}
-          required
-          icon={Activity}
-          error={errors.status}
+          rules={{ required: 'Status is required' }}
+          render={({ field, fieldState: { error } }) => (
+            <SelectField
+              label="Status"
+              name="status"
+              value={field.value || ''}
+              onValueChange={(value) => field.onChange(value as TeamMemberStatus)}
+              options={STATUS_OPTIONS.map(status => ({
+                value: status,
+                label: status.replace('-', ' ').replace(/\b\w/g, char => char.toUpperCase())
+              }))}
+              required
+              icon={Activity}
+              error={error?.message}
+            />
+          )}
         />
       </form>
     </BaseModal>

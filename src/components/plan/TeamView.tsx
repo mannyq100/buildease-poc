@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { ConstructionPlan } from '@/data/mock/generatedPlan/planData';
 import { TeamMember as PlanTeamMember } from '@/data/mock/generatedPlan/planData'; // Keep original for initial data
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +8,10 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button'; // Import Button
 import { TeamModal } from '@/components/shared/modals/TeamModal'; // Import TeamModal
 import { TeamMember } from '@/types/team'; // Import the type from types/team.ts
+import { VirtualizedTeamGrid } from './VirtualizedTeamGrid';
+import { useDebounceSearch, searchTeamMembers } from '@/hooks/useDebounceSearch';
+import { SearchInput } from '@/components/shared/SearchInput';
+import { useTeamModal } from '@/stores/modalStore';
 
 interface TeamViewProps {
   plan: ConstructionPlan;
@@ -29,9 +33,37 @@ export function TeamView({ plan }: TeamViewProps) {
   });
 
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(initialTeamMembers); // State for team members
-  const [showTeamModal, setShowTeamModal] = useState(false);
-  const [currentItem, setCurrentItem] = useState<TeamMember | null>(null);
-  const [isNewItem, setIsNewItem] = useState(true);
+  
+  // Use Zustand modal hook
+  const teamModal = useTeamModal();
+
+  // Search functionality with debouncing
+  const teamSearchFunction = useCallback((members: TeamMember[], searchTerm: string) => 
+    searchTeamMembers(members, searchTerm), []);
+
+  const {
+    searchTerm,
+    filteredResults: filteredTeamMembers,
+    isSearching,
+    setSearchTerm,
+    clearSearch,
+    searchStats
+  } = useDebounceSearch(teamMembers, teamSearchFunction, {
+    delay: 300,
+    minLength: 1
+  });
+
+  // Use virtualization for large team lists (threshold: 15+ members)
+  const shouldUseVirtualization = filteredTeamMembers.length > 15;
+
+  // Convert team members to virtualization format
+  const virtualizedTeamMembers = useMemo(() => filteredTeamMembers.map(member => ({
+    ...member,
+    status: member.status as 'active' | 'inactive' | 'busy',
+    joinDate: member.joinDate || new Date().toISOString(),
+    taskCount: undefined, // Could be populated from actual data
+    completedTasks: undefined // Could be populated from actual data
+  })), [filteredTeamMembers]);
   
   const getInitials = (name: string) => {
     return name
@@ -59,20 +91,16 @@ export function TeamView({ plan }: TeamViewProps) {
 
   // --- Modal Handling Functions ---
   function handleOpenAddModal() {
-    setCurrentItem(null); // Clear previous data
-    setIsNewItem(true);
-    setShowTeamModal(true);
+    teamModal.actions.open(undefined, true);
   }
 
   function handleOpenEditModal(item: TeamMember) {
-    setCurrentItem(item);
-    setIsNewItem(false);
-    setShowTeamModal(true);
+    teamModal.actions.open(item, false);
   }
 
   function handleSaveTeamMember(savedItem: Partial<TeamMember>) {
     setTeamMembers(prevItems => {
-      if (isNewItem) {
+      if (teamModal.isNew) {
         // Add new item (assign temporary ID for mock, ensure required fields)
         const newItemWithDefaults: TeamMember = {
           id: Date.now() + Math.random(), // Simple unique ID for demo
@@ -91,7 +119,7 @@ export function TeamView({ plan }: TeamViewProps) {
       } else {
         // Update existing item
         return prevItems.map(item => 
-          item.id === currentItem?.id 
+          item.id === teamModal.data?.id 
             ? { ...item, ...savedItem }
             : item
         );
@@ -99,12 +127,20 @@ export function TeamView({ plan }: TeamViewProps) {
     });
     
     // Close modal after save
-    setShowTeamModal(false);
+    teamModal.actions.close();
   }
 
   function handleDeleteTeamMember(id: number | string) {
     setTeamMembers(prevItems => prevItems.filter(item => item.id !== id));
   }
+
+  const handleContactMember = (member: TeamMember, type: 'email' | 'phone') => {
+    if (type === 'email') {
+      window.open(`mailto:${member.email}`, '_blank');
+    } else if (type === 'phone' && member.phone) {
+      window.open(`tel:${member.phone.replace(/[^0-9]/g, '')}`, '_blank');
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -126,6 +162,21 @@ export function TeamView({ plan }: TeamViewProps) {
             </Button>
           </CardHeader>
           <CardContent className="p-4">
+            {/* Search Input */}
+            {teamMembers.length > 0 && (
+              <div className="mb-4">
+                <SearchInput
+                  value={searchTerm}
+                  onChange={setSearchTerm}
+                  onClear={clearSearch}
+                  placeholder="Search team members, roles, email..."
+                  isSearching={isSearching}
+                  searchStats={searchStats}
+                  size="sm"
+                />
+              </div>
+            )}
+            
              {teamMembers.length === 0 ? (
               <div className="text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/20 rounded-lg border border-dashed border-gray-300 dark:border-gray-700">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 mb-3">
@@ -142,9 +193,38 @@ export function TeamView({ plan }: TeamViewProps) {
                   Add Your First Member
                 </Button>
               </div>
+            ) : filteredTeamMembers.length === 0 ? (
+              <div className="text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/20 rounded-lg border border-dashed border-gray-300 dark:border-gray-700">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 mb-3">
+                  <Users className="h-8 w-8 text-gray-400 dark:text-gray-600" />
+                </div>
+                <p className="font-medium text-base mb-1">
+                  {searchStats.hasActiveSearch ? 'No matching team members' : 'No team members found'}
+                </p>
+                <p className="text-sm mb-3">
+                  {searchStats.hasActiveSearch 
+                    ? `No team members found matching "${searchTerm}"`
+                    : 'This should not happen - there were team members before'
+                  }
+                </p>
+              </div>
+            ) : shouldUseVirtualization ? (
+              <VirtualizedTeamGrid
+                teamMembers={virtualizedTeamMembers}
+                onEditMember={(id) => {
+                  const member = teamMembers.find(m => m.id === id);
+                  if (member) handleOpenEditModal(member);
+                }}
+                onDeleteMember={handleDeleteTeamMember}
+                onContactMember={handleContactMember}
+                height={500}
+                itemWidth={320}
+                itemHeight={220}
+                columnsCount={3}
+              />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {teamMembers.map((member, index) => (
+                {filteredTeamMembers.map((member, index) => (
                   <motion.div
                     key={member.id}
                     initial={{ opacity: 0, y: 20 }}
@@ -201,11 +281,11 @@ export function TeamView({ plan }: TeamViewProps) {
 
       {/* Render the TeamModal */}
       <TeamModal
-        show={showTeamModal}
-        onClose={() => setShowTeamModal(false)}
+        show={teamModal.isOpen}
+        onClose={teamModal.actions.close}
         onSave={handleSaveTeamMember}
-        initialData={currentItem}
-        isNewItem={isNewItem}
+        initialData={teamModal.data}
+        isNewItem={teamModal.isNew}
       />
     </div>
   );

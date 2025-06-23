@@ -1,6 +1,6 @@
-import React, { ReactNode } from 'react';
-import { motion as m, AnimatePresence } from 'framer-motion';
+import { ReactNode, useEffect } from 'react';
 import { X } from 'lucide-react';
+import { AnimatePresence, m } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 
 interface BaseModalProps {
@@ -24,6 +24,10 @@ export function BaseModal({
   saving = false,
   description
 }: BaseModalProps) {
+  // Add logging for modal visibility changes
+  useEffect(() => {
+    console.log(`BaseModal: ${title} visibility changed to:`, { show });
+  }, [show, title]);
   const sizeClasses = {
     sm: 'max-w-sm',
     md: 'max-w-md',
@@ -31,9 +35,12 @@ export function BaseModal({
     xl: 'max-w-xl'
   };
 
+  // If show is undefined or null, treat it as false
+  const isVisible = !!show;
+  
   return (
     <AnimatePresence>
-      {show && (
+      {isVisible && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
           {/* Backdrop with subtle blur */}
           <m.div

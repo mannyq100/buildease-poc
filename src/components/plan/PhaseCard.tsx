@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Phase } from '@/data/mock/generatedPlan/planData';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Trash, Plus, Edit, Calendar, Clock, ChevronDown, ChevronRight } from 'lucide-react';
 import { AnimatePresence, motion as m } from 'framer-motion';
+import { getStatusColor, formatDate, getStatusText } from '@/utils/plan-helpers';
 
 interface PhaseCardProps {
   phase: Phase;
@@ -20,7 +21,7 @@ interface PhaseCardProps {
   onEditPhaseDates?: (phaseId: string) => void;
 }
 
-export function PhaseCard({ 
+export const PhaseCard = React.memo(function PhaseCard({ 
   phase, 
   onDelete, 
   onEdit, 
@@ -36,27 +37,61 @@ export function PhaseCard({
   const [tasksExpanded, setTasksExpanded] = useState(false);
   const [materialsExpanded, setMaterialsExpanded] = useState(false);
   
-  const getStatusColor = (status: string) => {
-    switch(status) {
-      case 'pending':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
-      case 'in-progress':
-        return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400';
-      case 'completed':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-      case 'delayed':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400';
-    }
-  };
-
-  // Format date for better display
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Not set';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
+  // Memoized computed values
+  const statusColorClass = useMemo(() => getStatusColor(phase.status), [phase.status]);
+  const statusText = useMemo(() => getStatusText(phase.status), [phase.status]);
+  const formattedStartDate = useMemo(() => formatDate(phase.startDate), [phase.startDate]);
+  const formattedEndDate = useMemo(() => formatDate(phase.endDate), [phase.endDate]);
+  
+  // Memoized callback handlers
+  const handleEditPhase = useCallback(() => {
+    onEdit?.(phase.id);
+  }, [onEdit, phase.id]);
+  
+  const handleDeletePhase = useCallback(() => {
+    onDelete?.(phase.id);
+  }, [onDelete, phase.id]);
+  
+  const handleEditPhaseDates = useCallback(() => {
+    console.log('PhaseCard: handleEditPhaseDates called', { onEditPhaseDates: !!onEditPhaseDates, phaseId: phase.id });
+    onEditPhaseDates?.(phase.id);
+  }, [onEditPhaseDates, phase.id]);
+  
+  const handleAddTask = useCallback(() => {
+    onAddTask?.(phase.id);
+  }, [onAddTask, phase.id]);
+  
+  const handleAddMaterial = useCallback(() => {
+    console.log('PhaseCard: handleAddMaterial called', { onAddMaterial: !!onAddMaterial, phaseId: phase.id });
+    onAddMaterial?.(phase.id);
+  }, [onAddMaterial, phase.id]);
+  
+  const handleToggleTasks = useCallback(() => {
+    setTasksExpanded(prev => !prev);
+  }, []);
+  
+  const handleToggleMaterials = useCallback(() => {
+    setMaterialsExpanded(prev => !prev);
+  }, []);
+  
+  // Memoized task and material handlers
+  const createTaskEditHandler = useCallback((taskId: string) => () => {
+    onEditTask?.(phase.id, taskId);
+  }, [onEditTask, phase.id]);
+  
+  const createTaskDeleteHandler = useCallback((taskId: string) => () => {
+    onDeleteTask?.(phase.id, taskId);
+  }, [onDeleteTask, phase.id]);
+  
+  const createMaterialEditHandler = useCallback((materialId: string) => () => {
+    onEditMaterial?.(phase.id, materialId);
+  }, [onEditMaterial, phase.id]);
+  
+  const createMaterialDeleteHandler = useCallback((materialId: string) => () => {
+    onDeleteMaterial?.(phase.id, materialId);
+  }, [onDeleteMaterial, phase.id]);
+  
+  // Using shared utility functions from @/utils/plan-helpers
 
   return (
     <m.div
@@ -73,11 +108,11 @@ export function PhaseCard({
             <div className="p-5 bg-gradient-to-r from-blue-50 to-white dark:from-blue-950/20 dark:to-gray-800/10">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-[#2563EB] dark:text-[#93C5FD] font-semibold text-lg">
+                  <h3 className="text-[#2B6CB0] dark:text-[#93C5FD] font-semibold text-lg">
                     Phase {phase.order}: {phase.name}
                   </h3>
-                  <Badge className={getStatusColor(phase.status)}>
-                    {phase.status.charAt(0).toUpperCase() + phase.status.slice(1)}
+                  <Badge className={statusColorClass}>
+                    {statusText}
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2">
@@ -85,11 +120,8 @@ export function PhaseCard({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 p-1 text-gray-500 hover:text-[#2563EB] hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-1"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEditPhaseDates(phase.id);
-                      }}
+                      className="h-8 p-1 text-gray-500 hover:text-[#2B6CB0] hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-1"
+                      onClick={handleEditPhaseDates}
                     >
                       <Calendar className="h-3.5 w-3.5" />
                       <span className="text-xs">Dates</span>
@@ -98,11 +130,8 @@ export function PhaseCard({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 w-8 p-0 text-gray-500 hover:text-[#2563EB] hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit && onEdit(phase.id);
-                    }}
+                    className="h-8 w-8 p-0 text-gray-500 hover:text-[#2B6CB0] hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                    onClick={handleEditPhase}
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -110,10 +139,7 @@ export function PhaseCard({
                     variant="ghost"
                     size="sm"
                     className="h-8 w-8 p-0 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete && onDelete(phase.id);
-                    }}
+                    onClick={handleDeletePhase}
                   >
                     <Trash className="h-4 w-4" />
                   </Button>
@@ -126,7 +152,7 @@ export function PhaseCard({
               
               <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
                 <div className="flex items-center bg-blue-50 dark:bg-blue-900/20 p-1.5 px-3 rounded-full">
-                  <Calendar className="h-3.5 w-3.5 mr-2 text-[#2563EB]" />
+                  <Calendar className="h-3.5 w-3.5 mr-2 text-[#2B6CB0]" />
                   <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Duration: {phase.duration}</span>
                 </div>
                 
@@ -134,7 +160,7 @@ export function PhaseCard({
                   <Clock className="h-3.5 w-3.5 mr-2 text-gray-500" />
                   <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
                     {phase.startDate && phase.endDate ? 
-                      `${formatDate(phase.startDate)} - ${formatDate(phase.endDate)}` : 
+                      `${formattedStartDate} - ${formattedEndDate}` : 
                       'Dates not set'}
                   </span>
                 </div>
@@ -145,12 +171,12 @@ export function PhaseCard({
             <div className="border-t border-gray-200 dark:border-gray-700">
               <div 
                 className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors duration-200"
-                onClick={() => setTasksExpanded(!tasksExpanded)}
+                onClick={handleToggleTasks}
               >
                 <div className="flex items-center gap-1">
                   {tasksExpanded ? 
-                    <ChevronDown className="h-4 w-4 text-[#2563EB]" /> : 
-                    <ChevronRight className="h-4 w-4 text-[#2563EB]" />}
+                    <ChevronDown className="h-4 w-4 text-[#2B6CB0]" /> : 
+                    <ChevronRight className="h-4 w-4 text-[#2B6CB0]" />}
                   <h4 className="font-medium text-gray-800 dark:text-gray-200 text-sm">
                     Tasks ({phase.tasks.length})
                   </h4>
@@ -158,10 +184,10 @@ export function PhaseCard({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 px-2 text-xs border-[#2563EB] text-[#2563EB] hover:bg-blue-50 dark:text-[#93C5FD] dark:border-blue-700 dark:hover:bg-blue-900/20"
+                  className="h-7 px-2 text-xs border-[#2B6CB0] text-[#2B6CB0] hover:bg-blue-50 dark:text-[#93C5FD] dark:border-blue-700 dark:hover:bg-blue-900/20"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onAddTask && onAddTask(phase.id);
+                    handleAddTask();
                   }}
                 >
                   <Plus className="h-3.5 w-3.5 mr-1" />
@@ -194,7 +220,7 @@ export function PhaseCard({
                                   className="h-6 w-6 p-0 opacity-70 hover:opacity-100"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    onEditTask && onEditTask(phase.id, task.id);
+                                    onEditTask?.(phase.id, task.id);
                                   }}
                                 >
                                   <Edit className="h-3 w-3" />
@@ -205,7 +231,7 @@ export function PhaseCard({
                                   className="h-6 w-6 p-0 text-red-600 opacity-70 hover:opacity-100"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    onDeleteTask && onDeleteTask(phase.id, task.id);
+                                    onDeleteTask?.(phase.id, task.id);
                                   }}
                                 >
                                   <Trash className="h-3 w-3" />
@@ -240,8 +266,8 @@ export function PhaseCard({
               >
                 <div className="flex items-center gap-1">
                   {materialsExpanded ? 
-                    <ChevronDown className="h-4 w-4 text-[#2563EB]" /> : 
-                    <ChevronRight className="h-4 w-4 text-[#2563EB]" />}
+                    <ChevronDown className="h-4 w-4 text-[#2B6CB0]" /> : 
+                    <ChevronRight className="h-4 w-4 text-[#2B6CB0]" />}
                   <h4 className="font-medium text-gray-800 dark:text-gray-200 text-sm">
                     Materials ({phase.materials.length})
                   </h4>
@@ -249,10 +275,10 @@ export function PhaseCard({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 px-2 text-xs border-[#2563EB] text-[#2563EB] hover:bg-blue-50 dark:text-[#93C5FD] dark:border-blue-700 dark:hover:bg-blue-900/20"
+                  className="h-7 px-2 text-xs border-[#2B6CB0] text-[#2B6CB0] hover:bg-blue-50 dark:text-[#93C5FD] dark:border-blue-700 dark:hover:bg-blue-900/20"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onAddMaterial && onAddMaterial(phase.id);
+                    onAddMaterial?.(phase.id);
                   }}
                 >
                   <Plus className="h-3.5 w-3.5 mr-1" />
@@ -285,7 +311,7 @@ export function PhaseCard({
                                   className="h-6 w-6 p-0 opacity-70 hover:opacity-100"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    onEditMaterial && onEditMaterial(phase.id, material.id);
+                                    onEditMaterial?.(phase.id, material.id);
                                   }}
                                 >
                                   <Edit className="h-3 w-3" />
@@ -296,7 +322,7 @@ export function PhaseCard({
                                   className="h-6 w-6 p-0 text-red-600 opacity-70 hover:opacity-100"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    onDeleteMaterial && onDeleteMaterial(phase.id, material.id);
+                                    onDeleteMaterial?.(phase.id, material.id);
                                   }}
                                 >
                                   <Trash className="h-3 w-3" />
@@ -326,4 +352,4 @@ export function PhaseCard({
       </Card>
     </m.div>
   );
-}
+});

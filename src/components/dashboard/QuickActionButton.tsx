@@ -1,7 +1,7 @@
 /**
  * QuickActionButton component for dashboard actions
  */
-import React from 'react'
+// import React from 'react'
 import { Button } from '@/components/ui/button'
 import { useNavigate } from 'react-router-dom'
 import { QuickAction } from '@/types/dashboard'

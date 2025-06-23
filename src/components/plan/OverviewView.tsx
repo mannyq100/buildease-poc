@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { ConstructionPlan } from '@/data/mock/generatedPlan/planData';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CalendarDays, Clock, Package, CheckSquare, Layers, FileText, Plus, Calendar, BarChart } from 'lucide-react';
 import { PhaseCard } from './PhaseCard';
 import { motion } from 'framer-motion';
+import { formatDate, containerVariants, itemVariants } from '@/utils/plan-helpers';
 
 interface OverviewViewProps {
   plan: ConstructionPlan;
@@ -23,7 +24,7 @@ interface OverviewViewProps {
   viewMode?: 'detailed' | 'summary';
 }
 
-export function OverviewView({ 
+export const OverviewView = React.memo(function OverviewView({ 
   plan, 
   onEditPhase, 
   onDeletePhase, 
@@ -37,43 +38,32 @@ export function OverviewView({
   onAddPhase,
   onEditProjectDates,
   onEditPhaseDates,
-  viewMode
+  viewMode: _viewMode // Prefix with underscore to indicate intentionally unused parameter
 }: OverviewViewProps) {
-  // Format dates for better display
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Not set';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  // Count total tasks and materials across all phases
-  const totalTasks = plan.phases.reduce((sum, phase) => sum + phase.tasks.length, 0);
-  const totalMaterials = plan.phases.reduce((sum, phase) => sum + phase.materials.length, 0);
+  // Memoized computed values for performance with specific dependencies
+  const { totalTasks, totalMaterials, completedTasks, overallProgress } = useMemo(() => {
+    const totalTasks = plan.phases.reduce((sum, phase) => sum + phase.tasks.length, 0);
+    const totalMaterials = plan.phases.reduce((sum, phase) => sum + phase.materials.length, 0);
+    const completedTasks = plan.phases.reduce((sum, phase) => sum + phase.tasks.filter(task => task.status === 'completed').length, 0);
+    const overallProgress = totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    
+    return { totalTasks, totalMaterials, completedTasks, overallProgress };
+  }, [plan.phases]); // This dependency is correct as we're looking at the entire phases array
   
-  // Calculate completed tasks
-  const completedTasks = plan.phases.reduce((sum, phase) => sum + phase.tasks.filter(task => task.status === 'completed').length, 0);
+  // Memoized formatted dates
+  const formattedStartDate = useMemo(() => formatDate(plan.startDate), [plan.startDate]);
+  const formattedEndDate = useMemo(() => formatDate(plan.endDate), [plan.endDate]);
+  const formattedLastUpdated = useMemo(() => formatDate(plan.lastUpdated), [plan.lastUpdated]);
   
-  // Calculate overall project progress
-  const overallProgress = totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
-
-  // Animation variants for staggered animations
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.4 } }
-  };
+  // Memoized callbacks
+  // Ensure all callbacks are properly memoized
+  const handleAddPhase = useCallback(() => {
+    onAddPhase?.(plan.id);
+  }, [onAddPhase, plan.id]);
+  
+  const handleEditProjectDates = useCallback(() => {
+    onEditProjectDates?.();
+  }, [onEditProjectDates]);
 
   return (
     <motion.div 
@@ -92,7 +82,7 @@ export function OverviewView({
                 <p className="text-blue-100 text-sm mt-1 max-w-2xl line-clamp-1">{plan.description}</p>
               </div>
               <Button 
-                onClick={onEditProjectDates} 
+                onClick={handleEditProjectDates} 
                 variant="outline" 
                 size="sm" 
                 className="bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-sm"
@@ -175,7 +165,7 @@ export function OverviewView({
                   </div>
                   <div className="flex justify-between items-center w-full">
                     <span className="text-xs text-gray-500 dark:text-gray-400">Start</span>
-                    <span className="font-medium text-sm">{formatDate(plan.startDate)}</span>
+                    <span className="font-medium text-sm">{formattedStartDate}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -184,7 +174,7 @@ export function OverviewView({
                   </div>
                   <div className="flex justify-between items-center w-full">
                     <span className="text-xs text-gray-500 dark:text-gray-400">End</span>
-                    <span className="font-medium text-sm">{formatDate(plan.endDate)}</span>
+                    <span className="font-medium text-sm">{formattedEndDate}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -193,7 +183,7 @@ export function OverviewView({
                   </div>
                   <div className="flex justify-between items-center w-full">
                     <span className="text-xs text-gray-500 dark:text-gray-400">Updated</span>
-                    <span className="font-medium text-sm">{formatDate(plan.lastUpdated)}</span>
+                    <span className="font-medium text-sm">{formattedLastUpdated}</span>
                   </div>
                 </div>
               </div>
@@ -229,7 +219,7 @@ export function OverviewView({
         
         {/* Add Phase button with accent color */}
         <Button
-          onClick={onAddPhase ? () => onAddPhase(plan.id) : undefined}
+          onClick={handleAddPhase}
           size="sm"
           className="bg-[#ED8936] hover:bg-[#ED8936]/90 text-white h-8 px-3 shadow-sm"
           disabled={!onAddPhase}
@@ -239,29 +229,30 @@ export function OverviewView({
         </Button>
       </motion.div>
 
-      {/* Phases List */}
+      {/* Phases List - Fixed animation hierarchy to prevent nested animation issues */}
       <motion.div variants={itemVariants} className="space-y-4">
         {plan.phases.map((phase, index) => (
-          <motion.div 
-            key={phase.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.1 }}
-          >
-            <PhaseCard 
-              phase={phase} 
-              onDelete={onDeletePhase}
-              onEdit={onEditPhase}
-              onAddTask={onAddTask}
-              onEditTask={onEditTask}
-              onDeleteTask={onDeleteTask}
-              onAddMaterial={onAddMaterial}
-              onEditMaterial={onEditMaterial}
-              onDeleteMaterial={onDeleteMaterial}
-              onReorderPhase={onReorderPhase}
-              onEditPhaseDates={onEditPhaseDates}
-            />
-          </motion.div>
+          <div key={phase.id}>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.1 }}
+            >
+              <PhaseCard 
+                phase={phase} 
+                onDelete={onDeletePhase}
+                onEdit={onEditPhase}
+                onAddTask={onAddTask}
+                onEditTask={onEditTask}
+                onDeleteTask={onDeleteTask}
+                onAddMaterial={onAddMaterial}
+                onEditMaterial={onEditMaterial}
+                onDeleteMaterial={onDeleteMaterial}
+                onReorderPhase={onReorderPhase}
+                onEditPhaseDates={onEditPhaseDates}
+              />
+            </motion.div>
+          </div>
         ))}
         
         {plan.phases.length === 0 && (
@@ -285,4 +276,4 @@ export function OverviewView({
       </motion.div>
     </motion.div>
   );
-}
+});

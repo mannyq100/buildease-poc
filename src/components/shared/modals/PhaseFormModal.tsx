@@ -1,6 +1,6 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Layers, Calendar, ListOrdered, ClipboardList } from 'lucide-react';
-import { useFormState } from '@/hooks/useFormState';
+import { useForm, Controller } from 'react-hook-form';
 import { BaseModal } from './BaseModal';
 import { FormField, SelectField, ModalFooter } from '@/components/ui/form-fields';
 import { v4 as uuidv4 } from 'uuid';
@@ -13,8 +13,8 @@ export interface Phase {
   startDate: string;
   endDate: string;
   status: string;
-  tasks?: any[];
-  materials?: any[];
+  tasks?: unknown[];
+  materials?: unknown[];
   progress?: number;
 }
 
@@ -38,83 +38,64 @@ export function PhaseFormModal({
   currentOrder = 1
 }: PhaseFormModalProps) {
   // Default phase values
-  const defaultValues: Phase = {
-    id: uuidv4(),
-    name: '',
-    description: '',
-    order: currentOrder,
-    startDate: new Date().toISOString().substring(0, 10),
-    endDate: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().substring(0, 10),
-    status: 'planning',
-    tasks: [],
-    materials: [],
-    progress: 0
-  };
+  const getDefaultValues = useCallback((): Phase => ({
+    id: phase?.id || uuidv4(),
+    name: phase?.name || '',
+    description: phase?.description || '',
+    order: phase?.order || currentOrder,
+    startDate: phase?.startDate || new Date().toISOString().substring(0, 10),
+    endDate: phase?.endDate || new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().substring(0, 10),
+    status: phase?.status || 'planning',
+    tasks: phase?.tasks || [],
+    materials: phase?.materials || [],
+    progress: phase?.progress || 0
+  }), [phase, currentOrder]);
 
-  // Phase validation function
-  const validatePhase = useCallback((data: Phase) => {
-    const errors: Partial<Record<keyof Phase, string>> = {};
-    
-    if (!data.name?.trim()) {
-      errors.name = 'Phase name is required';
-    }
-    
-    if (!data.startDate) {
-      errors.startDate = 'Start date is required';
-    }
-    
-    if (!data.endDate) {
-      errors.endDate = 'End date is required';
-    } else {
-      const start = new Date(data.startDate);
-      const end = new Date(data.endDate);
-      
-      if (end < start) {
-        errors.endDate = 'End date cannot be before start date';
-      }
-    }
-    
-    return errors;
-  }, []);
-
-  // Use our custom form state hook
+  // Initialize React Hook Form
   const {
-    formData,
-    errors,
-    saving,
-    setSaving,
-    handleChange,
-    handleSelectChange,
-    validate
-  } = useFormState<Phase>(
-    phase ? { ...defaultValues, ...phase, id: phase.id || uuidv4() } : null, 
-    defaultValues, 
-    show, 
-    validatePhase
-  );
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+    watch
+  } = useForm<Phase>({
+    defaultValues: getDefaultValues(),
+    mode: 'onBlur'
+  });
+
+  // Watch startDate and endDate for validation
+  const startDate = watch('startDate');
+  const endDate = watch('endDate');
+
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (show) {
+      reset(getDefaultValues());
+    }
+  }, [show, reset, getDefaultValues]);
 
   // Handle form submission
-  const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-
-    setSaving(true);
-    
-    // Simulate API call with slight delay
+  const onSubmit = useCallback((data: Phase) => {
+    // Simulate API call delay
     setTimeout(() => {
-      onSave(formData);
-      setSaving(false);
+      onSave(data);
       onClose();
     }, 500);
-  }, [formData, validate, onSave, onClose, setSaving]);
+  }, [onSave, onClose]);
+
+  // Handle form submit wrapper
+  const handleFormSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    handleSubmit(onSubmit)(e);
+  }, [handleSubmit, onSubmit]);
 
   // Create the modal footer
   const modalFooter = (
     <ModalFooter
       onClose={onClose}
-      onSubmit={handleSubmit}
+      onSubmit={handleFormSubmit}
       isNew={isNew}
-      saving={saving}
+      saving={isSubmitting}
       submitText={isNew ? 'Create Phase' : 'Save Changes'}
     />
   );
@@ -131,89 +112,143 @@ export function PhaseFormModal({
       title={isNew ? 'Add New Phase' : 'Edit Phase'}
       description={modalDescription}
       footer={modalFooter}
-      saving={saving}
+      saving={isSubmitting}
     >
-      <form id="phase-form" onSubmit={handleSubmit} className="space-y-5">
+      <form id="phase-form" onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         {/* Basic information */}
-        <FormField
-          label="Phase Name"
+        <Controller
+          control={control}
           name="name"
-          value={formData.name || ''}
-          onChange={handleChange}
-          placeholder="e.g., Foundation Work"
-          required
-          icon={Layers}
-          error={errors.name}
+          rules={{ required: 'Phase name is required' }}
+          render={({ field, fieldState: { error } }) => (
+            <FormField
+              label="Phase Name"
+              name="name"
+              value={field.value}
+              onChange={field.onChange}
+              placeholder="e.g., Foundation Work"
+              required
+              icon={Layers}
+              error={error?.message}
+            />
+          )}
         />
 
         {/* Description field */}
-        <div className="space-y-2">
-          <label htmlFor="description" className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
-            Description
-          </label>
-          <div className="relative group">
-            <ClipboardList className="absolute left-3 top-3 h-4 w-4 text-gray-400 group-hover:text-[#2B6CB0] transition-colors duration-200" />
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description || ''}
-              onChange={handleChange}
-              placeholder="Enter phase description"
-              rows={3}
-              className={`w-full pl-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2B6CB0]/10 focus:border-[#2B6CB0] shadow-sm hover:border-gray-400 dark:hover:border-gray-600 transition-all duration-200 ${errors.description ? 'border-red-300 focus:ring-red-200 focus:border-red-400' : ''}`}
-            />
-          </div>
-          {errors.description && <p className="text-xs text-red-500 mt-1">{errors.description}</p>}
-        </div>
+        <Controller
+          control={control}
+          name="description"
+          render={({ field, fieldState: { error } }) => (
+            <div className="space-y-2">
+              <label htmlFor="description" className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                Description
+              </label>
+              <div className="relative group">
+                <ClipboardList className="absolute left-3 top-3 h-4 w-4 text-gray-400 group-hover:text-[#2B6CB0] transition-colors duration-200" />
+                <textarea
+                  id="description"
+                  name="description"
+                  value={field.value || ''}
+                  onChange={field.onChange}
+                  placeholder="Enter phase description"
+                  rows={3}
+                  className={`w-full pl-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2B6CB0]/10 focus:border-[#2B6CB0] shadow-sm hover:border-gray-400 dark:hover:border-gray-600 transition-all duration-200 ${error ? 'border-red-300 focus:ring-red-200 focus:border-red-400' : ''}`}
+                />
+              </div>
+              {error && <p className="text-xs text-red-500 mt-1">{error.message}</p>}
+            </div>
+          )}
+        />
 
         {/* Order and Status */}
         <div className="grid grid-cols-2 gap-4">
-          <FormField
-            label="Order"
+          <Controller
+            control={control}
             name="order"
-            type="number"
-            value={formData.order || ''}
-            onChange={handleChange}
-            placeholder="e.g., 1"
-            icon={ListOrdered}
-            error={errors.order}
+            rules={{ 
+              required: 'Order is required',
+              min: { value: 1, message: 'Order must be at least 1' }
+            }}
+            render={({ field, fieldState: { error } }) => (
+              <FormField
+                label="Order"
+                name="order"
+                type="number"
+                value={field.value?.toString() || ''}
+                onChange={(e) => field.onChange(Number(e.target.value))}
+                placeholder="e.g., 1"
+                icon={ListOrdered}
+                error={error?.message}
+                min="1"
+              />
+            )}
           />
 
-          <SelectField
-            label="Status"
+          <Controller
+            control={control}
             name="status"
-            value={formData.status || ''}
-            onValueChange={(value) => handleSelectChange('status', value)}
-            options={statuses.map(status => ({
-              value: status,
-              label: status.charAt(0).toUpperCase() + status.slice(1).replace(/-/g, ' ')
-            }))}
-            placeholder="Select status"
+            rules={{ required: 'Status is required' }}
+            render={({ field, fieldState: { error } }) => (
+              <SelectField
+                label="Status"
+                name="status"
+                value={field.value}
+                onValueChange={field.onChange}
+                options={statuses.map(status => ({
+                  value: status,
+                  label: status.charAt(0).toUpperCase() + status.slice(1).replace(/-/g, ' ')
+                }))}
+                placeholder="Select status"
+                error={error?.message}
+              />
+            )}
           />
         </div>
 
         {/* Dates */}
         <div className="grid grid-cols-2 gap-4">
-          <FormField
-            label="Start Date"
+          <Controller
+            control={control}
             name="startDate"
-            type="date"
-            value={formData.startDate || ''}
-            onChange={handleChange}
-            icon={Calendar}
-            required
-            error={errors.startDate}
+            rules={{ required: 'Start date is required' }}
+            render={({ field, fieldState: { error } }) => (
+              <FormField
+                label="Start Date"
+                name="startDate"
+                type="date"
+                value={field.value}
+                onChange={field.onChange}
+                icon={Calendar}
+                required
+                error={error?.message}
+              />
+            )}
           />
 
-          <FormField
-            label="End Date"
+          <Controller
+            control={control}
             name="endDate"
-            type="date"
-            value={formData.endDate || ''}
-            onChange={handleChange}
-            icon={Calendar}
-            required
-            error={errors.endDate}
+            rules={{ 
+              required: 'End date is required',
+              validate: (value) => {
+                if (startDate && value && new Date(value) < new Date(startDate)) {
+                  return 'End date cannot be before start date';
+                }
+                return true;
+              }
+            }}
+            render={({ field, fieldState: { error } }) => (
+              <FormField
+                label="End Date"
+                name="endDate"
+                type="date"
+                value={field.value}
+                onChange={field.onChange}
+                icon={Calendar}
+                required
+                error={error?.message}
+              />
+            )}
           />
         </div>
       </form>

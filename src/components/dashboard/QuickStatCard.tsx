@@ -1,7 +1,7 @@
 /**
  * QuickStatCard component for displaying statistics in the dashboard
  */
-import React from 'react'
+// import React from 'react'
 import { QuickStatCard as QuickStatCardProps } from '@/types/dashboard'
 import { StatCard } from '@/components/shared/StatCard'
 
@@ -24,7 +24,6 @@ export function QuickStatCard({
       colorScheme={color}
       subtitle={subtitle}
       trend={trend}
-      simplified={true}
     />
   )
 }

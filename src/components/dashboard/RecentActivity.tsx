@@ -72,7 +72,9 @@ export function RecentActivity({ activities, className = '' }: RecentActivityPro
                         className="ml-auto h-8 w-8 rounded-full text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                         onClick={(e) => {
                           e.stopPropagation()
-                          navigate(item.link)
+                          if (item.link) {
+                            navigate(item.link)
+                          }
                         }}
                       >
                         <ChevronRight className="h-4 w-4" />

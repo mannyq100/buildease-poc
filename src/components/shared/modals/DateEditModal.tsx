@@ -1,6 +1,6 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Calendar, Info } from 'lucide-react';
-import { useFormState } from '@/hooks/useFormState';
+import { useForm, Controller } from 'react-hook-form';
 import { BaseModal } from './BaseModal';
 import { FormField, ModalFooter } from '@/components/ui/form-fields';
 import { v4 as uuidv4 } from 'uuid';
@@ -33,72 +33,59 @@ export function DateEditModal({
   isLoading = false
 }: DateEditModalProps) {
   // Default date values
-  const defaultValues: DateRange = {
-    id: uuidv4(),
-    startDate: new Date().toISOString().substring(0, 10),
-    endDate: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().substring(0, 10),
-    type: 'project'
-  };
+  const getDefaultValues = useCallback((): DateRange => ({
+    id: dateRange?.id || uuidv4(),
+    startDate: dateRange?.startDate || new Date().toISOString().substring(0, 10),
+    endDate: dateRange?.endDate || new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().substring(0, 10),
+    type: dateRange?.type || 'project',
+    name: dateRange?.name
+  }), [dateRange]);
 
-  // Date validation function
-  const validateDates = useCallback((data: DateRange) => {
-    const errors: Partial<Record<keyof DateRange, string>> = {};
-    
-    if (!data.startDate) {
-      errors.startDate = 'Start date is required';
-    }
-    
-    if (!data.endDate) {
-      errors.endDate = 'End date is required';
-    } else {
-      const start = new Date(data.startDate);
-      const end = new Date(data.endDate);
-      
-      if (end < start) {
-        errors.endDate = 'End date cannot be before start date';
-      }
-    }
-    
-    return errors;
-  }, []);
-
-  // Use our custom form state hook
+  // Initialize React Hook Form
   const {
-    formData,
-    errors,
-    saving: internalSaving,
-    setSaving,
-    handleChange,
-    validate
-  } = useFormState<DateRange>(
-    dateRange ? { ...defaultValues, ...dateRange, id: dateRange.id || uuidv4() } : null, 
-    defaultValues, 
-    show, 
-    validateDates
-  );
+    control,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors, isSubmitting }
+  } = useForm<DateRange>({
+    defaultValues: getDefaultValues(),
+    mode: 'onBlur'
+  });
+
+  // Watch startDate for validation
+  const startDate = watch('startDate');
+
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (show) {
+      reset(getDefaultValues());
+    }
+  }, [show, reset, getDefaultValues]);
 
   // Combine the internal saving state with any external loading state
-  const saving = internalSaving || isLoading;
+  const saving = isSubmitting || isLoading;
 
   // Handle form submission
-  const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-
-    setSaving(true);
-    
-    // Simulate API call with slight delay
+  const onSubmit = useCallback((data: DateRange) => {
+    // Simulate API call delay
     setTimeout(() => {
-      onSave(formData);
-      setSaving(false);
+      onSave(data);
+      onClose();
     }, 500);
-  }, [formData, validate, onSave, setSaving]);
+  }, [onSave, onClose]);
+
+  // Handle form submit wrapper
+  const handleFormSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    handleSubmit(onSubmit)(e);
+  }, [handleSubmit, onSubmit]);
 
   // Create the modal footer
   const modalFooter = (
     <ModalFooter
       onClose={onClose}
-      onSubmit={handleSubmit}
+      onSubmit={handleFormSubmit}
       isNew={false}
       saving={saving}
       submitText="Save Changes"
@@ -118,29 +105,51 @@ export function DateEditModal({
       saving={saving}
       size="sm"
     >
-      <form id="date-form" onSubmit={handleSubmit} className="space-y-5">
+      <form id="date-form" onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         <div className="p-1">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              label="Start Date"
+            <Controller
+              control={control}
               name="startDate"
-              type="date"
-              value={formData.startDate || ''}
-              onChange={handleChange}
-              icon={Calendar}
-              required
-              error={errors.startDate}
+              rules={{ required: 'Start date is required' }}
+              render={({ field, fieldState: { error } }) => (
+                <FormField
+                  label="Start Date"
+                  name="startDate"
+                  type="date"
+                  value={field.value}
+                  onChange={field.onChange}
+                  icon={Calendar}
+                  required
+                  error={error?.message}
+                />
+              )}
             />
             
-            <FormField
-              label="End Date"
+            <Controller
+              control={control}
               name="endDate"
-              type="date"
-              value={formData.endDate || ''}
-              onChange={handleChange}
-              icon={Calendar}
-              required
-              error={errors.endDate}
+              rules={{ 
+                required: 'End date is required',
+                validate: (value) => {
+                  if (startDate && value && new Date(value) < new Date(startDate)) {
+                    return 'End date cannot be before start date';
+                  }
+                  return true;
+                }
+              }}
+              render={({ field, fieldState: { error } }) => (
+                <FormField
+                  label="End Date"
+                  name="endDate"
+                  type="date"
+                  value={field.value}
+                  onChange={field.onChange}
+                  icon={Calendar}
+                  required
+                  error={error?.message}
+                />
+              )}
             />
           </div>
           

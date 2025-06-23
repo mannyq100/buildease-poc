@@ -18,7 +18,6 @@ import { useEffect, Suspense, lazy } from 'react';
 import config, { isDevelopment, isProduction } from '@/lib/env-config';
 
 // Security initialization
-import { securityMonitor } from '@/utils/auth/SecurityMonitor';
 
 
 // Styles
@@ -111,9 +110,6 @@ function App() {
   // Initialize security systems on app start
   useEffect(() => {
     try {
-      // Initialize security monitoring
-      securityMonitor;
-      
       if (isDevelopment()) {
         console.log('🛡️ Lightweight security systems initialized');
       }

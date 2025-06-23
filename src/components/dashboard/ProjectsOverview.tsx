@@ -1,4 +1,4 @@
-import React from 'react'
+// import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowUpRight, Briefcase, ChevronRight } from 'lucide-react'
 import { LazyMotion, domAnimation, m } from 'framer-motion'
@@ -20,7 +20,7 @@ interface ProjectsOverviewProps {
  */
 export function ProjectsOverview({ projects, className = '' }: ProjectsOverviewProps) {
   const navigate = useNavigate()
-  const isDarkMode = document.documentElement.classList.contains('dark')
+  const _isDarkMode = document.documentElement.classList.contains('dark')
   
   // Get only active projects and limit to 5
   const activeProjects = projects
@@ -67,7 +67,7 @@ export function ProjectsOverview({ projects, className = '' }: ProjectsOverviewP
                           className={cn(
                             "text-xs",
                             project.status === 'active' ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300 border-green-200 dark:border-green-800/30' : 
-                            project.status === 'pending' ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-800/30' : 
+                            project.status === 'planning' ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-800/30' : 
                             'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800/30'
                           )}
                         >

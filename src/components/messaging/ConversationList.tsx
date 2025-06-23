@@ -70,7 +70,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   conversations,
   activeConversationId,
   onSelectConversation,
-  onCreateConversation,
+  onCreateConversation: _onCreateConversation,
   onPinConversation,
   onArchiveConversation,
   onDeleteConversation,
@@ -84,7 +84,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   const [filterQuery, setFilterQuery] = useState("");
   
   // State for confirm delete dialog
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [_isDeleteDialogOpen, _setIsDeleteDialogOpen] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
 
   // Filter and sort conversations
@@ -113,7 +113,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
     });
   
   // Get the name of the other participant for individual chats
-  const getParticipantName = (conversation: Conversation): string | undefined => {
+  const _getParticipantName = (conversation: Conversation): string | undefined => {
     if (conversation.type !== "individual") return undefined;
     
     const otherParticipant = conversation.participants.find(

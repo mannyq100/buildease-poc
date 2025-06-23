@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 
 import MainNavigation from './MainNavigation';
@@ -22,7 +22,7 @@ interface AppLayoutProps {
 export function AppLayout({ showBreadcrumbs = true, className }: AppLayoutProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [isSmallTablet, setIsSmallTablet] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [_mobileMenuOpen, _setMobileMenuOpen] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   
   // Detect mobile/tablet screen sizes - mobile-first approach

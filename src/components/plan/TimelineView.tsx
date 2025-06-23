@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useMemo } from 'react';
 import { Phase as PlanPhase, ConstructionPlan, Task as PlanTask } from '@/data/mock/generatedPlan/planData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, Edit, Plus, CalendarDays } from 'lucide-react';
 import { motion as m } from 'framer-motion';
+import { getTimelineStatusColor, getTimelineTextColor, getStatusText } from '@/utils/plan-helpers';
 
 // Import our shared modal components and their types
 import { 
@@ -15,6 +16,9 @@ import {
 } from '@/components/shared/modals';
 import { DateRange } from '@/components/shared/modals/DateEditModal';
 
+// Import Zustand modal hooks
+import { usePhaseModal, useTaskModal, useDateModal } from '@/stores/modalStore';
+
 interface TimelineViewProps {
   plan: ConstructionPlan;
   onUpdatePhase?: (phase: PlanPhase) => void;
@@ -22,105 +26,76 @@ interface TimelineViewProps {
   onUpdateDate?: (phaseId: string | number, startDate: string, endDate: string) => void;
 }
 
-export function TimelineView({ plan, onUpdatePhase, onUpdateTask, onUpdateDate }: TimelineViewProps) {
-  // Sort phases by order
-  const sortedPhases = [...plan.phases].sort((a, b) => a.order - b.order);
+export const TimelineView = React.memo(function TimelineView({ plan, onUpdatePhase, onUpdateTask, onUpdateDate }: TimelineViewProps) {
+  // Memoized sorted phases to prevent unnecessary re-computation
+  const sortedPhases = useMemo(() => {
+    return [...plan.phases].sort((a, b) => a.order - b.order);
+  }, [plan.phases]);
 
-  // State for modals
-  const [showPhaseModal, setShowPhaseModal] = useState(false);
-  const [showTaskModal, setShowTaskModal] = useState(false);
-  const [showDateModal, setShowDateModal] = useState(false);
-  const [currentPhase, setCurrentPhase] = useState<ModalPhase | null>(null);
-  const [currentTask, setCurrentTask] = useState<ModalTask | null>(null);
-  const [currentDates, setCurrentDates] = useState<{ phaseId: string | number, startDate: string, endDate: string } | null>(null);
+  // Zustand modal hooks
+  const phaseModal = usePhaseModal();
+  const taskModal = useTaskModal();
+  const dateModal = useDateModal();
 
-  const getStatusColor = (status: string) => {
-    switch(status) {
-      case 'pending':
-        return 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/10';
-      case 'in-progress':
-        return 'border-amber-500 dark:border-amber-400 bg-amber-50 dark:bg-amber-900/10';
-      case 'completed':
-        return 'border-green-500 dark:border-green-400 bg-green-50 dark:bg-green-900/10';
-      case 'delayed':
-        return 'border-red-500 dark:border-red-400 bg-red-50 dark:bg-red-900/10';
-      default:
-        return 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/30';
-    }
-  };
+  // Using shared utility functions from @/utils/plan-helpers
 
-  const getTextColor = (status: string) => {
-    switch(status) {
-      case 'pending':
-        return 'text-blue-600 dark:text-blue-400';
-      case 'in-progress':
-        return 'text-amber-600 dark:text-amber-400';
-      case 'completed':
-        return 'text-green-600 dark:text-green-400';
-      case 'delayed':
-        return 'text-red-600 dark:text-red-400';
-      default:
-        return 'text-gray-600 dark:text-gray-400';
-    }
-  };
-
-  // Convert from PlanPhase to ModalPhase
-  const convertToModalPhase = (phase: PlanPhase): ModalPhase => {
-    return {
+  // Memoized conversion functions to prevent recreation on every render
+  const convertToModalPhase = useMemo(() => {
+    return (phase: PlanPhase): ModalPhase => ({
       id: phase.id.toString(),
       name: phase.name,
       description: phase.description,
       status: phase.status as 'pending' | 'in-progress' | 'completed' | 'delayed',
       startDate: phase.startDate || '',
       endDate: phase.endDate || '',
-      order: phase.order.toString(),
+      order: phase.order,
       tasks: phase.tasks ? phase.tasks.map(t => t.id.toString()) : []
-    };
-  };
+    });
+  }, []);
 
-  // Convert from PlanTask to ModalTask
-  const convertToModalTask = (task: PlanTask, phaseId: string | number): ModalTask => {
-    return {
+  const convertToModalTask = useMemo(() => {
+    return (task: PlanTask, phaseId: string | number): ModalTask => ({
       id: task.id.toString(),
       name: task.name,
       description: task.description || '',
       status: task.status as 'pending' | 'in-progress' | 'completed' | 'delayed',
       startDate: task.startDate || '',
       endDate: task.endDate || '',
-      assignedTo: task.assignedTo || [],
+      assignedTo: task.assignedTo || '',
       phaseId: phaseId.toString(),
       progress: task.progress || 0,
-      dependencies: task.dependencies ? task.dependencies.map(d => d.toString()) : []
-    };
-  };
+      // dependencies not part of modal Task type but available in plan data
+      ...(task.dependencies && { dependencies: task.dependencies })
+    });
+  }, []);
 
   // Convert from ModalPhase back to PlanPhase
   const convertToPlanPhase = (modalPhase: ModalPhase, originalPhase: PlanPhase): PlanPhase => {
     return {
       ...originalPhase,
-      id: typeof modalPhase.id === 'string' ? parseInt(modalPhase.id) : modalPhase.id,
+      id: modalPhase.id,
       name: modalPhase.name,
-      description: modalPhase.description,
+      description: modalPhase.description || '',
       status: modalPhase.status as 'pending' | 'in-progress' | 'completed' | 'delayed',
       startDate: modalPhase.startDate,
       endDate: modalPhase.endDate,
-      order: typeof modalPhase.order === 'string' ? parseInt(modalPhase.order) : modalPhase.order
+      order: modalPhase.order
     };
   };
 
   // Convert from ModalTask back to PlanTask
   const convertToPlanTask = (modalTask: ModalTask, originalTask?: PlanTask): PlanTask => {
     const baseTask: PlanTask = {
-      id: modalTask.id ? (typeof modalTask.id === 'string' ? parseInt(modalTask.id) : modalTask.id) : Date.now(),
+      id: modalTask.id || '',
       name: modalTask.name,
       description: modalTask.description || '',
       status: modalTask.status as 'pending' | 'in-progress' | 'completed' | 'delayed',
       startDate: modalTask.startDate,
       endDate: modalTask.endDate,
-      assignedTo: modalTask.assignedTo || [],
-      phaseId: typeof modalTask.phaseId === 'string' ? parseInt(modalTask.phaseId) : modalTask.phaseId,
+      assignedTo: modalTask.assignedTo || '',
       progress: modalTask.progress,
-      dependencies: modalTask.dependencies?.map(d => (typeof d === 'string' ? parseInt(d) : d)) || []
+      dependencies: (modalTask as { dependencies?: string[] }).dependencies || [],
+      duration: originalTask?.duration || '1 day'
     };
     
     if (originalTask) {
@@ -132,47 +107,30 @@ export function TimelineView({ plan, onUpdatePhase, onUpdateTask, onUpdateDate }
 
   // Handler for opening the phase modal
   const handleEditPhase = (phase: PlanPhase) => {
-    setCurrentPhase(convertToModalPhase(phase));
-    setShowPhaseModal(true);
+    const modalPhase = convertToModalPhase(phase);
+    phaseModal.actions.open(modalPhase, false);
   };
 
   // Handler for opening the task modal
   const handleEditTask = (phase: PlanPhase, task: PlanTask) => {
-    setCurrentTask(convertToModalTask(task, phase.id));
-    setShowTaskModal(true);
+    const modalTask = convertToModalTask(task, phase.id);
+    taskModal.actions.open(modalTask, phase.id.toString(), false);
   };
 
   // Handler for opening the date edit modal
   const handleEditDates = (phase: PlanPhase) => {
-    setCurrentDates({
-      phaseId: phase.id,
-      startDate: phase.startDate || '',
-      endDate: phase.endDate || ''
-    });
-    setShowDateModal(true);
+    const modalPhase = convertToModalPhase(phase);
+    dateModal.actions.open('phase', modalPhase);
   };
 
   // Handler for adding a new task to a phase
   const handleAddTask = (phase: PlanPhase) => {
-    const newTask: ModalTask = {
-      id: '',
-      name: '',
-      description: '',
-      status: 'pending',
-      startDate: '',
-      endDate: '',
-      assignedTo: [],
-      phaseId: phase.id.toString(),
-      progress: 0,
-      dependencies: []
-    };
-    setCurrentTask(newTask);
-    setShowTaskModal(true);
+    taskModal.actions.open(undefined, phase.id.toString(), true);
   };
 
   // Handler for saving updated phase
   const handleSavePhase = (updatedModalPhase: ModalPhase) => {
-    if (onUpdatePhase && currentPhase) {
+    if (onUpdatePhase && phaseModal.data) {
       // Find the original phase to merge with updated values
       const originalPhase = sortedPhases.find(p => p.id.toString() === updatedModalPhase.id.toString());
       if (originalPhase) {
@@ -180,33 +138,30 @@ export function TimelineView({ plan, onUpdatePhase, onUpdateTask, onUpdateDate }
         onUpdatePhase(updatedPhase);
       }
     }
-    setShowPhaseModal(false);
-    setCurrentPhase(null);
+    phaseModal.actions.close();
   };
 
   // Handler for saving updated task
   const handleSaveTask = (updatedModalTask: ModalTask) => {
     if (onUpdateTask) {
       // Find the original task if it exists
-      const phaseId = typeof updatedModalTask.phaseId === 'string' ? 
-        parseInt(updatedModalTask.phaseId) : updatedModalTask.phaseId;
-      const phase = sortedPhases.find(p => p.id === phaseId);
+      const phaseId = updatedModalTask.phaseId;
+      const phase = sortedPhases.find(p => p.id.toString() === phaseId?.toString());
       const originalTask = phase?.tasks.find(t => t.id.toString() === updatedModalTask.id.toString());
       
       const updatedTask = convertToPlanTask(updatedModalTask, originalTask);
       onUpdateTask(updatedTask);
     }
-    setShowTaskModal(false);
-    setCurrentTask(null);
+    taskModal.actions.close();
   };
 
   // Handler for saving updated dates
   const handleSaveDates = (dateRange: DateRange) => {
-    if (onUpdateDate && currentDates) {
-      onUpdateDate(currentDates.phaseId, dateRange.startDate, dateRange.endDate);
+    if (onUpdateDate && dateModal.data?.phase) {
+      const phaseId = dateModal.data.phase.id;
+      onUpdateDate(phaseId, dateRange.startDate, dateRange.endDate);
     }
-    setShowDateModal(false);
-    setCurrentDates(null);
+    dateModal.actions.close();
   };
 
   return (
@@ -237,15 +192,15 @@ export function TimelineView({ plan, onUpdatePhase, onUpdateTask, onUpdateDate }
                     transition={{ duration: 0.3, delay: index * 0.1 }}
                     className="flex relative"
                   >
-                    <div className={`flex-shrink-0 h-14 w-14 rounded-full ${getStatusColor(phase.status)} border-2 flex items-center justify-center`}>
-                      <span className={`font-bold ${getTextColor(phase.status)}`}>{phase.order}</span>
+                    <div className={`flex-shrink-0 h-14 w-14 rounded-full ${getTimelineStatusColor(phase.status)} border-2 flex items-center justify-center`}>
+                      <span className={`font-bold ${getTimelineTextColor(phase.status)}`}>{phase.order}</span>
                     </div>
                     <div className="ml-4 mt-1 w-full">
                       <div className="flex items-center justify-between">
                         <h3 className="text-md font-medium text-gray-900 dark:text-white flex items-center">
                           {phase.name}
-                          <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${getStatusColor(phase.status)} ${getTextColor(phase.status)}`}>
-                            {phase.status.charAt(0).toUpperCase() + phase.status.slice(1)}
+                          <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${getTimelineStatusColor(phase.status)} ${getTimelineTextColor(phase.status)}`}>
+                            {getStatusText(phase.status)}
                           </span>
                         </h3>
                         <div className="flex space-x-2">
@@ -321,54 +276,40 @@ export function TimelineView({ plan, onUpdatePhase, onUpdateTask, onUpdateDate }
         </Card>
       </m.div>
 
-      {/* Render the modals */}
-      {currentPhase && (
-        <PhaseFormModal
-          show={showPhaseModal}
-          onClose={() => {
-            setShowPhaseModal(false);
-            setCurrentPhase(null);
-          }}
-          onSave={handleSavePhase}
-          phase={currentPhase}
-          isNew={false}
-        />
-      )}
+      {/* Render the modals using Zustand state */}
+      <PhaseFormModal
+        show={phaseModal.isOpen}
+        onClose={phaseModal.actions.close}
+        onSave={handleSavePhase}
+        phase={phaseModal.data}
+        isNew={phaseModal.isNew}
+        currentOrder={plan.phases.length}
+        statuses={['planning', 'in-progress', 'on-hold', 'completed']}
+      />
 
-      {currentTask && (
-        <TaskFormModal
-          show={showTaskModal}
-          onClose={() => {
-            setShowTaskModal(false);
-            setCurrentTask(null);
-          }}
-          onSave={handleSaveTask}
-          task={currentTask}
-          isNew={!currentTask.id}
-        />
-      )}
+      <TaskFormModal
+        show={taskModal.isOpen}
+        onClose={taskModal.actions.close}
+        onSave={handleSaveTask}
+        task={taskModal.data}
+        isNew={taskModal.isNew}
+        teamMembers={plan.team.map(member => member.name)}
+        phaseId={taskModal.data?.phaseId || ''}
+      />
 
-      {currentDates && (
-        <DateEditModal
-          show={showDateModal}
-          onClose={() => {
-            setShowDateModal(false);
-            setCurrentDates(null);
-          }}
-          onSave={(dates) => {
-            if (currentDates) {
-              handleSaveDates(dates);
-            }
-          }}
-          dateRange={{
-            startDate: currentDates.startDate,
-            endDate: currentDates.endDate,
-            type: 'phase'
-          }}
-          title="Edit Phase Dates"
-          description="Update the start and end dates for this phase"
-        />
-      )}
+      <DateEditModal
+        show={dateModal.isOpen}
+        onClose={dateModal.actions.close}
+        onSave={handleSaveDates}
+        title="Edit Phase Dates"
+        description="Update the start and end dates for this phase"
+        dateRange={{
+          startDate: dateModal.data?.phase?.startDate || '',
+          endDate: dateModal.data?.phase?.endDate || '',
+          type: 'phase'
+        }}
+        isLoading={false}
+      />
     </div>
   );
-}
+});

@@ -18,11 +18,40 @@ export interface Material {
   name: string;
   quantity: number;
   unit: string;
-  unitPrice: number;
-  totalPrice: number;
+  price?: number;  // Optional field for compatibility with modal Material
+  unitPrice?: number;
+  totalPrice?: number;
   supplier?: string;
-  status: 'ordered' | 'delivered' | 'pending';
+  status?: string; // Made string type to be more flexible for all uses
+  orderDate?: string;  // Added for compatibility with modal Material
+  purchaseDate?: string; // Alternative name for orderDate
   deliveryDate?: string;
+  phaseId?: string;  // Added for compatibility with modal Material
+  type?: string;  // Added for compatibility with modal Material
+}
+
+// Helper functions to work with different material formats
+
+// Convert from plan material to modal material format
+export function convertToModalMaterial(planMaterial: Material): Material {
+  return {
+    ...planMaterial,
+    price: planMaterial.price ?? planMaterial.unitPrice,
+    orderDate: planMaterial.orderDate ?? planMaterial.purchaseDate,
+    type: planMaterial.type ?? 'Other',
+    status: planMaterial.status ?? 'pending'
+  };
+}
+
+// Convert from modal material to plan material format
+export function convertToPlanMaterial(modalMaterial: Material): Material {
+  return {
+    ...modalMaterial,
+    unitPrice: modalMaterial.price ?? modalMaterial.unitPrice,
+    totalPrice: modalMaterial.totalPrice ?? 
+               (modalMaterial.price ?? modalMaterial.unitPrice ?? 0) * modalMaterial.quantity,
+    status: modalMaterial.status ?? 'pending'
+  };
 }
 
 export interface Phase {

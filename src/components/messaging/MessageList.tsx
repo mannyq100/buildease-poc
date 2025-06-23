@@ -82,7 +82,7 @@ const formatMessageTime = (timestamp: string | Date) => {
 };
 
 // Function to format date for date separators
-const formatMessageDate = (timestamp: string | Date) => {
+const _formatMessageDate = (timestamp: string | Date) => {
   const date = new Date(timestamp);
   if (isToday(date)) {
     return "Today";
@@ -336,7 +336,7 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
 };
 
 // DateSeparator component
-const DateSeparator: React.FC<{ date: string }> = ({ date }) => (
+const _DateSeparator: React.FC<{ date: string }> = ({ date }) => (
   <div className="flex items-center justify-center my-4">
     <div className="px-2 py-1 text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-full">
       {date}
@@ -345,7 +345,7 @@ const DateSeparator: React.FC<{ date: string }> = ({ date }) => (
 );
 
 // System Message component
-const SystemMessage: React.FC<{ content: string; timestamp: string | Date }> = ({ content, timestamp }) => (
+const _SystemMessage: React.FC<{ content: string; timestamp: string | Date }> = ({ content, _timestamp }) => (
   <div className="flex justify-center my-4">
     <div className="inline-block px-3 py-1.5 text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-full">
       {content}

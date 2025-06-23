@@ -1,7 +1,7 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo, useEffect, useState } from 'react';
 import { ListTodo, Calendar, User, Clock, Activity } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
-import { useFormState } from '@/hooks/useFormState';
+import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { BaseModal } from './BaseModal';
 import { FormField, SelectField, ModalFooter } from '@/components/ui/form-fields';
 import { v4 as uuidv4 } from 'uuid';
@@ -30,259 +30,330 @@ interface TaskFormModalProps {
   phaseId?: string;
 }
 
-export function TaskFormModal({
+// Export as default for better module compatibility
+export default function TaskFormModal({
   show,
   onClose,
   onSave,
   task,
-  isNew = true,
-  statuses = ['not-started', 'in-progress', 'on-hold', 'completed'],
+  isNew = false,
+  statuses = [],
   teamMembers = [],
   phaseId
 }: TaskFormModalProps) {
-  // Default task values
-  const defaultValues: Task = {
-    id: uuidv4(),
-    name: '',
-    description: '',
-    duration: 1,
-    startDate: new Date().toISOString().substring(0, 10),
-    endDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().substring(0, 10),
-    status: 'not-started',
-    assignedTo: teamMembers.length > 0 ? teamMembers[0] : '',
-    progress: 0,
-    phaseId: phaseId || ''
-  };
+  // Track renders for debugging
+  const renderCounter = React.useRef<number>(0);
+  const renderCount = ++renderCounter.current;
+  // Use a more controlled debugging approach
+  if (renderCount % 10 === 0) {
+    console.log(`TaskFormModal: Render #${renderCount}`);
+  }
 
-  // Task validation function
-  const validateTask = useCallback((data: Task) => {
-    const errors: Partial<Record<keyof Task, string>> = {};
+  // State for saving status
+  const [saving, setSaving] = useState(false);
+
+  // Memoizing arrays to prevent unnecessary re-renders
+  const memoizedStatuses = useMemo(() => statuses, [statuses]);
+  const memoizedTeamMembers = useMemo(() => teamMembers, [teamMembers]);
+
+  // Generate default values function 
+  const getDefaultValues = useCallback(() => {
+    const defaultDate = new Date().toISOString().split('T')[0];
+    const defaultStatus = (statuses && statuses.length > 0) ? statuses[0] : 'not-started';
     
-    if (!data.name?.trim()) {
-      errors.name = 'Task name is required';
+    // If editing existing task, use its data
+    if (task) {
+      return {
+        id: task.id || uuidv4(),
+        name: task.name || '',
+        description: task.description || '',
+        duration: task.duration || 1,
+        startDate: task.startDate || defaultDate,
+        endDate: task.endDate || defaultDate,
+        status: task.status || defaultStatus,
+        assignedTo: task.assignedTo || '',
+        progress: task.progress ?? 0,
+        phaseId: task.phaseId || phaseId || '',
+      };
     }
-    
-    if (!data.startDate) {
-      errors.startDate = 'Start date is required';
-    }
-    
-    if (!data.endDate) {
-      errors.endDate = 'End date is required';
-    } else {
-      const start = new Date(data.startDate);
-      const end = new Date(data.endDate);
-      
-      if (end < start) {
-        errors.endDate = 'End date cannot be before start date';
-      }
-    }
-    
-    if (data.duration && data.duration <= 0) {
-      errors.duration = 'Duration must be greater than 0';
-    }
-    
-    return errors;
+
+    // Default values for new task
+    return {
+      id: uuidv4(),
+      name: '',
+      description: '',
+      duration: 1,
+      startDate: defaultDate,
+      endDate: defaultDate,
+      status: defaultStatus,
+      assignedTo: '',
+      progress: 0,
+      phaseId: phaseId || '',
+    };
   }, []);
 
-  // Use our custom form state hook
-  const {
-    formData,
-    setFormData,
-    errors,
-    saving,
-    setSaving,
-    handleChange,
-    handleSelectChange,
-    validate
-  } = useFormState<Task>(
-    task ? { ...defaultValues, ...task, id: task.id || uuidv4() } : null, 
-    defaultValues, 
-    show, 
-    validateTask
+  // Initialize React Hook Form
+  const { 
+    control,
+    handleSubmit,
+    reset
+  } = useForm<Task>({
+    defaultValues: getDefaultValues(),
+    mode: 'onBlur'
+  });
+
+  // Reset form when modal visibility changes
+  useEffect(() => {
+    if (show) {
+      // Clean reset when opening the modal, calculating fresh defaults inline
+      const defaultDate = new Date().toISOString().split('T')[0];
+      const defaultStatus = (statuses && statuses.length > 0) ? statuses[0] : 'not-started';
+      
+      const defaultValues = task ? {
+        id: task.id || uuidv4(),
+        name: task.name || '',
+        description: task.description || '',
+        duration: task.duration || 1,
+        startDate: task.startDate || defaultDate,
+        endDate: task.endDate || defaultDate,
+        status: task.status || defaultStatus,
+        assignedTo: task.assignedTo || '',
+        progress: task.progress ?? 0,
+        phaseId: task.phaseId || phaseId || '',
+      } : {
+        id: uuidv4(),
+        name: '',
+        description: '',
+        duration: 1,
+        startDate: defaultDate,
+        endDate: defaultDate,
+        status: defaultStatus,
+        assignedTo: '',
+        progress: 0,
+        phaseId: phaseId || '',
+      };
+      
+      reset(defaultValues);
+    }
+  }, [show, task, statuses, phaseId, reset]);
+
+  // Prepare options for select fields
+  const statusOptions = useMemo(() => 
+    memoizedStatuses.map(status => ({
+      value: status,
+      label: status.charAt(0).toUpperCase() + status.slice(1).replace(/-/g, ' ')
+    })), [memoizedStatuses]
   );
 
-  // Specialized handler for the progress slider
-  const handleProgressChange = useCallback((value: number[]) => {
-    setFormData(prev => ({
-      ...prev,
-      progress: value[0]
-    }));
-  }, [setFormData]);
+  const teamMemberOptions = useMemo(() => 
+    memoizedTeamMembers.map(member => ({
+      value: member,
+      label: member
+    })), [memoizedTeamMembers]
+  );
 
-  // Handle form submission
-  const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
+  // We no longer need these separate handlers, as we'll use the field.onChange directly
 
+  // Form submission handler
+  const onSubmit: SubmitHandler<Task> = useCallback((data) => {
     setSaving(true);
     
     // Simulate API call with slight delay
     setTimeout(() => {
-      onSave(formData);
+      onSave(data);
       setSaving(false);
       onClose();
     }, 500);
-  }, [formData, validate, onSave, onClose, setSaving]);
+  }, [onSave, onClose, setSaving]);
 
-  // Create the modal footer
-  const modalFooter = (
+  // Handle form submission
+  const handleFormSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    handleSubmit(onSubmit)(e);
+  }, [handleSubmit, onSubmit]);
+
+  // Create the modal footer - memoized to prevent recreation on every render
+  const modalFooter = useMemo(() => (
     <ModalFooter
       onClose={onClose}
-      onSubmit={handleSubmit}
+      onSubmit={handleFormSubmit}
       isNew={isNew}
       saving={saving}
       submitText={isNew ? 'Create Task' : 'Save Changes'}
     />
-  );
+  ), [onClose, handleFormSubmit, isNew, saving]);
 
-  // Modal description based on whether we're creating or editing
-  const modalDescription = isNew 
-    ? 'Create a new task for this construction phase' 
-    : 'Update the details of this task';
-
-  // Get progress color based on value
-  const getProgressColor = (progress: number) => {
-    if (progress < 30) return 'bg-red-500';
-    if (progress < 70) return 'bg-amber-500';
-    return 'bg-green-500';
-  };
+  // Define the heading based on whether this is a new task
+  const modalHeading = isNew ? 'Add New Task' : 'Edit Task';
 
   return (
-    <BaseModal
+    <BaseModal 
       show={show}
+      title={modalHeading}
       onClose={onClose}
-      title={isNew ? 'Add New Task' : 'Edit Task'}
-      description={modalDescription}
       footer={modalFooter}
-      saving={saving}
     >
-      <form id="task-form" onSubmit={handleSubmit} className="space-y-5">
-        {/* Basic information */}
-        <FormField
-          label="Task Name"
+      <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+        <Controller
+          control={control}
           name="name"
-          value={formData.name || ''}
-          onChange={handleChange}
-          placeholder="e.g., Install Drywall"
-          required
-          icon={ListTodo}
-          error={errors.name}
+          rules={{ required: 'Task name is required' }}
+          render={({ field, fieldState: { error } }) => (
+            <FormField
+              name="name"
+              label="Task Name"
+              type="text"
+              value={field.value}
+              onChange={field.onChange}
+              error={error?.message}
+              placeholder="Enter task name"
+              icon={ListTodo}
+              required
+            />
+          )}
         />
 
-        {/* Description field */}
-        <div className="space-y-2">
-          <label htmlFor="description" className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
-            Description
-          </label>
-          <div className="relative group">
-            <ListTodo className="absolute left-3 top-3 h-4 w-4 text-gray-400 group-hover:text-[#2B6CB0] transition-colors duration-200" />
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description || ''}
-              onChange={handleChange}
+        <Controller
+          control={control}
+          name="description"
+          render={({ field, fieldState: { error } }) => (
+            <FormField
+              name="description" 
+              label="Description"
+              type="textarea"
+              value={field.value || ''}
+              onChange={field.onChange}
+              error={error?.message}
               placeholder="Enter task description"
-              rows={3}
-              className={`w-full pl-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2B6CB0]/10 focus:border-[#2B6CB0] shadow-sm hover:border-gray-400 dark:hover:border-gray-600 transition-all duration-200 ${errors.description ? 'border-red-300 focus:ring-red-200 focus:border-red-400' : ''}`}
             />
-          </div>
-          {errors.description && <p className="text-xs text-red-500 mt-1">{errors.description}</p>}
-        </div>
+          )}
+        />
 
-        {/* Duration and Status */}
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            label="Duration (days)"
-            name="duration"
-            type="number"
-            value={formData.duration || ''}
-            onChange={handleChange}
-            placeholder="e.g., 5"
-            icon={Clock}
-            error={errors.duration}
-          />
+        <Controller
+          control={control}
+          name="status"
+          rules={{ required: 'Status is required' }}
+          render={({ field, fieldState: { error } }) => (
+            <SelectField
+              name="status"
+              label="Status"
+              value={field.value}
+              onValueChange={field.onChange}
+              options={statusOptions}
+              error={error?.message}
+              required
+            />
+          )}
+        />
 
-          <SelectField
-            label="Status"
-            name="status"
-            value={formData.status || ''}
-            onValueChange={(value) => handleSelectChange('status', value)}
-            options={statuses.map(status => ({
-              value: status,
-              label: status.charAt(0).toUpperCase() + status.slice(1).replace(/-/g, ' ')
-            }))}
-            icon={Activity}
-            placeholder="Select status"
-          />
-        </div>
-
-        {/* Dates */}
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            label="Start Date"
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Controller
+            control={control}
             name="startDate"
-            type="date"
-            value={formData.startDate || ''}
-            onChange={handleChange}
-            icon={Calendar}
-            required
-            error={errors.startDate}
+            rules={{ required: 'Start date is required' }}
+            render={({ field, fieldState: { error } }) => (
+              <FormField
+                name="startDate"
+                label="Start Date"
+                type="date"
+                value={field.value}
+                onChange={field.onChange}
+                error={error?.message}
+                icon={Calendar}
+                required
+              />
+            )}
           />
 
-          <FormField
-            label="End Date"
+          <Controller
+            control={control}
             name="endDate"
-            type="date"
-            value={formData.endDate || ''}
-            onChange={handleChange}
-            icon={Calendar}
-            required
-            error={errors.endDate}
+            rules={{ 
+              required: 'End date is required',
+              validate: (value, formValues) => {
+                const start = new Date(formValues.startDate);
+                const end = new Date(value);
+                return end >= start || 'End date cannot be before start date';
+              }
+            }}
+            render={({ field, fieldState: { error } }) => (
+              <FormField
+                name="endDate"
+                label="End Date"
+                type="date"
+                value={field.value}
+                onChange={field.onChange}
+                error={error?.message}
+                icon={Calendar}
+                required
+              />
+            )}
           />
-        </div>
 
-        {/* Team Member Assignment */}
-        {teamMembers.length > 0 && (
-          <SelectField
-            label="Assigned To"
+          <Controller
+            control={control}
+            name="duration"
+            rules={{ 
+              required: 'Duration is required',
+              min: { value: 1, message: 'Duration must be greater than 0' }
+            }}
+            render={({ field, fieldState: { error } }) => (
+              <FormField
+                name="duration"
+                label="Duration (days)"
+                type="number"
+                value={field.value?.toString() || '1'}
+                onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                error={error?.message}
+                icon={Clock}
+                min="1"
+                required
+              />
+            )}
+          />
+
+          <Controller
+            control={control}
             name="assignedTo"
-            value={formData.assignedTo || ''}
-            onValueChange={(value) => handleSelectChange('assignedTo', value)}
-            options={teamMembers.map(member => ({
-              value: member,
-              label: member
-            }))}
-            icon={User}
-            placeholder="Select team member"
+            render={({ field, fieldState: { error } }) => (
+              <SelectField
+                name="assignedTo"
+                label="Assigned To"
+                value={field.value || ''}
+                onValueChange={field.onChange}
+                options={teamMemberOptions}
+                error={error?.message}
+                placeholder="Select team member"
+                icon={User}
+              />
+            )}
           />
-        )}
-
-        {/* Progress Slider */}
-        <div className="space-y-3 bg-white p-4 rounded-lg border border-gray-200 shadow-sm dark:bg-gray-800 dark:border-gray-700">
-          <div className="flex justify-between items-center">
-            <label htmlFor="progress" className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-              <Activity className="h-4 w-4 text-[#2B6CB0]" /> Progress
-            </label>
-            <span className={`text-sm font-medium px-2 py-0.5 rounded ${getProgressColor(formData.progress)} text-white transition-colors duration-300`}>
-              {formData.progress}%
-            </span>
-          </div>
-          <div className="px-1 py-3">
-            <Slider
-              defaultValue={[formData.progress]}
-              value={[formData.progress]}
-              max={100}
-              step={5}
-              onValueChange={handleProgressChange}
-              className="w-full"
-            />
-          </div>
-          <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 px-1">
-            <span className="text-red-500 font-medium">0%</span>
-            <span className="text-amber-500 font-medium">50%</span>
-            <span className="text-green-500 font-medium">100%</span>
-          </div>
         </div>
+
+        <Controller
+          control={control}
+          name="progress"
+          render={({ field }) => (
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label htmlFor="progress" className="block text-sm font-medium">Progress ({field.value}%)</label>
+                <span className="text-sm text-gray-500">{field.value}%</span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Activity className="h-4 w-4 text-primary" />
+                <Slider
+                  defaultValue={[field.value]}
+                  value={[field.value]}
+                  onValueChange={(values) => field.onChange(values[0])}
+                  max={100}
+                  step={5}
+                  className="flex-grow"
+                />
+              </div>
+            </div>
+          )}
+        />
       </form>
     </BaseModal>
   );

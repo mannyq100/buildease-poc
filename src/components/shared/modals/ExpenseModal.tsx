@@ -1,9 +1,9 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { BaseModal } from './BaseModal';
 import { FormField, ModalFooter, SelectField } from '@/components/ui/form-fields';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useFormState } from '@/hooks/useFormState';
 import { DollarSign, Calendar, FileUp, Receipt, Tag, Building } from 'lucide-react';
 import { cn } from '@/utils/core/ui';
 import { v4 as uuidv4 } from 'uuid';
@@ -46,59 +46,39 @@ export function ExpenseModal({
   projects = []
 }: ExpenseModalProps) {
   // Default expense data for new expenses
-  const defaultExpense: ExpenseFormData = {
-    id: '',
-    description: '',
-    amount: 0,
-    date: new Date().toISOString().split('T')[0],
-    category: categories.length > 0 ? categories[0] : '',
-    project: projects.length > 0 ? projects[0] : '',
-    notes: '',
-    status: 'pending',
-  };
+  const getDefaultValues = useCallback((): ExpenseFormData => ({
+    id: expense?.id || uuidv4(),
+    description: expense?.description || '',
+    amount: expense?.amount || 0,
+    date: expense?.date || new Date().toISOString().split('T')[0],
+    category: expense?.category || (categories.length > 0 ? categories[0] : ''),
+    project: expense?.project || (projects.length > 0 ? projects[0] : ''),
+    notes: expense?.notes || '',
+    status: expense?.status || 'pending',
+  }), [expense, categories, projects]);
 
-  // Validation function for the expense form
-  const validateExpense = useCallback((data: ExpenseFormData) => {
-    const errors: Partial<Record<keyof ExpenseFormData, string>> = {};
-    
-    if (!data.description.trim()) {
-      errors.description = 'Description is required';
-    }
-    
-    if (isNaN(data.amount) || data.amount <= 0) {
-      errors.amount = 'Amount must be greater than zero';
-    }
-    
-    if (!data.date) {
-      errors.date = 'Date is required';
-    }
-    
-    if (!data.category) {
-      errors.category = 'Category is required';
-    }
-    
-    if (!data.project) {
-      errors.project = 'Project is required';
-    }
-    
-    return errors;
-  }, []);
-
-  // Use our custom form state hook
+  // Initialize React Hook Form
   const {
-    formData,
-    errors,
-    setFormData,
-    handleChange,
-    validate,
-    saving: internalSaving,
-    setSaving
-  } = useFormState<ExpenseFormData>(
-    expense,
-    defaultExpense,
-    show,
-    validateExpense
-  );
+    control,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    formState: { errors, isSubmitting }
+  } = useForm<ExpenseFormData>({
+    defaultValues: getDefaultValues(),
+    mode: 'onBlur'
+  });
+
+  // Watch form data for viewing mode
+  const formData = watch();
+
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (show) {
+      reset(getDefaultValues());
+    }
+  }, [show, reset, getDefaultValues]);
 
   // For file upload handling
   const [receipt, setReceipt] = useState<File | null>(null);
@@ -111,28 +91,28 @@ export function ExpenseModal({
   };
 
   // Combine the internal saving state with any external loading state
-  const saving = internalSaving || isLoading;
+  const saving = isSubmitting || isLoading;
 
   // Handle form submission
-  const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-
-    setSaving(true);
-    
+  const onSubmit = useCallback((data: ExpenseFormData) => {
     // Prepare the data with a new ID if this is a new expense
     const expenseToSave: ExpenseFormData = {
-      ...formData,
-      id: formData.id || uuidv4()
+      ...data,
+      id: data.id || uuidv4()
     };
 
     // Here you would typically handle the file upload if needed
     // For this example, we'll just save the expense data
     setTimeout(() => {
       onSave(expenseToSave);
-      setSaving(false);
     }, 500);
-  }, [formData, validate, onSave, setSaving]);
+  }, [onSave]);
+
+  // Handle form submit wrapper
+  const handleFormSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    handleSubmit(onSubmit)(e);
+  }, [handleSubmit, onSubmit]);
 
   // Viewing existing expense
   const isViewingMode = !isNew && formData?.status;
@@ -142,8 +122,8 @@ export function ExpenseModal({
     <div className="flex justify-end space-x-2">
       <Button variant="outline" onClick={onClose}>Close</Button>
       <Button onClick={() => {
-        setFormData({ ...formData, status: 'approved' });
-        handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+        setValue('status', 'approved');
+        handleSubmit(onSubmit)();
       }}>
         Approve
       </Button>
@@ -151,7 +131,7 @@ export function ExpenseModal({
   ) : (
     <ModalFooter
       onClose={onClose}
-      onSubmit={handleSubmit}
+      onSubmit={handleFormSubmit}
       isNew={isNew}
       saving={saving}
     />
@@ -240,77 +220,125 @@ export function ExpenseModal({
         </div>
       ) : (
         // Edit/Add mode form
-        <form id="expense-form" onSubmit={handleSubmit} className="space-y-4 py-2">
-          <FormField
-            label="Description"
+        <form id="expense-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
+          <Controller
+            control={control}
             name="description"
-            type="text"
-            value={formData.description || ''}
-            onChange={handleChange}
-            placeholder="Enter expense description"
-            error={errors.description}
-            required
+            rules={{ 
+              required: 'Description is required',
+              validate: (value) => value?.trim() ? true : 'Description cannot be empty'
+            }}
+            render={({ field, fieldState: { error } }) => (
+              <FormField
+                label="Description"
+                name="description"
+                type="text"
+                value={field.value || ''}
+                onChange={field.onChange}
+                placeholder="Enter expense description"
+                error={error?.message}
+                required
+              />
+            )}
           />
           
           <div className="grid grid-cols-2 gap-4">
-            <FormField
-              label="Amount"
+            <Controller
+              control={control}
               name="amount"
-              type="number"
-              value={formData.amount?.toString() || ''}
-              onChange={handleChange}
-              placeholder="0.00"
-              icon={DollarSign}
-              error={errors.amount}
-              required
-              min={0.01}
-              step={0.01}
+              rules={{ 
+                required: 'Amount is required',
+                min: { value: 0.01, message: 'Amount must be greater than zero' },
+                validate: (value) => !isNaN(value) || 'Amount must be a valid number'
+              }}
+              render={({ field, fieldState: { error } }) => (
+                <FormField
+                  label="Amount"
+                  name="amount"
+                  type="number"
+                  value={field.value?.toString() || ''}
+                  onChange={(e) => field.onChange(Number(e.target.value))}
+                  placeholder="0.00"
+                  icon={DollarSign}
+                  error={error?.message}
+                  required
+                  min={0.01}
+                  step={0.01}
+                />
+              )}
             />
             
-            <FormField
-              label="Date"
+            <Controller
+              control={control}
               name="date"
-              type="date"
-              value={formData.date || ''}
-              onChange={handleChange}
-              icon={Calendar}
-              error={errors.date}
-              required
+              rules={{ required: 'Date is required' }}
+              render={({ field, fieldState: { error } }) => (
+                <FormField
+                  label="Date"
+                  name="date"
+                  type="date"
+                  value={field.value || ''}
+                  onChange={field.onChange}
+                  icon={Calendar}
+                  error={error?.message}
+                  required
+                />
+              )}
             />
           </div>
           
           <div className="grid grid-cols-2 gap-4">
-            <SelectField
-              label="Category"
+            <Controller
+              control={control}
               name="category"
-              value={formData.category || ''}
-              onValueChange={(value) => setFormData({ ...formData, category: value })}
-              options={categories.map(cat => ({ value: cat, label: cat }))}
-              icon={Tag}
-              error={errors.category}
-              required
+              rules={{ required: 'Category is required' }}
+              render={({ field, fieldState: { error } }) => (
+                <SelectField
+                  label="Category"
+                  name="category"
+                  value={field.value || ''}
+                  onValueChange={field.onChange}
+                  options={categories.map(cat => ({ value: cat, label: cat }))}
+                  icon={Tag}
+                  error={error?.message}
+                  required
+                />
+              )}
             />
             
-            <SelectField
-              label="Project"
+            <Controller
+              control={control}
               name="project"
-              value={formData.project || ''}
-              onValueChange={(value) => setFormData({ ...formData, project: value })}
-              options={projects.map(proj => ({ value: proj, label: proj }))}
-              icon={Building}
-              error={errors.project}
-              required
+              rules={{ required: 'Project is required' }}
+              render={({ field, fieldState: { error } }) => (
+                <SelectField
+                  label="Project"
+                  name="project"
+                  value={field.value || ''}
+                  onValueChange={field.onChange}
+                  options={projects.map(proj => ({ value: proj, label: proj }))}
+                  icon={Building}
+                  error={error?.message}
+                  required
+                />
+              )}
             />
           </div>
           
-          <FormField
-            label="Notes"
+          <Controller
+            control={control}
             name="notes"
-            type="textarea"
-            value={formData.notes || ''}
-            onChange={handleChange}
-            placeholder="Enter any additional notes"
-            error={errors.notes}
+            render={({ field, fieldState: { error } }) => (
+              <FormField
+                label="Notes"
+                name="notes"
+                type="textarea"
+                value={field.value || ''}
+                onChange={field.onChange}
+                placeholder="Enter any additional notes"
+                error={error?.message}
+              />
+            )}
           />
           
           <div className="grid gap-2">

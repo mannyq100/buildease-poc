@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { BudgetModal } from '@/components/shared/modals/BudgetModal';
 import { BudgetItem as BudgetItemType } from '@/types/budget';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { formatCurrency } from '@/utils/plan-helpers';
+import { useBudgetModal } from '@/stores/modalStore';
 
 const mockBudgetItems: BudgetItemType[] = [
   { id: 1, type: 'expense', description: 'Foundation Concrete', category: 'Materials', amount: 15000, date: '2025-04-10', status: 'paid' },
@@ -23,9 +25,9 @@ interface BudgetViewProps {
 export function BudgetView({ plan }: BudgetViewProps) {
   const budget = plan.budget;
   const [budgetItems, setBudgetItems] = useState<BudgetItemType[]>(mockBudgetItems);
-  const [showBudgetModal, setShowBudgetModal] = useState(false);
-  const [currentItem, setCurrentItem] = useState<BudgetItemType | null>(null);
-  const [isNewItem, setIsNewItem] = useState(true);
+  
+  // Use Zustand modal hook
+  const budgetModal = useBudgetModal();
 
   const total = budget.totalCost;
   const laborPercentage = total > 0 ? (budget.laborCost / total) * 100 : 0;
@@ -34,38 +36,26 @@ export function BudgetView({ plan }: BudgetViewProps) {
   const permitsPercentage = total > 0 ? (budget.permitsFees / total) * 100 : 0;
   const contingencyPercentage = total > 0 ? (budget.contingency / total) * 100 : 0;
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+  // Using shared formatCurrency utility
 
   function handleOpenAddModal() {
-    setCurrentItem(null);
-    setIsNewItem(true);
-    setShowBudgetModal(true);
+    budgetModal.actions.open(undefined, true);
   }
 
   function handleOpenEditModal(item: BudgetItemType) {
-    setCurrentItem(item);
-    setIsNewItem(false);
-    setShowBudgetModal(true);
+    budgetModal.actions.open(item, false);
   }
 
   function handleSaveBudgetItem(savedItem: Partial<BudgetItemType>) {
     setBudgetItems(prevItems => {
-      if (isNewItem) {
+      if (budgetModal.isNew) {
         const newItemWithId = { ...savedItem, id: Date.now() } as BudgetItemType;
         return [...prevItems, newItemWithId];
       } else {
         return prevItems.map(item => item.id === savedItem.id ? { ...item, ...savedItem } : item);
       }
     });
-    setShowBudgetModal(false);
-    setCurrentItem(null);
+    budgetModal.actions.close();
   }
 
   function handleDeleteBudgetItem(id: number) {
@@ -240,11 +230,11 @@ export function BudgetView({ plan }: BudgetViewProps) {
       </m.div>
 
       <BudgetModal
-        show={showBudgetModal}
-        onClose={() => setShowBudgetModal(false)}
+        show={budgetModal.isOpen}
+        onClose={budgetModal.actions.close}
         onSave={handleSaveBudgetItem}
-        initialData={currentItem}
-        isNewItem={isNewItem}
+        initialData={budgetModal.data}
+        isNewItem={budgetModal.isNew}
       />
     </div>
   );

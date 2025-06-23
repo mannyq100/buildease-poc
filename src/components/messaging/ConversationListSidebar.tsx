@@ -40,7 +40,7 @@ export function ConversationListSidebar({
   onConversationSelect,
   onCreateConversation,
   className,
-  isMobileView = false,
+  _isMobileView = false,
   isVisible = true
 }: ConversationListSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -202,7 +202,7 @@ export function ConversationListSidebar({
               key={key}
               variant={selectedFilter === key ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => setSelectedFilter(key as any)}
+              onClick={() => setSelectedFilter(key as 'all' | 'starred' | 'archived')}
               className="flex-1 text-xs"
             >
               <Icon className="h-3 w-3 mr-1" />

@@ -40,16 +40,16 @@ interface MainNavigationProps {
 const MainNavigation: React.FC<MainNavigationProps> = ({ className, onCollapseChange }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [_showMobileSearch, _setShowMobileSearch] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const { isAuthenticated, isLoading, user, signOut } = useSupabaseAuth();
+  const { isAuthenticated: _isAuthenticated, isLoading: _isLoading, user, signOut } = useSupabaseAuth();
   
   // Use our custom hook to fetch user profile data from the BuildEase API
   const { 
     profile,
-    role,
-    isLoading: isProfileLoading
+    role: _role,
+    isLoading: _isProfileLoading
   } = useUserProfile();
 
   // Determine if we're on mobile

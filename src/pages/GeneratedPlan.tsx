@@ -1,813 +1,332 @@
-import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
+import { useEffect, useState, useCallback, useRef } from 'react'
+// import { useNavigate } from 'react-router-dom' // Reserved for future use
 import { Helmet } from 'react-helmet-async'
 import { motion as m } from 'framer-motion'
-import { 
-  FileText, 
-  RefreshCw, 
-  Save, 
-  CheckCircle,
-  Share2,
-  Loader2,
-  Calendar,
-  Home,
-  MoreHorizontal,
-  Package,
-  DollarSign,
-  Users,
-  Printer,
-  Download
-} from 'lucide-react'
+import { FileText, Loader2 } from 'lucide-react'
 
-import { OverviewView } from '@/components/plan/OverviewView'
-import { TimelineView } from '@/components/plan/TimelineView'
-import { MaterialsView } from '@/components/plan/MaterialsView'
-import { BudgetView } from '@/components/plan/BudgetView'
-import { TeamView } from '@/components/plan/TeamView'
-import { DocumentsView } from '@/components/plan/DocumentsView'
-import { DistributeModal } from '@/components/plan/DistributeModal'
-import { PhaseFormModal, TaskFormModal, MaterialModal, DateEditModal, Phase, Task } from '@/components/shared/modals'
-import { mockConstructionPlan, ConstructionPlan, Material } from '@/data/mock/generatedPlan/planData'
-import { toast } from 'sonner'
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem } from '@/components/ui/dropdown-menu'
+import { preloadCommonViews } from '@/components/plan/LazyViews'
+import { PlanTabNavigation } from '@/components/plan/PlanTabNavigation'
+import { PlanActionBar } from '@/components/plan/PlanActionBar'
+import { PlanModalManager, PlanModalManagerHandlers } from '@/components/plan'
+import { PlanViewRenderer } from '@/components/plan/PlanViewRenderer'
+import { mockConstructionPlan } from '@/data/mock/generatedPlan/planData'
+import { usePlanState } from '@/hooks/usePlanState'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { PageHeader } from '@/components/shared/PageHeader'
-import { v4 as uuidv4 } from 'uuid'
+import { Phase as ModalPhase, Task as ModalTask } from '@/components/shared/modals'
+import { Material, Phase as PlanPhase, Task as PlanTask } from '@/data/mock/generatedPlan/planData'
+import { 
+  PageErrorBoundary, 
+  SectionErrorBoundary, 
+  ComponentErrorBoundary,
+  ErrorProvider 
+} from '@/components/shared/ErrorBoundarySystem'
+import { toast } from 'sonner'
 
 export default function GeneratedPlan() {
-  const navigate = useNavigate()
+  // const navigate = useNavigate() // Keeping for future use
+  const { handleError, handleAsyncError, createSafeAsyncWrapper } = useErrorHandler()
   
-  // State variables
-  const [plan, setPlan] = useState<ConstructionPlan>(mockConstructionPlan)
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [isDarkMode, setIsDarkMode] = useState(false)
-  const [activeView, setActiveView] = useState('overview')
-  const [showDistributeModal, setShowDistributeModal] = useState(false)
+  // Plan state management using our custom hook
+  const {
+    state,
+    actions,
+    plan,
+    isGenerating,
+    isSaving
+  } = usePlanState(mockConstructionPlan)
+  
+  // Local state for UI
   const [isDistributing, setIsDistributing] = useState(false)
-  const [saving, setSaving] = useState(false)
   
-  // Form modal states
-  const [showPhaseModal, setShowPhaseModal] = useState(false)
-  const [showTaskModal, setShowTaskModal] = useState(false)
-  const [showMaterialModal, setShowMaterialModal] = useState(false)
-  const [showDateEditModal, setShowDateEditModal] = useState(false)
-  const [currentPhase, setCurrentPhase] = useState<Phase | undefined>(undefined)
-  const [currentTask, setCurrentTask] = useState<Task | undefined>(undefined)
-  const [currentMaterial, setCurrentMaterial] = useState<Material | undefined>(undefined)
-  const [currentPhaseId, setCurrentPhaseId] = useState<string>('')
-  const [isNewItem, setIsNewItem] = useState(true)
-  const [dateEditType, setDateEditType] = useState<'project' | 'phase'>('project')
+  // Modal handlers ref - using MutableRefObject as required by PlanModalManager
+  // Reference used to access modal handlers from other components
+  const modalHandlersRef = useRef<PlanModalManagerHandlers>({} as PlanModalManagerHandlers);
   
-  // Check system dark mode preference on component mount
+  // Log when the component mounts for debugging
   useEffect(() => {
-    const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    setIsDarkMode(darkModeMediaQuery.matches)
-    
-    const handleChange = (e: MediaQueryListEvent) => {
-      setIsDarkMode(e.matches)
-    }
-    
-    darkModeMediaQuery.addEventListener('change', handleChange)
-    return () => darkModeMediaQuery.removeEventListener('change', handleChange)
+    console.log('GeneratedPlan: Component mounted, modalHandlersRef initialized');
+  }, []);
+  
+  // Log when modalHandlersRef.current changes
+  useEffect(() => {
+    console.log('GeneratedPlan: Checking if modalHandlersRef.current has methods:', {
+      hasOpenPhaseModal: !!modalHandlersRef.current?.openPhaseModal,
+      hasOpenTaskModal: !!modalHandlersRef.current?.openTaskModal,
+      hasOpenMaterialModal: !!modalHandlersRef.current?.openMaterialModal,
+      hasOpenDateModal: !!modalHandlersRef.current?.openDateModal,
+      hasOpenDistributeModal: !!modalHandlersRef.current?.openDistributeModal
+    });
+  }, [modalHandlersRef.current?.openPhaseModal, modalHandlersRef.current?.openTaskModal]);
+  
+  
+  // Preload views on component mount
+  useEffect(() => {
+    // Preload commonly used views for better performance
+    preloadCommonViews()
   }, [])
 
-  // Regenerate plan function
-  const handleRegenerate = () => {
-    setIsGenerating(true)
-    
-    // Simulate API call delay
-    setTimeout(() => {
-      // Reset to fresh mock data
-      setPlan({...mockConstructionPlan})
-      setIsGenerating(false)
-      
-      toast.success('Plan regenerated successfully')
-    }, 2000)
-  }
 
-  // Save plan function
-  const handleSavePlan = (status: 'draft' | 'final' = 'draft') => {
-    setSaving(true)
-    
-    // Simulate API call delay
-    setTimeout(() => {
-      setPlan(prev => ({
-        ...prev,
-        status,
-        lastUpdated: new Date().toISOString()
-      }))
-      setSaving(false)
+  // Plan action handlers using the usePlanState actions with error handling
+  const handleRegenerate = useCallback(async () => {
+    try {
+      actions.setGenerating(true)
       
-      toast.success(`Plan saved as ${status === 'draft' ? 'Draft' : 'Final'}`)
-    }, 1500)
-  }
+      // Wrap async operation with error handling
+      await handleAsyncError(
+        async () => {
+          // Simulate API call delay
+          await new Promise(resolve => setTimeout(resolve, 2000))
+          // Create a stable object reference to avoid unnecessary rerenders
+          actions.setPlan({...mockConstructionPlan})
+          toast.success('Plan regenerated successfully')
+        },
+        { 
+          context: { operation: 'regenerate_plan' },
+          retries: 2,
+          retryDelay: 1000
+        }
+      )
+    } catch {
+      // Error already handled by handleAsyncError
+    } finally {
+      actions.setGenerating(false)
+    }
+  }, [actions, handleAsyncError])
 
-  // Distribute plan function
-  const handleDistribute = () => {
-    setIsDistributing(true)
-    
-    // Simulate API call delay
-    setTimeout(() => {
+  const handleSavePlan = useCallback(async (status: 'draft' | 'final' = 'draft') => {
+    const safeSave = createSafeAsyncWrapper(
+      async () => {
+        actions.setSaving(true)
+        // Simulate API call delay
+        await new Promise(resolve => setTimeout(resolve, 1500))
+        actions.updatePlanStatus(status)
+        return status
+      },
+      { context: { operation: 'save_plan', status } }
+    )
+
+    try {
+      await safeSave()
+    } finally {
+      actions.setSaving(false)
+    }
+  }, [actions, createSafeAsyncWrapper])
+
+  const handleDistribute = useCallback(async () => {
+    try {
+      setIsDistributing(true)
+      
+      await handleAsyncError(
+        async () => {
+          // Simulate API call delay
+          await new Promise(resolve => setTimeout(resolve, 2000))
+          toast.success('Plan distributed to team members')
+        },
+        { 
+          context: { operation: 'distribute_plan' },
+          fallbackMessage: 'Failed to distribute plan to team members'
+        }
+      )
+    } catch {
+      // Error already handled
+    } finally {
       setIsDistributing(false)
-      setShowDistributeModal(false)
-      
-      toast.success('Plan distributed to team members')
-    }, 2000)
-  }
-
-  // Add a new phase
-  const handleAddPhase = () => {
-    setCurrentPhase(undefined)
-    setIsNewItem(true)
-    setShowPhaseModal(true)
-  }
-
-  // Functions for phase management
-  const handleEditPhase = (phaseId: string) => {
-    const phase = plan.phases.find(p => p.id === phaseId);
-    if (phase) {
-      // Convert to shared modal Phase type
-      setCurrentPhase({
-        id: phase.id,
-        name: phase.name,
-        description: phase.description,
-        order: phase.order,
-        startDate: phase.startDate || '',
-        endDate: phase.endDate || '',
-        status: phase.status,
-        progress: phase.progress
-      });
-      setIsNewItem(false);
-      setShowPhaseModal(true);
     }
-  }
+  }, [handleAsyncError])
 
-  const handleDeletePhase = (phaseId: string) => {
-    // Confirm deletion
-    if (window.confirm(`Are you sure you want to delete this phase?`)) {
-      // Update the plan by removing the phase with the given ID
-      setPlan(prev => ({
-        ...prev,
-        phases: prev.phases.filter(phase => phase.id !== phaseId)
-      }))
-      
-      toast.success('Phase deleted successfully')
-    }
-  }
-
-  const handleReorderPhase = (phaseId: string, direction: 'up' | 'down') => {
-    // Find the phase and its current index
-    const phaseIndex = plan.phases.findIndex(phase => phase.id === phaseId)
-    if (phaseIndex === -1) return
-    
-    // Calculate new index based on direction
-    const newIndex = direction === 'up' ? phaseIndex - 1 : phaseIndex + 1
-    
-    // Check if the new index is valid
-    if (newIndex < 0 || newIndex >= plan.phases.length) return
-    
-    // Create a copy of the phases array
-    const newPhases = [...plan.phases]
-    
-    // Swap the phases
-    const temp = newPhases[phaseIndex]
-    newPhases[phaseIndex] = newPhases[newIndex]
-    newPhases[newIndex] = temp
-    
-    // Update the order property of the swapped phases
-    newPhases[phaseIndex].order = phaseIndex + 1
-    newPhases[newIndex].order = newIndex + 1
-    
-    // Update the plan with the new phases array
-    setPlan(prev => ({
-      ...prev,
-      phases: newPhases
-    }))
-    
-    toast.success(`Phase moved ${direction}`)
-  }
-
-  // Task management functions
-  const handleAddTask = (phaseId: string) => {
-    setCurrentTask(undefined)
-    setCurrentPhaseId(phaseId)
-    setIsNewItem(true)
-    setShowTaskModal(true)
-  }
-
-  const handleEditTask = (phaseId: string, taskId: string) => {
-    const phase = plan.phases.find(p => p.id === phaseId);
-    if (phase) {
-      const task = phase.tasks.find(t => t.id === taskId);
-      if (task) {
-        // Convert to shared modal Task type
-        setCurrentTask({
-          id: task.id,
-          name: task.name,
-          description: task.description,
-          duration: typeof task.duration === 'string' ? parseInt(task.duration) || 1 : task.duration || 1,
-          startDate: task.startDate || '',
-          endDate: task.endDate || '',
-          status: task.status,
-          assignedTo: task.assignedTo,
-          progress: task.progress,
-          phaseId: phaseId
-        });
-        setCurrentPhaseId(phaseId);
-        setIsNewItem(false);
-        setShowTaskModal(true);
-      }
-    }
-  }
-
-  const handleDeleteTask = (phaseId: string, taskId: string) => {
-    // Confirm deletion
-    if (window.confirm(`Are you sure you want to delete this task?`)) {
-      // Update the plan by removing the task from the specified phase
-      setPlan(prev => {
-        const updatedPhases = prev.phases.map(phase => {
-          if (phase.id === phaseId) {
-            return {
-              ...phase,
-              tasks: phase.tasks.filter(task => task.id !== taskId)
-            }
-          }
-          return phase
-        })
-        
-        return {
-          ...prev,
-          phases: updatedPhases
-        }
-      })
-      
-      toast.success('Task deleted successfully')
-    }
-  }
-
-  // Material management functions
-  const handleAddMaterial = (phaseId: string) => {
-    setCurrentMaterial(undefined)
-    setCurrentPhaseId(phaseId)
-    setIsNewItem(true)
-    setShowMaterialModal(true)
-  }
-
-  const handleEditMaterial = (phaseId: string, materialId: string) => {
-    const phase = plan.phases.find(p => p.id === phaseId)
-    if (phase) {
-      const material = phase.materials.find(m => m.id === materialId)
-      if (material) {
-        setCurrentMaterial(material)
-        setCurrentPhaseId(phaseId)
-        setIsNewItem(false)
-        setShowMaterialModal(true)
-      }
-    }
-  }
-
-  const handleDeleteMaterial = (phaseId: string, materialId: string) => {
-    // Confirm deletion
-    if (window.confirm(`Are you sure you want to delete this material?`)) {
-      // Update the plan by removing the material from the specified phase
-      setPlan(prev => {
-        const updatedPhases = prev.phases.map(phase => {
-          if (phase.id === phaseId) {
-            return {
-              ...phase,
-              materials: phase.materials.filter(material => material.id !== materialId)
-            }
-          }
-          return phase
-        })
-        
-        return {
-          ...prev,
-          phases: updatedPhases
-        }
-      })
-      
-      toast.success('Material deleted successfully')
-    }
-  }
-
-  // Save handlers for modals
-  const handleSavePhase = (phaseData: Partial<Phase>) => {
-    if (isNewItem) {
-      // Add new phase
-      const newPhase: Phase = {
-        id: phaseData.id || uuidv4(),
+  // Modal save handlers that use plan state actions  
+  const handleSavePhase = useCallback((phaseData: Partial<ModalPhase>) => {
+    if (!phaseData.id) {
+      // Add new phase - convert modal phase to plan phase
+      const planPhase: Omit<PlanPhase, 'id' | 'tasks' | 'materials'> = {
         name: phaseData.name || '',
         description: phaseData.description || '',
-        order: phaseData.order || plan.phases.length + 1,
-        duration: phaseData.duration || '',
+        order: phaseData.order || 1,
+        duration: '1 week', // Default duration
         startDate: phaseData.startDate,
         endDate: phaseData.endDate,
-        status: phaseData.status as 'pending' | 'in-progress' | 'completed' | 'delayed',
-        progress: phaseData.progress || 0,
-        tasks: [],
-        materials: []
+        status: (phaseData.status as PlanPhase['status']) || 'pending',
+        progress: phaseData.progress || 0
       }
-      
-      setPlan(prev => ({
-        ...prev,
-        phases: [...prev.phases, newPhase].sort((a, b) => a.order - b.order)
-      }))
-      
-      toast.success('New phase added successfully')
+      actions.addPhase(planPhase)
+      toast.success(`Phase "${planPhase.name}" added successfully`)
     } else {
-      // Update existing phase
-      setPlan(prev => {
-        const updatedPhases = prev.phases.map(phase => {
-          if (phase.id === phaseData.id) {
-            return {
-              ...phase,
-              ...phaseData,
-              status: phaseData.status as 'pending' | 'in-progress' | 'completed' | 'delayed'
-            }
-          }
-          return phase
-        })
-        
-        return {
-          ...prev,
-          phases: updatedPhases
-        }
-      })
-      
+      // Update existing phase - convert modal phase to plan phase
+      const planPhaseUpdate: Partial<PlanPhase> = {
+        name: phaseData.name,
+        description: phaseData.description,
+        order: phaseData.order,
+        startDate: phaseData.startDate,
+        endDate: phaseData.endDate,
+        status: phaseData.status as PlanPhase['status'],
+        progress: phaseData.progress
+      }
+      actions.updatePhase(phaseData.id, planPhaseUpdate)
       toast.success('Phase updated successfully')
     }
-  }
+  }, [actions])
 
-  const handleSaveTask = (taskData: Partial<Task>) => {
-    if (isNewItem) {
-      // Add new task to the current phase
-      const newTask: Task = {
-        id: taskData.id || uuidv4(),
+  const handleSaveTask = useCallback((taskData: Partial<ModalTask>) => {
+    if (!taskData.phaseId) return
+    
+    if (!taskData.id) {
+      // Add new task - convert modal task to plan task
+      const planTask: Omit<PlanTask, 'id'> = {
         name: taskData.name || '',
         description: taskData.description || '',
-        duration: taskData.duration || '',
+        duration: String(taskData.duration || '1 day'),
         startDate: taskData.startDate,
         endDate: taskData.endDate,
-        status: taskData.status as 'pending' | 'in-progress' | 'completed' | 'delayed',
+        status: (taskData.status as PlanTask['status']) || 'pending',
         assignedTo: taskData.assignedTo,
-        progress: taskData.progress || 0,
-        dependencies: taskData.dependencies || []
+        dependencies: (taskData as { dependencies?: string[] }).dependencies || [],
+        progress: taskData.progress || 0
       }
-      
-      setPlan(prev => {
-        const updatedPhases = prev.phases.map(phase => {
-          if (phase.id === currentPhaseId) {
-            return {
-              ...phase,
-              tasks: [...phase.tasks, newTask]
-            }
-          }
-          return phase
-        })
-        
-        return {
-          ...prev,
-          phases: updatedPhases
-        }
-      })
-      
-      toast.success('New task added successfully')
+      actions.addTask(taskData.phaseId, planTask)
+      toast.success(`Task "${planTask.name}" added successfully`)
     } else {
-      // Update existing task
-      setPlan(prev => {
-        const updatedPhases = prev.phases.map(phase => {
-          if (phase.id === currentPhaseId) {
-            const updatedTasks = phase.tasks.map(task => {
-              if (task.id === taskData.id) {
-                return {
-                  ...task,
-                  ...taskData,
-                  status: taskData.status as 'pending' | 'in-progress' | 'completed' | 'delayed'
-                }
-              }
-              return task
-            })
-            
-            return {
-              ...phase,
-              tasks: updatedTasks
-            }
-          }
-          return phase
-        })
-        
-        return {
-          ...prev,
-          phases: updatedPhases
-        }
-      })
-      
+      // Update existing task - convert modal task to plan task
+      const planTaskUpdate: Partial<PlanTask> = {
+        name: taskData.name,
+        description: taskData.description,
+        duration: typeof taskData.duration === 'number' ? String(taskData.duration) : taskData.duration,
+        startDate: taskData.startDate,
+        endDate: taskData.endDate,
+        status: taskData.status as PlanTask['status'],
+        assignedTo: taskData.assignedTo,
+        dependencies: (taskData as { dependencies?: string[] }).dependencies,
+        progress: taskData.progress
+      }
+      actions.updateTask(taskData.phaseId, taskData.id, planTaskUpdate)
       toast.success('Task updated successfully')
     }
-  }
+  }, [actions])
 
-  const handleSaveMaterial = (materialData: Partial<Material>) => {
-    if (isNewItem) {
-      // Add new material to the current phase
-      const newMaterial: Material = {
-        id: materialData.id || uuidv4(),
-        name: materialData.name || '',
-        quantity: materialData.quantity || 0,
-        unit: materialData.unit || '',
-        unitPrice: materialData.unitPrice || 0,
-        totalPrice: materialData.totalPrice || 0,
-        supplier: materialData.supplier,
-        status: materialData.status as 'ordered' | 'delivered' | 'pending',
-        deliveryDate: materialData.deliveryDate
-      }
-      
-      setPlan(prev => {
-        const updatedPhases = prev.phases.map(phase => {
-          if (phase.id === currentPhaseId) {
-            return {
-              ...phase,
-              materials: [...phase.materials, newMaterial]
-            }
-          }
-          return phase
-        })
-        
-        return {
-          ...prev,
-          phases: updatedPhases
-        }
-      })
-      
-      toast.success('New material added successfully')
+  const handleSaveMaterial = useCallback((materialData: Partial<Material>) => {
+    const phaseId = (materialData as { phaseId?: string }).phaseId
+    if (!phaseId) return
+    
+    if (!materialData.id) {
+      // Add new material
+      actions.addMaterial(phaseId, materialData as Omit<Material, 'id'>)
+      toast.success(`Material "${materialData.name || 'New Material'}" added successfully`)
     } else {
       // Update existing material
-      setPlan(prev => {
-        const updatedPhases = prev.phases.map(phase => {
-          if (phase.id === currentPhaseId) {
-            const updatedMaterials = phase.materials.map(material => {
-              if (material.id === materialData.id) {
-                return {
-                  ...material,
-                  ...materialData,
-                  status: materialData.status as 'ordered' | 'delivered' | 'pending'
-                }
-              }
-              return material
-            })
-            
-            return {
-              ...phase,
-              materials: updatedMaterials
-            }
-          }
-          return phase
-        })
-        
-        return {
-          ...prev,
-          phases: updatedPhases
-        }
-      })
-      
+      actions.updateMaterial(phaseId, materialData.id, materialData)
       toast.success('Material updated successfully')
     }
-  }
+  }, [actions])
 
-  // Date editing handlers
-  const handleEditProjectDates = () => {
-    setDateEditType('project');
-    setShowDateEditModal(true);
-  };
-
-  const handleEditPhaseDates = (phaseId: string) => {
-    setDateEditType('phase');
-    const phase = plan.phases.find(p => p.id === phaseId);
-    if (phase) {
-      setCurrentPhase({
-        id: phase.id,
-        name: phase.name,
-        description: phase.description,
-        order: phase.order,
-        startDate: phase.startDate || '',
-        endDate: phase.endDate || '',
-        status: phase.status,
-        progress: phase.progress
-      });
-      setShowDateEditModal(true);
-    }
-  };
-
-  const handleSaveDates = (dateRange: { startDate: string, endDate: string }) => {
-    setSaving(true);
+  const handleSaveDates = useCallback((dateRange: { startDate: string; endDate: string }) => {
+    // Validate date range
+    const startDate = new Date(dateRange.startDate)
+    const endDate = new Date(dateRange.endDate)
     
-    // Simulate API call delay
-    setTimeout(() => {
-      if (dateEditType === 'project') {
-        setPlan(prev => ({
-          ...prev,
-          startDate: dateRange.startDate,
-          endDate: dateRange.endDate,
-          lastUpdated: new Date().toISOString()
-        }));
-        
-        toast.success('Project timeline updated');
-      } else if (dateEditType === 'phase' && currentPhase) {
-        setPlan(prev => ({
-          ...prev,
-          phases: prev.phases.map(phase => 
-            phase.id === currentPhase.id 
-              ? { 
-                  ...phase, 
-                  startDate: dateRange.startDate,
-                  endDate: dateRange.endDate
-                }
-              : phase
-          ),
-          lastUpdated: new Date().toISOString()
-        }));
-        
-        toast.success('Phase timeline updated');
-      }
-      
-      setSaving(false);
-      setShowDateEditModal(false);
-    }, 1500);
-  };
-
-  // Render the active view component
-  const renderActiveView = () => {
-    switch (activeView) {
-      case 'overview':
-        return <OverviewView plan={plan} onAddPhase={handleAddPhase} onEditPhase={handleEditPhase} onDeletePhase={handleDeletePhase} onReorderPhase={handleReorderPhase} onAddTask={handleAddTask} onEditTask={handleEditTask} onDeleteTask={handleDeleteTask} onAddMaterial={handleAddMaterial} onEditMaterial={handleEditMaterial} onDeleteMaterial={handleDeleteMaterial} onEditProjectDates={handleEditProjectDates} onEditPhaseDates={handleEditPhaseDates} />
-      case 'timeline':
-        return <TimelineView plan={plan} />
-      case 'materials':
-        return <MaterialsView plan={plan} onAddMaterial={handleAddMaterial} onEditMaterial={handleEditMaterial} onDeleteMaterial={handleDeleteMaterial} />
-      case 'budget':
-        return <BudgetView plan={plan} />
-      case 'team':
-        return <TeamView plan={plan} />
-      case 'documents':
-        return <DocumentsView plan={plan} />
-      default:
-        return <OverviewView plan={plan} onAddPhase={handleAddPhase} onEditPhase={handleEditPhase} onDeletePhase={handleDeletePhase} onReorderPhase={handleReorderPhase} onAddTask={handleAddTask} onEditTask={handleEditTask} onDeleteTask={handleDeleteTask} onAddMaterial={handleAddMaterial} onEditMaterial={handleEditMaterial} onDeleteMaterial={handleDeleteMaterial} onEditProjectDates={handleEditProjectDates} onEditPhaseDates={handleEditPhaseDates} />
+    if (startDate >= endDate) {
+      toast.error('End date must be after start date')
+      return
     }
+    
+    // Check if dates are in the past (optional warning)
+    const today = new Date()
+    if (startDate < today) {
+      toast.warning('Start date is in the past')
+    }
+    
+    actions.updatePlanDates(dateRange.startDate, dateRange.endDate)
+    toast.success('Project timeline updated')
+  }, [actions])
+
+  // Guard against null plan
+  if (!plan) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#2B6CB0]" />
+      </div>
+    )
   }
-
-  // Header actions for the PageHeader component
-  const headerActions = (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="bg-white hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-[#2B6CB0] dark:text-[#93C5FD] transition-all duration-200 shadow-sm"
-          >
-            <Save className="h-4 w-4 mr-1" />
-            Save
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
-          <DropdownMenuItem onClick={() => handleSavePlan('draft')}>
-            <Save className="h-4 w-4 mr-2 text-[#2B6CB0]" />
-            Save as Draft
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleSavePlan('final')}>
-            <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
-            Save as Final
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleRegenerate}
-        disabled={isGenerating}
-        className="bg-white hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-[#2B6CB0] dark:text-[#93C5FD] transition-all duration-200 shadow-sm"
-      >
-        {isGenerating ? (
-          <>
-            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-            Regenerating...
-          </>
-        ) : (
-          <>
-            <RefreshCw className="h-4 w-4 mr-1" />
-            Regenerate
-          </>
-        )}
-      </Button>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="bg-white hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-[#2B6CB0] dark:text-[#93C5FD] transition-all duration-200 shadow-sm"
-          >
-            <MoreHorizontal className="h-4 w-4 mr-1" />
-            More
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setShowDistributeModal(true)}>
-            <Share2 className="h-4 w-4 mr-2 text-[#2B6CB0]" />
-            Distribute Plan
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            <Printer className="h-4 w-4 mr-2 text-[#2B6CB0]" />
-            Print Plan
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            <Download className="h-4 w-4 mr-2 text-[#2B6CB0]" />
-            Export as PDF
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </>
-  );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Helmet>
-        <title>Generated Plan | BuildEase</title>
-      </Helmet>
-      
-      <PageHeader
-        title={plan.name}
-        description="AI generated construction phases with timeline, tasks, and material requirements."
-        icon={<FileText className="h-6 w-6" />}
-        status={plan.status}
-        actions={headerActions}
-      />
+    <ErrorProvider onError={(error, context) => handleError(error, { context })}>
+      <PageErrorBoundary name="GeneratedPlan">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+          <Helmet>
+            <title>Generated Plan | BuildEase</title>
+          </Helmet>
+          
+          {/* Page Header */}
+          <SectionErrorBoundary name="PageHeader">
+            <PageHeader
+              title={plan.name}
+              description="AI generated construction phases with timeline, tasks, and material requirements."
+              icon={<FileText className="h-6 w-6" />}
+              status={plan.status}
+              actions={
+                <ComponentErrorBoundary name="PlanActionBar">
+                  <PlanActionBar
+                    isGenerating={isGenerating}
+                    isSaving={isSaving}
+                    onSave={handleSavePlan}
+                    onRegenerate={handleRegenerate}
+                    onDistribute={() => modalHandlersRef.current?.openDistributeModal()}
+                    onPrint={() => console.log('Print functionality')}
+                    onExportPDF={() => console.log('Export PDF functionality')}
+                  />
+                </ComponentErrorBoundary>
+              }
+            />
+          </SectionErrorBoundary>
 
-      {/* Tab navigation */}
-      <div className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-4 sm:px-6 flex items-center overflow-x-auto hide-scrollbar">
-          <Button
-            onClick={() => setActiveView('overview')}
-            variant="ghost"
-            size="sm"
-            className={`${activeView === 'overview' ? 'border-b-2 border-[#2B6CB0] text-[#2B6CB0] font-medium' : 'text-gray-600 hover:text-[#2B6CB0]'} px-3 py-3 rounded-none text-sm transition-all`}
-          >
-            <Home className="h-4 w-4 mr-2" />
-            Overview
-          </Button>
-          <Button
-            onClick={() => setActiveView('timeline')}
-            variant="ghost"
-            size="sm"
-            className={`${activeView === 'timeline' ? 'border-b-2 border-[#2B6CB0] text-[#2B6CB0] font-medium' : 'text-gray-600 hover:text-[#2B6CB0]'} px-3 py-3 rounded-none text-sm transition-all`}
-          >
-            <Calendar className="h-4 w-4 mr-2" />
-            Timeline
-          </Button>
-          <Button
-            onClick={() => setActiveView('materials')}
-            variant="ghost"
-            size="sm"
-            className={`${activeView === 'materials' ? 'border-b-2 border-[#2B6CB0] text-[#2B6CB0] font-medium' : 'text-gray-600 hover:text-[#2B6CB0]'} px-3 py-3 rounded-none text-sm transition-all`}
-          >
-            <Package className="h-4 w-4 mr-2" />
-            Materials
-          </Button>
-          <Button
-            onClick={() => setActiveView('budget')}
-            variant="ghost"
-            size="sm"
-            className={`${activeView === 'budget' ? 'border-b-2 border-[#2B6CB0] text-[#2B6CB0] font-medium' : 'text-gray-600 hover:text-[#2B6CB0]'} px-3 py-3 rounded-none text-sm transition-all`}
-          >
-            <DollarSign className="h-4 w-4 mr-2" />
-            Budget
-          </Button>
-          <Button
-            onClick={() => setActiveView('team')}
-            variant="ghost"
-            size="sm"
-            className={`${activeView === 'team' ? 'border-b-2 border-[#2B6CB0] text-[#2B6CB0] font-medium' : 'text-gray-600 hover:text-[#2B6CB0]'} px-3 py-3 rounded-none text-sm transition-all`}
-          >
-            <Users className="h-4 w-4 mr-2" />
-            Team
-          </Button>
-          <Button
-            onClick={() => setActiveView('documents')}
-            variant="ghost"
-            size="sm"
-            className={`${activeView === 'documents' ? 'border-b-2 border-[#2B6CB0] text-[#2B6CB0] font-medium' : 'text-gray-600 hover:text-[#2B6CB0]'} px-3 py-3 rounded-none text-sm transition-all`}
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            Documents
-          </Button>
-        </div>
-      </div>
+          {/* Tab Navigation */}
+          <SectionErrorBoundary name="TabNavigation">
+            <PlanTabNavigation
+              activeView={state.activeView}
+              onViewChange={actions.setActiveView}
+            />
+          </SectionErrorBoundary>
 
-      {/* Content area */}
-      <div className="container mx-auto px-4 sm:px-6 py-6">
-        {isGenerating ? (
-          <m.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center py-10 bg-white dark:bg-gray-800 rounded-xl shadow-md p-6"
-          >
-            <Loader2 className="h-10 w-10 text-[#2B6CB0] animate-spin mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">Regenerating your construction plan...</p>
-          </m.div>
-        ) : (
-          <>
-            {/* Render main content */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 sm:p-6">
-              {renderActiveView()}
+          {/* Main Content */}
+          <SectionErrorBoundary name="MainContent" resetKeys={[state.activeView, plan?.id]}>
+            <div className="container mx-auto px-4 sm:px-6 py-6">
+              {isGenerating ? (
+                <m.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex flex-col items-center justify-center py-10 bg-white dark:bg-gray-800 rounded-xl shadow-md p-6"
+                >
+                  <Loader2 className="h-10 w-10 text-[#2B6CB0] animate-spin mb-4" />
+                  <p className="text-gray-500 dark:text-gray-400">Regenerating your construction plan...</p>
+                </m.div>
+              ) : (
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 sm:p-6">
+                  <ComponentErrorBoundary name="PlanViewRenderer">
+                    <PlanViewRenderer
+                      activeView={state.activeView}
+                      plan={plan}
+                      modalHandlersRef={modalHandlersRef}
+                    />
+                  </ComponentErrorBoundary>
+                </div>
+              )}
             </div>
-          </>
-        )}
-      </div>
+          </SectionErrorBoundary>
 
-      {/* Modals */}
-      <PhaseFormModal
-        show={showPhaseModal}
-        onClose={() => setShowPhaseModal(false)}
-        onSave={handleSavePhase}
-        phase={currentPhase ? {
-          id: currentPhase.id,
-          name: currentPhase.name,
-          description: currentPhase.description,
-          order: currentPhase.order,
-          startDate: currentPhase.startDate || '',
-          endDate: currentPhase.endDate || '',
-          status: currentPhase.status,
-          progress: currentPhase.progress
-        } : undefined}
-        isNew={isNewItem}
-        currentOrder={plan.phases.length}
-        statuses={['planning', 'in-progress', 'on-hold', 'completed']}
-      />
-      
-      <TaskFormModal
-        show={showTaskModal}
-        onClose={() => setShowTaskModal(false)}
-        onSave={handleSaveTask}
-        task={currentTask ? {
-          id: currentTask.id,
-          name: currentTask.name,
-          description: currentTask.description,
-          duration: typeof currentTask.duration === 'string' ? parseInt(currentTask.duration) || 1 : currentTask.duration || 1,
-          startDate: currentTask.startDate || '',
-          endDate: currentTask.endDate || '',
-          status: currentTask.status,
-          assignedTo: currentTask.assignedTo,
-          progress: currentTask.progress,
-          phaseId: currentPhaseId
-        } : undefined}
-        isNew={isNewItem}
-        teamMembers={plan.team.map(member => member.name)}
-        phaseId={currentPhaseId}
-      />
-      
-      <MaterialModal
-        show={showMaterialModal}
-        onClose={() => setShowMaterialModal(false)}
-        onSave={handleSaveMaterial}
-        material={currentMaterial ? {
-          id: currentMaterial.id,
-          name: currentMaterial.name,
-          quantity: currentMaterial.quantity,
-          unit: currentMaterial.unit,
-          unitPrice: currentMaterial.unitPrice,
-          totalPrice: currentMaterial.totalPrice,
-          supplier: currentMaterial.supplier,
-          status: currentMaterial.status,
-          deliveryDate: currentMaterial.deliveryDate
-        } : undefined}
-        isNew={isNewItem}
-        modalType="plan"
-      />
-      
-      <DateEditModal
-        show={showDateEditModal}
-        onClose={() => setShowDateEditModal(false)}
-        onSave={handleSaveDates}
-        title={dateEditType === 'project' ? 'Edit Project Timeline' : 'Edit Phase Timeline'}
-        description={dateEditType === 'project' ? 'Update the project start and end dates' : 'Update the phase start and end dates'}
-        dateRange={{
-          startDate: dateEditType === 'project' ? plan.startDate : currentPhase?.startDate || '',
-          endDate: dateEditType === 'project' ? plan.endDate : currentPhase?.endDate || '',
-          type: dateEditType
-        }}
-        isLoading={saving}
-      />
-      
-      {/* Distribute Modal */}
-      <DistributeModal
-        show={showDistributeModal}
-        onClose={() => setShowDistributeModal(false)}
-        onDistribute={handleDistribute}
-        saving={isDistributing}
-      />
-    </div>
+          {/* Modal Manager */}
+          <ComponentErrorBoundary name="PlanModalManager">
+            <PlanModalManager
+              plan={plan}
+              isSaving={isSaving || isDistributing}
+              onSavePhase={handleSavePhase}
+              onSaveTask={handleSaveTask}
+              onSaveMaterial={handleSaveMaterial}
+              onSaveDates={handleSaveDates}
+              onDistribute={handleDistribute}
+              modalHandlersRef={modalHandlersRef as React.MutableRefObject<PlanModalManagerHandlers>}
+            />
+          </ComponentErrorBoundary>
+        </div>
+      </PageErrorBoundary>
+    </ErrorProvider>
   )
 }
