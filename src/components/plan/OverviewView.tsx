@@ -248,7 +248,6 @@ export const OverviewView = React.memo(function OverviewView({
                 onAddMaterial={onAddMaterial}
                 onEditMaterial={onEditMaterial}
                 onDeleteMaterial={onDeleteMaterial}
-                onReorderPhase={onReorderPhase}
                 onEditPhaseDates={onEditPhaseDates}
               />
             </motion.div>

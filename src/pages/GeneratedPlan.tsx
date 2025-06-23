@@ -43,20 +43,9 @@ export default function GeneratedPlan() {
   // Reference used to access modal handlers from other components
   const modalHandlersRef = useRef<PlanModalManagerHandlers>({} as PlanModalManagerHandlers);
   
-  // Log when the component mounts for debugging
-  useEffect(() => {
-    console.log('GeneratedPlan: Component mounted, modalHandlersRef initialized');
-  }, []);
   
-  // Log when modalHandlersRef.current changes
+  // Track when modalHandlersRef.current changes
   useEffect(() => {
-    console.log('GeneratedPlan: Checking if modalHandlersRef.current has methods:', {
-      hasOpenPhaseModal: !!modalHandlersRef.current?.openPhaseModal,
-      hasOpenTaskModal: !!modalHandlersRef.current?.openTaskModal,
-      hasOpenMaterialModal: !!modalHandlersRef.current?.openMaterialModal,
-      hasOpenDateModal: !!modalHandlersRef.current?.openDateModal,
-      hasOpenDistributeModal: !!modalHandlersRef.current?.openDistributeModal
-    });
   }, [modalHandlersRef.current?.openPhaseModal, modalHandlersRef.current?.openTaskModal]);
   
   
@@ -270,8 +259,8 @@ export default function GeneratedPlan() {
                     onSave={handleSavePlan}
                     onRegenerate={handleRegenerate}
                     onDistribute={() => modalHandlersRef.current?.openDistributeModal()}
-                    onPrint={() => console.log('Print functionality')}
-                    onExportPDF={() => console.log('Export PDF functionality')}
+                    onPrint={() => {}}
+                    onExportPDF={() => {}}
                   />
                 </ComponentErrorBoundary>
               }

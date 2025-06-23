@@ -7,29 +7,12 @@
 import { lazy } from 'react';
 
 // Lazy load all plan view components
-export const LazyOverviewView = lazy(() => 
-  import('./OverviewView').then(module => ({ default: module.OverviewView }))
-);
-
-export const LazyTimelineView = lazy(() => 
-  import('./TimelineView').then(module => ({ default: module.TimelineView }))
-);
-
-export const LazyMaterialsView = lazy(() => 
-  import('./MaterialsView').then(module => ({ default: module.MaterialsView }))
-);
-
-export const LazyBudgetView = lazy(() => 
-  import('./BudgetView').then(module => ({ default: module.BudgetView }))
-);
-
-export const LazyTeamView = lazy(() => 
-  import('./TeamView').then(module => ({ default: module.TeamView }))
-);
-
-export const LazyDocumentsView = lazy(() => 
-  import('./DocumentsView').then(module => ({ default: module.DocumentsView }))
-);
+export const LazyOverviewView = lazy(() => import('./OverviewView').then(module => ({ default: module.OverviewView })));
+export const LazyTimelineView = lazy(() => import('./TimelineView').then(module => ({ default: module.TimelineView })));
+export const LazyMaterialsView = lazy(() => import('./MaterialsView').then(module => ({ default: module.MaterialsView })));
+export const LazyBudgetView = lazy(() => import('./BudgetView').then(module => ({ default: module.BudgetView })));
+export const LazyTeamView = lazy(() => import('./TeamView').then(module => ({ default: module.TeamView })));
+export const LazyDocumentsView = lazy(() => import('./DocumentsView').then(module => ({ default: module.DocumentsView })));
 
 // Preload views that are likely to be used
 export const preloadViews = {

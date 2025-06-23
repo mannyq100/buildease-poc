@@ -5,8 +5,7 @@
 import { lazy } from 'react';
 
 // Lazy load large project management components
-export const ProjectPhaseManager = lazy(() => import('../shared/ProjectPhaseManager'));
-export const PhaseDetailsPanel = lazy(() => import('./PhaseDetailsPanel'));
+export const PhaseDetailsPanel = lazy(() => import('./PhaseDetailsPanel').then(module => ({ default: module.PhaseDetailsPanel })));
 
 // Component loading fallback for project components
 export const ProjectLoader = () => (

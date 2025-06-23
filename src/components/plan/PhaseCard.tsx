@@ -17,7 +17,6 @@ interface PhaseCardProps {
   onAddMaterial?: (phaseId: string) => void;
   onEditMaterial?: (phaseId: string, materialId: string) => void;
   onDeleteMaterial?: (phaseId: string, materialId: string) => void;
-  onReorderPhase?: (phaseId: string, direction: 'up' | 'down') => void;
   onEditPhaseDates?: (phaseId: string) => void;
 }
 
@@ -31,7 +30,6 @@ export const PhaseCard = React.memo(function PhaseCard({
   onAddMaterial,
   onEditMaterial,
   onDeleteMaterial,
-  onReorderPhase,
   onEditPhaseDates
 }: PhaseCardProps) {
   const [tasksExpanded, setTasksExpanded] = useState(false);
@@ -53,7 +51,6 @@ export const PhaseCard = React.memo(function PhaseCard({
   }, [onDelete, phase.id]);
   
   const handleEditPhaseDates = useCallback(() => {
-    console.log('PhaseCard: handleEditPhaseDates called', { onEditPhaseDates: !!onEditPhaseDates, phaseId: phase.id });
     onEditPhaseDates?.(phase.id);
   }, [onEditPhaseDates, phase.id]);
   
@@ -61,35 +58,10 @@ export const PhaseCard = React.memo(function PhaseCard({
     onAddTask?.(phase.id);
   }, [onAddTask, phase.id]);
   
-  const handleAddMaterial = useCallback(() => {
-    console.log('PhaseCard: handleAddMaterial called', { onAddMaterial: !!onAddMaterial, phaseId: phase.id });
-    onAddMaterial?.(phase.id);
-  }, [onAddMaterial, phase.id]);
-  
   const handleToggleTasks = useCallback(() => {
     setTasksExpanded(prev => !prev);
   }, []);
   
-  const handleToggleMaterials = useCallback(() => {
-    setMaterialsExpanded(prev => !prev);
-  }, []);
-  
-  // Memoized task and material handlers
-  const createTaskEditHandler = useCallback((taskId: string) => () => {
-    onEditTask?.(phase.id, taskId);
-  }, [onEditTask, phase.id]);
-  
-  const createTaskDeleteHandler = useCallback((taskId: string) => () => {
-    onDeleteTask?.(phase.id, taskId);
-  }, [onDeleteTask, phase.id]);
-  
-  const createMaterialEditHandler = useCallback((materialId: string) => () => {
-    onEditMaterial?.(phase.id, materialId);
-  }, [onEditMaterial, phase.id]);
-  
-  const createMaterialDeleteHandler = useCallback((materialId: string) => () => {
-    onDeleteMaterial?.(phase.id, materialId);
-  }, [onDeleteMaterial, phase.id]);
   
   // Using shared utility functions from @/utils/plan-helpers
 
@@ -302,7 +274,7 @@ export const PhaseCard = React.memo(function PhaseCard({
                             <span className="font-medium text-gray-700 dark:text-gray-300">{material.name}</span>
                             <div className="flex items-center gap-2">
                               <span className="text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full text-xs">
-                                ${material.totalPrice.toLocaleString()}
+                                ${(material.totalPrice ?? 0).toLocaleString()}
                               </span>
                               <div className="flex gap-1">
                                 <Button

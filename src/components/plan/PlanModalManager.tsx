@@ -149,7 +149,11 @@ export const PlanModalManager = React.memo(function PlanModalManager({
         const material = phase.materials?.find(m => m.id === materialId);
         if (material) {
           console.log('MaterialModal: Found material to edit:', material);
-          const modalMaterial = convertToModalMaterial(material);
+          // Create a merged material with explicit phaseId to fix type incompatibility
+          const modalMaterial = {
+            ...convertToModalMaterial(material),
+            phaseId: phaseId // Explicitly set phaseId to ensure compatibility
+          };
           console.log('MaterialModal: Converted material for modal:', modalMaterial);
           materialModal.actions.open(modalMaterial, phaseId, false);
         } else {
