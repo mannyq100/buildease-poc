@@ -1,7 +1,7 @@
 import React, { useMemo, useCallback } from 'react';
 import { ConstructionPlan, Material } from '@/data/mock/generatedPlan/planData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, Calendar, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Package, Calendar, CheckCircle, Clock, AlertCircle, Edit, Trash2, TrendingUp, Box } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { motion as m } from 'framer-motion';
@@ -16,7 +16,7 @@ interface MaterialsViewProps {
   onDeleteMaterial?: (phaseId: string, materialId: string) => void;
 }
 
-export function MaterialsView({ plan, onAddMaterial, onEditMaterial, onDeleteMaterial }: MaterialsViewProps) {
+export function MaterialsView({ plan, onAddMaterial: _onAddMaterial, onEditMaterial, onDeleteMaterial }: MaterialsViewProps) {
   // Extract all materials from all phases
   const allMaterials = useMemo(() => plan.phases.flatMap(phase => 
     phase.materials.map(material => ({
@@ -97,26 +97,40 @@ export function MaterialsView({ plan, onAddMaterial, onEditMaterial, onDeleteMat
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <Card className="border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden rounded-xl">
-          <CardHeader className="bg-gray-50 dark:bg-gray-800/30 border-b border-gray-200 dark:border-gray-700 pb-3">
+        <Card className="border border-buildease-blue-100/50 dark:border-buildease-blue-900/30 shadow-sm overflow-hidden rounded-lg bg-white/95 dark:bg-gray-900/95">
+          <CardHeader className="bg-buildease-blue-50/30 dark:bg-buildease-blue-950/20 border-b border-buildease-blue-100/50 dark:border-buildease-blue-900/30 pb-4">
             <div className="flex justify-between items-start mb-4">
-              <CardTitle className="text-lg font-semibold text-[#2B6CB0] dark:text-[#93C5FD] flex items-center">
-                <Package className="h-5 w-5 mr-2" />
-                Materials Needed
+              <CardTitle className="text-lg font-semibold text-buildease-blue-800 dark:text-buildease-blue-200 flex items-center">
+                <Box className="h-5 w-5 mr-2" />
+                Construction Materials
               </CardTitle>
+              <p className="text-buildease-blue-600/70 dark:text-buildease-blue-400/70 text-sm mt-1">Project material requirements and costs</p>
               <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {searchStats.hasActiveSearch ? 'Filtered Cost' : 'Total Cost'}
-                  </p>
-                  <p className="text-lg font-medium text-[#2B6CB0] dark:text-[#93C5FD]">
+                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-lg p-4 border border-buildease-blue-200/30 dark:border-buildease-blue-800/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="h-4 w-4 text-buildease-blue-600 dark:text-buildease-blue-400" />
+                    <p className="text-sm font-medium text-buildease-blue-700 dark:text-buildease-blue-300">
+                      {searchStats.hasActiveSearch ? 'Filtered Cost' : 'Total Material Cost'}
+                    </p>
+                  </div>
+                  <p className="text-2xl font-bold text-buildease-blue-800 dark:text-buildease-blue-200">
                     {formatCurrency(searchStats.hasActiveSearch ? filteredMaterialsCost : totalMaterialsCost)}
                   </p>
                   {searchStats.hasActiveSearch && (
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-buildease-blue-600/60 dark:text-buildease-blue-400/60 mt-1">
                       of {formatCurrency(totalMaterialsCost)} total
                     </p>
                   )}
+                  <div className="flex items-center gap-4 mt-3 text-xs text-buildease-blue-600/60 dark:text-buildease-blue-400/60">
+                    <div className="flex items-center gap-1">
+                      <Package className="h-3 w-3" />
+                      <span>{filteredMaterials.length} items</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Box className="h-3 w-3" />
+                      <span>{plan.phases.length} phases</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -146,82 +160,87 @@ export function MaterialsView({ plan, onAddMaterial, onEditMaterial, onDeleteMat
             ) : (
               <div className="max-h-[600px] overflow-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50 dark:bg-gray-800/50 sticky top-0 z-10">
+                  <thead className="bg-buildease-blue-50/50 dark:bg-buildease-blue-950/30 sticky top-0 z-10 border-b border-buildease-blue-200/50 dark:border-buildease-blue-800/50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Material</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Phase</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Quantity</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cost</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-buildease-blue-700 dark:text-buildease-blue-300 uppercase tracking-wider">Material</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-buildease-blue-700 dark:text-buildease-blue-300 uppercase tracking-wider">Phase</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-buildease-blue-700 dark:text-buildease-blue-300 uppercase tracking-wider">Quantity</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-buildease-blue-700 dark:text-buildease-blue-300 uppercase tracking-wider">Cost</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-buildease-blue-700 dark:text-buildease-blue-300 uppercase tracking-wider">Status</th>
                       {(onEditMaterial || onDeleteMaterial) && (
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold text-buildease-blue-700 dark:text-buildease-blue-300 uppercase tracking-wider">Actions</th>
                       )}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
+                  <tbody className="divide-y divide-buildease-blue-100/40 dark:divide-buildease-blue-900/40 bg-white dark:bg-gray-800">
                     {filteredMaterials.map((material, index) => (
                       <m.tr 
                         key={material.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.2, delay: index * 0.03 }}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-750"
+                        className="hover:bg-buildease-blue-50/30 dark:hover:bg-buildease-blue-950/20 transition-colors duration-200"
                       >
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td className="px-4 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <Package className="h-4 w-4 text-gray-400 dark:text-gray-500 mr-2" />
-                            <div className="text-sm font-medium text-gray-900 dark:text-white">{material.name}</div>
+                            <div className="w-8 h-8 rounded-lg bg-buildease-blue-100/60 dark:bg-buildease-blue-900/40 flex items-center justify-center mr-3">
+                              <Package className="h-4 w-4 text-buildease-blue-600 dark:text-buildease-blue-400" />
+                            </div>
+                            <div>
+                              <div className="text-sm font-semibold text-buildease-earth-800 dark:text-buildease-earth-200">{material.name}</div>
+                              {material.supplier && (
+                                <div className="text-xs text-buildease-earth-600 dark:text-buildease-earth-400">Supplier: {material.supplier}</div>
+                              )}
+                            </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="text-sm text-gray-700 dark:text-gray-300">{material.phaseName}</div>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-buildease-blue-50 dark:bg-buildease-blue-900/30 text-buildease-blue-700 dark:text-buildease-blue-300 border border-buildease-blue-200/50 dark:border-buildease-blue-800/50">
+                            {material.phaseName}
+                          </span>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="text-sm text-gray-700 dark:text-gray-300">{material.quantity} {material.unit}</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">${material.unitPrice} each</div>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <div className="text-sm font-semibold text-buildease-earth-800 dark:text-buildease-earth-200">{material.quantity} {material.unit}</div>
+                          <div className="text-xs text-buildease-earth-600 dark:text-buildease-earth-400 bg-buildease-earth-50/60 dark:bg-buildease-earth-900/30 px-2 py-0.5 rounded-md mt-1 inline-block">${material.unitPrice} each</div>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">{formatCurrency(material.totalPrice)}</div>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <div className="text-sm font-bold text-status-completed bg-status-completed/10 dark:bg-status-completed/20 px-3 py-1 rounded-md border border-status-completed/30">{formatCurrency(material.totalPrice)}</div>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="flex items-center">
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2 mb-2">
                             {getStatusIcon(material.status)}
-                            <span className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">{material.status.charAt(0).toUpperCase() + material.status.slice(1)}</span>
+                            <span className="text-sm font-medium text-buildease-earth-800 dark:text-buildease-earth-200">{material.status.charAt(0).toUpperCase() + material.status.slice(1)}</span>
                           </div>
                           {material.deliveryDate && (
-                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center">
-                              <Calendar className="h-3 w-3 mr-1" />
-                              Expected: {new Date(material.deliveryDate).toLocaleDateString()}
+                            <div className="text-xs text-buildease-earth-600 dark:text-buildease-earth-400 bg-buildease-earth-50/60 dark:bg-buildease-earth-900/30 px-2 py-1 rounded-md flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              <span>Expected: {new Date(material.deliveryDate).toLocaleDateString()}</span>
                             </div>
                           )}
                         </td>
                         {(onEditMaterial || onDeleteMaterial) && (
-                          <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-                            <div className="flex justify-end space-x-2">
+                          <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div className="flex justify-end space-x-1">
                               {onEditMaterial && (
                                 <Button 
                                   variant="ghost" 
                                   size="sm" 
-                                  className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                                  className="h-8 w-8 p-0 text-buildease-blue-600 dark:text-buildease-blue-400 hover:text-buildease-blue-700 dark:hover:text-buildease-blue-300 hover:bg-buildease-blue-50 dark:hover:bg-buildease-blue-900/20 rounded-md transition-all duration-200"
                                   onClick={() => onEditMaterial(material.phaseId, material.id)}
                                 >
                                   <span className="sr-only">Edit</span>
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                                  </svg>
+                                  <Edit className="h-4 w-4" />
                                 </Button>
                               )}
                               {onDeleteMaterial && (
                                 <Button 
                                   variant="ghost" 
                                   size="sm" 
-                                  className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                                  className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-md transition-all duration-200"
                                   onClick={() => onDeleteMaterial(material.phaseId, material.id)}
                                 >
                                   <span className="sr-only">Delete</span>
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                                  </svg>
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               )}
                             </div>
@@ -232,11 +251,22 @@ export function MaterialsView({ plan, onAddMaterial, onEditMaterial, onDeleteMat
                   </tbody>
                 </table>
                 {filteredMaterials.length === 0 && (
-                  <div className="py-8 text-center text-gray-500 dark:text-gray-400">
-                    {searchStats.hasActiveSearch 
-                      ? `No materials found matching "${searchTerm}"`
-                      : 'No materials listed for this project'
-                    }
+                  <div className="py-12 text-center">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-buildease-blue-100/60 dark:bg-buildease-blue-900/40 mb-4">
+                      <Package className="h-8 w-8 text-buildease-blue-600 dark:text-buildease-blue-400" />
+                    </div>
+                    <h3 className="text-sm font-medium text-buildease-earth-800 dark:text-buildease-earth-200 mb-2">
+                      {searchStats.hasActiveSearch 
+                        ? 'No materials found'
+                        : 'No materials listed'
+                      }
+                    </h3>
+                    <p className="text-xs text-buildease-earth-600 dark:text-buildease-earth-400">
+                      {searchStats.hasActiveSearch 
+                        ? `No materials found matching "${searchTerm}"`
+                        : 'No materials have been added to this construction project yet'
+                      }
+                    </p>
                   </div>
                 )}
               </div>

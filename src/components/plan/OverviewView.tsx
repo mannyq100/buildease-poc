@@ -34,7 +34,7 @@ export const OverviewView = React.memo(function OverviewView({
   onAddMaterial,
   onEditMaterial,
   onDeleteMaterial,
-  onReorderPhase,
+  onReorderPhase: _onReorderPhase,
   onAddPhase,
   onEditProjectDates,
   onEditPhaseDates,
@@ -74,131 +74,157 @@ export const OverviewView = React.memo(function OverviewView({
     >
       {/* Project Overview Card */}
       <motion.div variants={itemVariants}>
-        <Card className="overflow-hidden border-none shadow-md">
-          <div className="bg-gradient-to-r from-[#2B6CB0]/80 to-[#2B6CB0] px-6 py-4">
+        <Card className="overflow-hidden border border-buildease-blue-200/50 dark:border-buildease-blue-800/50 shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl bg-gradient-to-br from-white via-buildease-blue-50/20 to-buildease-earth-50/20 dark:from-gray-900 dark:via-buildease-blue-950/10 dark:to-buildease-earth-950/10 backdrop-blur-sm">
+          <div className="bg-gradient-to-r from-buildease-blue-50/50 via-white/80 to-buildease-earth-50/40 dark:from-buildease-blue-950/30 dark:via-gray-800/40 dark:to-buildease-earth-950/20 border-b border-buildease-blue-200/40 dark:border-buildease-blue-800/40 px-6 py-5 backdrop-blur-sm">
             <div className="flex justify-between items-center">
               <div>
-                <h2 className="text-xl font-semibold text-white">{plan.name}</h2>
-                <p className="text-blue-100 text-sm mt-1 max-w-2xl line-clamp-1">{plan.description}</p>
+                <h2 className="text-2xl font-bold text-buildease-blue-800 dark:text-buildease-blue-200 tracking-tight">{plan.name}</h2>
+                <p className="text-buildease-blue-600/80 dark:text-buildease-blue-400/80 text-sm mt-2 max-w-2xl line-clamp-2 leading-relaxed">{plan.description}</p>
               </div>
               <Button 
                 onClick={handleEditProjectDates} 
                 variant="outline" 
                 size="sm" 
-                className="bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-sm"
+                className="bg-white/90 dark:bg-gray-800/90 text-buildease-blue-700 dark:text-buildease-blue-300 border-buildease-blue-300/60 dark:border-buildease-blue-700/60 hover:bg-gradient-to-r hover:from-buildease-blue-50 hover:to-white dark:hover:from-buildease-blue-900/30 dark:hover:to-gray-800/60 hover:border-buildease-blue-400/80 dark:hover:border-buildease-blue-600/80 shadow-md hover:shadow-lg transition-all duration-200 backdrop-blur-sm ring-1 ring-buildease-blue-200/20 dark:ring-buildease-blue-800/20"
               >
-                <Calendar className="h-4 w-4 mr-1" />
+                <Calendar className="h-4 w-4 mr-1 text-buildease-blue-600 dark:text-buildease-blue-400" />
                 Edit Dates
               </Button>
             </div>
           </div>
           
           <CardContent className="p-0">
-            {/* Project Stats */}
-            <div className="grid grid-cols-4 divide-x divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
-              {/* Progress */}
-              <div className="p-4 flex flex-col items-center justify-center">
-                <div className="flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 dark:bg-blue-900/20 mb-2 relative">
-                  <span className="text-lg font-bold text-[#2B6CB0] dark:text-blue-300">{overallProgress}%</span>
-                  <svg className="absolute inset-0" width="64" height="64" viewBox="0 0 64 64">
-                    <circle 
-                      cx="32" 
-                      cy="32" 
-                      r="28" 
-                      fill="none" 
-                      stroke="#E2E8F0" 
-                      strokeWidth="4" 
-                    />
-                    <circle 
-                      cx="32" 
-                      cy="32" 
-                      r="28" 
-                      fill="none" 
-                      stroke="#2B6CB0" 
-                      strokeWidth="4" 
-                      strokeDasharray="175.9" 
-                      strokeDashoffset={175.9 - (175.9 * overallProgress / 100)} 
-                      strokeLinecap="round" 
-                      transform="rotate(-90 32 32)" 
-                    />
-                  </svg>
+            {/* Enhanced Project Stats */}
+            <div className="bg-gradient-to-br from-white/95 via-buildease-blue-50/30 to-buildease-earth-50/25 dark:from-gray-900/95 dark:via-buildease-blue-950/15 dark:to-buildease-earth-950/15 backdrop-blur-sm">
+              {/* Main Stats Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border-b border-buildease-blue-200/40 dark:border-buildease-blue-800/40">
+                {/* Enhanced Progress Circle */}
+                <div className="p-6 flex flex-col items-center justify-center border-r border-buildease-blue-200/40 dark:border-buildease-blue-800/40 last:border-r-0">
+                  <div className="relative mb-4">
+                    <div className="flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-buildease-blue-100/80 to-buildease-blue-50/60 dark:from-buildease-blue-900/40 dark:to-buildease-blue-950/30 shadow-lg ring-2 ring-buildease-blue-200/50 dark:ring-buildease-blue-800/50">
+                      <span className="text-2xl font-bold text-buildease-blue-800 dark:text-buildease-blue-200">{overallProgress}%</span>
+                      <svg className="absolute inset-0" width="80" height="80" viewBox="0 0 80 80">
+                        <circle 
+                          cx="40" 
+                          cy="40" 
+                          r="35" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          strokeWidth="4" 
+                          className="text-buildease-blue-200/60 dark:text-buildease-blue-800/60"
+                        />
+                        <circle 
+                          cx="40" 
+                          cy="40" 
+                          r="35" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          strokeWidth="4" 
+                          strokeDasharray="219.9" 
+                          strokeDashoffset={219.9 - (219.9 * overallProgress / 100)} 
+                          strokeLinecap="round" 
+                          transform="rotate(-90 40 40)" 
+                          className="text-buildease-blue-600 dark:text-buildease-blue-400 transition-all duration-700 ease-out drop-shadow-sm"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-construction-subtitle font-bold text-buildease-blue-800 dark:text-buildease-blue-200">Overall Progress</h3>
+                    <p className="text-xs text-buildease-blue-600/80 dark:text-buildease-blue-400/80 mt-1 font-medium">{completedTasks} of {totalTasks} tasks completed</p>
+                  </div>
                 </div>
-                <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Overall Progress</span>
-              </div>
 
-              {/* Key stats with icons */}
-              <div className="p-4 flex flex-col space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="rounded-md bg-blue-50 dark:bg-blue-900/20 p-1.5">
-                    <Layers className="h-4 w-4 text-[#2B6CB0]" />
-                  </div>
-                  <div className="flex justify-between items-center w-full">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">Phases</span>
-                    <span className="font-semibold text-sm">{plan.phases.length}</span>
+                {/* Enhanced Key Metrics */}
+                <div className="p-6 border-r border-buildease-blue-200/40 dark:border-buildease-blue-800/40 last:border-r-0">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-buildease-blue-50/60 to-white/80 dark:from-buildease-blue-950/30 dark:to-gray-800/60 shadow-md border border-buildease-blue-200/40 dark:border-buildease-blue-800/40 hover:shadow-lg transition-all duration-200 backdrop-blur-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-buildease-blue-100 to-buildease-blue-50 dark:from-buildease-blue-900/50 dark:to-buildease-blue-950/40 flex items-center justify-center shadow-sm ring-1 ring-buildease-blue-200/30 dark:ring-buildease-blue-800/30">
+                          <Layers className="h-5 w-5 text-buildease-blue-600 dark:text-buildease-blue-400" />
+                        </div>
+                        <span className="text-construction-body font-semibold text-buildease-blue-800 dark:text-buildease-blue-200">Phases</span>
+                      </div>
+                      <span className="text-xl font-bold text-buildease-blue-800 dark:text-buildease-blue-200">{plan.phases.length}</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-buildease-blue-50/60 to-white/80 dark:from-buildease-blue-950/30 dark:to-gray-800/60 shadow-md border border-buildease-blue-200/40 dark:border-buildease-blue-800/40 hover:shadow-lg transition-all duration-200 backdrop-blur-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-md bg-status-completed/10 dark:bg-status-completed/20 flex items-center justify-center">
+                          <CheckSquare className="h-4 w-4 text-status-completed" />
+                        </div>
+                        <span className="text-construction-body font-medium text-gray-700 dark:text-gray-300">Tasks</span>
+                      </div>
+                      <span className="text-lg font-bold text-status-completed">{completedTasks}/{totalTasks}</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-buildease-blue-50/60 to-white/80 dark:from-buildease-blue-950/30 dark:to-gray-800/60 shadow-md border border-buildease-blue-200/40 dark:border-buildease-blue-800/40 hover:shadow-lg transition-all duration-200 backdrop-blur-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-md bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                          <Package className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                        </div>
+                        <span className="text-construction-body font-medium text-gray-700 dark:text-gray-300">Materials</span>
+                      </div>
+                      <span className="text-lg font-bold text-gray-900 dark:text-gray-100">{totalMaterials}</span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="rounded-md bg-emerald-50 dark:bg-emerald-900/20 p-1.5">
-                    <CheckSquare className="h-4 w-4 text-emerald-600" />
-                  </div>
-                  <div className="flex justify-between items-center w-full">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">Tasks</span>
-                    <span className="font-semibold text-sm">{completedTasks}/{totalTasks}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="rounded-md bg-amber-50 dark:bg-amber-900/20 p-1.5">
-                    <Package className="h-4 w-4 text-amber-600" />
-                  </div>
-                  <div className="flex justify-between items-center w-full">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">Materials</span>
-                    <span className="font-semibold text-sm">{totalMaterials}</span>
-                  </div>
-                </div>
-              </div>
 
-              {/* Date Information */}
-              <div className="p-4 flex flex-col space-y-3">
-                <div className="flex items-center gap-2">
-                  <div className="rounded-md bg-blue-50 dark:bg-blue-900/20 p-1.5">
-                    <Calendar className="h-4 w-4 text-[#2B6CB0]" />
-                  </div>
-                  <div className="flex justify-between items-center w-full">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">Start</span>
-                    <span className="font-medium text-sm">{formattedStartDate}</span>
+                {/* Enhanced Timeline Information */}
+                <div className="p-6 border-r border-buildease-blue-100/50 dark:border-buildease-blue-900/30 last:border-r-0">
+                  <div className="space-y-4">
+                    <div className="text-center mb-4">
+                      <h3 className="text-construction-subtitle font-semibold text-gray-900 dark:text-gray-100">Project Timeline</h3>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3 p-2 rounded-md bg-gray-50 dark:bg-gray-800">
+                        <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center">
+                          <Calendar className="h-3 w-3 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs font-medium text-gray-700 dark:text-gray-300">Start Date</p>
+                          <p className="text-construction-body font-semibold text-gray-900 dark:text-gray-100">{formattedStartDate}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3 p-2 rounded-md bg-gray-50 dark:bg-gray-800">
+                        <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center">
+                          <CalendarDays className="h-3 w-3 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs font-medium text-gray-700 dark:text-gray-300">End Date</p>
+                          <p className="text-construction-body font-semibold text-gray-900 dark:text-gray-100">{formattedEndDate}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3 p-2 rounded-md bg-gray-50 dark:bg-gray-800">
+                        <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center">
+                          <Clock className="h-3 w-3 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs font-medium text-gray-700 dark:text-gray-300">Last Updated</p>
+                          <p className="text-construction-body font-semibold text-gray-900 dark:text-gray-100">{formattedLastUpdated}</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="rounded-md bg-blue-50 dark:bg-blue-900/20 p-1.5">
-                    <CalendarDays className="h-4 w-4 text-[#2B6CB0]" />
+                
+                {/* Enhanced Project Description */}
+                <div className="p-6">
+                  <div className="text-center mb-4">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-700">
+                      <FileText className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Project Description</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center w-full">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">End</span>
-                    <span className="font-medium text-sm">{formattedEndDate}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="rounded-md bg-gray-100 dark:bg-gray-800 p-1.5">
-                    <Clock className="h-4 w-4 text-gray-500" />
-                  </div>
-                  <div className="flex justify-between items-center w-full">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">Updated</span>
-                    <span className="font-medium text-sm">{formattedLastUpdated}</span>
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <p className="text-construction-body text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-4">
+                      {plan.description || 'No description available for this construction project.'}
+                    </p>
                   </div>
                 </div>
-              </div>
-              
-              {/* Project Description */}
-              <div className="p-4">
-                <div className="flex items-start gap-2 mb-1">
-                  <div className="rounded-md bg-blue-50 dark:bg-blue-900/20 p-1.5 mt-0.5">
-                    <FileText className="h-4 w-4 text-[#2B6CB0]" />
-                  </div>
-                  <span className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">Description</span>
-                </div>
-                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed pl-8 line-clamp-3">
-                  {plan.description || 'No description available'}
-                </p>
               </div>
             </div>
           </CardContent>
@@ -209,7 +235,7 @@ export const OverviewView = React.memo(function OverviewView({
       <motion.div variants={itemVariants} className="flex justify-between items-center mb-2">
         <div className="flex items-center gap-2">
           <h2 className="text-base font-medium text-gray-900 dark:text-white flex items-center gap-1.5">
-            <BarChart className="h-5 w-5 text-[#2B6CB0]" />
+            <BarChart className="h-5 w-5 text-gray-600 dark:text-gray-400" />
             <span>Construction Phases</span>
           </h2>
           <div className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
@@ -221,7 +247,7 @@ export const OverviewView = React.memo(function OverviewView({
         <Button
           onClick={handleAddPhase}
           size="sm"
-          className="bg-[#ED8936] hover:bg-[#ED8936]/90 text-white h-8 px-3 shadow-sm"
+          className="bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-gray-900 h-8 px-3 shadow-sm"
           disabled={!onAddPhase}
         >
           <Plus className="h-4 w-4 mr-1" />
@@ -264,7 +290,7 @@ export const OverviewView = React.memo(function OverviewView({
             <Button
               onClick={onAddPhase ? () => onAddPhase(plan.id) : undefined}
               size="sm"
-              className="bg-[#ED8936] hover:bg-[#ED8936]/90 text-white shadow-sm"
+              className="bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-gray-900 shadow-sm"
               disabled={!onAddPhase}
             >
               <Plus className="h-4 w-4 mr-1" />

@@ -149,19 +149,19 @@ export function TeamView({ plan }: TeamViewProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <Card className="border-none shadow-md overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-[#2B6CB0]/80 to-[#2B6CB0] p-4">
-            <CardTitle className="text-white flex items-center gap-2">
-              <Users className="h-5 w-5" />
+        <Card className="border border-buildease-blue-200/50 dark:border-buildease-blue-800/50 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden rounded-xl bg-gradient-to-br from-white via-buildease-blue-50/20 to-buildease-earth-50/20 dark:from-gray-900 dark:via-buildease-blue-950/10 dark:to-buildease-earth-950/10 backdrop-blur-sm">
+          <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-buildease-blue-50/50 via-white/80 to-buildease-earth-50/40 dark:from-buildease-blue-950/30 dark:via-gray-800/40 dark:to-buildease-earth-950/20 border-b border-buildease-blue-200/40 dark:border-buildease-blue-800/40 p-5 backdrop-blur-sm">
+            <CardTitle className="text-xl font-bold text-buildease-blue-800 dark:text-buildease-blue-200 flex items-center gap-2 tracking-tight">
+              <Users className="h-5 w-5 text-buildease-blue-600 dark:text-buildease-blue-400" />
               Project Team
             </CardTitle>
             {/* Add Member Button */}
-            <Button size="sm" onClick={handleOpenAddModal} className="bg-[#ED8936] hover:bg-[#ED8936]/90 text-white shadow-sm">
+            <Button size="sm" onClick={handleOpenAddModal} className="bg-buildease-blue-600 hover:bg-buildease-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 border-0">
               <Plus className="h-4 w-4 mr-1" />
               Add Member
             </Button>
           </CardHeader>
-          <CardContent className="p-4">
+          <CardContent className="p-6">
             {/* Search Input */}
             {teamMembers.length > 0 && (
               <div className="mb-4">
@@ -178,25 +178,25 @@ export function TeamView({ plan }: TeamViewProps) {
             )}
             
              {teamMembers.length === 0 ? (
-              <div className="text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/20 rounded-lg border border-dashed border-gray-300 dark:border-gray-700">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 mb-3">
-                  <Users className="h-8 w-8 text-gray-400 dark:text-gray-600" />
+              <div className="text-center py-12 text-buildease-earth-600 dark:text-buildease-earth-400 bg-gradient-to-br from-buildease-blue-50/40 to-white/60 dark:from-buildease-blue-950/20 dark:to-gray-800/40 rounded-xl border border-dashed border-buildease-blue-300/60 dark:border-buildease-blue-700/60 backdrop-blur-sm">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-buildease-blue-100/60 dark:bg-buildease-blue-900/40 mb-4 shadow-sm ring-2 ring-buildease-blue-200/50 dark:ring-buildease-blue-800/50">
+                  <Users className="h-8 w-8 text-buildease-blue-600 dark:text-buildease-blue-400" />
                 </div>
                 <p className="font-medium text-base mb-1">No team members</p>
                 <p className="text-sm mb-3">Start by adding your first team member</p>
                 <Button
                   onClick={handleOpenAddModal}
                   size="sm"
-                  className="bg-[#ED8936] hover:bg-[#ED8936]/90 text-white shadow-sm"
+                  className="bg-buildease-blue-600 hover:bg-buildease-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 border-0"
                 >
                   <Plus className="h-4 w-4 mr-1" />
                   Add Your First Member
                 </Button>
               </div>
             ) : filteredTeamMembers.length === 0 ? (
-              <div className="text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/20 rounded-lg border border-dashed border-gray-300 dark:border-gray-700">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 mb-3">
-                  <Users className="h-8 w-8 text-gray-400 dark:text-gray-600" />
+              <div className="text-center py-12 text-buildease-earth-600 dark:text-buildease-earth-400 bg-gradient-to-br from-buildease-blue-50/40 to-white/60 dark:from-buildease-blue-950/20 dark:to-gray-800/40 rounded-xl border border-dashed border-buildease-blue-300/60 dark:border-buildease-blue-700/60 backdrop-blur-sm">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-buildease-blue-100/60 dark:bg-buildease-blue-900/40 mb-4 shadow-sm ring-2 ring-buildease-blue-200/50 dark:ring-buildease-blue-800/50">
+                  <Users className="h-8 w-8 text-buildease-blue-600 dark:text-buildease-blue-400" />
                 </div>
                 <p className="font-medium text-base mb-1">
                   {searchStats.hasActiveSearch ? 'No matching team members' : 'No team members found'}
@@ -230,14 +230,14 @@ export function TeamView({ plan }: TeamViewProps) {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.1 }}
-                    className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 relative group"
+                    className="p-5 bg-white/90 dark:bg-gray-800/90 border border-buildease-blue-200/50 dark:border-buildease-blue-800/50 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 relative group backdrop-blur-md ring-1 ring-buildease-blue-100/20 dark:ring-buildease-blue-900/20 hover:ring-buildease-blue-200/30 dark:hover:ring-buildease-blue-800/30"
                   >
                     {/* Edit/Delete Buttons (Appear on Hover) */}
                     <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                       <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-500 hover:text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/50" onClick={() => handleOpenEditModal(member)}>
+                       <Button variant="ghost" size="icon" className="h-8 w-8 text-buildease-earth-600 dark:text-buildease-earth-400 hover:text-buildease-blue-700 dark:hover:text-buildease-blue-300 hover:bg-buildease-blue-50 dark:hover:bg-buildease-blue-900/20 rounded-md transition-all duration-200" onClick={() => handleOpenEditModal(member)}>
                         <Edit className="h-4 w-4" />
                       </Button>
-                       <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-900/50" onClick={() => handleDeleteTeamMember(member.id)}>
+                       <Button variant="ghost" size="icon" className="h-8 w-8 text-buildease-earth-600 dark:text-buildease-earth-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-all duration-200" onClick={() => handleDeleteTeamMember(member.id)}>
                         <Trash className="h-4 w-4" />
                       </Button>
                     </div>
@@ -250,20 +250,20 @@ export function TeamView({ plan }: TeamViewProps) {
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <h3 className="font-medium text-gray-900 dark:text-white">{member.name}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{member.role}</p>
+                        <h3 className="font-semibold text-buildease-blue-800 dark:text-buildease-blue-200">{member.name}</h3>
+                        <p className="text-sm text-buildease-earth-600 dark:text-buildease-earth-400 font-medium">{member.role}</p>
                       </div>
                     </div>
                   
                     <div className="mt-4 space-y-2 text-sm">
-                      <div className="flex items-center text-gray-600 dark:text-gray-300">
-                        <Mail className="h-4 w-4 mr-2 text-gray-400 dark:text-gray-500" />
-                        <a href={`mailto:${member.email}`} className="hover:text-[#2B6CB0] dark:hover:text-[#93C5FD] transition-colors">
+                      <div className="flex items-center text-buildease-earth-700 dark:text-buildease-earth-300">
+                        <Mail className="h-4 w-4 mr-2 text-buildease-blue-600 dark:text-buildease-blue-400" />
+                        <a href={`mailto:${member.email}`} className="hover:text-buildease-blue-700 dark:hover:text-buildease-blue-300 transition-colors font-medium">
                           {member.email}
                         </a>
                       </div>
                       {member.phone && (
-                        <div className="flex items-center text-gray-600 dark:text-gray-300">
+                        <div className="flex items-center text-buildease-earth-700 dark:text-buildease-earth-300">
                           <Phone className="h-4 w-4 mr-2 text-gray-400 dark:text-gray-500" />
                           <a href={`tel:${member.phone.replace(/[^0-9]/g, '')}`} className="hover:text-[#2B6CB0] dark:hover:text-[#93C5FD] transition-colors">
                             {member.phone}

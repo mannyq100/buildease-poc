@@ -79,20 +79,20 @@ export function BudgetView({ plan }: BudgetViewProps) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200"
+      className="flex items-center p-5 border border-buildease-blue-200/50 dark:border-buildease-blue-800/50 rounded-xl bg-gradient-to-r from-white/90 to-buildease-blue-50/60 dark:from-gray-800/90 dark:to-buildease-blue-950/30 shadow-md hover:shadow-lg transition-all duration-200 backdrop-blur-sm ring-1 ring-buildease-blue-100/20 dark:ring-buildease-blue-900/20 hover:ring-buildease-blue-200/30 dark:hover:ring-buildease-blue-800/30"
     >
-      <div className={`p-2 rounded-md mr-3 ${color}`}>
+      <div className={`p-3 rounded-lg mr-4 ${color} shadow-sm ring-1 ring-white/20 dark:ring-gray-900/20`}>
         {icon}
       </div>
       <div className="flex-1">
-        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{title}</h3>
-        <p className="text-lg font-semibold text-gray-900 dark:text-white">
+        <h3 className="text-sm font-semibold text-buildease-blue-800 dark:text-buildease-blue-200">{title}</h3>
+        <p className="text-xl font-bold text-buildease-blue-800 dark:text-buildease-blue-200">
           {formatCurrency(amount)}
         </p>
       </div>
       <div className="text-right">
-        <span className="text-sm text-gray-500 dark:text-gray-400">{percentage.toFixed(1)}%</span>
-        <div className="w-16 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mt-1">
+        <span className="text-sm font-medium text-buildease-blue-600/80 dark:text-buildease-blue-400/80">{percentage.toFixed(1)}%</span>
+        <div className="w-16 h-2 bg-buildease-blue-100/60 dark:bg-buildease-blue-900/40 rounded-full mt-1 shadow-inner">
           <div 
             className={`h-full rounded-full ${color.replace('text-', 'bg-').replace('/10', '')}`}
             style={{ width: `${percentage}%` }}
@@ -109,21 +109,21 @@ export function BudgetView({ plan }: BudgetViewProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <Card className="border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden rounded-xl">
-          <CardHeader className="bg-gray-50 dark:bg-gray-800/30 border-b border-gray-200 dark:border-gray-700 pb-3 flex flex-row items-center justify-between">
-            <CardTitle className="text-lg font-semibold text-[#2B6CB0] dark:text-[#93C5FD] flex items-center">
+        <Card className="border border-buildease-blue-200/50 dark:border-buildease-blue-800/50 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden rounded-xl bg-gradient-to-br from-white via-buildease-blue-50/20 to-buildease-earth-50/20 dark:from-gray-900 dark:via-buildease-blue-950/10 dark:to-buildease-earth-950/10 backdrop-blur-sm">
+          <CardHeader className="bg-gradient-to-r from-buildease-blue-50/50 via-white/80 to-buildease-earth-50/40 dark:from-buildease-blue-950/30 dark:via-gray-800/40 dark:to-buildease-earth-950/20 border-b border-buildease-blue-200/40 dark:border-buildease-blue-800/40 pb-4 flex flex-row items-center justify-between backdrop-blur-sm">
+            <CardTitle className="text-xl font-bold text-buildease-blue-800 dark:text-buildease-blue-200 flex items-center tracking-tight">
               <Banknote className="h-5 w-5 mr-2" />
               Budget Summary
             </CardTitle>
-            <Button size="sm" onClick={handleOpenAddModal} className="bg-[#ED8936] hover:bg-[#ED8936]/90 text-white">
+            <Button size="sm" onClick={handleOpenAddModal} className="bg-buildease-blue-600 hover:bg-buildease-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 border-0">
               <Plus className="h-4 w-4 mr-1" />
               Add Item
             </Button>
           </CardHeader>
-          <CardContent className="p-4">
-            <div className="text-center mb-6">
-              <p className="text-lg text-gray-600 dark:text-gray-400">Total Budget</p>
-              <h2 className="text-3xl font-bold text-[#2B6CB0] dark:text-[#93C5FD]">
+          <CardContent className="p-6">
+            <div className="text-center mb-8">
+              <p className="text-lg font-medium text-buildease-blue-600/80 dark:text-buildease-blue-400/80">Total Budget</p>
+              <h2 className="text-4xl font-bold text-buildease-blue-800 dark:text-buildease-blue-200 tracking-tight mt-2">
                 {formatCurrency(budget.totalCost)}
               </h2>
             </div>
@@ -176,10 +176,10 @@ export function BudgetView({ plan }: BudgetViewProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.1 }}
       >
-        <Card className="border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden rounded-xl">
-          <CardHeader className="bg-gray-50 dark:bg-gray-800/30 border-b border-gray-200 dark:border-gray-700">
-            <CardTitle className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center">
-              <TrendingUp className="h-5 w-5 mr-2 text-gray-600 dark:text-gray-400" />
+        <Card className="border border-buildease-blue-200/50 dark:border-buildease-blue-800/50 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden rounded-xl bg-gradient-to-br from-white via-buildease-blue-50/20 to-buildease-earth-50/20 dark:from-gray-900 dark:via-buildease-blue-950/10 dark:to-buildease-earth-950/10 backdrop-blur-sm">
+          <CardHeader className="bg-gradient-to-r from-buildease-blue-50/50 via-white/80 to-buildease-earth-50/40 dark:from-buildease-blue-950/30 dark:via-gray-800/40 dark:to-buildease-earth-950/20 border-b border-buildease-blue-200/40 dark:border-buildease-blue-800/40 backdrop-blur-sm">
+            <CardTitle className="text-xl font-bold text-buildease-blue-800 dark:text-buildease-blue-200 flex items-center tracking-tight">
+              <TrendingUp className="h-5 w-5 mr-2 text-buildease-blue-600 dark:text-buildease-blue-400" />
               Budget Line Items
             </CardTitle>
           </CardHeader>

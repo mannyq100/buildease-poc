@@ -2,17 +2,15 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 // import { useNavigate } from 'react-router-dom' // Reserved for future use
 import { Helmet } from 'react-helmet-async'
 import { motion as m } from 'framer-motion'
-import { FileText, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 
 import { preloadCommonViews } from '@/components/plan/LazyViews'
 import { PlanTabNavigation } from '@/components/plan/PlanTabNavigation'
-import { PlanActionBar } from '@/components/plan/PlanActionBar'
 import { PlanModalManager, PlanModalManagerHandlers } from '@/components/plan'
 import { PlanViewRenderer } from '@/components/plan/PlanViewRenderer'
 import { mockConstructionPlan } from '@/data/mock/generatedPlan/planData'
 import { usePlanState } from '@/hooks/usePlanState'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
-import { PageHeader } from '@/components/shared/PageHeader'
 import { Phase as ModalPhase, Task as ModalTask } from '@/components/shared/modals'
 import { Material, Phase as PlanPhase, Task as PlanTask } from '@/data/mock/generatedPlan/planData'
 import { 
@@ -244,34 +242,18 @@ export default function GeneratedPlan() {
             <title>Generated Plan | BuildEase</title>
           </Helmet>
           
-          {/* Page Header */}
-          <SectionErrorBoundary name="PageHeader">
-            <PageHeader
-              title={plan.name}
-              description="AI generated construction phases with timeline, tasks, and material requirements."
-              icon={<FileText className="h-6 w-6" />}
-              status={plan.status}
-              actions={
-                <ComponentErrorBoundary name="PlanActionBar">
-                  <PlanActionBar
-                    isGenerating={isGenerating}
-                    isSaving={isSaving}
-                    onSave={handleSavePlan}
-                    onRegenerate={handleRegenerate}
-                    onDistribute={() => modalHandlersRef.current?.openDistributeModal()}
-                    onPrint={() => {}}
-                    onExportPDF={() => {}}
-                  />
-                </ComponentErrorBoundary>
-              }
-            />
-          </SectionErrorBoundary>
-
-          {/* Tab Navigation */}
+          {/* Tab Navigation with integrated plan actions */}
           <SectionErrorBoundary name="TabNavigation">
             <PlanTabNavigation
               activeView={state.activeView}
               onViewChange={actions.setActiveView}
+              isGenerating={isGenerating}
+              isSaving={isSaving}
+              onSave={handleSavePlan}
+              onRegenerate={handleRegenerate}
+              onDistribute={() => modalHandlersRef.current?.openDistributeModal()}
+              onPrint={() => {}}
+              onExportPDF={() => {}}
             />
           </SectionErrorBoundary>
 

@@ -13,25 +13,25 @@
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
 
-    /* New warm, construction-themed palette */
-    --primary: 210 70% 43%;  /* Warm blue */
-    --primary-foreground: 210 40% 98%;
-    --primary-lighter: 210 70% 53%;
-    --primary-darker: 210 70% 33%;
+    /* Enhanced BuildEase construction-themed palette */
+    --primary: 210 61% 45%;  /* BuildEase blue #2B6CB0 */
+    --primary-foreground: 0 0% 100%;
+    --primary-lighter: 211 65% 60%;  /* Lighter BuildEase blue */
+    --primary-darker: 210 67% 36%;   /* Darker BuildEase blue */
     
-    --secondary: 30 20% 50%;  /* Warm gray */
-    --secondary-foreground: 30 10% 98%;
+    --secondary: 30 20% 50%;  /* Warm gray - earth tones */
+    --secondary-foreground: 0 0% 100%;
     
-    --accent: 25 90% 58%;  /* Warm orange */
-    --accent-foreground: 25 10% 98%;
+    --accent: 25 77% 57%;  /* BuildEase orange #ED8936 */
+    --accent-foreground: 0 0% 100%;
     
-    /* Status colors */
-    --success: 142 72% 29%;
-    --success-foreground: 144 70% 98%;
-    --warning: 45 93% 47%;
-    --warning-foreground: 46 92% 98%;
+    /* Status colors - aligned with construction industry */
+    --success: 160 69% 20%;  /* Professional green for completed */
+    --success-foreground: 0 0% 100%;
+    --warning: 25 77% 57%;   /* BuildEase orange for in-progress */
+    --warning-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 0 0% 100%;
 
     /* Neutral colors */
     --muted: 210 40% 96.1%;
@@ -54,6 +54,23 @@
     
     /* Improved border radius */
     --radius: 0.75rem;
+    
+    /* BuildEase construction theme colors */
+    --deepblue: 210 85% 25%;
+    --deepblue-light: 210 80% 35%;
+    --deepblue-dark: 210 90% 15%;
+    
+    --darkgreen: 160 70% 25%;
+    --darkgreen-light: 160 65% 35%;
+    --darkgreen-dark: 160 75% 15%;
+    
+    --burntorange: 25 77% 57%;  /* BuildEase orange */
+    --burntorange-light: 25 77% 67%;
+    --burntorange-dark: 25 77% 47%;
+    
+    --lightgray: 30 15% 93%;
+    --lightgray-dark: 30 15% 83%;
+    --lightgray-darker: 30 15% 73%;
     
     /* Sidebar colors */
     --sidebar-background: 210 30% 15%;
@@ -79,11 +96,11 @@
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     
-    /* Dark mode adjustments */
-    --primary: 210 70% 50%;
-    --primary-foreground: 0 0% 100%;
-    --primary-lighter: 210 70% 60%;
-    --primary-darker: 210 70% 40%;
+    /* Dark mode adjustments - enhanced BuildEase colors */
+    --primary: 211 65% 60%;  /* Lighter BuildEase blue for dark mode */
+    --primary-foreground: 210 90% 15%;
+    --primary-lighter: 211 70% 70%;
+    --primary-darker: 210 60% 50%;
     
     /* Popover and dropdown colors with solid backgrounds for dark mode */
     --popover: 222.2 84% 4.9%;  /* Solid dark background */
@@ -130,18 +147,68 @@
     font-feature-settings: "rlig" 1, "calt" 1;
     font-family: 'Open Sans', sans-serif;
   }
+  
+  /* Enhanced BuildEase Typography Hierarchy */
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Inter', sans-serif;
   }
+ 
+  
+  /* Professional body text */
+  p {
+    @apply text-sm leading-relaxed;
+    color: hsl(var(--muted-foreground));
+  }
+  
+  /* Construction industry specific text utilities */
+  .text-construction-title {
+    @apply text-buildease-blue-700 dark:text-buildease-blue-300 font-semibold tracking-tight;
+  }
+  
+  .text-construction-subtitle {
+    @apply text-buildease-earth-700 dark:text-buildease-earth-300 font-medium;
+  }
+  
+  .text-construction-body {
+    @apply text-gray-700 dark:text-gray-300 leading-relaxed;
+  }
+  
+  .text-construction-caption {
+    @apply text-sm text-buildease-earth-600 dark:text-buildease-earth-400 font-medium;
+  }
 }
 
-/* Improved spacing and typography */
+/* Enhanced BuildEase spacing and typography utilities */
 .content-container {
   @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
 }
 
 .section-title {
-  @apply text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-6;
+  @apply text-lg md:text-xl font-semibold text-construction-title mb-4 tracking-tight;
+}
+
+.section-subtitle {
+  @apply text-base md:text-lg font-medium text-construction-subtitle mb-3;
+}
+
+.construction-heading {
+  @apply text-buildease-blue-700 dark:text-buildease-blue-300 font-bold tracking-tight;
+}
+
+.construction-subheading {
+  @apply text-buildease-earth-700 dark:text-buildease-earth-300 font-semibold;
+}
+
+.plan-card-title {
+  @apply text-base font-semibold text-buildease-blue-700 dark:text-buildease-blue-300 tracking-tight;
+}
+
+.plan-card-subtitle {
+  @apply text-xs font-medium text-buildease-earth-600 dark:text-buildease-earth-400;
+}
+
+.plan-section-header {
+  @apply text-sm font-semibold text-gray-800 dark:text-gray-200 tracking-tight;
 }
 
 .card-container {
