@@ -45,7 +45,7 @@ export const PlanViewRenderer = React.memo(function PlanViewRenderer({
   }, [modalHandlersRef]);
 
   const handleDeletePhase = useCallback(async (phaseId: string) => {
-    const phase = plan.phases.find(p => p.id === phaseId);
+    const phase = plan.phases.find((p) => p.id === phaseId);
     const phaseName = phase?.name || 'this phase';
     
     const confirmed = await confirmDelete(phaseName, 'phase');
@@ -63,8 +63,10 @@ export const PlanViewRenderer = React.memo(function PlanViewRenderer({
     }
   }, [confirmDelete, plan.phases, loadingActions]);
 
-  const handleReorderPhase = useCallback((_phaseId: string, _direction: 'up' | 'down') => {
-    // This will be handled by the parent component's plan state
+  const handleReorderPhase = useCallback((oldIndex: number, newIndex: number) => {
+    // For now, just log the reorder - the actual implementation would need to be
+    // connected to the plan state management in the parent component
+    console.log('Reorder phase:', { oldIndex, newIndex });
   }, []);
 
   const handleAddTask = useCallback((phaseId: string) => {
@@ -76,8 +78,8 @@ export const PlanViewRenderer = React.memo(function PlanViewRenderer({
   }, [modalHandlersRef]);
 
   const handleDeleteTask = useCallback(async (phaseId: string, taskId: string) => {
-    const phase = plan.phases.find(p => p.id === phaseId);
-    const task = phase?.tasks.find(t => t.id === taskId);
+    const phase = plan.phases.find((p: { id: string }) => p.id === phaseId);
+    const task = phase?.tasks.find((t: { id: string }) => t.id === taskId);
     const taskName = task?.name || 'this task';
     
     const confirmed = await confirmDelete(taskName, 'task');
@@ -103,8 +105,8 @@ export const PlanViewRenderer = React.memo(function PlanViewRenderer({
   }, [modalHandlersRef]);
 
   const handleDeleteMaterial = useCallback(async (phaseId: string, materialId: string) => {
-    const phase = plan.phases.find(p => p.id === phaseId);
-    const material = phase?.materials.find(m => m.id === materialId);
+    const phase = plan.phases.find((p: { id: string }) => p.id === phaseId);
+    const material = phase?.materials?.find((m: { id: string }) => m.id === materialId);
     const materialName = material?.name || 'this material';
     
     const confirmed = await confirmDelete(materialName, 'material');
@@ -173,7 +175,8 @@ export const PlanViewRenderer = React.memo(function PlanViewRenderer({
           onEditPhase: handleEditPhase,
           onAddTask: handleAddTask,
           onEditTask: handleEditTask,
-          onEditDates: handleEditPhaseDates
+          onEditDates: handleEditPhaseDates,
+          onReorderPhase: handleReorderPhase
         };
 
       case 'materials':

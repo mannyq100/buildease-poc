@@ -55,7 +55,7 @@ export function AddTaskButton({
         size="icon"
         onClick={handleClick}
         disabled={disabled}
-        className={`h-8 w-8 ${className}`}
+        className={`h-11 w-11 ${className}`}
         title="Add Task"
       >
         <Plus className="h-4 w-4" />

@@ -6,6 +6,7 @@
 
 import { ConstructionPlan } from './base';
 import { LoadingState } from '@/hooks/usePlanLoading';
+import { PlanModalManagerHandlers } from '@/components/plan/PlanModalManager';
 
 /**
  * Base interface that all plan views should extend
@@ -34,7 +35,7 @@ export interface PlanViewActionHandlers {
   onAddPhase?: (planId: string) => void;
   onEditPhase?: (phaseId: string) => void;
   onDeletePhase?: (phaseId: string) => void;
-  onReorderPhase?: (phaseId: string, direction: 'up' | 'down') => void;
+  onReorderPhase?: (oldIndex: number, newIndex: number) => void;
   
   // Task actions
   onAddTask?: (phaseId: string) => void;
@@ -72,6 +73,7 @@ export interface TimelineViewProps extends PlanViewBaseProps {
   onAddTask?: (phaseId: string) => void;
   onEditTask?: (phaseId: string, taskId: string) => void;
   onEditDates?: (phaseId: string) => void;
+  onReorderPhase?: (oldIndex: number, newIndex: number) => void;
 }
 
 export interface MaterialsViewProps extends PlanViewBaseProps {
@@ -117,7 +119,7 @@ export interface PlanViewRendererProps extends PlanViewBaseProps {
   activeView: string;
   
   /** Reference to modal handlers for opening modals */
-  modalHandlersRef?: React.RefObject<unknown>;
+  modalHandlersRef?: React.RefObject<PlanModalManagerHandlers>;
   
   /** Loading actions for updating loading states */
   loadingActions?: {

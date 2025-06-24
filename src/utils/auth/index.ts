@@ -33,26 +33,29 @@ export const authUtils = {
   /**
    * Check if operation requires re-authentication for construction workflows
    */
-  requiresReAuth: (operation: string): boolean => {
-    return require('./SecurityMonitor').securityMonitor.requiresReAuthentication(operation);
+  requiresReAuth: async (operation: string): Promise<boolean> => {
+    const { securityMonitor } = await import('./SecurityMonitor');
+    return securityMonitor.requiresReAuthentication(operation);
   },
   
   /**
    * Get current security status for dashboard display
    */
-  getSecurityStatus: () => {
-    return require('./SecurityMonitor').securityMonitor.getSecuritySummary();
+  getSecurityStatus: async () => {
+    const { securityMonitor } = await import('./SecurityMonitor');
+    return securityMonitor.getSecuritySummary();
   },
   
   /**
    * Audit localStorage for security status
    */
-  auditStorageSecurity: (): {
+  auditStorageSecurity: async (): Promise<{
     hasStoredSession: boolean;
     sessionAge: number | null;
     isValidFormat: boolean;
     storageMethod: string;
-  } => {
-    return require('./StorageAdapter').storageAdapter.auditStorageSecurity();
+  }> => {
+    const { storageAdapter } = await import('./StorageAdapter');
+    return storageAdapter.auditStorageSecurity();
   },
 };

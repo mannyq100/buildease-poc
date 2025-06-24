@@ -44,6 +44,7 @@ export default {
 				'content-xl': '2.5rem',
 				'section': '3rem',
 				'section-lg': '4rem',
+				'safe': 'env(safe-area-inset-bottom)',
 			},
 			// Add specific line heights
 			lineHeight: {

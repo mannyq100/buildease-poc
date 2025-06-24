@@ -66,15 +66,25 @@ export class PlanApiMock {
     // In real app, this would delete the phase on the server
   }
 
-  static async reorderPhase(phaseId: string, direction: 'up' | 'down'): Promise<PlanPhase[]> {
+  static async reorderPhase(oldIndex: number, newIndex: number, phases: PlanPhase[]): Promise<PlanPhase[]> {
     await delay(400);
     
     if (shouldFail(0.05)) {
       throw new Error('Failed to reorder phase');
     }
 
-    // In real app, this would reorder phases on the server and return updated list
-    return []; // Would return updated phases array
+    // Create a new array with the reordered phases
+    const reorderedPhases = [...phases];
+    const [movedPhase] = reorderedPhases.splice(oldIndex, 1);
+    reorderedPhases.splice(newIndex, 0, movedPhase);
+    
+    // Update the order property for all phases
+    const updatedPhases = reorderedPhases.map((phase, index) => ({
+      ...phase,
+      order: index + 1
+    }));
+
+    return updatedPhases;
   }
 
   // === Task Operations ===

@@ -3,9 +3,31 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CalendarDays, Clock, Package, CheckSquare, Layers, FileText, Plus, Calendar, BarChart } from 'lucide-react';
 import { PhaseCard } from './PhaseCard';
+import { LazyPhaseList } from './LazyPhaseList';
+import { MobileStickyActionBar } from './MobileStickyActionBar';
+import { MobileFloatingActionButton } from './MobileFloatingActionButton';
 import { motion } from 'framer-motion';
 import { formatDate, containerVariants, itemVariants } from '@/utils/plan-helpers';
 import { OverviewViewProps } from '@/types/plan/views';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  restrictToVerticalAxis,
+} from '@dnd-kit/modifiers';
 
 export const OverviewView = React.memo(function OverviewView({ 
   plan, 
@@ -17,13 +39,30 @@ export const OverviewView = React.memo(function OverviewView({
   onAddMaterial,
   onEditMaterial,
   onDeleteMaterial,
-  onReorderPhase: _onReorderPhase,
+  onReorderPhase,
   onAddPhase,
   onEditProjectDates,
   onEditPhaseDates,
   viewMode: _viewMode, // Prefix with underscore to indicate intentionally unused parameter
   loadingState
 }: OverviewViewProps) {
+  // Drag and drop state
+  const [activePhaseId, setActivePhaseId] = React.useState<string | null>(null);
+  
+  // Configure sensors for drag and drop with mobile optimization
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Start drag after 8px movement
+        delay: 100, // Small delay for better mobile UX
+        tolerance: 5, // Tolerance for slight finger movement
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+  
   // Memoized computed values for performance with specific dependencies
   const { totalTasks, totalMaterials, completedTasks, overallProgress } = useMemo(() => {
     const totalTasks = plan.phases.reduce((sum: number, phase) => sum + phase.tasks.length, 0);
@@ -48,6 +87,48 @@ export const OverviewView = React.memo(function OverviewView({
   const handleEditProjectDates = useCallback(() => {
     onEditProjectDates?.();
   }, [onEditProjectDates]);
+  
+  // Drag and drop handlers with mobile haptic feedback
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActivePhaseId(event.active.id as string);
+    
+    // Haptic feedback for mobile devices
+    if ('vibrate' in navigator) {
+      navigator.vibrate(50); // Short vibration for drag start
+    }
+  }, []);
+  
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    setActivePhaseId(null);
+    
+    if (over && active.id !== over.id) {
+      // Find the indices of the phases being reordered
+      const oldIndex = plan.phases.findIndex((phase) => phase.id === active.id);
+      const newIndex = plan.phases.findIndex((phase) => phase.id === over.id);
+      
+      if (oldIndex !== -1 && newIndex !== -1) {
+        // Haptic feedback for successful reorder on mobile
+        if ('vibrate' in navigator) {
+          navigator.vibrate([30, 10, 30]); // Double pulse for success
+        }
+        
+        // Call the reorder callback with the indices
+        onReorderPhase?.(oldIndex, newIndex);
+      }
+    } else {
+      // Light haptic feedback for canceled drag
+      if ('vibrate' in navigator) {
+        navigator.vibrate(20);
+      }
+    }
+  }, [plan.phases, onReorderPhase]);
+  
+  // Get the active phase for drag overlay
+  const activePhase = useMemo(() => {
+    return activePhaseId ? plan.phases.find((phase) => phase.id === activePhaseId) : null;
+  }, [activePhaseId, plan.phases]);
 
   return (
     <motion.div 
@@ -62,14 +143,14 @@ export const OverviewView = React.memo(function OverviewView({
           <div className="bg-gradient-to-r from-buildease-blue-50/50 via-white/80 to-buildease-earth-50/40 dark:from-buildease-blue-950/30 dark:via-gray-800/40 dark:to-buildease-earth-950/20 border-b border-buildease-blue-200/40 dark:border-buildease-blue-800/40 px-6 py-5 backdrop-blur-sm">
             <div className="flex justify-between items-center">
               <div>
-                <h2 className="text-2xl font-bold text-buildease-blue-800 dark:text-buildease-blue-200 tracking-tight">{plan.name}</h2>
-                <p className="text-buildease-blue-600/80 dark:text-buildease-blue-400/80 text-sm mt-2 max-w-2xl line-clamp-2 leading-relaxed">{plan.description}</p>
+                <h2 className="text-xl sm:text-2xl font-bold text-buildease-blue-800 dark:text-buildease-blue-200 tracking-tight">{plan.name}</h2>
+                <p className="text-buildease-blue-600/80 dark:text-buildease-blue-400/80 text-sm sm:text-sm mt-2 max-w-2xl line-clamp-2 leading-relaxed">{plan.description}</p>
               </div>
               <Button 
                 onClick={handleEditProjectDates} 
                 variant="outline" 
                 size="sm" 
-                className="bg-white/90 dark:bg-gray-800/90 text-buildease-blue-700 dark:text-buildease-blue-300 border-buildease-blue-300/60 dark:border-buildease-blue-700/60 hover:bg-gradient-to-r hover:from-buildease-blue-50 hover:to-white dark:hover:from-buildease-blue-900/30 dark:hover:to-gray-800/60 hover:border-buildease-blue-400/80 dark:hover:border-buildease-blue-600/80 shadow-md hover:shadow-lg transition-all duration-200 backdrop-blur-sm ring-1 ring-buildease-blue-200/20 dark:ring-buildease-blue-800/20"
+                className="h-11 px-4 sm:h-8 sm:px-3 bg-white/90 dark:bg-gray-800/90 text-buildease-blue-700 dark:text-buildease-blue-300 border-buildease-blue-300/60 dark:border-buildease-blue-700/60 hover:bg-gradient-to-r hover:from-buildease-blue-50 hover:to-white dark:hover:from-buildease-blue-900/30 dark:hover:to-gray-800/60 hover:border-buildease-blue-400/80 dark:hover:border-buildease-blue-600/80 shadow-md hover:shadow-lg transition-all duration-200 backdrop-blur-sm ring-1 ring-buildease-blue-200/20 dark:ring-buildease-blue-800/20"
               >
                 <Calendar className="h-4 w-4 mr-1 text-buildease-blue-600 dark:text-buildease-blue-400" />
                 Edit Dates
@@ -231,7 +312,7 @@ export const OverviewView = React.memo(function OverviewView({
         <Button
           onClick={handleAddPhase}
           size="sm"
-          className="bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-gray-900 h-8 px-3 shadow-sm"
+          className="bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-gray-900 h-11 px-4 sm:h-8 sm:px-3 shadow-sm"
           disabled={!onAddPhase}
         >
           <Plus className="h-4 w-4 mr-1" />
@@ -239,43 +320,70 @@ export const OverviewView = React.memo(function OverviewView({
         </Button>
       </motion.div>
 
-      {/* Phases List - Fixed animation hierarchy to prevent nested animation issues */}
-      <motion.div variants={itemVariants} className="space-y-4">
-        {plan.phases.map((phase, index: number) => (
-          <div key={phase.id}>
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
-            >
-              <PhaseCard 
-                phase={phase} 
-                onDelete={onDeletePhase}
-                onEdit={onEditPhase}
-                onAddTask={onAddTask}
-                onEditTask={onEditTask}
-                onDeleteTask={onDeleteTask}
-                onAddMaterial={onAddMaterial}
-                onEditMaterial={onEditMaterial}
-                onDeleteMaterial={onDeleteMaterial}
-                onEditPhaseDates={onEditPhaseDates}
-                loadingState={loadingState}
-              />
-            </motion.div>
-          </div>
-        ))}
+      {/* Phases List - Enhanced with drag-and-drop functionality */}
+      <motion.div variants={itemVariants}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          modifiers={[restrictToVerticalAxis]}
+        >
+          <SortableContext
+            items={plan.phases.map((phase) => phase.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <LazyPhaseList
+              phases={plan.phases}
+              onDelete={onDeletePhase}
+              onEdit={onEditPhase}
+              onAddTask={onAddTask}
+              onEditTask={onEditTask}
+              onDeleteTask={onDeleteTask}
+              onAddMaterial={onAddMaterial}
+              onEditMaterial={onEditMaterial}
+              onDeleteMaterial={onDeleteMaterial}
+              onEditPhaseDates={onEditPhaseDates}
+              loadingState={loadingState}
+              isDragDisabled={!onReorderPhase}
+              batchSize={5}
+              threshold={200}
+            />
+          </SortableContext>
+          
+          {/* Enhanced Drag Overlay for mobile-friendly visual feedback */}
+          <DragOverlay>
+            {activePhase && (
+              <div className="opacity-95 transform rotate-2 sm:rotate-3 shadow-2xl ring-2 ring-buildease-orange-400 ring-opacity-50 scale-105 sm:scale-100">
+                <PhaseCard 
+                  phase={activePhase} 
+                  onDelete={onDeletePhase}
+                  onEdit={onEditPhase}
+                  onAddTask={onAddTask}
+                  onEditTask={onEditTask}
+                  onDeleteTask={onDeleteTask}
+                  onAddMaterial={onAddMaterial}
+                  onEditMaterial={onEditMaterial}
+                  onDeleteMaterial={onDeleteMaterial}
+                  onEditPhaseDates={onEditPhaseDates}
+                  loadingState={loadingState}
+                />
+              </div>
+            )}
+          </DragOverlay>
+        </DndContext>
         
         {plan.phases.length === 0 && (
           <div className="text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/20 rounded-lg border border-dashed border-gray-300 dark:border-gray-700">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 mb-3">
               <Layers className="h-8 w-8 text-gray-400 dark:text-gray-600" />
             </div>
-            <p className="font-medium text-base mb-1">No phases have been defined</p>
-            <p className="text-sm mb-3">Start by adding your first construction phase</p>
+            <p className="font-medium text-lg sm:text-base mb-2 sm:mb-1">No phases have been defined</p>
+            <p className="text-base sm:text-sm mb-4 sm:mb-3">Start by adding your first construction phase</p>
             <Button
               onClick={onAddPhase ? () => onAddPhase(plan.id) : undefined}
               size="sm"
-              className="bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-gray-900 shadow-sm"
+              className="bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-gray-900 h-11 px-4 sm:h-8 sm:px-3 shadow-sm"
               disabled={!onAddPhase}
             >
               <Plus className="h-4 w-4 mr-1" />
@@ -284,6 +392,54 @@ export const OverviewView = React.memo(function OverviewView({
           </div>
         )}
       </motion.div>
+
+      {/* Mobile Navigation Enhancements */}
+      <MobileStickyActionBar
+        primaryAction={{
+          label: 'Add Phase',
+          icon: Plus,
+          onClick: handleAddPhase,
+          disabled: !onAddPhase
+        }}
+        secondaryActions={[
+          {
+            label: 'Edit Dates',
+            icon: Calendar,
+            onClick: handleEditProjectDates,
+            disabled: !onEditProjectDates,
+            variant: 'outline'
+          }
+        ]}
+        viewContext="overview"
+        visible={true}
+      />
+
+      <MobileFloatingActionButton
+        primaryAction={{
+          label: 'Quick Actions',
+          icon: Plus,
+          onClick: () => {}, // Handled by speed dial
+          color: 'orange'
+        }}
+        secondaryActions={[
+          {
+            label: 'Add Phase',
+            icon: Layers,
+            onClick: handleAddPhase,
+            disabled: !onAddPhase,
+            color: 'blue'
+          },
+          {
+            label: 'Edit Project',
+            icon: Calendar,
+            onClick: handleEditProjectDates,
+            disabled: !onEditProjectDates,
+            color: 'green'
+          }
+        ]}
+        visible={true}
+        offset={{ bottom: 100, right: 16 }} // Account for sticky action bar
+      />
     </motion.div>
   );
 });

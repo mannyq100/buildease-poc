@@ -58,7 +58,7 @@ function ProjectInspirationImagesComponent({ control, className = '' }: ProjectI
       // The context handles the image addition and shows toast messages
       try {
         await handleFileSelection(file);
-      } catch (_error) {
+      } catch {
         // Error handling is managed by the context with toast notifications
       }
     }

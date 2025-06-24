@@ -289,19 +289,29 @@ export function TaskCard({
     <Card 
       className={cn(
         'overflow-hidden border border-blue-200 hover:border-blue-300 dark:border-blue-800/30 dark:hover:border-blue-700/50',
-        'transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer',
+        'transition-all duration-200 shadow-sm hover:shadow-md hover:shadow-blue-200/50 dark:hover:shadow-blue-900/30 cursor-pointer',
+        'hover:scale-[1.02] active:scale-[0.98] hover:-translate-y-1 active:translate-y-0',
+        'focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:outline-none',
+        'group relative',
         className
       )}
       onClick={handleClick}
     >
       <CardContent className="p-0">
         {/* Status badge at top */}
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center relative">
+          {/* Hover indicator line */}
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+          
           <Badge className={cn(
-            'rounded-none rounded-tr-none rounded-bl-none px-3 py-1 text-xs font-medium',
+            'rounded-none rounded-tr-none rounded-bl-none px-3 py-1 text-xs font-medium relative z-10',
+            'transition-all duration-200 group-hover:shadow-sm',
             statusBadgeClass
           )}>
-            {taskValues.status}
+            <div className="flex items-center gap-1">
+              <div className={cn('w-2 h-2 rounded-full', statusColor)} />
+              {taskValues.status}
+            </div>
           </Badge>
           
           {taskValues.priority && (
@@ -339,42 +349,67 @@ export function TaskCard({
             </p>
           )}
           
-          {/* Progress bar */}
+          {/* Progress bar with enhanced styling */}
           <div className="mb-2">
             <div className="flex justify-between items-center text-xs text-gray-600 dark:text-gray-400 mb-1">
               <span>Progress</span>
-              <span>{taskValues.completion || 0}%</span>
+              <span className="font-medium">{taskValues.completion || 0}%</span>
             </div>
-            <Progress 
-              value={taskValues.completion || 0} 
-              className="h-2 bg-gray-100 dark:bg-gray-700" 
-            />
+            <div className="relative">
+              <Progress 
+                value={taskValues.completion || 0} 
+                className="h-2 bg-gray-100 dark:bg-gray-700 transition-all duration-300 group-hover:h-2.5" 
+              />
+              {/* Completion celebration effect */}
+              {(taskValues.completion || 0) >= 100 && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-1 h-1 bg-green-400 rounded-full animate-ping" />
+                </div>
+              )}
+            </div>
           </div>
           
           {/* Due date and metadata */}
           <div className="flex justify-between items-end mt-3">
-            {/* Due date */}
+            {/* Due date with enhanced visual feedback */}
             <div className="flex items-center text-sm">
-              <Calendar className="h-4 w-4 mr-2 text-gray-500" />
-              <span>{formattedDueDate}</span>
+              <Calendar className={cn(
+                "h-4 w-4 mr-2 transition-colors duration-200",
+                daysRemaining !== null && daysRemaining < 0 ? "text-red-500" : 
+                daysRemaining !== null && daysRemaining <= 3 ? "text-amber-500" : 
+                "text-gray-500 group-hover:text-blue-500"
+              )} />
+              <span className={cn(
+                "transition-colors duration-200",
+                daysRemaining !== null && daysRemaining < 0 ? "text-red-600" : 
+                daysRemaining !== null && daysRemaining <= 3 ? "text-amber-600" : 
+                "text-gray-700 dark:text-gray-300"
+              )}>
+                {formattedDueDate}
+              </span>
               {overdueDays && (
-                <span className="ml-2 text-xs text-red-600 font-medium">
+                <span className="ml-2 text-xs text-red-600 font-medium bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded-full animate-pulse">
                   {overdueDays}
+                </span>
+              )}
+              {daysRemaining !== null && daysRemaining > 0 && daysRemaining <= 3 && (
+                <span className="ml-2 text-xs text-amber-600 font-medium bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full">
+                  {daysRemaining}d left
                 </span>
               )}
             </div>
             
-            {/* Comments and attachments */}
+            {/* Comments and attachments with hover effects */}
             <div className="flex items-center space-x-3 text-gray-500">
               {taskValues.commentsCount > 0 && (
-                <div className="flex items-center text-xs">
+                <div className="flex items-center text-xs transition-all duration-200 hover:text-blue-600 dark:hover:text-blue-400 hover:scale-110 cursor-pointer">
                   <MessageSquare className="h-4 w-4 mr-1" />
                   <span>{taskValues.commentsCount}</span>
                 </div>
               )}
               
               {taskValues.attachmentsCount > 0 && (
-                <div className="flex items-center text-xs">
+                <div className="flex items-center text-xs transition-all duration-200 hover:text-blue-600 dark:hover:text-blue-400 hover:scale-110 cursor-pointer">
                   <Paperclip className="h-4 w-4 mr-1" />
                   <span>{taskValues.attachmentsCount}</span>
                 </div>
@@ -382,19 +417,20 @@ export function TaskCard({
             </div>
           </div>
           
-          {/* Assignees */}
+          {/* Assignees with enhanced hover effects */}
           {taskValues.assignees && taskValues.assignees.length > 0 && (
             <div className="flex justify-end mt-3">
-              <div className="flex -space-x-2">
+              <div className="flex -space-x-2 group-hover:space-x-1 transition-all duration-300">
                 {taskValues.assignees.slice(0, 3).map((assignee, index) => (
                   <Avatar 
                     key={typeof assignee.id === 'string' ? assignee.id : `assignee-${index}`} 
-                    className="h-6 w-6 border-2 border-white dark:border-slate-800"
+                    className="h-6 w-6 border-2 border-white dark:border-slate-800 transition-all duration-200 hover:scale-125 hover:z-10 cursor-pointer shadow-sm hover:shadow-md"
+                    title={assignee.name}
                   >
                     {assignee.avatar ? (
                       <AvatarImage src={assignee.avatar} alt={assignee.name} />
                     ) : (
-                      <AvatarFallback className="text-xs bg-blue-500 text-white">
+                      <AvatarFallback className="text-xs bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-200">
                         {assignee.name.split(' ').map(n => n[0]).join('')}
                       </AvatarFallback>
                     )}
@@ -402,7 +438,7 @@ export function TaskCard({
                 ))}
                 
                 {taskValues.assignees.length > 3 && (
-                  <Avatar className="h-6 w-6 border-2 border-white dark:border-slate-800 bg-gray-200 dark:bg-slate-700">
+                  <Avatar className="h-6 w-6 border-2 border-white dark:border-slate-800 bg-gray-200 dark:bg-slate-700 transition-all duration-200 hover:scale-125 hover:z-10 cursor-pointer shadow-sm hover:shadow-md hover:bg-gray-300 dark:hover:bg-slate-600">
                     <AvatarFallback className="text-xs">+{taskValues.assignees.length - 3}</AvatarFallback>
                   </Avatar>
                 )}
@@ -421,7 +457,15 @@ export function TaskCard({
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        whileHover={{ y: -2, transition: { duration: 0.2 } }}
+        whileHover={{ 
+          y: -4, 
+          scale: 1.02,
+          transition: { duration: 0.2, ease: "easeOut" } 
+        }}
+        whileTap={{ 
+          scale: 0.98, 
+          transition: { duration: 0.1 } 
+        }}
       >
         {cardContent}
       </m.div>

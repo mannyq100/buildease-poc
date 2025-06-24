@@ -59,7 +59,7 @@ export function EditTaskAction({
         size="icon"
         onClick={handleClick}
         disabled={disabled}
-        className={`h-8 w-8 ${className}`}
+        className={`h-11 w-11 ${className}`}
         title="Edit Task"
       >
         <Edit className="h-4 w-4" />

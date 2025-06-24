@@ -74,7 +74,7 @@ export function DeleteMaterialAction({
         size="icon"
         onClick={handleClick}
         disabled={disabled}
-        className={`h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 ${className}`}
+        className={`h-11 w-11 text-red-600 hover:text-red-700 hover:bg-red-50 ${className}`}
         title="Delete Material"
       >
         <Trash2 className="h-4 w-4" />

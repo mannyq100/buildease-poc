@@ -4,7 +4,7 @@
  * Eliminates infinite re-render issues and simplifies state management
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { PhaseFormModal, TaskFormModal, MaterialModal, DateEditModal, ConfirmationModal } from '@/components/shared/modals';
 import { DistributeModal } from './DistributeModal';
 import { ConstructionPlan } from '@/data/mock/generatedPlan/planData';
@@ -73,7 +73,7 @@ export const PlanModalManager = React.memo(function PlanModalManager({
   // Use unified conversion functions from types/plan
 
   // Phase modal handlers - now using Zustand store actions
-  const handleOpenPhaseModal = (phaseId?: string, isNew = true) => {
+  const handleOpenPhaseModal = useCallback((phaseId?: string, isNew = true) => {
     if (phaseId && !isNew) {
       const planPhase = plan.phases.find(p => p.id === phaseId);
       if (planPhase) {
@@ -84,7 +84,7 @@ export const PlanModalManager = React.memo(function PlanModalManager({
     } else {
       phaseModal.actions.open(undefined, true);
     }
-  };
+  }, [plan.phases, phaseModal.actions]);
 
   const handleSavePhaseModal = (phaseData: Partial<Phase>) => {
     onSavePhase(phaseData);
@@ -92,7 +92,7 @@ export const PlanModalManager = React.memo(function PlanModalManager({
   };
 
   // Task modal handlers - now using Zustand store actions
-  const handleOpenTaskModal = (phaseId: string, taskId?: string, isNew = true) => {
+  const handleOpenTaskModal = useCallback((phaseId: string, taskId?: string, isNew = true) => {
     if (taskId && !isNew) {
       const phase = plan.phases.find(p => p.id === phaseId);
       if (phase) {
@@ -110,7 +110,7 @@ export const PlanModalManager = React.memo(function PlanModalManager({
     } else {
       taskModal.actions.open(undefined, phaseId, true);
     }
-  };
+  }, [plan.phases, taskModal.actions]);
 
   const handleSaveTaskModal = (taskData: Partial<Task>) => {
     onSaveTask(taskData);
@@ -118,7 +118,7 @@ export const PlanModalManager = React.memo(function PlanModalManager({
   };
 
   // Material modal handlers - now using Zustand store actions
-  const handleOpenMaterialModal = (phaseId: string, materialId?: string, isNew = true) => {
+  const handleOpenMaterialModal = useCallback((phaseId: string, materialId?: string, isNew = true) => {
     if (materialId && !isNew) {
       const phase = plan.phases.find(p => p.id === phaseId);
       if (phase) {
@@ -136,7 +136,7 @@ export const PlanModalManager = React.memo(function PlanModalManager({
     } else {
       materialModal.actions.open(undefined, phaseId, true);
     }
-  };
+  }, [plan.phases, materialModal.actions]);
 
   const handleSaveMaterialModal = (materialData: Material) => {
     onSaveMaterial(materialData);
@@ -144,7 +144,7 @@ export const PlanModalManager = React.memo(function PlanModalManager({
   };
 
   // Date modal handlers - now using Zustand store actions
-  const handleOpenDateModal = (type: 'project' | 'phase', phaseId?: string) => {
+  const handleOpenDateModal = useCallback((type: 'project' | 'phase', phaseId?: string) => {
     let phase: Phase | undefined;
     
     if (type === 'phase' && phaseId) {
@@ -158,7 +158,7 @@ export const PlanModalManager = React.memo(function PlanModalManager({
     }
 
     dateModal.actions.open(type, phase);
-  };
+  }, [plan.phases, dateModal.actions]);
 
   const handleSaveDateModal = (dateRange: { startDate: string; endDate: string }) => {
     onSaveDates(dateRange);
@@ -166,9 +166,9 @@ export const PlanModalManager = React.memo(function PlanModalManager({
   };
 
   // Distribute modal handlers - now using Zustand store actions
-  const handleOpenDistributeModal = () => {
+  const handleOpenDistributeModal = useCallback(() => {
     distributeModal.actions.open();
-  };
+  }, [distributeModal.actions]);
 
   const handleSaveDistributeModal = () => {
     onDistribute();

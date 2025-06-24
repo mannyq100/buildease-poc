@@ -164,9 +164,9 @@ export function MaterialsView({ plan, onAddMaterial: _onAddMaterial, onEditMater
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-buildease-blue-700 dark:text-buildease-blue-300 uppercase tracking-wider">Material</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-buildease-blue-700 dark:text-buildease-blue-300 uppercase tracking-wider">Phase</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-buildease-blue-700 dark:text-buildease-blue-300 uppercase tracking-wider">Quantity</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-buildease-blue-700 dark:text-buildease-blue-300 uppercase tracking-wider hidden sm:table-cell">Quantity</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-buildease-blue-700 dark:text-buildease-blue-300 uppercase tracking-wider">Cost</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-buildease-blue-700 dark:text-buildease-blue-300 uppercase tracking-wider">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-buildease-blue-700 dark:text-buildease-blue-300 uppercase tracking-wider hidden sm:table-cell">Status</th>
                       {(onEditMaterial || onDeleteMaterial) && (
                         <th className="px-4 py-3 text-right text-xs font-semibold text-buildease-blue-700 dark:text-buildease-blue-300 uppercase tracking-wider">Actions</th>
                       )}
@@ -199,14 +199,14 @@ export function MaterialsView({ plan, onAddMaterial: _onAddMaterial, onEditMater
                             {material.phaseName}
                           </span>
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
+                        <td className="px-4 py-4 whitespace-nowrap hidden sm:table-cell">
                           <div className="text-sm font-semibold text-buildease-earth-800 dark:text-buildease-earth-200">{material.quantity} {material.unit}</div>
                           <div className="text-xs text-buildease-earth-600 dark:text-buildease-earth-400 bg-buildease-earth-50/60 dark:bg-buildease-earth-900/30 px-2 py-0.5 rounded-md mt-1 inline-block">${material.unitPrice} each</div>
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
                           <div className="text-sm font-bold text-status-completed bg-status-completed/10 dark:bg-status-completed/20 px-3 py-1 rounded-md border border-status-completed/30">{formatCurrency(material.totalPrice)}</div>
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
+                        <td className="px-4 py-4 whitespace-nowrap hidden sm:table-cell">
                           <div className="flex items-center gap-2 mb-2">
                             {getStatusIcon(material.status)}
                             <span className="text-sm font-medium text-buildease-earth-800 dark:text-buildease-earth-200">{material.status.charAt(0).toUpperCase() + material.status.slice(1)}</span>
@@ -220,12 +220,12 @@ export function MaterialsView({ plan, onAddMaterial: _onAddMaterial, onEditMater
                         </td>
                         {(onEditMaterial || onDeleteMaterial) && (
                           <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <div className="flex justify-end space-x-1">
+                            <div className="flex justify-end space-x-2 sm:space-x-1">
                               {onEditMaterial && (
                                 <Button 
                                   variant="ghost" 
                                   size="sm" 
-                                  className="h-8 w-8 p-0 text-buildease-blue-600 dark:text-buildease-blue-400 hover:text-buildease-blue-700 dark:hover:text-buildease-blue-300 hover:bg-buildease-blue-50 dark:hover:bg-buildease-blue-900/20 rounded-md transition-all duration-200"
+                                  className="h-11 w-11 p-0 text-buildease-blue-600 dark:text-buildease-blue-400 hover:text-buildease-blue-700 dark:hover:text-buildease-blue-300 hover:bg-buildease-blue-50 dark:hover:bg-buildease-blue-900/20 rounded-md transition-all duration-200"
                                   onClick={() => onEditMaterial(material.phaseId, material.id)}
                                 >
                                   <span className="sr-only">Edit</span>
@@ -236,7 +236,7 @@ export function MaterialsView({ plan, onAddMaterial: _onAddMaterial, onEditMater
                                 <Button 
                                   variant="ghost" 
                                   size="sm" 
-                                  className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-md transition-all duration-200"
+                                  className="h-11 w-11 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-md transition-all duration-200"
                                   onClick={() => onDeleteMaterial(material.phaseId, material.id)}
                                 >
                                   <span className="sr-only">Delete</span>

@@ -3,11 +3,13 @@ import { Phase } from '@/data/mock/generatedPlan/planData';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Trash, Plus, Edit, Calendar, Clock, ChevronDown, ChevronRight, CheckCircle, Package, Users } from 'lucide-react';
+import { Trash, Plus, Edit, Calendar, Clock, ChevronDown, ChevronRight, CheckCircle, Package } from 'lucide-react';
 import { AnimatePresence, motion as m } from 'framer-motion';
 import { getStatusColor, formatDate, getStatusText } from '@/utils/plan-helpers';
 import { LoadingState } from '@/hooks/usePlanLoading';
 import { LoadingButton, ActionLoadingOverlay } from './LoadingIndicators';
+import { LazyTaskList } from './LazyTaskList';
+import { LazyMaterialList } from './LazyMaterialList';
 
 interface PhaseCardProps {
   phase: Phase;
@@ -111,30 +113,30 @@ export const PhaseCard = React.memo(function PhaseCard({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 px-3 text-buildease-earth-600 dark:text-buildease-earth-400 hover:text-buildease-blue-700 dark:hover:text-buildease-blue-300 hover:bg-buildease-blue-50 dark:hover:bg-buildease-blue-900/20 flex items-center gap-1.5 rounded-md transition-all duration-200"
+                        className="h-11 px-4 sm:h-8 sm:px-3 text-buildease-earth-600 dark:text-buildease-earth-400 hover:text-buildease-blue-700 dark:hover:text-buildease-blue-300 hover:bg-buildease-blue-50 dark:hover:bg-buildease-blue-900/20 flex items-center gap-1.5 rounded-md transition-all duration-200"
                         onClick={handleEditPhaseDates}
                       >
-                        <Calendar className="h-3.5 w-3.5" />
+                        <Calendar className="h-5 w-5 sm:h-3.5 sm:w-3.5" />
                         <span className="text-xs font-medium hidden sm:inline">Edit Dates</span>
                       </Button>
                     )}
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 w-8 p-0 text-buildease-earth-600 dark:text-buildease-earth-400 hover:text-buildease-blue-700 dark:hover:text-buildease-blue-300 hover:bg-buildease-blue-50 dark:hover:bg-buildease-blue-900/20 rounded-md transition-all duration-200"
+                      className="h-11 w-11 sm:h-8 sm:w-8 p-0 text-buildease-earth-600 dark:text-buildease-earth-400 hover:text-buildease-blue-700 dark:hover:text-buildease-blue-300 hover:bg-buildease-blue-50 dark:hover:bg-buildease-blue-900/20 rounded-md transition-all duration-200"
                       onClick={handleEditPhase}
                     >
-                      <Edit className="h-4 w-4" />
+                      <Edit className="h-5 w-5 sm:h-4 sm:w-4" />
                     </Button>
                     <LoadingButton
                       variant="ghost"
                       size="sm"
-                      className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-all duration-200"
+                      className="h-11 w-11 sm:h-8 sm:w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-all duration-200"
                       onClick={handleDeletePhase}
                       isLoading={isPhaseLoading}
                       disabled={isPhaseLoading}
                     >
-                      <Trash className="h-4 w-4" />
+                      <Trash className="h-5 w-5 sm:h-4 sm:w-4" />
                     </LoadingButton>
                   </div>
                 </div>
@@ -192,13 +194,13 @@ export const PhaseCard = React.memo(function PhaseCard({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-9 px-4 text-xs bg-white/80 dark:bg-gray-800/80 border-buildease-blue-300/60 dark:border-buildease-blue-700/60 text-buildease-blue-700 dark:text-buildease-blue-300 hover:bg-gradient-to-r hover:from-buildease-blue-50 hover:to-white dark:hover:from-buildease-blue-900/30 dark:hover:to-gray-800/60 hover:border-buildease-blue-400/80 dark:hover:border-buildease-blue-600/80 shadow-md hover:shadow-lg transition-all duration-200 backdrop-blur-sm ring-1 ring-buildease-blue-200/20 dark:ring-buildease-blue-800/20"
+                  className="h-11 px-4 sm:h-9 sm:px-4 text-xs bg-white/80 dark:bg-gray-800/80 border-buildease-blue-300/60 dark:border-buildease-blue-700/60 text-buildease-blue-700 dark:text-buildease-blue-300 hover:bg-gradient-to-r hover:from-buildease-blue-50 hover:to-white dark:hover:from-buildease-blue-900/30 dark:hover:to-gray-800/60 hover:border-buildease-blue-400/80 dark:hover:border-buildease-blue-600/80 shadow-md hover:shadow-lg transition-all duration-200 backdrop-blur-sm ring-1 ring-buildease-blue-200/20 dark:ring-buildease-blue-800/20"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleAddTask();
                   }}
                 >
-                  <Plus className="h-3.5 w-3.5 mr-1.5" />
+                  <Plus className="h-4 w-4 sm:h-3.5 sm:w-3.5 mr-1.5" />
                   <span className="hidden sm:inline">Add Task</span>
                   <span className="sm:hidden">Add</span>
                 </Button>
@@ -213,60 +215,14 @@ export const PhaseCard = React.memo(function PhaseCard({
                     transition={{ duration: 0.2 }}
                     className="overflow-hidden px-4 pb-4"
                   >
-                    <div className="space-y-2">
-                      {phase.tasks.map(task => (
-                        <div key={task.id} className="p-5 bg-white/80 dark:bg-gray-800/80 rounded-xl border border-buildease-blue-200/50 dark:border-buildease-blue-800/50 shadow-md hover:border-buildease-blue-300/70 dark:hover:border-buildease-blue-700/70 transition-all duration-200 hover:shadow-lg backdrop-blur-md ring-1 ring-buildease-blue-100/20 dark:ring-buildease-blue-900/20 hover:ring-buildease-blue-200/30 dark:hover:ring-buildease-blue-800/30">
-                          <div className="flex justify-between">
-                            <span className="font-semibold text-buildease-earth-800 dark:text-buildease-earth-200 text-construction-body">{task.name}</span>
-                            <div className="flex items-center gap-2">
-                              <Badge className={getStatusColor(task.status)} variant="outline">
-                                {task.status}
-                              </Badge>
-                              <div className="flex gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0 opacity-70 hover:opacity-100"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onEditTask?.(phase.id, task.id);
-                                  }}
-                                >
-                                  <Edit className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0 text-red-600 opacity-70 hover:opacity-100"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onDeleteTask?.(phase.id, task.id);
-                                  }}
-                                >
-                                  <Trash className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                          {task.assignedTo && (
-                            <div className="mt-3 flex items-center gap-2">
-                              <div className="flex items-center gap-1.5 text-xs text-buildease-earth-600 dark:text-buildease-earth-400 bg-buildease-earth-50 dark:bg-buildease-earth-900/30 px-2 py-1 rounded-md border border-buildease-earth-200 dark:border-buildease-earth-800">
-                                <Users className="h-3 w-3" />
-                                <span className="font-medium">Assigned to: {task.assignedTo}</span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                      
-                      {phase.tasks.length === 0 && (
-                        <div className="text-center py-8 text-construction-body text-buildease-earth-600 dark:text-buildease-earth-400 bg-gradient-to-br from-buildease-blue-50/40 to-white/60 dark:from-buildease-blue-950/20 dark:to-gray-800/40 rounded-xl border border-dashed border-buildease-blue-300/60 dark:border-buildease-blue-700/60 backdrop-blur-sm">
-                          <CheckCircle className="h-8 w-8 mx-auto mb-2 text-buildease-blue-400 dark:text-buildease-blue-500" />
-                          <p className="font-medium">No tasks added yet</p>
-                          <p className="text-xs mt-1 text-buildease-earth-500 dark:text-buildease-earth-500">Click "Add Task" to get started</p>
-                        </div>
-                      )}
-                    </div>
+                    <LazyTaskList
+                      tasks={phase.tasks}
+                      phaseId={phase.id}
+                      onEditTask={onEditTask}
+                      onDeleteTask={onDeleteTask}
+                      initialDisplayCount={3}
+                      batchSize={5}
+                    />
                   </m.div>
                 )}
               </AnimatePresence>
@@ -312,57 +268,14 @@ export const PhaseCard = React.memo(function PhaseCard({
                     transition={{ duration: 0.2 }}
                     className="overflow-hidden px-4 pb-4"
                   >
-                    <div className="space-y-2">
-                      {phase.materials.map(material => (
-                        <div key={material.id} className="p-5 bg-white/80 dark:bg-gray-800/80 rounded-xl border border-buildease-orange-200/50 dark:border-buildease-orange-800/50 shadow-md hover:border-buildease-orange-300/70 dark:hover:border-buildease-orange-700/70 transition-all duration-200 hover:shadow-lg backdrop-blur-md ring-1 ring-buildease-orange-100/20 dark:ring-buildease-orange-900/20 hover:ring-buildease-orange-200/30 dark:hover:ring-buildease-orange-800/30">
-                          <div className="flex justify-between">
-                            <span className="font-semibold text-buildease-earth-800 dark:text-buildease-earth-200 text-construction-body">{material.name}</span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-status-completed font-bold bg-gradient-to-r from-status-completed/15 to-green-100/20 dark:from-status-completed/25 dark:to-green-900/30 px-3 py-1.5 rounded-full text-xs border border-status-completed/30 dark:border-status-completed/40 backdrop-blur-sm shadow-sm">
-                                ${(material.totalPrice ?? 0).toLocaleString()}
-                              </span>
-                              <div className="flex gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0 opacity-70 hover:opacity-100"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onEditMaterial?.(phase.id, material.id);
-                                  }}
-                                >
-                                  <Edit className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0 text-red-600 opacity-70 hover:opacity-100"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onDeleteMaterial?.(phase.id, material.id);
-                                  }}
-                                >
-                                  <Trash className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="text-xs text-buildease-earth-600 dark:text-buildease-earth-400 mt-3 flex items-center gap-2">
-                            <span className="bg-gradient-to-r from-buildease-earth-100/80 to-buildease-earth-50/60 dark:from-buildease-earth-900/40 dark:to-buildease-earth-950/30 px-3 py-1.5 rounded-lg font-medium border border-buildease-earth-200/60 dark:border-buildease-earth-800/60 shadow-sm backdrop-blur-sm">{material.quantity} {material.unit}</span>
-                            <span className="text-buildease-earth-500 dark:text-buildease-earth-500">×</span>
-                            <span className="bg-gradient-to-r from-buildease-earth-100/80 to-buildease-earth-50/60 dark:from-buildease-earth-900/40 dark:to-buildease-earth-950/30 px-3 py-1.5 rounded-lg font-medium border border-buildease-earth-200/60 dark:border-buildease-earth-800/60 shadow-sm backdrop-blur-sm">${material.unitPrice} each</span>
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {phase.materials.length === 0 && (
-                        <div className="text-center py-8 text-construction-body text-buildease-earth-600 dark:text-buildease-earth-400 bg-gradient-to-br from-buildease-orange-50/40 to-white/60 dark:from-buildease-orange-950/20 dark:to-gray-800/40 rounded-xl border border-dashed border-buildease-orange-300/60 dark:border-buildease-orange-700/60 backdrop-blur-sm">
-                          <Package className="h-8 w-8 mx-auto mb-2 text-buildease-orange-400 dark:text-buildease-orange-500" />
-                          <p className="font-medium">No materials added yet</p>
-                          <p className="text-xs mt-1 text-buildease-earth-500 dark:text-buildease-earth-500">Click "Add Material" to get started</p>
-                        </div>
-                      )}
-                    </div>
+                    <LazyMaterialList
+                      materials={phase.materials}
+                      phaseId={phase.id}
+                      onEditMaterial={onEditMaterial}
+                      onDeleteMaterial={onDeleteMaterial}
+                      initialDisplayCount={3}
+                      batchSize={5}
+                    />
                   </m.div>
                 )}
               </AnimatePresence>

@@ -27,7 +27,7 @@ interface PlanActionsOptimisticConfig {
     addPhase: (phaseData: Omit<PlanPhase, 'id' | 'tasks' | 'materials'>) => Promise<PlanPhase>;
     updatePhase: (phaseId: string, phaseData: Partial<PlanPhase>) => Promise<PlanPhase>;
     deletePhase: (phaseId: string) => Promise<void>;
-    reorderPhase: (phaseId: string, direction: 'up' | 'down') => Promise<PlanPhase[]>;
+    reorderPhase: (oldIndex: number, newIndex: number, phases: PlanPhase[]) => Promise<PlanPhase[]>;
     
     // Task operations
     addTask: (phaseId: string, taskData: Omit<PlanTask, 'id'>) => Promise<PlanTask>;
@@ -173,27 +173,35 @@ export function usePlanActionsOptimistic(
     }
   }, [config, apiActions, enableOptimisticUpdates, enableToasts, deletePhaseOptimistic]);
 
-  const handleReorderPhase = useCallback(async (phaseId: string, direction: 'up' | 'down') => {
-    const operationId = `reorder-phase-${phaseId}`;
+  const handleReorderPhase = useCallback(async (oldIndex: number, newIndex: number) => {
+    const operationId = `reorder-phases`;
     config.setOperationLoading?.(operationId, true);
 
     try {
-      // For reordering, we might want to show immediate feedback but not full optimistic updates
-      // since it affects multiple phases
-      await apiActions.reorderPhase(phaseId, direction);
+      // Get the current phases for the API call
+      const currentPhases = optimisticPhases;
+      
+      // Call the API with the current phase array
+      const reorderedPhases = await apiActions.reorderPhase(oldIndex, newIndex, currentPhases);
+      
+      // Update the phases with the server response
+      // Note: In a real implementation, you might want to update the parent state here
       
       if (enableToasts) {
-        toast.success(`Phase moved ${direction}`);
+        toast.success('Phase order updated');
       }
+      
+      return reorderedPhases;
     } catch (error) {
       console.error('Failed to reorder phase:', error);
       if (enableToasts) {
         toast.error('Failed to reorder phase');
       }
+      throw error;
     } finally {
       config.setOperationLoading?.(operationId, false);
     }
-  }, [config, apiActions, enableToasts]);
+  }, [config, apiActions, enableToasts, optimisticPhases]);
 
   // === Task Actions (for future implementation) ===
 
