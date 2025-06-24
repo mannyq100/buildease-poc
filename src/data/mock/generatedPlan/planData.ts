@@ -1,118 +1,24 @@
 import { v4 as uuidv4 } from 'uuid';
+import {
+  PlanTask,
+  PlanMaterial,
+  PlanPhase,
+  ConstructionPlan,
+  convertPlanMaterialToModal,
+  convertModalMaterialToPlan
+} from '@/types/plan/index';
 
-export interface Task {
-  id: string;
-  name: string;
-  description: string;
-  duration: string;
-  startDate?: string;
-  endDate?: string;
-  status: 'pending' | 'in-progress' | 'completed' | 'delayed';
-  assignedTo?: string;
-  dependencies?: string[];
-  progress: number;
-}
+// Re-export for backward compatibility
+export type Task = PlanTask;
+export type Material = PlanMaterial;
+export type Phase = PlanPhase;
 
-export interface Material {
-  id: string;
-  name: string;
-  quantity: number;
-  unit: string;
-  price?: number;  // Optional field for compatibility with modal Material
-  unitPrice?: number;
-  totalPrice?: number;
-  supplier?: string;
-  status?: string; // Made string type to be more flexible for all uses
-  orderDate?: string;  // Added for compatibility with modal Material
-  purchaseDate?: string; // Alternative name for orderDate
-  deliveryDate?: string;
-  phaseId?: string;  // Added for compatibility with modal Material
-  type?: string;  // Added for compatibility with modal Material
-}
+// Export conversion functions for backward compatibility
+export const convertToModalMaterial = convertPlanMaterialToModal;
+export const convertToPlanMaterial = convertModalMaterialToPlan;
 
-// Helper functions to work with different material formats
-
-// Convert from plan material to modal material format
-export function convertToModalMaterial(planMaterial: Material): Material {
-  return {
-    ...planMaterial,
-    price: planMaterial.price ?? planMaterial.unitPrice,
-    orderDate: planMaterial.orderDate ?? planMaterial.purchaseDate,
-    type: planMaterial.type ?? 'Other',
-    status: planMaterial.status ?? 'pending'
-  };
-}
-
-// Convert from modal material to plan material format
-export function convertToPlanMaterial(modalMaterial: Material): Material {
-  return {
-    ...modalMaterial,
-    unitPrice: modalMaterial.price ?? modalMaterial.unitPrice,
-    totalPrice: modalMaterial.totalPrice ?? 
-               (modalMaterial.price ?? modalMaterial.unitPrice ?? 0) * modalMaterial.quantity,
-    status: modalMaterial.status ?? 'pending'
-  };
-}
-
-export interface Phase {
-  id: string;
-  name: string;
-  description: string;
-  order: number;
-  duration: string;
-  startDate?: string;
-  endDate?: string;
-  status: 'pending' | 'in-progress' | 'completed' | 'delayed';
-  progress: number;
-  tasks: Task[];
-  materials: Material[];
-}
-
-export interface Budget {
-  laborCost: number;
-  materialsCost: number;
-  equipmentCost: number;
-  permitsFees: number;
-  contingency: number;
-  totalCost: number;
-}
-
-export interface TeamMember {
-  id: string;
-  name: string;
-  role: string;
-  email: string;
-  phone?: string;
-  avatar?: string;
-}
-
-export interface Document {
-  id: string;
-  name: string;
-  type: string;
-  url: string;
-  createdAt: string;
-  createdBy: string;
-}
-
-export interface ConstructionPlan {
-  id: string;
-  name: string;
-  description: string;
-  projectType: string;
-  clientName: string;
-  location: string;
-  estimatedDuration: string;
-  startDate?: string;
-  endDate?: string;
-  status: 'draft' | 'final';
-  phases: Phase[];
-  budget: Budget;
-  team: TeamMember[];
-  documents: Document[];
-  lastUpdated: string;
-  createdAt: string;
-}
+// Re-export types from unified plan types
+export type { Budget, TeamMember, Document, ConstructionPlan } from '@/types/plan/index';
 
 // Generate mock construction plan data
 export const mockConstructionPlan: ConstructionPlan = {

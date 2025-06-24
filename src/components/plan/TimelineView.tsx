@@ -1,41 +1,18 @@
 import React, { useMemo } from 'react';
-import { Phase as PlanPhase, ConstructionPlan, Task as PlanTask } from '@/data/mock/generatedPlan/planData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, Edit, Plus, CalendarDays, CheckCircle, Circle, AlertCircle, Pause } from 'lucide-react';
 import { motion as m } from 'framer-motion';
 import { getTimelineStatusColor, getTimelineTextColor, getStatusText } from '@/utils/plan-helpers';
+import { TimelineViewProps } from '@/types/plan/views';
 
-// Import our shared modal components and their types
-import { 
-  PhaseFormModal, 
-  TaskFormModal, 
-  DateEditModal, 
-  Phase as ModalPhase, 
-  Task as ModalTask
-} from '@/components/shared/modals';
-import { DateRange } from '@/components/shared/modals/DateEditModal';
-
-// Import Zustand modal hooks
-import { usePhaseModal, useTaskModal, useDateModal } from '@/stores/modalStore';
-
-interface TimelineViewProps {
-  plan: ConstructionPlan;
-  onUpdatePhase?: (phase: PlanPhase) => void;
-  onUpdateTask?: (task: PlanTask) => void;
-  onUpdateDate?: (phaseId: string | number, startDate: string, endDate: string) => void;
-}
-
-export const TimelineView = React.memo(function TimelineView({ plan, onUpdatePhase, onUpdateTask, onUpdateDate }: TimelineViewProps) {
+export const TimelineView = React.memo(function TimelineView({ plan, onEditPhase, onAddTask, onEditTask, onEditDates }: TimelineViewProps) {
   // Memoized sorted phases to prevent unnecessary re-computation
   const sortedPhases = useMemo(() => {
     return [...plan.phases].sort((a, b) => a.order - b.order);
   }, [plan.phases]);
 
-  // Zustand modal hooks
-  const phaseModal = usePhaseModal();
-  const taskModal = useTaskModal();
-  const dateModal = useDateModal();
+  // No local modal management - using centralized PlanModalManager
 
   // Using shared utility functions from @/utils/plan-helpers
 
@@ -55,129 +32,22 @@ export const TimelineView = React.memo(function TimelineView({ plan, onUpdatePha
     }
   };
 
-  // Memoized conversion functions to prevent recreation on every render
-  const convertToModalPhase = useMemo(() => {
-    return (phase: PlanPhase): ModalPhase => ({
-      id: phase.id.toString(),
-      name: phase.name,
-      description: phase.description,
-      status: phase.status as 'pending' | 'in-progress' | 'completed' | 'delayed',
-      startDate: phase.startDate || '',
-      endDate: phase.endDate || '',
-      order: phase.order,
-      tasks: phase.tasks ? phase.tasks.map(t => t.id.toString()) : []
-    });
-  }, []);
 
-  const convertToModalTask = useMemo(() => {
-    return (task: PlanTask, phaseId: string | number): ModalTask => ({
-      id: task.id.toString(),
-      name: task.name,
-      description: task.description || '',
-      status: task.status as 'pending' | 'in-progress' | 'completed' | 'delayed',
-      startDate: task.startDate || '',
-      endDate: task.endDate || '',
-      assignedTo: task.assignedTo || '',
-      phaseId: phaseId.toString(),
-      progress: task.progress || 0,
-      // dependencies not part of modal Task type but available in plan data
-      ...(task.dependencies && { dependencies: task.dependencies })
-    });
-  }, []);
-
-  // Convert from ModalPhase back to PlanPhase
-  const convertToPlanPhase = (modalPhase: ModalPhase, originalPhase: PlanPhase): PlanPhase => {
-    return {
-      ...originalPhase,
-      id: modalPhase.id,
-      name: modalPhase.name,
-      description: modalPhase.description || '',
-      status: modalPhase.status as 'pending' | 'in-progress' | 'completed' | 'delayed',
-      startDate: modalPhase.startDate,
-      endDate: modalPhase.endDate,
-      order: modalPhase.order
-    };
+  // Simplified handlers that delegate to centralized modal management
+  const handleEditPhase = (phaseId: string) => {
+    onEditPhase?.(phaseId);
   };
 
-  // Convert from ModalTask back to PlanTask
-  const convertToPlanTask = (modalTask: ModalTask, originalTask?: PlanTask): PlanTask => {
-    const baseTask: PlanTask = {
-      id: modalTask.id || '',
-      name: modalTask.name,
-      description: modalTask.description || '',
-      status: modalTask.status as 'pending' | 'in-progress' | 'completed' | 'delayed',
-      startDate: modalTask.startDate,
-      endDate: modalTask.endDate,
-      assignedTo: modalTask.assignedTo || '',
-      progress: modalTask.progress,
-      dependencies: (modalTask as { dependencies?: string[] }).dependencies || [],
-      duration: originalTask?.duration || '1 day'
-    };
-    
-    if (originalTask) {
-      return { ...originalTask, ...baseTask };
-    }
-    
-    return baseTask;
+  const handleEditTask = (phaseId: string, taskId: string) => {
+    onEditTask?.(phaseId, taskId);
   };
 
-  // Handler for opening the phase modal
-  const handleEditPhase = (phase: PlanPhase) => {
-    const modalPhase = convertToModalPhase(phase);
-    phaseModal.actions.open(modalPhase, false);
+  const handleEditDates = (phaseId: string) => {
+    onEditDates?.(phaseId);
   };
 
-  // Handler for opening the task modal
-  const handleEditTask = (phase: PlanPhase, task: PlanTask) => {
-    const modalTask = convertToModalTask(task, phase.id);
-    taskModal.actions.open(modalTask, phase.id.toString(), false);
-  };
-
-  // Handler for opening the date edit modal
-  const handleEditDates = (phase: PlanPhase) => {
-    const modalPhase = convertToModalPhase(phase);
-    dateModal.actions.open('phase', modalPhase);
-  };
-
-  // Handler for adding a new task to a phase
-  const handleAddTask = (phase: PlanPhase) => {
-    taskModal.actions.open(undefined, phase.id.toString(), true);
-  };
-
-  // Handler for saving updated phase
-  const handleSavePhase = (updatedModalPhase: ModalPhase) => {
-    if (onUpdatePhase && phaseModal.data) {
-      // Find the original phase to merge with updated values
-      const originalPhase = sortedPhases.find(p => p.id.toString() === updatedModalPhase.id.toString());
-      if (originalPhase) {
-        const updatedPhase = convertToPlanPhase(updatedModalPhase, originalPhase);
-        onUpdatePhase(updatedPhase);
-      }
-    }
-    phaseModal.actions.close();
-  };
-
-  // Handler for saving updated task
-  const handleSaveTask = (updatedModalTask: ModalTask) => {
-    if (onUpdateTask) {
-      // Find the original task if it exists
-      const phaseId = updatedModalTask.phaseId;
-      const phase = sortedPhases.find(p => p.id.toString() === phaseId?.toString());
-      const originalTask = phase?.tasks.find(t => t.id.toString() === updatedModalTask.id.toString());
-      
-      const updatedTask = convertToPlanTask(updatedModalTask, originalTask);
-      onUpdateTask(updatedTask);
-    }
-    taskModal.actions.close();
-  };
-
-  // Handler for saving updated dates
-  const handleSaveDates = (dateRange: DateRange) => {
-    if (onUpdateDate && dateModal.data?.phase) {
-      const phaseId = dateModal.data.phase.id;
-      onUpdateDate(phaseId, dateRange.startDate, dateRange.endDate);
-    }
-    dateModal.actions.close();
+  const handleAddTask = (phaseId: string) => {
+    onAddTask?.(phaseId);
   };
 
   return (
@@ -234,7 +104,7 @@ export const TimelineView = React.memo(function TimelineView({ plan, onUpdatePha
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              onClick={() => handleEditPhase(phase)}
+                              onClick={() => handleEditPhase(phase.id.toString())}
                               className="h-8 px-3 text-buildease-orange-600 dark:text-buildease-orange-400 hover:text-buildease-orange-700 dark:hover:text-buildease-orange-300 hover:bg-buildease-orange-50 dark:hover:bg-buildease-orange-900/20 rounded-md transition-all duration-200"
                             >
                               <Edit className="h-3.5 w-3.5 mr-1" />
@@ -250,7 +120,7 @@ export const TimelineView = React.memo(function TimelineView({ plan, onUpdatePha
                             <span className="text-xs font-semibold text-buildease-blue-800 dark:text-buildease-blue-200">{phase.duration}</span>
                           </div>
                           {phase.startDate && phase.endDate && (
-                            <div className="flex items-center bg-buildease-earth-50 dark:bg-buildease-earth-900/30 px-3 py-2 rounded-lg group cursor-pointer hover:bg-buildease-earth-100 dark:hover:bg-buildease-earth-800/50 transition-colors duration-200" onClick={() => handleEditDates(phase)}>
+                            <div className="flex items-center bg-buildease-earth-50 dark:bg-buildease-earth-900/30 px-3 py-2 rounded-lg group cursor-pointer hover:bg-buildease-earth-100 dark:hover:bg-buildease-earth-800/50 transition-colors duration-200" onClick={() => handleEditDates(phase.id.toString())}>
                               <CalendarDays className="h-4 w-4 mr-2 text-buildease-earth-600 dark:text-buildease-earth-400 group-hover:text-buildease-orange-600 dark:group-hover:text-buildease-orange-400" />
                               <span className="text-xs font-semibold text-buildease-earth-800 dark:text-buildease-earth-200 group-hover:text-buildease-orange-700 dark:group-hover:text-buildease-orange-300">
                                 {new Date(phase.startDate).toLocaleDateString()} - {new Date(phase.endDate).toLocaleDateString()}
@@ -274,7 +144,7 @@ export const TimelineView = React.memo(function TimelineView({ plan, onUpdatePha
                               <Button 
                                 variant="outline" 
                                 size="sm" 
-                                onClick={() => handleAddTask(phase)}
+                                onClick={() => handleAddTask(phase.id.toString())}
                                 className="h-7 px-3 text-xs border-buildease-orange-200 dark:border-buildease-orange-700 text-buildease-orange-600 dark:text-buildease-orange-400 hover:bg-buildease-orange-50 dark:hover:bg-buildease-orange-900/20 rounded-md shadow-sm transition-all duration-200"
                               >
                                 <Plus className="h-3 w-3 mr-1" />
@@ -286,7 +156,7 @@ export const TimelineView = React.memo(function TimelineView({ plan, onUpdatePha
                                 <div
                                   key={task.id} 
                                   className="text-xs px-3 py-2 bg-buildease-earth-50/60 dark:bg-buildease-earth-900/30 text-buildease-earth-800 dark:text-buildease-earth-200 rounded-lg flex items-center justify-between cursor-pointer hover:bg-buildease-earth-100/80 dark:hover:bg-buildease-earth-800/50 transition-all duration-200 border border-buildease-earth-200/60 dark:border-buildease-earth-800/60 group"
-                                  onClick={() => handleEditTask(phase, task)}
+                                  onClick={() => handleEditTask(phase.id.toString(), task.id.toString())}
                                 >
                                   <span className="font-medium truncate flex-1">{task.name}</span>
                                   <div className="flex items-center gap-1 ml-2">
@@ -317,40 +187,7 @@ export const TimelineView = React.memo(function TimelineView({ plan, onUpdatePha
         </Card>
       </m.div>
 
-      {/* Render the modals using Zustand state */}
-      <PhaseFormModal
-        show={phaseModal.isOpen}
-        onClose={phaseModal.actions.close}
-        onSave={handleSavePhase}
-        phase={phaseModal.data}
-        isNew={phaseModal.isNew}
-        currentOrder={plan.phases.length}
-        statuses={['planning', 'in-progress', 'on-hold', 'completed']}
-      />
-
-      <TaskFormModal
-        show={taskModal.isOpen}
-        onClose={taskModal.actions.close}
-        onSave={handleSaveTask}
-        task={taskModal.data}
-        isNew={taskModal.isNew}
-        teamMembers={plan.team.map(member => member.name)}
-        phaseId={taskModal.data?.phaseId || ''}
-      />
-
-      <DateEditModal
-        show={dateModal.isOpen}
-        onClose={dateModal.actions.close}
-        onSave={handleSaveDates}
-        title="Edit Phase Dates"
-        description="Update the start and end dates for this phase"
-        dateRange={{
-          startDate: dateModal.data?.phase?.startDate || '',
-          endDate: dateModal.data?.phase?.endDate || '',
-          type: 'phase'
-        }}
-        isLoading={false}
-      />
+      {/* Modals are now handled by centralized PlanModalManager */}
     </div>
   );
 });

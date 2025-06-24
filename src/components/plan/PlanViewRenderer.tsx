@@ -5,32 +5,27 @@
  */
 
 import React, { useMemo, useCallback } from 'react';
-import { ConstructionPlan } from '@/data/mock/generatedPlan/planData';
 import { VIEW_COMPONENTS } from './LazyViews';
 import { ViewLoadingBoundary } from './LoadingBoundary';
-
-import { PlanModalManagerHandlers } from './PlanModalManager';
-
-interface PlanViewRendererProps {
-  activeView: string;
-  plan: ConstructionPlan;
-  modalHandlersRef?: React.RefObject<PlanModalManagerHandlers>;
-}
+import { useConfirmation } from '@/hooks/useConfirmation';
+import { PlanViewRendererProps } from '@/types/plan/views';
 
 export const PlanViewRenderer = React.memo(function PlanViewRenderer({
   activeView,
   plan,
-  modalHandlersRef
+  modalHandlersRef,
+  loadingState,
+  loadingActions
 }: PlanViewRendererProps) {
+  const { confirmDelete } = useConfirmation();
+  
   // Memoized callback handlers to prevent recreation on every render
   const handleAddPhase = useCallback((_planId?: string) => {
-    console.log('PlanViewRenderer: Add Phase button clicked');
     if (!modalHandlersRef?.current) {
       console.error('PlanViewRenderer: Modal handlers ref is not initialized');
       return;
     }
     try {
-      console.log('PlanViewRenderer: Calling openPhaseModal with:', { isNew: true });
       modalHandlersRef.current.openPhaseModal(undefined, true);
     } catch (error) {
       console.error('PlanViewRenderer: Error opening phase modal:', error);
@@ -38,29 +33,38 @@ export const PlanViewRenderer = React.memo(function PlanViewRenderer({
   }, [modalHandlersRef]);
 
   const handleEditPhase = useCallback((phaseId: string) => {
-    console.log('PlanViewRenderer: Edit Phase button clicked', { phaseId });
     if (!modalHandlersRef?.current) {
       console.error('PlanViewRenderer: Modal handlers ref is not initialized');
       return;
     }
     try {
-      console.log('PlanViewRenderer: Calling openPhaseModal with:', { phaseId, isNew: false });
       modalHandlersRef.current.openPhaseModal(phaseId, false);
     } catch (error) {
       console.error('PlanViewRenderer: Error opening phase modal for edit:', error);
     }
   }, [modalHandlersRef]);
 
-  const handleDeletePhase = useCallback((phaseId: string) => {
-    if (window.confirm('Are you sure you want to delete this phase?')) {
-      // This will be handled by the parent component's plan state
-      console.log('Delete phase:', phaseId);
+  const handleDeletePhase = useCallback(async (phaseId: string) => {
+    const phase = plan.phases.find(p => p.id === phaseId);
+    const phaseName = phase?.name || 'this phase';
+    
+    const confirmed = await confirmDelete(phaseName, 'phase');
+    if (confirmed) {
+      // Set loading state for this specific phase
+      loadingActions?.setPhaseLoading(phaseId, true);
+      
+      try {
+        // This will be handled by the parent component's plan state
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } finally {
+        loadingActions?.setPhaseLoading(phaseId, false);
+      }
     }
-  }, []);
+  }, [confirmDelete, plan.phases, loadingActions]);
 
-  const handleReorderPhase = useCallback((phaseId: string, direction: 'up' | 'down') => {
+  const handleReorderPhase = useCallback((_phaseId: string, _direction: 'up' | 'down') => {
     // This will be handled by the parent component's plan state
-    console.log('Reorder phase:', phaseId, direction);
   }, []);
 
   const handleAddTask = useCallback((phaseId: string) => {
@@ -71,11 +75,24 @@ export const PlanViewRenderer = React.memo(function PlanViewRenderer({
     modalHandlersRef?.current?.openTaskModal(phaseId, taskId, false);
   }, [modalHandlersRef]);
 
-  const handleDeleteTask = useCallback((phaseId: string, taskId: string) => {
-    if (window.confirm('Are you sure you want to delete this task?')) {
-      console.log('Delete task:', phaseId, taskId);
+  const handleDeleteTask = useCallback(async (phaseId: string, taskId: string) => {
+    const phase = plan.phases.find(p => p.id === phaseId);
+    const task = phase?.tasks.find(t => t.id === taskId);
+    const taskName = task?.name || 'this task';
+    
+    const confirmed = await confirmDelete(taskName, 'task');
+    if (confirmed) {
+      // Set loading state for this specific task
+      loadingActions?.setTaskLoading(taskId, true);
+      
+      try {
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 800));
+      } finally {
+        loadingActions?.setTaskLoading(taskId, false);
+      }
     }
-  }, []);
+  }, [confirmDelete, plan.phases, loadingActions]);
 
   const handleAddMaterial = useCallback((phaseId: string) => {
     modalHandlersRef?.current?.openMaterialModal(phaseId, undefined, true);
@@ -85,20 +102,31 @@ export const PlanViewRenderer = React.memo(function PlanViewRenderer({
     modalHandlersRef?.current?.openMaterialModal(phaseId, materialId, false);
   }, [modalHandlersRef]);
 
-  const handleDeleteMaterial = useCallback((phaseId: string, materialId: string) => {
-    if (window.confirm('Are you sure you want to delete this material?')) {
-      console.log('Delete material:', phaseId, materialId);
+  const handleDeleteMaterial = useCallback(async (phaseId: string, materialId: string) => {
+    const phase = plan.phases.find(p => p.id === phaseId);
+    const material = phase?.materials.find(m => m.id === materialId);
+    const materialName = material?.name || 'this material';
+    
+    const confirmed = await confirmDelete(materialName, 'material');
+    if (confirmed) {
+      // Set loading state for this specific material
+      loadingActions?.setMaterialLoading(materialId, true);
+      
+      try {
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 600));
+      } finally {
+        loadingActions?.setMaterialLoading(materialId, false);
+      }
     }
-  }, []);
+  }, [confirmDelete, plan.phases, loadingActions]);
 
   const handleEditProjectDates = useCallback(() => {
-    console.log('PlanViewRenderer: Edit Project Dates button clicked');
     if (!modalHandlersRef?.current) {
       console.error('PlanViewRenderer: Modal handlers ref is not initialized');
       return;
     }
     try {
-      console.log('PlanViewRenderer: Calling openDateModal with type: project');
       modalHandlersRef.current.openDateModal('project');
     } catch (error) {
       console.error('PlanViewRenderer: Error opening date modal:', error);
@@ -106,13 +134,11 @@ export const PlanViewRenderer = React.memo(function PlanViewRenderer({
   }, [modalHandlersRef]);
 
   const handleEditPhaseDates = useCallback((phaseId: string) => {
-    console.log('PlanViewRenderer: Edit Phase Dates button clicked', { phaseId });
     if (!modalHandlersRef?.current) {
       console.error('PlanViewRenderer: Modal handlers ref is not initialized');
       return;
     }
     try {
-      console.log('PlanViewRenderer: Calling openDateModal with:', { type: 'phase', phaseId });
       modalHandlersRef.current.openDateModal('phase', phaseId);
     } catch (error) {
       console.error('PlanViewRenderer: Error opening date modal for phase:', error);
@@ -121,7 +147,7 @@ export const PlanViewRenderer = React.memo(function PlanViewRenderer({
 
   // Memoized view-specific props to prevent unnecessary re-renders
   const viewProps = useMemo(() => {
-    const baseProps = { plan };
+    const baseProps = { plan, loadingState };
 
     switch (activeView) {
       case 'overview':
@@ -142,7 +168,13 @@ export const PlanViewRenderer = React.memo(function PlanViewRenderer({
         };
 
       case 'timeline':
-        return baseProps;
+        return {
+          ...baseProps,
+          onEditPhase: handleEditPhase,
+          onAddTask: handleAddTask,
+          onEditTask: handleEditTask,
+          onEditDates: handleEditPhaseDates
+        };
 
       case 'materials':
         return {
@@ -158,7 +190,7 @@ export const PlanViewRenderer = React.memo(function PlanViewRenderer({
       default:
         return baseProps;
     }
-  }, [activeView, plan, handleAddPhase, handleEditPhase, handleDeletePhase, handleReorderPhase, handleAddTask, handleEditTask, handleDeleteTask, handleAddMaterial, handleEditMaterial, handleDeleteMaterial, handleEditProjectDates, handleEditPhaseDates]);
+  }, [activeView, plan, loadingState, handleAddPhase, handleEditPhase, handleDeletePhase, handleReorderPhase, handleAddTask, handleEditTask, handleDeleteTask, handleAddMaterial, handleEditMaterial, handleDeleteMaterial, handleEditProjectDates, handleEditPhaseDates]);
 
   // Get the appropriate view component
   const ViewComponent = useMemo(() => {

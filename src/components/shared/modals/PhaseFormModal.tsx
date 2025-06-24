@@ -4,19 +4,10 @@ import { useForm, Controller } from 'react-hook-form';
 import { BaseModal } from './BaseModal';
 import { FormField, SelectField, ModalFooter } from '@/components/ui/form-fields';
 import { v4 as uuidv4 } from 'uuid';
+import { ModalPhase } from '@/types/plan/index';
 
-export interface Phase {
-  id: string;
-  name: string;
-  description?: string;
-  order: number;
-  startDate: string;
-  endDate: string;
-  status: string;
-  tasks?: unknown[];
-  materials?: unknown[];
-  progress?: number;
-}
+// Re-export for backward compatibility
+export type Phase = ModalPhase;
 
 interface PhaseFormModalProps {
   show: boolean;
@@ -38,7 +29,7 @@ export function PhaseFormModal({
   currentOrder = 1
 }: PhaseFormModalProps) {
   // Default phase values
-  const getDefaultValues = useCallback((): Phase => ({
+  const getDefaultValues = useCallback((): ModalPhase => ({
     id: phase?.id || uuidv4(),
     name: phase?.name || '',
     description: phase?.description || '',
@@ -46,9 +37,9 @@ export function PhaseFormModal({
     startDate: phase?.startDate || new Date().toISOString().substring(0, 10),
     endDate: phase?.endDate || new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().substring(0, 10),
     status: phase?.status || 'planning',
+    progress: phase?.progress || 0,
     tasks: phase?.tasks || [],
-    materials: phase?.materials || [],
-    progress: phase?.progress || 0
+    materials: phase?.materials || []
   }), [phase, currentOrder]);
 
   // Initialize React Hook Form

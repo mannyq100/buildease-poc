@@ -1,28 +1,11 @@
 import React, { useMemo, useCallback } from 'react';
-import { ConstructionPlan } from '@/data/mock/generatedPlan/planData';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CalendarDays, Clock, Package, CheckSquare, Layers, FileText, Plus, Calendar, BarChart } from 'lucide-react';
 import { PhaseCard } from './PhaseCard';
 import { motion } from 'framer-motion';
 import { formatDate, containerVariants, itemVariants } from '@/utils/plan-helpers';
-
-interface OverviewViewProps {
-  plan: ConstructionPlan;
-  onEditPhase?: (id: string) => void;
-  onDeletePhase?: (id: string) => void;
-  onAddTask?: (phaseId: string) => void;
-  onEditTask?: (phaseId: string, taskId: string) => void;
-  onDeleteTask?: (phaseId: string, taskId: string) => void;
-  onAddMaterial?: (phaseId: string) => void;
-  onEditMaterial?: (phaseId: string, materialId: string) => void;
-  onDeleteMaterial?: (phaseId: string, materialId: string) => void;
-  onReorderPhase?: (phaseId: string, direction: 'up' | 'down') => void;
-  onAddPhase?: (planId: string) => void;
-  onEditProjectDates?: () => void;
-  onEditPhaseDates?: (phaseId: string) => void;
-  viewMode?: 'detailed' | 'summary';
-}
+import { OverviewViewProps } from '@/types/plan/views';
 
 export const OverviewView = React.memo(function OverviewView({ 
   plan, 
@@ -38,13 +21,14 @@ export const OverviewView = React.memo(function OverviewView({
   onAddPhase,
   onEditProjectDates,
   onEditPhaseDates,
-  viewMode: _viewMode // Prefix with underscore to indicate intentionally unused parameter
+  viewMode: _viewMode, // Prefix with underscore to indicate intentionally unused parameter
+  loadingState
 }: OverviewViewProps) {
   // Memoized computed values for performance with specific dependencies
   const { totalTasks, totalMaterials, completedTasks, overallProgress } = useMemo(() => {
-    const totalTasks = plan.phases.reduce((sum, phase) => sum + phase.tasks.length, 0);
-    const totalMaterials = plan.phases.reduce((sum, phase) => sum + phase.materials.length, 0);
-    const completedTasks = plan.phases.reduce((sum, phase) => sum + phase.tasks.filter(task => task.status === 'completed').length, 0);
+    const totalTasks = plan.phases.reduce((sum: number, phase) => sum + phase.tasks.length, 0);
+    const totalMaterials = plan.phases.reduce((sum: number, phase) => sum + phase.materials.length, 0);
+    const completedTasks = plan.phases.reduce((sum: number, phase) => sum + phase.tasks.filter((task) => task.status === 'completed').length, 0);
     const overallProgress = totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
     
     return { totalTasks, totalMaterials, completedTasks, overallProgress };
@@ -257,7 +241,7 @@ export const OverviewView = React.memo(function OverviewView({
 
       {/* Phases List - Fixed animation hierarchy to prevent nested animation issues */}
       <motion.div variants={itemVariants} className="space-y-4">
-        {plan.phases.map((phase, index) => (
+        {plan.phases.map((phase, index: number) => (
           <div key={phase.id}>
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
@@ -275,6 +259,7 @@ export const OverviewView = React.memo(function OverviewView({
                 onEditMaterial={onEditMaterial}
                 onDeleteMaterial={onDeleteMaterial}
                 onEditPhaseDates={onEditPhaseDates}
+                loadingState={loadingState}
               />
             </motion.div>
           </div>

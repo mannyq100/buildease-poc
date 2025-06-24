@@ -5,19 +5,10 @@ import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { BaseModal } from './BaseModal';
 import { FormField, SelectField, ModalFooter } from '@/components/ui/form-fields';
 import { v4 as uuidv4 } from 'uuid';
+import { ModalTask } from '@/types/plan/index';
 
-export interface Task {
-  id: string;
-  name: string;
-  description?: string;
-  duration?: number;
-  startDate: string;
-  endDate: string;
-  status: string;
-  assignedTo?: string;
-  progress: number;
-  phaseId?: string;
-}
+// Re-export for backward compatibility
+export type Task = ModalTask;
 
 interface TaskFormModalProps {
   show: boolean;

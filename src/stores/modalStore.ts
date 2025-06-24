@@ -11,14 +11,24 @@ import { BudgetItem } from '@/types/budget';
 import { TeamMember } from '@/types/team';
 
 // Modal Types
-export type ModalType = 'phase' | 'task' | 'material' | 'date' | 'distribute' | 'budget' | 'team';
+export type ModalType = 'phase' | 'task' | 'material' | 'date' | 'distribute' | 'budget' | 'team' | 'confirmation';
+
+// Confirmation Modal Data
+export interface ConfirmationModalData {
+  title: string;
+  description: string;
+  confirmText?: string;
+  cancelText?: string;
+  variant?: 'destructive' | 'warning' | 'info' | 'success';
+  onConfirm: () => void;
+}
 
 // Individual Modal State Interface
 export interface ModalState {
   isOpen: boolean;
-  data: any;
+  data: unknown;
   isNew: boolean;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 // Date Modal Specific Data
@@ -37,6 +47,7 @@ interface ModalStoreState {
   distribute: ModalState;
   budget: ModalState;
   team: ModalState;
+  confirmation: ModalState;
   
   // Global modal state
   isAnyModalOpen: boolean;
@@ -49,6 +60,7 @@ interface ModalStoreState {
   openDistributeModal: () => void;
   openBudgetModal: (budgetData?: BudgetItem, isNew?: boolean) => void;
   openTeamModal: (teamData?: TeamMember, isNew?: boolean) => void;
+  openConfirmationModal: (data: ConfirmationModalData) => void;
   
   closePhaseModal: () => void;
   closeTaskModal: () => void;
@@ -57,6 +69,7 @@ interface ModalStoreState {
   closeDistributeModal: () => void;
   closeBudgetModal: () => void;
   closeTeamModal: () => void;
+  closeConfirmationModal: () => void;
   closeAllModals: () => void;
   
   // Data update actions
@@ -79,7 +92,7 @@ const createInitialModalState = (): ModalState => ({
 // Create the modal store
 export const useModalStore = create<ModalStoreState>()(
   devtools(
-    (set, get) => ({
+    (set, _get) => ({
       // Initial states
       phase: createInitialModalState(),
       task: createInitialModalState(),
@@ -88,11 +101,12 @@ export const useModalStore = create<ModalStoreState>()(
       distribute: createInitialModalState(),
       budget: createInitialModalState(),
       team: createInitialModalState(),
+      confirmation: createInitialModalState(),
       isAnyModalOpen: false,
       
       // Phase modal actions
       openPhaseModal: (phaseData, isNew = true) => {
-        set((state) => ({
+        set((_state) => ({
           phase: {
             isOpen: true,
             data: phaseData || null,
@@ -119,14 +133,14 @@ export const useModalStore = create<ModalStoreState>()(
         set((state) => ({
           phase: {
             ...state.phase,
-            data: { ...state.phase.data, ...data }
+            data: { ...(state.phase.data as object), ...data }
           }
         }), false, 'updatePhaseData');
       },
       
       // Task modal actions
       openTaskModal: (taskData, phaseId, isNew = true) => {
-        set((state) => ({
+        set((_state) => ({
           task: {
             isOpen: true,
             data: taskData ? { ...taskData, phaseId } : { phaseId },
@@ -150,7 +164,7 @@ export const useModalStore = create<ModalStoreState>()(
         set((state) => ({
           task: {
             ...state.task,
-            data: { ...state.task.data, ...data }
+            data: { ...(state.task.data as object), ...data }
           }
         }), false, 'updateTaskData');
       },
@@ -166,7 +180,7 @@ export const useModalStore = create<ModalStoreState>()(
           price: 0
         };
         
-        set((state) => ({
+        set((_state) => ({
           material: {
             isOpen: true,
             data,
@@ -190,14 +204,14 @@ export const useModalStore = create<ModalStoreState>()(
         set((state) => ({
           material: {
             ...state.material,
-            data: { ...state.material.data, ...data }
+            data: { ...(state.material.data as object), ...data }
           }
         }), false, 'updateMaterialData');
       },
       
       // Date modal actions
       openDateModal: (type, phase) => {
-        set((state) => ({
+        set((_state) => ({
           date: {
             isOpen: true,
             data: { dateEditType: type, phase },
@@ -221,14 +235,14 @@ export const useModalStore = create<ModalStoreState>()(
         set((state) => ({
           date: {
             ...state.date,
-            data: { ...state.date.data, ...data }
+            data: { ...(state.date.data as object), ...data }
           }
         }), false, 'updateDateData');
       },
       
       // Distribute modal actions
       openDistributeModal: () => {
-        set((state) => ({
+        set((_state) => ({
           distribute: {
             isOpen: true,
             data: null,
@@ -250,7 +264,7 @@ export const useModalStore = create<ModalStoreState>()(
       
       // Budget modal actions
       openBudgetModal: (budgetData, isNew = true) => {
-        set((state) => ({
+        set((_state) => ({
           budget: {
             isOpen: true,
             data: budgetData || null,
@@ -274,14 +288,14 @@ export const useModalStore = create<ModalStoreState>()(
         set((state) => ({
           budget: {
             ...state.budget,
-            data: { ...state.budget.data, ...data }
+            data: { ...(state.budget.data as object), ...data }
           }
         }), false, 'updateBudgetData');
       },
       
       // Team modal actions
       openTeamModal: (teamData, isNew = true) => {
-        set((state) => ({
+        set((_state) => ({
           team: {
             isOpen: true,
             data: teamData || null,
@@ -305,9 +319,32 @@ export const useModalStore = create<ModalStoreState>()(
         set((state) => ({
           team: {
             ...state.team,
-            data: { ...state.team.data, ...data }
+            data: { ...(state.team.data as object), ...data }
           }
         }), false, 'updateTeamData');
+      },
+      
+      // Confirmation modal actions
+      openConfirmationModal: (data) => {
+        set((_state) => ({
+          confirmation: {
+            isOpen: true,
+            data,
+            isNew: false,
+            metadata: {}
+          },
+          isAnyModalOpen: true
+        }), false, 'openConfirmationModal');
+      },
+      
+      closeConfirmationModal: () => {
+        set((state) => ({
+          confirmation: createInitialModalState(),
+          isAnyModalOpen: state.phase.isOpen || state.task.isOpen || 
+                         state.material.isOpen || state.date.isOpen ||
+                         state.distribute.isOpen || state.budget.isOpen ||
+                         state.team.isOpen
+        }), false, 'closeConfirmationModal');
       },
       
       // Close all modals
@@ -320,6 +357,7 @@ export const useModalStore = create<ModalStoreState>()(
           distribute: createInitialModalState(),
           budget: createInitialModalState(),
           team: createInitialModalState(),
+          confirmation: createInitialModalState(),
           isAnyModalOpen: false
         }), false, 'closeAllModals');
       }
@@ -442,6 +480,20 @@ export const useTeamModal = () => {
   };
 };
 
+export const useConfirmationModal = () => {
+  const confirmation = useModalStore((state) => state.confirmation);
+  const openConfirmationModal = useModalStore((state) => state.openConfirmationModal);
+  const closeConfirmationModal = useModalStore((state) => state.closeConfirmationModal);
+  
+  return {
+    ...confirmation,
+    actions: {
+      open: openConfirmationModal,
+      close: closeConfirmationModal
+    }
+  };
+};
+
 // Hook to get all modal handlers (for ref assignment)
 export const useModalHandlers = () => {
   return {
@@ -452,6 +504,7 @@ export const useModalHandlers = () => {
     openDistributeModal: useModalStore((state) => state.openDistributeModal),
     openBudgetModal: useModalStore((state) => state.openBudgetModal),
     openTeamModal: useModalStore((state) => state.openTeamModal),
+    openConfirmationModal: useModalStore((state) => state.openConfirmationModal),
     closeAllModals: useModalStore((state) => state.closeAllModals),
   };
 };

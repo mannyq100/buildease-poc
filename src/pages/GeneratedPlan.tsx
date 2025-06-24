@@ -10,9 +10,12 @@ import { PlanModalManager, PlanModalManagerHandlers } from '@/components/plan'
 import { PlanViewRenderer } from '@/components/plan/PlanViewRenderer'
 import { mockConstructionPlan } from '@/data/mock/generatedPlan/planData'
 import { usePlanState } from '@/hooks/usePlanState'
+import { usePlanLoading } from '@/hooks/usePlanLoading'
+import { usePlanActions } from '@/hooks/usePlanActions'
+import { usePlanActionsOptimistic } from '@/hooks/usePlanActionsOptimistic'
+import { PlanApiMock } from '@/services/planApiMock'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
-import { Phase as ModalPhase, Task as ModalTask } from '@/components/shared/modals'
-import { Material, Phase as PlanPhase, Task as PlanTask } from '@/data/mock/generatedPlan/planData'
+import { Phase as ModalPhase, Task as ModalTask, Material as ModalMaterial } from '@/components/shared/modals'
 import { 
   PageErrorBoundary, 
   SectionErrorBoundary, 
@@ -33,6 +36,44 @@ export default function GeneratedPlan() {
     isGenerating,
     isSaving
   } = usePlanState(mockConstructionPlan)
+  
+  // Enhanced loading state management
+  const { loadingState, actions: loadingActions } = usePlanLoading()
+  
+  // Unified plan actions
+  const planActions = usePlanActions({
+    ...actions,
+    setPhaseLoading: loadingActions.setPhaseLoading,
+    setTaskLoading: loadingActions.setTaskLoading,
+    setMaterialLoading: loadingActions.setMaterialLoading,
+    setOperationLoading: loadingActions.setOperationLoading
+  })
+
+  // Enhanced plan actions with optimistic updates
+  const optimisticActions = usePlanActionsOptimistic({
+    phases: plan?.phases || [],
+    apiActions: {
+      addPhase: PlanApiMock.addPhase,
+      updatePhase: PlanApiMock.updatePhase,
+      deletePhase: PlanApiMock.deletePhase,
+      reorderPhase: PlanApiMock.reorderPhase,
+      addTask: PlanApiMock.addTask,
+      updateTask: PlanApiMock.updateTask,
+      deleteTask: PlanApiMock.deleteTask,
+      addMaterial: PlanApiMock.addMaterial,
+      updateMaterial: PlanApiMock.updateMaterial,
+      deleteMaterial: PlanApiMock.deleteMaterial,
+      updatePlanDates: PlanApiMock.updatePlanDates
+    },
+    setPhaseLoading: loadingActions.setPhaseLoading,
+    setTaskLoading: loadingActions.setTaskLoading,
+    setMaterialLoading: loadingActions.setMaterialLoading,
+    setOperationLoading: loadingActions.setOperationLoading
+  }, {
+    enableOptimisticUpdates: true,
+    enableToasts: true,
+    rollbackDelay: 3000
+  })
   
   // Local state for UI
   const [isDistributing, setIsDistributing] = useState(false)
@@ -122,111 +163,31 @@ export default function GeneratedPlan() {
     }
   }, [handleAsyncError])
 
-  // Modal save handlers that use plan state actions  
+  // Modal save handlers using optimistic plan actions
   const handleSavePhase = useCallback((phaseData: Partial<ModalPhase>) => {
-    if (!phaseData.id) {
-      // Add new phase - convert modal phase to plan phase
-      const planPhase: Omit<PlanPhase, 'id' | 'tasks' | 'materials'> = {
-        name: phaseData.name || '',
-        description: phaseData.description || '',
-        order: phaseData.order || 1,
-        duration: '1 week', // Default duration
-        startDate: phaseData.startDate,
-        endDate: phaseData.endDate,
-        status: (phaseData.status as PlanPhase['status']) || 'pending',
-        progress: phaseData.progress || 0
-      }
-      actions.addPhase(planPhase)
-      toast.success(`Phase "${planPhase.name}" added successfully`)
-    } else {
-      // Update existing phase - convert modal phase to plan phase
-      const planPhaseUpdate: Partial<PlanPhase> = {
-        name: phaseData.name,
-        description: phaseData.description,
-        order: phaseData.order,
-        startDate: phaseData.startDate,
-        endDate: phaseData.endDate,
-        status: phaseData.status as PlanPhase['status'],
-        progress: phaseData.progress
-      }
-      actions.updatePhase(phaseData.id, planPhaseUpdate)
-      toast.success('Phase updated successfully')
-    }
-  }, [actions])
+    optimisticActions.handleSavePhase(phaseData);
+  }, [optimisticActions])
 
   const handleSaveTask = useCallback((taskData: Partial<ModalTask>) => {
-    if (!taskData.phaseId) return
-    
-    if (!taskData.id) {
-      // Add new task - convert modal task to plan task
-      const planTask: Omit<PlanTask, 'id'> = {
-        name: taskData.name || '',
-        description: taskData.description || '',
-        duration: String(taskData.duration || '1 day'),
-        startDate: taskData.startDate,
-        endDate: taskData.endDate,
-        status: (taskData.status as PlanTask['status']) || 'pending',
-        assignedTo: taskData.assignedTo,
-        dependencies: (taskData as { dependencies?: string[] }).dependencies || [],
-        progress: taskData.progress || 0
-      }
-      actions.addTask(taskData.phaseId, planTask)
-      toast.success(`Task "${planTask.name}" added successfully`)
-    } else {
-      // Update existing task - convert modal task to plan task
-      const planTaskUpdate: Partial<PlanTask> = {
-        name: taskData.name,
-        description: taskData.description,
-        duration: typeof taskData.duration === 'number' ? String(taskData.duration) : taskData.duration,
-        startDate: taskData.startDate,
-        endDate: taskData.endDate,
-        status: taskData.status as PlanTask['status'],
-        assignedTo: taskData.assignedTo,
-        dependencies: (taskData as { dependencies?: string[] }).dependencies,
-        progress: taskData.progress
-      }
-      actions.updateTask(taskData.phaseId, taskData.id, planTaskUpdate)
-      toast.success('Task updated successfully')
-    }
-  }, [actions])
+    optimisticActions.handleSaveTask(taskData);
+  }, [optimisticActions])
 
-  const handleSaveMaterial = useCallback((materialData: Partial<Material>) => {
-    const phaseId = (materialData as { phaseId?: string }).phaseId
-    if (!phaseId) return
-    
-    if (!materialData.id) {
-      // Add new material
-      actions.addMaterial(phaseId, materialData as Omit<Material, 'id'>)
-      toast.success(`Material "${materialData.name || 'New Material'}" added successfully`)
-    } else {
-      // Update existing material
-      actions.updateMaterial(phaseId, materialData.id, materialData)
-      toast.success('Material updated successfully')
-    }
-  }, [actions])
+  const handleSaveMaterial = useCallback((materialData: Partial<ModalMaterial>) => {
+    optimisticActions.handleSaveMaterial(materialData);
+  }, [optimisticActions])
 
   const handleSaveDates = useCallback((dateRange: { startDate: string; endDate: string }) => {
-    // Validate date range
-    const startDate = new Date(dateRange.startDate)
-    const endDate = new Date(dateRange.endDate)
-    
-    if (startDate >= endDate) {
-      toast.error('End date must be after start date')
-      return
-    }
-    
-    // Check if dates are in the past (optional warning)
-    const today = new Date()
-    if (startDate < today) {
-      toast.warning('Start date is in the past')
-    }
-    
-    actions.updatePlanDates(dateRange.startDate, dateRange.endDate)
-    toast.success('Project timeline updated')
-  }, [actions])
+    optimisticActions.handleUpdatePlanDates(dateRange);
+  }, [optimisticActions])
+
+  // Create enhanced plan with optimistic data
+  const enhancedPlan = plan ? {
+    ...plan,
+    phases: optimisticActions.phases
+  } : null;
 
   // Guard against null plan
-  if (!plan) {
+  if (!enhancedPlan) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-[#2B6CB0]" />
@@ -248,7 +209,7 @@ export default function GeneratedPlan() {
               activeView={state.activeView}
               onViewChange={actions.setActiveView}
               isGenerating={isGenerating}
-              isSaving={isSaving}
+              isSaving={isSaving || optimisticActions.hasPendingActions}
               onSave={handleSavePlan}
               onRegenerate={handleRegenerate}
               onDistribute={() => modalHandlersRef.current?.openDistributeModal()}
@@ -274,8 +235,10 @@ export default function GeneratedPlan() {
                   <ComponentErrorBoundary name="PlanViewRenderer">
                     <PlanViewRenderer
                       activeView={state.activeView}
-                      plan={plan}
+                      plan={enhancedPlan}
                       modalHandlersRef={modalHandlersRef}
+                      loadingState={loadingState}
+                      loadingActions={loadingActions}
                     />
                   </ComponentErrorBoundary>
                 </div>
@@ -286,8 +249,8 @@ export default function GeneratedPlan() {
           {/* Modal Manager */}
           <ComponentErrorBoundary name="PlanModalManager">
             <PlanModalManager
-              plan={plan}
-              isSaving={isSaving || isDistributing}
+              plan={enhancedPlan}
+              isSaving={isSaving || isDistributing || optimisticActions.hasPendingActions}
               onSavePhase={handleSavePhase}
               onSaveTask={handleSaveTask}
               onSaveMaterial={handleSaveMaterial}

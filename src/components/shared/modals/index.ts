@@ -8,3 +8,4 @@ export type { Task } from './TaskFormModal';
 export * from './BudgetModal';
 export * from './DateEditModal';
 export * from './ExpenseModal';
+export * from './ConfirmationModal';

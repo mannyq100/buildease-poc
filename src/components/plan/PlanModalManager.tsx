@@ -5,16 +5,22 @@
  */
 
 import React, { useEffect } from 'react';
-import { PhaseFormModal, TaskFormModal, MaterialModal, DateEditModal } from '@/components/shared/modals';
+import { PhaseFormModal, TaskFormModal, MaterialModal, DateEditModal, ConfirmationModal } from '@/components/shared/modals';
 import { DistributeModal } from './DistributeModal';
-import { ConstructionPlan, Material as PlanMaterial, convertToModalMaterial, convertToPlanMaterial } from '@/data/mock/generatedPlan/planData';
+import { ConstructionPlan } from '@/data/mock/generatedPlan/planData';
 import { Phase, Task, Material } from '@/components/shared/modals';
+import { 
+  convertPlanPhaseToModal, 
+  convertPlanTaskToModal, 
+  convertPlanMaterialToModal 
+} from '@/types/plan/index';
 import {
   usePhaseModal,
   useTaskModal,
   useMaterialModal,
   useDateModal,
-  useDistributeModal
+  useDistributeModal,
+  useConfirmationModal
 } from '@/stores/modalStore';
 
 // Use the Material interface directly from the import - no need for extension now
@@ -26,7 +32,7 @@ interface PlanModalManagerProps {
   isSaving: boolean;
   onSavePhase: (phaseData: Partial<Phase>) => void;
   onSaveTask: (taskData: Partial<Task>) => void;
-  onSaveMaterial: (materialData: Partial<PlanMaterial>) => void;
+  onSaveMaterial: (materialData: Partial<Material>) => void;
   onSaveDates: (dateRange: { startDate: string; endDate: string }) => void;
   onDistribute: () => void;
   modalHandlersRef?: React.MutableRefObject<PlanModalManagerHandlers>;
@@ -38,6 +44,7 @@ export interface PlanModalManagerHandlers {
   openMaterialModal: (phaseId: string, materialId?: string, isNew?: boolean) => void;
   openDateModal: (type: 'project' | 'phase', phaseId?: string) => void;
   openDistributeModal: () => void;
+  openConfirmationModal: (data: import('@/stores/modalStore').ConfirmationModalData) => void;
 }
 
 export const PlanModalManager = React.memo(function PlanModalManager({
@@ -56,71 +63,44 @@ export const PlanModalManager = React.memo(function PlanModalManager({
   const materialModal = useMaterialModal();
   const dateModal = useDateModal();
   const distributeModal = useDistributeModal();
+  const confirmationModal = useConfirmationModal();
 
   // Stable statuses array to prevent re-renders
   const PHASE_STATUSES = React.useMemo(() => ['planning', 'in-progress', 'on-hold', 'completed'], []);
   const TASK_STATUSES = React.useMemo(() => ['not-started', 'in-progress', 'completed', 'on-hold'], []);
   const TEAM_MEMBERS = React.useMemo(() => plan.team.map(member => member.name), [plan.team]);
 
-  // Helper function to convert plan phase to modal phase format
-  const convertToModalPhase = (planPhase: ConstructionPlan['phases'][0]): Phase => ({
-    id: planPhase.id,
-    name: planPhase.name,
-    description: planPhase.description,
-    order: planPhase.order,
-    startDate: planPhase.startDate || '',
-    endDate: planPhase.endDate || '',
-    status: planPhase.status,
-    progress: planPhase.progress
-  });
-
-  // Helper function to convert plan task to modal task format
-  const convertToModalTask = (planTask: ConstructionPlan['phases'][0]['tasks'][0], phaseId: string): Task => ({
-    id: planTask.id,
-    name: planTask.name,
-    description: planTask.description,
-    duration: typeof planTask.duration === 'string' ? parseInt(planTask.duration) || 1 : planTask.duration || 1,
-    startDate: planTask.startDate || '',
-    endDate: planTask.endDate || '',
-    status: planTask.status,
-    assignedTo: planTask.assignedTo,
-    progress: planTask.progress,
-    phaseId: phaseId
-  });
+  // Use unified conversion functions from types/plan
 
   // Phase modal handlers - now using Zustand store actions
   const handleOpenPhaseModal = (phaseId?: string, isNew = true) => {
-    console.log('PhaseModal: Opening phase modal', { phaseId, isNew });
     if (phaseId && !isNew) {
       const planPhase = plan.phases.find(p => p.id === phaseId);
       if (planPhase) {
-        console.log('PhaseModal: Found phase to edit:', planPhase);
-        phaseModal.actions.open(convertToModalPhase(planPhase), false);
+        phaseModal.actions.open(convertPlanPhaseToModal(planPhase), false);
       } else {
         console.error('PhaseModal: Could not find phase with ID:', phaseId);
       }
     } else {
-      console.log('PhaseModal: Opening new phase modal');
       phaseModal.actions.open(undefined, true);
     }
   };
 
   const handleSavePhaseModal = (phaseData: Partial<Phase>) => {
-    console.log('PhaseModal: Saving phase data:', phaseData);
     onSavePhase(phaseData);
     phaseModal.actions.close();
   };
 
   // Task modal handlers - now using Zustand store actions
   const handleOpenTaskModal = (phaseId: string, taskId?: string, isNew = true) => {
-    console.log('TaskModal: Opening task modal with ID:', taskId);
     if (taskId && !isNew) {
       const phase = plan.phases.find(p => p.id === phaseId);
       if (phase) {
         const task = phase.tasks?.find(t => t.id === taskId);
         if (task) {
-          console.log('TaskModal: Found task to edit:', task);
-          taskModal.actions.open(convertToModalTask(task, phaseId), phaseId, false);
+          const modalTask = convertPlanTaskToModal(task);
+          modalTask.phaseId = phaseId; // Ensure phaseId is set
+          taskModal.actions.open(modalTask, phaseId, false);
         } else {
           console.error('TaskModal: Could not find task with ID:', taskId);
         }
@@ -128,33 +108,24 @@ export const PlanModalManager = React.memo(function PlanModalManager({
         console.error('TaskModal: Could not find phase with ID:', phaseId);
       }
     } else {
-      console.log('TaskModal: Opening new task modal for phase:', phaseId);
       taskModal.actions.open(undefined, phaseId, true);
     }
   };
 
   const handleSaveTaskModal = (taskData: Partial<Task>) => {
-    console.log('TaskModal: Saving task data:', taskData);
     onSaveTask(taskData);
     taskModal.actions.close();
-    console.log('TaskModal: Closing task modal after save');
   };
 
   // Material modal handlers - now using Zustand store actions
   const handleOpenMaterialModal = (phaseId: string, materialId?: string, isNew = true) => {
-    console.log('MaterialModal: Opening material modal', { phaseId, materialId, isNew });
     if (materialId && !isNew) {
       const phase = plan.phases.find(p => p.id === phaseId);
       if (phase) {
         const material = phase.materials?.find(m => m.id === materialId);
         if (material) {
-          console.log('MaterialModal: Found material to edit:', material);
-          // Create a merged material with explicit phaseId to fix type incompatibility
-          const modalMaterial = {
-            ...convertToModalMaterial(material),
-            phaseId: phaseId // Explicitly set phaseId to ensure compatibility
-          };
-          console.log('MaterialModal: Converted material for modal:', modalMaterial);
+          const modalMaterial = convertPlanMaterialToModal(material);
+          modalMaterial.phaseId = phaseId; // Ensure phaseId is set
           materialModal.actions.open(modalMaterial, phaseId, false);
         } else {
           console.error('MaterialModal: Could not find material with ID:', materialId);
@@ -163,28 +134,23 @@ export const PlanModalManager = React.memo(function PlanModalManager({
         console.error('MaterialModal: Could not find phase with ID:', phaseId);
       }
     } else {
-      console.log('MaterialModal: Opening new material modal for phase:', phaseId);
       materialModal.actions.open(undefined, phaseId, true);
     }
   };
 
   const handleSaveMaterialModal = (materialData: Material) => {
-    console.log('MaterialModal: Saving material data:', materialData);
-    const planMaterialData = convertToPlanMaterial(materialData);
-    console.log('MaterialModal: Converted to plan format:', planMaterialData);
-    onSaveMaterial(planMaterialData);
+    onSaveMaterial(materialData);
     materialModal.actions.close();
   };
 
   // Date modal handlers - now using Zustand store actions
   const handleOpenDateModal = (type: 'project' | 'phase', phaseId?: string) => {
-    console.log('DateModal: Opening date modal', { type, phaseId });
     let phase: Phase | undefined;
     
     if (type === 'phase' && phaseId) {
       const planPhase = plan.phases.find(p => p.id === phaseId);
       if (planPhase) {
-        phase = convertToModalPhase(planPhase);
+        phase = convertPlanPhaseToModal(planPhase);
       } else {
         console.error('DateModal: Could not find phase with ID:', phaseId);
         return;
@@ -201,7 +167,6 @@ export const PlanModalManager = React.memo(function PlanModalManager({
 
   // Distribute modal handlers - now using Zustand store actions
   const handleOpenDistributeModal = () => {
-    console.log('DistributeModal: Opening distribute modal');
     distributeModal.actions.open();
   };
 
@@ -218,11 +183,11 @@ export const PlanModalManager = React.memo(function PlanModalManager({
         openTaskModal: handleOpenTaskModal,
         openMaterialModal: handleOpenMaterialModal,
         openDateModal: handleOpenDateModal,
-        openDistributeModal: handleOpenDistributeModal
+        openDistributeModal: handleOpenDistributeModal,
+        openConfirmationModal: confirmationModal.actions.open
       };
-      console.log('ModalManager: Handlers assigned to ref (Zustand version)');
     }
-  }, [modalHandlersRef]);
+  }, [modalHandlersRef, handleOpenPhaseModal, handleOpenTaskModal, handleOpenMaterialModal, handleOpenDateModal, handleOpenDistributeModal, confirmationModal.actions.open]);
 
 
   return (
@@ -281,6 +246,19 @@ export const PlanModalManager = React.memo(function PlanModalManager({
         onClose={distributeModal.actions.close}
         onDistribute={handleSaveDistributeModal}
         saving={isSaving}
+      />
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        show={confirmationModal.isOpen}
+        onClose={confirmationModal.actions.close}
+        onConfirm={confirmationModal.data?.onConfirm || (() => {})}
+        title={confirmationModal.data?.title || ''}
+        description={confirmationModal.data?.description || ''}
+        confirmText={confirmationModal.data?.confirmText}
+        cancelText={confirmationModal.data?.cancelText}
+        variant={confirmationModal.data?.variant}
+        isLoading={isSaving}
       />
     </>
   );

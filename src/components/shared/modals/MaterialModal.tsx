@@ -4,27 +4,10 @@ import { useForm, Controller } from 'react-hook-form';
 import { BaseModal } from './BaseModal';
 import { FormField, SelectField, ModalFooter } from '@/components/ui/form-fields';
 import { v4 as uuidv4 } from 'uuid';
+import { ModalMaterial } from '@/types/plan/index';
 
-export interface Material {
-  id: string;
-  name: string;
-  type?: string;
-  quantity: number;
-  unit: string;
-  unitPrice?: number;
-  totalPrice?: number;
-  price?: number; // For compatibility with PlanMaterial
-  supplier?: string;
-  purchaseDate?: string;
-  deliveryDate?: string;
-  orderDate?: string; // For compatibility with PlanMaterial
-  status?: string;  // Made optional for compatibility with PlanMaterial
-  notes?: string;
-  phaseId: string; // Required since materials must belong to a phase
-  
-  // Index signature to satisfy Record<string, FieldValue> constraint
-  [key: string]: string | number | boolean | null | undefined;
-}
+// Re-export for backward compatibility
+export type Material = ModalMaterial;
 
 interface MaterialModalProps {
   show: boolean;

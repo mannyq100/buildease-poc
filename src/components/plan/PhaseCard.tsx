@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Trash, Plus, Edit, Calendar, Clock, ChevronDown, ChevronRight, CheckCircle, Package, Users } from 'lucide-react';
 import { AnimatePresence, motion as m } from 'framer-motion';
 import { getStatusColor, formatDate, getStatusText } from '@/utils/plan-helpers';
+import { LoadingState } from '@/hooks/usePlanLoading';
+import { LoadingButton, ActionLoadingOverlay } from './LoadingIndicators';
 
 interface PhaseCardProps {
   phase: Phase;
@@ -18,6 +20,7 @@ interface PhaseCardProps {
   onEditMaterial?: (phaseId: string, materialId: string) => void;
   onDeleteMaterial?: (phaseId: string, materialId: string) => void;
   onEditPhaseDates?: (phaseId: string) => void;
+  loadingState?: LoadingState;
 }
 
 export const PhaseCard = React.memo(function PhaseCard({ 
@@ -30,7 +33,8 @@ export const PhaseCard = React.memo(function PhaseCard({
   onAddMaterial,
   onEditMaterial,
   onDeleteMaterial,
-  onEditPhaseDates
+  onEditPhaseDates,
+  loadingState
 }: PhaseCardProps) {
   const [tasksExpanded, setTasksExpanded] = useState(false);
   const [materialsExpanded, setMaterialsExpanded] = useState(false);
@@ -40,6 +44,9 @@ export const PhaseCard = React.memo(function PhaseCard({
   const statusText = useMemo(() => getStatusText(phase.status), [phase.status]);
   const formattedStartDate = useMemo(() => formatDate(phase.startDate), [phase.startDate]);
   const formattedEndDate = useMemo(() => formatDate(phase.endDate), [phase.endDate]);
+  
+  // Check if this phase is loading
+  const isPhaseLoading = loadingState?.phases[phase.id] || false;
   
   // Memoized callback handlers
   const handleEditPhase = useCallback(() => {
@@ -73,9 +80,15 @@ export const PhaseCard = React.memo(function PhaseCard({
       transition={{ duration: 0.3 }}
       className="mb-4"
     >
-      <Card className="border border-buildease-blue-200/60 hover:border-buildease-blue-400/60 dark:border-buildease-blue-800/60 dark:hover:border-buildease-blue-600/60 shadow-lg hover:shadow-xl overflow-hidden rounded-xl bg-gradient-to-br from-white via-buildease-blue-50/20 to-buildease-blue-100/30 dark:from-gray-900 dark:via-buildease-blue-950/10 dark:to-buildease-blue-900/20 transition-all duration-300 hover:transform hover:scale-[1.02] backdrop-blur-sm border-0 ring-1 ring-buildease-blue-200/40 dark:ring-buildease-blue-800/40 hover:ring-buildease-blue-300/60 dark:hover:ring-buildease-blue-600/60">
+      <Card className="border border-buildease-blue-200/60 hover:border-buildease-blue-400/60 dark:border-buildease-blue-800/60 dark:hover:border-buildease-blue-600/60 shadow-lg hover:shadow-xl overflow-hidden rounded-xl bg-gradient-to-br from-white via-buildease-blue-50/20 to-buildease-blue-100/30 dark:from-gray-900 dark:via-buildease-blue-950/10 dark:to-buildease-blue-900/20 transition-all duration-300 hover:transform hover:scale-[1.02] backdrop-blur-sm border-0 ring-1 ring-buildease-blue-200/40 dark:ring-buildease-blue-800/40 hover:ring-buildease-blue-300/60 dark:hover:ring-buildease-blue-600/60 relative">
         <CardContent className="p-0">
           <div className="flex flex-col">
+            {/* Loading Overlay */}
+            <ActionLoadingOverlay
+              isLoading={isPhaseLoading}
+              operation="delete"
+              message={`Deleting phase "${phase.name}"...`}
+            />
             {/* Enhanced Phase Header */}
             <div className="p-6 bg-gradient-to-r from-buildease-blue-50/60 via-white/90 to-buildease-earth-50/40 dark:from-buildease-blue-950/30 dark:via-gray-800/20 dark:to-buildease-earth-950/20 border-b border-buildease-blue-200/40 dark:border-buildease-blue-800/40 backdrop-blur-sm">
               <div className="flex items-center justify-between mb-3">
@@ -113,14 +126,16 @@ export const PhaseCard = React.memo(function PhaseCard({
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button
+                    <LoadingButton
                       variant="ghost"
                       size="sm"
                       className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-all duration-200"
                       onClick={handleDeletePhase}
+                      isLoading={isPhaseLoading}
+                      disabled={isPhaseLoading}
                     >
                       <Trash className="h-4 w-4" />
-                    </Button>
+                    </LoadingButton>
                   </div>
                 </div>
               </div>

@@ -147,7 +147,7 @@ export const PlanErrorFallback = ({
   </motion.div>
 );
 
-export const ViewErrorFallback = ({ error, resetErrorBoundary }: ErrorFallbackProps) => (
+export const ViewErrorFallback = ({ error: _error, resetErrorBoundary }: ErrorFallbackProps) => (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}

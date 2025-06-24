@@ -1,65 +1,86 @@
 import React, { useState } from 'react';
-import { ConstructionPlan } from '@/data/mock/generatedPlan/planData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Banknote, TrendingUp, Package, Wrench, FileText, ShieldAlert, Plus, Edit, Trash } from 'lucide-react';
+import { Banknote, TrendingUp, Package, Wrench, FileText, ShieldAlert, Plus } from 'lucide-react';
 import { motion as m } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { BudgetModal } from '@/components/shared/modals/BudgetModal';
-import { BudgetItem as BudgetItemType } from '@/types/budget';
+import { MaterialModal } from '@/components/shared/modals/MaterialModal';
+import { Material } from '@/components/shared/modals';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatCurrency } from '@/utils/plan-helpers';
-import { useBudgetModal } from '@/stores/modalStore';
+import { useMaterialModal } from '@/stores/modalStore';
+import { BudgetViewProps } from '@/types/plan/views';
+import {
+  EditMaterialAction, 
+  DeleteMaterialAction,
+  HeaderActionBar
+} from '@/components/shared/actions';
 
-const mockBudgetItems: BudgetItemType[] = [
-  { id: 1, type: 'expense', description: 'Foundation Concrete', category: 'Materials', amount: 15000, date: '2025-04-10', status: 'paid' },
-  { id: 2, type: 'expense', description: 'Framing Labor', category: 'Labor', amount: 25000, date: '2025-04-15', status: 'incurred' },
-  { id: 3, type: 'income', description: 'Client Downpayment', category: 'Income Payment', amount: 50000, date: '2025-04-05', status: 'received' },
-  { id: 4, type: 'expense', description: 'Building Permit', category: 'Permits', amount: 2500, date: '2025-04-08', status: 'paid' },
-  { id: 5, type: 'expense', description: 'Excavator Rental', category: 'Equipment Rental', amount: 3000, date: '2025-04-12', status: 'planned' },
+// Mock budget items as materials with cost focus
+const mockBudgetMaterials: Material[] = [
+  { id: '1', name: 'Foundation Concrete', description: 'Concrete for foundation work', quantity: 1, unit: 'lot', cost: 15000, vendor: 'Concrete Supply Co', category: 'Materials', phaseId: 'phase-1' },
+  { id: '2', name: 'Framing Labor', description: 'Labor for framing work', quantity: 1, unit: 'lot', cost: 25000, vendor: 'Construction Crew', category: 'Labor', phaseId: 'phase-2' },
+  { id: '3', name: 'Building Permit', description: 'Permit fees and documentation', quantity: 1, unit: 'permit', cost: 2500, vendor: 'City Planning Office', category: 'Permits', phaseId: 'phase-1' },
+  { id: '4', name: 'Excavator Rental', description: 'Equipment rental for excavation', quantity: 1, unit: 'days', cost: 3000, vendor: 'Equipment Rental Co', category: 'Equipment', phaseId: 'phase-1' },
 ];
 
-interface BudgetViewProps {
-  plan: ConstructionPlan;
-}
 
 export function BudgetView({ plan }: BudgetViewProps) {
   const budget = plan.budget;
-  const [budgetItems, setBudgetItems] = useState<BudgetItemType[]>(mockBudgetItems);
+  const [budgetMaterials, setBudgetMaterials] = useState<Material[]>(mockBudgetMaterials);
   
-  // Use Zustand modal hook
-  const budgetModal = useBudgetModal();
+  // Use shared MaterialModal for budget items
+  const materialModal = useMaterialModal();
 
-  const total = budget.totalCost;
-  const laborPercentage = total > 0 ? (budget.laborCost / total) * 100 : 0;
-  const materialsPercentage = total > 0 ? (budget.materialsCost / total) * 100 : 0;
-  const equipmentPercentage = total > 0 ? (budget.equipmentCost / total) * 100 : 0;
-  const permitsPercentage = total > 0 ? (budget.permitsFees / total) * 100 : 0;
-  const contingencyPercentage = total > 0 ? (budget.contingency / total) * 100 : 0;
+  // Calculate totals from budgetMaterials
+  const calculatedTotals = React.useMemo(() => {
+    const laborCost = budgetMaterials.filter(m => m.category === 'Labor').reduce((sum, m) => sum + (m.cost || 0), 0);
+    const materialsCost = budgetMaterials.filter(m => m.category === 'Materials').reduce((sum, m) => sum + (m.cost || 0), 0);
+    const equipmentCost = budgetMaterials.filter(m => m.category === 'Equipment').reduce((sum, m) => sum + (m.cost || 0), 0);
+    const permitsCost = budgetMaterials.filter(m => m.category === 'Permits').reduce((sum, m) => sum + (m.cost || 0), 0);
+    const total = laborCost + materialsCost + equipmentCost + permitsCost + budget.contingency;
+    
+    return {
+      total,
+      laborCost,
+      materialsCost,
+      equipmentCost,
+      permitsCost,
+      laborPercentage: total > 0 ? (laborCost / total) * 100 : 0,
+      materialsPercentage: total > 0 ? (materialsCost / total) * 100 : 0,
+      equipmentPercentage: total > 0 ? (equipmentCost / total) * 100 : 0,
+      permitsPercentage: total > 0 ? (permitsCost / total) * 100 : 0,
+      contingencyPercentage: total > 0 ? (budget.contingency / total) * 100 : 0
+    };
+  }, [budgetMaterials, budget.contingency]);
 
   // Using shared formatCurrency utility
 
-  function handleOpenAddModal() {
-    budgetModal.actions.open(undefined, true);
+  function handleAddBudgetItem() {
+    materialModal.actions.open(undefined, 'budget', true);
   }
 
-  function handleOpenEditModal(item: BudgetItemType) {
-    budgetModal.actions.open(item, false);
+  function handleEditBudgetItem(materialId: string) {
+    const material = budgetMaterials.find(m => m.id === materialId);
+    if (material) {
+      materialModal.actions.open(material, 'budget', false);
+    }
   }
 
-  function handleSaveBudgetItem(savedItem: Partial<BudgetItemType>) {
-    setBudgetItems(prevItems => {
-      if (budgetModal.isNew) {
-        const newItemWithId = { ...savedItem, id: Date.now() } as BudgetItemType;
-        return [...prevItems, newItemWithId];
+  function handleDeleteBudgetItem(materialId: string) {
+    setBudgetMaterials(prev => prev.filter(m => m.id !== materialId));
+  }
+
+  function handleSaveBudgetMaterial(savedMaterial: Material) {
+    setBudgetMaterials(prevMaterials => {
+      if (materialModal.isNew) {
+        const newMaterial = { ...savedMaterial, id: Date.now().toString() };
+        return [...prevMaterials, newMaterial];
       } else {
-        return prevItems.map(item => item.id === savedItem.id ? { ...item, ...savedItem } : item);
+        return prevMaterials.map(material => 
+          material.id === savedMaterial.id ? { ...material, ...savedMaterial } : material
+        );
       }
     });
-    budgetModal.actions.close();
-  }
-
-  function handleDeleteBudgetItem(id: number) {
-    setBudgetItems(prevItems => prevItems.filter(item => item.id !== id));
+    materialModal.actions.close();
   }
 
   const BudgetItemSummary = ({ 
@@ -111,20 +132,18 @@ export function BudgetView({ plan }: BudgetViewProps) {
       >
         <Card className="border border-buildease-blue-200/50 dark:border-buildease-blue-800/50 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden rounded-xl bg-gradient-to-br from-white via-buildease-blue-50/20 to-buildease-earth-50/20 dark:from-gray-900 dark:via-buildease-blue-950/10 dark:to-buildease-earth-950/10 backdrop-blur-sm">
           <CardHeader className="bg-gradient-to-r from-buildease-blue-50/50 via-white/80 to-buildease-earth-50/40 dark:from-buildease-blue-950/30 dark:via-gray-800/40 dark:to-buildease-earth-950/20 border-b border-buildease-blue-200/40 dark:border-buildease-blue-800/40 pb-4 flex flex-row items-center justify-between backdrop-blur-sm">
-            <CardTitle className="text-xl font-bold text-buildease-blue-800 dark:text-buildease-blue-200 flex items-center tracking-tight">
-              <Banknote className="h-5 w-5 mr-2" />
-              Budget Summary
-            </CardTitle>
-            <Button size="sm" onClick={handleOpenAddModal} className="bg-buildease-blue-600 hover:bg-buildease-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 border-0">
-              <Plus className="h-4 w-4 mr-1" />
-              Add Item
-            </Button>
+            <HeaderActionBar
+              title="Budget Summary"
+              onAdd={handleAddBudgetItem}
+              addButtonText="Add Budget Item"
+              addButtonIcon={Plus}
+            />
           </CardHeader>
           <CardContent className="p-6">
             <div className="text-center mb-8">
               <p className="text-lg font-medium text-buildease-blue-600/80 dark:text-buildease-blue-400/80">Total Budget</p>
               <h2 className="text-4xl font-bold text-buildease-blue-800 dark:text-buildease-blue-200 tracking-tight mt-2">
-                {formatCurrency(budget.totalCost)}
+                {formatCurrency(calculatedTotals.total)}
               </h2>
             </div>
             
@@ -132,29 +151,29 @@ export function BudgetView({ plan }: BudgetViewProps) {
               <BudgetItemSummary 
                 icon={<Banknote className="h-5 w-5 text-blue-600 dark:text-blue-400" />} 
                 title="Labor" 
-                amount={budget.laborCost} 
-                percentage={laborPercentage} 
+                amount={calculatedTotals.laborCost} 
+                percentage={calculatedTotals.laborPercentage} 
                 color="text-blue-600/10 dark:text-blue-400/10"
               />
               <BudgetItemSummary 
                 icon={<Package className="h-5 w-5 text-green-600 dark:text-green-400" />} 
                 title="Materials" 
-                amount={budget.materialsCost} 
-                percentage={materialsPercentage} 
+                amount={calculatedTotals.materialsCost} 
+                percentage={calculatedTotals.materialsPercentage} 
                 color="text-green-600/10 dark:text-green-400/10"
               />
               <BudgetItemSummary 
                 icon={<Wrench className="h-5 w-5 text-amber-600 dark:text-amber-400" />} 
                 title="Equipment" 
-                amount={budget.equipmentCost} 
-                percentage={equipmentPercentage} 
+                amount={calculatedTotals.equipmentCost} 
+                percentage={calculatedTotals.equipmentPercentage} 
                 color="text-amber-600/10 dark:text-amber-400/10"
               />
               <BudgetItemSummary 
                 icon={<FileText className="h-5 w-5 text-purple-600 dark:text-purple-400" />} 
                 title="Permits & Fees" 
-                amount={budget.permitsFees} 
-                percentage={permitsPercentage} 
+                amount={calculatedTotals.permitsCost} 
+                percentage={calculatedTotals.permitsPercentage} 
                 color="text-purple-600/10 dark:text-purple-400/10"
               />
               <div className="md:col-span-2">
@@ -162,7 +181,7 @@ export function BudgetView({ plan }: BudgetViewProps) {
                   icon={<ShieldAlert className="h-5 w-5 text-orange-600 dark:text-orange-400" />} 
                   title="Contingency" 
                   amount={budget.contingency} 
-                  percentage={contingencyPercentage} 
+                  percentage={calculatedTotals.contingencyPercentage} 
                   color="text-orange-600/10 dark:text-orange-400/10"
                 />
               </div>
@@ -187,38 +206,45 @@ export function BudgetView({ plan }: BudgetViewProps) {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Name</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead>Category</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>Quantity</TableHead>
+                  <TableHead className="text-right">Cost</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {budgetItems.length === 0 ? (
+                {budgetMaterials.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       No budget items added yet.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  budgetItems.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.description}</TableCell>
-                      <TableCell>{item.category}</TableCell>
-                      <TableCell>{item.date}</TableCell>
-                      <TableCell className="capitalize">{item.status}</TableCell>
-                      <TableCell className={`text-right font-semibold ${item.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                        {item.type === 'income' ? '+' : '-'}{formatCurrency(item.amount)}
+                  budgetMaterials.map((material) => (
+                    <TableRow key={material.id}>
+                      <TableCell className="font-medium">{material.name}</TableCell>
+                      <TableCell>{material.description}</TableCell>
+                      <TableCell>{material.category}</TableCell>
+                      <TableCell>{material.quantity} {material.unit}</TableCell>
+                      <TableCell className="text-right font-semibold text-buildease-blue-800 dark:text-buildease-blue-200">
+                        {formatCurrency(material.cost || 0)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => handleOpenEditModal(item)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleDeleteBudgetItem(item.id)}>
-                          <Trash className="h-4 w-4" />
-                        </Button>
+                        <div className="flex justify-end gap-1">
+                          <EditMaterialAction
+                            onEditMaterial={handleEditBudgetItem}
+                            phaseId={material.phaseId || 'budget'}
+                            materialId={material.id}
+                          />
+                          <DeleteMaterialAction
+                            onDeleteMaterial={handleDeleteBudgetItem}
+                            phaseId={material.phaseId || 'budget'}
+                            materialId={material.id}
+                            materialName={material.name}
+                          />
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -229,12 +255,13 @@ export function BudgetView({ plan }: BudgetViewProps) {
         </Card>
       </m.div>
 
-      <BudgetModal
-        show={budgetModal.isOpen}
-        onClose={budgetModal.actions.close}
-        onSave={handleSaveBudgetItem}
-        initialData={budgetModal.data}
-        isNewItem={budgetModal.isNew}
+      <MaterialModal
+        show={materialModal.isOpen}
+        onClose={materialModal.actions.close}
+        onSave={handleSaveBudgetMaterial}
+        material={materialModal.data}
+        isNew={materialModal.isNew}
+        phaseId="budget"
       />
     </div>
   );
