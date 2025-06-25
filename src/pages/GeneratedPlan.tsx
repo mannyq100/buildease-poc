@@ -189,7 +189,7 @@ export default function GeneratedPlan() {
   // Guard against null plan
   if (!enhancedPlan) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-buildease-blue-50/30 dark:bg-buildease-blue-950/20 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-[#2B6CB0]" />
       </div>
     )
@@ -198,7 +198,7 @@ export default function GeneratedPlan() {
   return (
     <ErrorProvider onError={(error, context) => handleError(error, { context })}>
       <PageErrorBoundary name="GeneratedPlan">
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="min-h-screen bg-buildease-blue-50/30 dark:bg-buildease-blue-950/20 flex flex-col">
           <Helmet>
             <title>Generated Plan | BuildEase</title>
           </Helmet>
@@ -220,18 +220,18 @@ export default function GeneratedPlan() {
 
           {/* Main Content */}
           <SectionErrorBoundary name="MainContent" resetKeys={[state.activeView, plan?.id]}>
-            <div className="container mx-auto px-4 sm:px-6 py-6">
+            <div className="container mx-auto px-4 sm:px-6 py-6 flex-1 flex flex-col">
               {isGenerating ? (
                 <m.div 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="flex flex-col items-center justify-center py-10 bg-white dark:bg-gray-800 rounded-xl shadow-md p-6"
+                  className="flex flex-col items-center justify-center py-10 bg-white dark:bg-buildease-blue-950/40 rounded-xl shadow-md p-6"
                 >
                   <Loader2 className="h-10 w-10 text-[#2B6CB0] animate-spin mb-4" />
-                  <p className="text-gray-500 dark:text-gray-400">Regenerating your construction plan...</p>
+                  <p className="text-buildease-earth-600 dark:text-buildease-earth-400">Regenerating your construction plan...</p>
                 </m.div>
               ) : (
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 sm:p-6">
+                <div className="bg-white dark:bg-buildease-blue-950/40 rounded-xl shadow-md p-4 sm:p-6 flex-1 flex flex-col overflow-hidden">
                   <ComponentErrorBoundary name="PlanViewRenderer">
                     <PlanViewRenderer
                       activeView={state.activeView}

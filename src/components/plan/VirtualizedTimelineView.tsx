@@ -196,10 +196,12 @@ export const VirtualizedTimelineView = React.memo(function VirtualizedTimelineVi
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="border border-buildease-blue-100/50 dark:border-buildease-blue-900/30 rounded-lg overflow-hidden shadow-sm bg-white/95 dark:bg-gray-900/95"
+      className="border border-buildease-blue-100/50 dark:border-buildease-blue-900/30 rounded-lg overflow-hidden shadow-sm bg-white/95 dark:bg-gray-900/95 flex flex-col h-full"
     >
-      <div className="px-6 py-4 bg-buildease-blue-50/30 dark:bg-buildease-blue-950/20 border-b border-buildease-blue-100/50 dark:border-buildease-blue-900/30">
-        <h3 className="text-sm font-semibold text-buildease-blue-700 dark:text-buildease-blue-300">
+      {/* Sticky Header */}
+      <div className="px-6 py-4 bg-buildease-blue-50/30 dark:bg-buildease-blue-950/20 border-b border-buildease-blue-100/50 dark:border-buildease-blue-900/30 sticky top-0 z-20 backdrop-blur-sm bg-buildease-blue-50/80 dark:bg-buildease-blue-950/80">
+        <h3 className="text-sm font-semibold text-buildease-blue-700 dark:text-buildease-blue-300 flex items-center">
+          <Calendar className="h-4 w-4 mr-2" />
           Timeline View ({sortedPhases.length} phases)
         </h3>
         <p className="text-xs text-buildease-blue-600/70 dark:text-buildease-blue-400/70 mt-1">
@@ -207,7 +209,8 @@ export const VirtualizedTimelineView = React.memo(function VirtualizedTimelineVi
         </p>
       </div>
       
-      <div className="relative">
+      {/* Scrollable Content */}
+      <div className="relative flex-1">
         {/* Timeline line for virtualized view */}
         <div className="absolute top-0 bottom-0 left-6 sm:left-8 w-1 bg-gradient-to-b from-buildease-blue-300/60 via-buildease-orange-400/60 to-buildease-blue-300/60 dark:from-buildease-blue-600/60 dark:via-buildease-orange-600/60 dark:to-buildease-blue-600/60 rounded-full z-0"></div>
         

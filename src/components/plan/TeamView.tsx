@@ -75,13 +75,13 @@ export function TeamView({ plan }: TeamViewProps) {
 
   const getAvatarColor = (name: string) => {
     const colors = [
-      'bg-blue-500 dark:bg-blue-600',
-      'bg-purple-500 dark:bg-purple-600',
-      'bg-green-500 dark:bg-green-600',
-      'bg-orange-500 dark:bg-orange-600',
-      'bg-red-500 dark:bg-red-600',
-      'bg-indigo-500 dark:bg-indigo-600',
-      'bg-teal-500 dark:bg-teal-600',
+      'bg-buildease-blue-500 dark:bg-buildease-blue-600',
+      'bg-buildease-earth-600 dark:bg-buildease-earth-700',
+      'bg-buildease-orange-500 dark:bg-buildease-orange-600',
+      'bg-buildease-blue-600 dark:bg-buildease-blue-700',
+      'bg-buildease-earth-700 dark:bg-buildease-earth-800',
+      'bg-buildease-blue-700 dark:bg-buildease-blue-800',
+      'bg-buildease-earth-500 dark:bg-buildease-earth-600',
     ];
     
     // Use the first character's charcode to determine the color

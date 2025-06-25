@@ -58,26 +58,26 @@ export function MaterialsView({ plan, onAddMaterial: _onAddMaterial, onEditMater
   const _getStatusBadge = (status: string) => {
     switch(status) {
       case 'ordered':
-        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">Ordered</Badge>;
+        return <Badge className="bg-buildease-blue-100 text-buildease-blue-800 dark:bg-buildease-blue-900/30 dark:text-buildease-blue-400">Ordered</Badge>;
       case 'delivered':
         return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">Delivered</Badge>;
       case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">Pending</Badge>;
+        return <Badge className="bg-buildease-orange-100 text-buildease-orange-800 dark:bg-buildease-orange-900/30 dark:text-buildease-orange-400">Pending</Badge>;
       default:
-        return <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400">{status}</Badge>;
+        return <Badge className="bg-buildease-earth-100 text-buildease-earth-800 dark:bg-buildease-earth-800 dark:text-buildease-earth-400">{status}</Badge>;
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch(status) {
       case 'ordered':
-        return <Clock className="h-4 w-4 text-blue-500 dark:text-blue-400" />;
+        return <Clock className="h-4 w-4 text-buildease-blue-500 dark:text-buildease-blue-400" />;
       case 'delivered':
         return <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />;
       case 'pending':
-        return <AlertCircle className="h-4 w-4 text-yellow-500 dark:text-yellow-400" />;
+        return <AlertCircle className="h-4 w-4 text-buildease-orange-500 dark:text-buildease-orange-400" />;
       default:
-        return <Package className="h-4 w-4 text-gray-500 dark:text-gray-400" />;
+        return <Package className="h-4 w-4 text-buildease-earth-500 dark:text-buildease-earth-400" />;
     }
   };
 

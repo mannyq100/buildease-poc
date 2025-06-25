@@ -26,25 +26,25 @@ const ProgressHeader: React.FC<ProgressHeaderProps> = ({ steps = [] }) => {
   ];
 
   return (
-    <div className="bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-900 p-6 shadow-sm sticky top-0 z-50 transition-all duration-300">
+    <div className="bg-gradient-to-b from-buildease-blue-50/40 to-buildease-blue-100/60 dark:from-buildease-blue-950/30 dark:to-buildease-blue-900/40 p-6 shadow-sm sticky top-0 z-50 transition-all duration-300">
       <div className="max-w-3xl mx-auto">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">AI Generated Plan</h1>
-          <Button variant="outline" className="space-x-2 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700">
+          <h1 className="text-2xl font-semibold text-buildease-blue-800 dark:text-buildease-blue-200">AI Generated Plan</h1>
+          <Button variant="outline" className="space-x-2 border-buildease-blue-300 text-buildease-blue-700 hover:bg-buildease-blue-50 dark:border-buildease-blue-700 dark:text-buildease-blue-300 dark:hover:bg-buildease-blue-900/30">
             <Download className="w-4 h-4" />
             <span>Export Plan</span>
           </Button>
         </div>
         <div className="mt-6">
-          <Progress value={progressPercentage} className="h-2 dark:bg-slate-700" />
-          <div className="flex justify-between mt-3 text-sm text-gray-600 dark:text-gray-400">
+          <Progress value={progressPercentage} className="h-2 bg-buildease-blue-100 dark:bg-buildease-blue-900" />
+          <div className="flex justify-between mt-3 text-sm text-buildease-earth-600 dark:text-buildease-earth-400">
             {defaultSteps.map((step, index) => (
               <span 
                 key={index} 
                 className={`font-medium ${
                   step.status === 'complete' ? 'text-green-600 dark:text-green-400' :
-                  step.status === 'current' ? 'text-blue-600 dark:text-blue-400' :
-                  'text-gray-500 dark:text-gray-500'
+                  step.status === 'current' ? 'text-buildease-orange-600 dark:text-buildease-orange-400' :
+                  'text-buildease-earth-500 dark:text-buildease-earth-400'
                 }`}
               >
                 {step.name}

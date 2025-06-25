@@ -149,40 +149,40 @@ export function BudgetView({ plan }: BudgetViewProps) {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <BudgetItemSummary 
-                icon={<Banknote className="h-5 w-5 text-blue-600 dark:text-blue-400" />} 
+                icon={<Banknote className="h-5 w-5 text-buildease-blue-600 dark:text-buildease-blue-400" />} 
                 title="Labor" 
                 amount={calculatedTotals.laborCost} 
                 percentage={calculatedTotals.laborPercentage} 
-                color="text-blue-600/10 dark:text-blue-400/10"
+                color="text-buildease-blue-600/10 dark:text-buildease-blue-400/10"
               />
               <BudgetItemSummary 
-                icon={<Package className="h-5 w-5 text-green-600 dark:text-green-400" />} 
+                icon={<Package className="h-5 w-5 text-buildease-earth-600 dark:text-buildease-earth-400" />} 
                 title="Materials" 
                 amount={calculatedTotals.materialsCost} 
                 percentage={calculatedTotals.materialsPercentage} 
-                color="text-green-600/10 dark:text-green-400/10"
+                color="text-buildease-earth-600/10 dark:text-buildease-earth-400/10"
               />
               <BudgetItemSummary 
-                icon={<Wrench className="h-5 w-5 text-amber-600 dark:text-amber-400" />} 
+                icon={<Wrench className="h-5 w-5 text-buildease-earth-700 dark:text-buildease-earth-500" />} 
                 title="Equipment" 
                 amount={calculatedTotals.equipmentCost} 
                 percentage={calculatedTotals.equipmentPercentage} 
-                color="text-amber-600/10 dark:text-amber-400/10"
+                color="text-buildease-earth-700/10 dark:text-buildease-earth-500/10"
               />
               <BudgetItemSummary 
-                icon={<FileText className="h-5 w-5 text-purple-600 dark:text-purple-400" />} 
+                icon={<FileText className="h-5 w-5 text-buildease-earth-800 dark:text-buildease-earth-600" />} 
                 title="Permits & Fees" 
                 amount={calculatedTotals.permitsCost} 
                 percentage={calculatedTotals.permitsPercentage} 
-                color="text-purple-600/10 dark:text-purple-400/10"
+                color="text-buildease-earth-800/10 dark:text-buildease-earth-600/10"
               />
               <div className="md:col-span-2">
                 <BudgetItemSummary 
-                  icon={<ShieldAlert className="h-5 w-5 text-orange-600 dark:text-orange-400" />} 
+                  icon={<ShieldAlert className="h-5 w-5 text-buildease-orange-600 dark:text-buildease-orange-400" />} 
                   title="Contingency" 
                   amount={budget.contingency} 
                   percentage={calculatedTotals.contingencyPercentage} 
-                  color="text-orange-600/10 dark:text-orange-400/10"
+                  color="text-buildease-orange-600/10 dark:text-buildease-orange-400/10"
                 />
               </div>
             </div>

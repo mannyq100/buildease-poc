@@ -124,16 +124,20 @@ export const TimelineView = React.memo(function TimelineView({
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
+        className="flex flex-col h-full"
       >
-        <Card className="border border-buildease-blue-100/50 dark:border-buildease-blue-900/30 shadow-sm overflow-hidden rounded-lg bg-white/95 dark:bg-gray-900/95">
-          <CardHeader className="bg-buildease-blue-50/30 dark:bg-buildease-blue-950/20 border-b border-buildease-blue-100/50 dark:border-buildease-blue-900/30 pb-4">
+        <Card className="border border-buildease-blue-100/50 dark:border-buildease-blue-900/30 shadow-sm overflow-hidden rounded-lg bg-white/95 dark:bg-gray-900/95 flex flex-col h-full">
+          {/* Sticky Header */}
+          <CardHeader className="bg-buildease-blue-50/30 dark:bg-buildease-blue-950/20 border-b border-buildease-blue-100/50 dark:border-buildease-blue-900/30 pb-4 sticky top-0 z-20 backdrop-blur-sm bg-buildease-blue-50/80 dark:bg-buildease-blue-950/80">
             <CardTitle className="text-lg font-semibold text-buildease-blue-800 dark:text-buildease-blue-200 flex items-center">
               <Calendar className="h-5 w-5 mr-2" />
               Construction Timeline
             </CardTitle>
             <p className="text-buildease-blue-600/70 dark:text-buildease-blue-400/70 text-sm mt-1">Project phases and milestones</p>
           </CardHeader>
-          <CardContent className="p-6">
+          
+          {/* Scrollable Content */}
+          <CardContent className="p-6 flex-1 overflow-y-auto max-h-[60vh]">
             <div className="relative">
               {/* Enhanced Timeline line with responsive positioning */}
               <div className="absolute top-0 bottom-0 left-6 sm:left-8 w-1 bg-gradient-to-b from-buildease-blue-300/60 via-buildease-orange-400/60 to-buildease-blue-300/60 dark:from-buildease-blue-600/60 dark:via-buildease-orange-600/60 dark:to-buildease-blue-600/60 rounded-full z-0"></div>
