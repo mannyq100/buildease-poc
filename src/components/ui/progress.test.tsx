@@ -4,10 +4,7 @@ import { Progress } from './progress'
 
 describe('Progress Component', () => {
   it('should render correctly', () => {
-    const { container, debug } = render(<Progress value={50} />)
-    
-    // Debug the component structure
-    console.log(container.innerHTML)
+    const { container } = render(<Progress value={50} />)
     
     // Root component should have the base classes
     const root = container.firstChild

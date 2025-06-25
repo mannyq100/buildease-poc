@@ -60,8 +60,7 @@ const Messaging: React.FC = () => {
   useEffect(() => {
     setIsLoading(true);
     
-    // Simulate API loading
-    const timer = setTimeout(() => {
+  
       setConversations(
         [...mockConversations].sort((a, b) => 
           new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
@@ -69,9 +68,7 @@ const Messaging: React.FC = () => {
       );
       setMessages(mockMessages);
       setIsLoading(false);
-    }, 1000);
     
-    return () => clearTimeout(timer);
   }, []);
   
   // Filtered team members for selection

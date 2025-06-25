@@ -62,7 +62,7 @@ export function getFilenameFromInspirationUrl(url: string): string | null {
     const urlObj = new URL(url);
     const pathParts = urlObj.pathname.split('/');
     return pathParts[pathParts.length - 1];
-  } catch (error) {
+  } catch {
     console.error('Invalid URL:', url);
     return null;
   }

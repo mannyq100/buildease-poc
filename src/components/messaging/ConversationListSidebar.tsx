@@ -132,11 +132,11 @@ export function ConversationListSidebar({
 
   return (
     <div className={cn(
-      "w-80 border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex flex-col h-full",
+      "w-80 border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex flex-col h-full flex-shrink-0",
       className
     )}>
-      {/* Header */}
-      <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+      {/* Header - Fixed at top */}
+      <div className="flex-shrink-0 p-4 border-b border-slate-200 dark:border-slate-700">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
             Messages
@@ -212,9 +212,9 @@ export function ConversationListSidebar({
         </div>
       </div>
 
-      {/* Conversation list */}
-      <ScrollArea className="flex-1">
-        <div className="p-2">
+      {/* Conversation list - Scrollable area */}
+      <ScrollArea className="flex-1 overflow-hidden scroll-smooth">
+        <div className="p-2 pb-4">
           {filteredConversations.length > 0 ? (
             filteredConversations.map((conversation) => (
               <m.div

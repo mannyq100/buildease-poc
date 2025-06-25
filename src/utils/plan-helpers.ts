@@ -39,7 +39,7 @@ export const formatDate = (dateString?: string) => {
       month: 'short',
       day: 'numeric'
     });
-  } catch (error) {
+  } catch {
     return 'Invalid date';
   }
 };

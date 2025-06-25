@@ -40,8 +40,8 @@ const priorityOptions = [
 ];
 
 export const TaskFilters = ({ onFilterChange, onReset }: TaskFiltersProps) => {
-  const [selectedProject, setSelectedProject] = useState<string | undefined>(undefined);
-  const [phases, setPhases] = useState<string[]>([]);
+  const [_selectedProject, setSelectedProject] = useState<string | undefined>(undefined);
+  const [_phases, setPhases] = useState<string[]>([]);
   const [projectFilter, setProjectFilter] = useState('All Projects');
   const [statusFilter, setStatusFilter] = useState('All Statuses');
   const [priorityFilter, setPriorityFilter] = useState('All Priorities');

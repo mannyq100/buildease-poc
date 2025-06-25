@@ -210,13 +210,12 @@ export const preloadCriticalComponents = () => {
 };
 
 // Performance monitoring for code splitting
-export const trackChunkLoadTime = (chunkName: string) => {
+export const trackChunkLoadTime = (_chunkName: string) => {
   if (process.env.NODE_ENV === 'development') {
     const startTime = performance.now();
     
     return () => {
-      const loadTime = performance.now() - startTime;
-      console.log(`📦 Chunk "${chunkName}" loaded in ${loadTime.toFixed(2)}ms`);
+      const _loadTime = performance.now() - startTime;
       
       // In production, you would send this to your analytics service
       // analytics.track('chunk_load_time', { chunkName, loadTime });

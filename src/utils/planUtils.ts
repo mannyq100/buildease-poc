@@ -144,6 +144,5 @@ export function phasesToMarkdown(phases: Phase[]): string {
  * Force a complete page refresh
  */
 export function forceRefresh() {
-  console.log('Forcing page refresh')
   window.location.href = window.location.href + '?refresh=' + Date.now()
 }

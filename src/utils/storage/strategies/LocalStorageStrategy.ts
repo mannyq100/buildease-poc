@@ -247,7 +247,7 @@ export class LocalStorageStrategy implements StorageStrategy {
           size: item.metadata.size || new Blob([stored]).size
         });
 
-      } catch (error) {
+      } catch {
         // Remove corrupted items
         itemsToRemove.push(key);
       }

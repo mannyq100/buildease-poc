@@ -2,7 +2,6 @@
  * PhaseDetailsPanel.tsx - Component to display detailed information about a phase
  */
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 // UI Components
 import { Button } from '@/components/ui/button';
@@ -45,7 +44,6 @@ interface PhaseDetailsPanelProps {
  * Component that displays detailed information about a phase
  */
 export function PhaseDetailsPanel({ phaseId, onClose }: PhaseDetailsPanelProps) {
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('tasks');
   const { phase, isLoading, error } = usePhaseDetails(phaseId);
 
@@ -231,14 +229,10 @@ export function PhaseDetailsPanel({ phaseId, onClose }: PhaseDetailsPanelProps) 
   ];
 
   // Calculate completion percentage
-  const completedTasks = tasks.filter(t => t.status === 'completed').length;
-  const taskCompletionPercentage = tasks.length > 0 ? 
-    Math.round((completedTasks / tasks.length) * 100) : 0;
+  const _completedTasks = tasks.filter(t => t.status === 'completed').length;
     
   // Calculate materials status
-  const deliveredMaterials = materials.filter(m => m.status === 'delivered').length;
-  const materialsDeliveredPercentage = materials.length > 0 ?
-    Math.round((deliveredMaterials / materials.length) * 100) : 0;
+  const _deliveredMaterials = materials.filter(m => m.status === 'delivered').length;
 
   return (
     <Card className="w-full h-full">

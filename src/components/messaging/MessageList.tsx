@@ -57,16 +57,6 @@ const REACTIONS = [
   { emoji: "🎉", name: "celebrate", emoji_only: true },
 ];
 
-interface MessageGroupProps {
-  messages: Message[];
-  showAvatar: boolean;
-  isCurrentUser: boolean;
-  senderName: string;
-  senderAvatar?: string;
-  isDarkMode?: boolean;
-  onReplyToMessage?: (messageId: string) => void;
-  onAddReaction?: (messageId: string, reaction: string) => void;
-}
 
 // Function to format message timestamp
 const formatMessageTime = (timestamp: string | Date) => {
@@ -80,17 +70,6 @@ const formatMessageTime = (timestamp: string | Date) => {
   }
 };
 
-// Function to format date for date separators
-const _formatMessageDate = (timestamp: string | Date) => {
-  const date = new Date(timestamp);
-  if (isToday(date)) {
-    return "Today";
-  } else if (isYesterday(date)) {
-    return "Yesterday";
-  } else {
-    return format(date, "MMMM d, yyyy");
-  }
-};
 
 // Format date header - used for date separators in the message list
 const formatDateHeader = (date: Date): string => {
@@ -119,12 +98,6 @@ const getStatusIcon = (status: string, isDarkMode: boolean = false) => {
   }
 };
 
-// MessageGroup component for grouping messages from the same sender  
-// Currently unused - may be implemented in future versions
-const _MessageGroup = (_props: MessageGroupProps) => {
-  // Placeholder for future message grouping functionality
-  return null;
-};
 
 // Date separator component  
 const DateSeparator = ({ content }: { content: string }) => (
@@ -161,7 +134,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   }, [messages, scrollToBottom]);
   
   const getParticipant = useCallback((senderId: string): ChatParticipant | undefined => {
-    return participants.find(p => p.id === senderId);
+    return participants?.find(p => p.id === senderId);
   }, [participants]);
   
   // Group messages by sender and date - memoized for performance
@@ -220,9 +193,9 @@ export const MessageList: React.FC<MessageListProps> = ({
   }, [groupedMessages]);
 
   return (
-    <div className={cn("flex flex-col h-full", className)}>
-      <ScrollArea className="flex-1 px-4" ref={scrollRef}>
-        <div className="space-y-1 py-4">
+    <div className={cn("flex flex-col h-full overflow-hidden", className)}>
+      <ScrollArea className="flex-1 px-4 scroll-smooth" ref={scrollRef}>
+        <div className="space-y-1 py-4 pb-6">
           {Object.entries(messagesByDate)
             .sort(([a], [b]) => parseInt(a) - parseInt(b))
             .map(([dateStr, groups]) => {

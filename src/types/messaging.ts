@@ -46,6 +46,7 @@ export interface Reaction {
   emoji: string;
   userId: string;
   timestamp: Date | string;
+  count?: number;
 }
 
 /**

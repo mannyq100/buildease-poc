@@ -53,10 +53,10 @@ export function ChatContainer({
   
   const processedUserRef = useRef<string | null>(null);
 
-  // Check if mobile view
+  // Check if mobile view - use a smaller threshold to show sidebar on tablets
   useEffect(() => {
     const checkIfMobile = () => {
-      setIsMobileView(window.innerWidth < 768);
+      setIsMobileView(window.innerWidth < 640); // Changed from 768 to 640
     };
     
     checkIfMobile();
@@ -84,6 +84,13 @@ export function ChatContainer({
     }
   }, [targetUserId, conversations]);
 
+  // Auto-select first conversation if none is selected and conversations exist
+  useEffect(() => {
+    if (!activeConversationId && conversations.length > 0 && !targetUserId) {
+      setActiveConversationId(conversations[0].id);
+    }
+  }, [conversations, activeConversationId, targetUserId]);
+
   // Get active conversation
   const activeConversation = conversations.find(conv => conv.id === activeConversationId);
   const conversationMessages = activeConversationId ? messages[activeConversationId] || [] : [];
@@ -93,9 +100,13 @@ export function ChatContainer({
     if (isMobileView) {
       setShowConversationList(!activeConversationId);
     } else {
+      // For desktop/tablet, always show conversation list
       setShowConversationList(true);
     }
   }, [activeConversationId, isMobileView]);
+
+  // Force show conversation list on desktop as fallback
+  const shouldShowSidebar = !isMobileView || showConversationList;
 
   const handleConversationSelect = (conversationId: string) => {
     setActiveConversationId(conversationId);
@@ -106,7 +117,7 @@ export function ChatContainer({
   };
 
   const handleSendMessage = (content: string, type: Message['type'] = 'text') => {
-    if (!activeConversationId || !content.trim()) return;
+    if (!activeConversationId || !content?.trim()) return;
 
     const newMessage: Message = {
       id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -153,8 +164,8 @@ export function ChatContainer({
   };
 
   return (
-    <div className={cn("flex h-full bg-white dark:bg-slate-900", className)}>
-      {/* Conversation List Sidebar */}
+    <div className={cn("flex h-full bg-white dark:bg-slate-900 overflow-hidden", className)}>
+      {/* Conversation List Sidebar - Fixed width, full height, scrollable content */}
       <ConversationListSidebar
         conversations={conversations}
         activeConversationId={activeConversationId}
@@ -162,11 +173,11 @@ export function ChatContainer({
         onConversationSelect={handleConversationSelect}
         onCreateConversation={onCreateConversation}
         isMobileView={isMobileView}
-        isVisible={showConversationList}
+        isVisible={shouldShowSidebar}
       />
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+      {/* Main Chat Area - Flex 1, full height, constrained */}
+      <div className="flex-1 flex flex-col min-h-0">
         {activeConversation ? (
           <>
             {/* Chat Header */}
@@ -181,32 +192,42 @@ export function ChatContainer({
               onDelete={handleDelete}
             />
 
-            {/* Messages */}
-            <div className="flex-1 flex flex-col">
-              <MessageList 
-                messages={conversationMessages}
-                currentUser={currentUser}
-                conversation={activeConversation}
-                onReply={(message) => setReplyingTo({
-                  id: message.id,
-                  content: message.content,
-                  senderName: message.senderId === currentUser.id 
-                    ? 'You' 
-                    : activeConversation.participants.find(p => p.id === message.senderId)?.name || 'Unknown'
-                })}
-                className="flex-1"
-              />
+            {/* Messages Container - Scrollable area with fixed header and input */}
+            <div className="flex-1 flex flex-col min-h-0">
+              {/* Messages Area - Scrollable, takes remaining space */}
+              <div className="flex-1 min-h-0">
+                <MessageList 
+                  messages={conversationMessages}
+                  participants={activeConversation.participants}
+                  currentUser={currentUser}
+                  onReplyToMessage={(messageId) => {
+                    const message = conversationMessages.find(m => m.id === messageId);
+                    if (message) {
+                      setReplyingTo({
+                        id: message.id,
+                        content: message.content,
+                        senderName: message.senderId === currentUser.id 
+                          ? 'You' 
+                          : activeConversation.participants.find(p => p.id === message.senderId)?.name || 'Unknown'
+                      });
+                    }
+                  }}
+                  className="h-full"
+                />
+              </div>
 
-              {/* Message Input */}
-              <MessageInput 
-                value={newMessage}
-                onChange={setNewMessage}
-                onSend={handleSendMessage}
-                placeholder="Type a message..."
-                isDarkMode={isDarkMode}
-                replyingTo={replyingTo}
-                onCancelReply={() => setReplyingTo(null)}
-              />
+              {/* Message Input - Fixed at bottom */}
+              <div className="flex-shrink-0 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+                <MessageInput 
+                  value={newMessage}
+                  onChange={setNewMessage}
+                  onSend={handleSendMessage}
+                  placeholder="Type a message..."
+                  isDarkMode={isDarkMode}
+                  replyingTo={replyingTo}
+                  onCancelReply={() => setReplyingTo(null)}
+                />
+              </div>
             </div>
           </>
         ) : (

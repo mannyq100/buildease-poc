@@ -111,7 +111,7 @@ export function TeamMembersSection({
                   <div className="flex items-center justify-center p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer">
                     <div className="flex flex-col items-center text-center">
                       <div className="flex -space-x-2 overflow-hidden">
-                        {processedMembers.slice(6, 9).map((member, index) => (
+                        {processedMembers.slice(6, 9).map((member) => (
                           <Avatar key={member.id} className="h-8 w-8 border-2 border-white dark:border-slate-800">
                             <AvatarFallback className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300 text-xs">
                               {getInitials(member.name || member.id)}

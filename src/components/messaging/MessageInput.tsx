@@ -35,7 +35,7 @@ import { cn } from '@/utils/core/ui';
 interface MessageInputProps {
   value: string;
   onChange: (value: string) => void;
-  onSend: () => void;
+  onSend: (content: string) => void;
   onSendAttachment?: (file: File) => void;
   onTypingStart?: () => void;
   onTypingEnd?: () => void;
@@ -133,10 +133,10 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const handleSendMessage = () => {
     const trimmedMessage = value.trim();
     if (trimmedMessage && !disabled) {
-      // Clear input first for better UX
+      // Send the message first
+      onSend(trimmedMessage);
+      // Clear input after sending for better UX
       onChange("");
-      // Then send the message
-      onSend();
       
       if (onTypingEnd) {
         onTypingEnd();
