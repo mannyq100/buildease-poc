@@ -118,8 +118,8 @@ export function StepNavigator({
   return (
     <LazyMotion features={domAnimation}>
       <div className={cn("mb-6 md:mb-10", className)}>
-        {/* Desktop & Tablet Step Indicators */}
-        <div className="flex items-start justify-center max-w-5xl mx-auto mb-8">
+        {/* Simplified Step Indicators */}
+        <div className="flex items-start justify-center max-w-4xl mx-auto mb-8">
           {visibleSteps.map((step, index) => {
             const isActive = currentStep === step.id;
             const isCompleted = currentStep > step.id;
@@ -134,28 +134,28 @@ export function StepNavigator({
                     onClick={() => handleStepClick(step.id)}
                     disabled={!isClickable}
                     className={cn(
-                      "relative flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-xl transition-all duration-300 mb-3 border-2",
+                      "relative flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full transition-all duration-300 mb-3 border-2",
                       isActive 
-                        ? "bg-gradient-to-br from-[#2B6CB0] to-[#2B6CB0]/90 text-white shadow-lg border-[#2B6CB0]" 
+                        ? "bg-[#2B6CB0] text-white shadow-lg border-[#2B6CB0]" 
                         : isCompleted 
-                          ? "bg-gradient-to-br from-[#ED8936] to-[#ED8936]/90 text-white shadow-md border-[#ED8936]"
-                          : "bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700",
+                          ? "bg-[#ED8936] text-white shadow-md border-[#ED8936]"
+                          : "bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-300 dark:border-slate-600",
                       isClickable ? "cursor-pointer hover:shadow-lg hover:scale-105" : "cursor-default"
                     )}
                     whileHover={isClickable ? { scale: 1.05 } : {}}
                     whileTap={isClickable ? { scale: 0.95 } : {}}
                     aria-label={`${isClickable ? 'Go to' : ''} step ${step.id}: ${step.title}`}
                   >
-                    {/* Active step pulse animation */}
+                    {/* Simplified active step pulse */}
                     {isActive && (
                       <m.div
-                        className="absolute inset-0 rounded-xl bg-[#2B6CB0]/20"
+                        className="absolute inset-0 rounded-full bg-[#2B6CB0]/20"
                         animate={{
-                          scale: [1, 1.2, 1],
-                          opacity: [0.5, 0, 0.5]
+                          scale: [1, 1.15, 1],
+                          opacity: [0.6, 0, 0.6]
                         }}
                         transition={{
-                          duration: 2,
+                          duration: 2.5,
                           repeat: Infinity,
                           ease: "easeInOut"
                         }}
@@ -214,50 +214,27 @@ export function StepNavigator({
           })}
         </div>
         
-        {/* Progress Bar Section */}
+        {/* Simplified Progress Bar Section */}
         <div className="max-w-2xl mx-auto">
-          {/* Progress Info */}
-          <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-400 mb-3">
+          {/* Cleaner Progress Info */}
+          <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-400 mb-4">
             <span className="font-medium font-inter">
               Step {currentStep} of {totalSteps}
             </span>
-            <div className="flex items-center gap-2">
-              <m.span 
-                className="text-xs px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-full font-opensans"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                key={`steps-${progress}`}
-              >
-                {Math.round(progress)}% Steps
-              </m.span>
-            </div>
+            <span className="text-xs px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-full font-opensans">
+              {Math.round(progress)}% complete
+            </span>
           </div>
           
-          {/* Animated Progress Bar */}
-          <div className="relative h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+          {/* Simplified Progress Bar */}
+          <div className="relative h-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
             <m.div 
               className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#2B6CB0] to-[#ED8936] rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
               transition={{ 
-                duration: 0.8, 
-                ease: "easeOut",
-                type: "spring",
-                stiffness: 100
-              }}
-            />
-            
-            {/* Shine effect */}
-            <m.div
-              className="absolute top-0 h-full w-8 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-              animate={{
-                left: [`-2rem`, `${progress + 2}%`]
-              }}
-              transition={{
-                duration: 1.5,
-                repeat: Infinity,
-                repeatDelay: 2,
-                ease: "easeInOut"
+                duration: 0.6, 
+                ease: "easeOut"
               }}
             />
           </div>

@@ -268,7 +268,7 @@ function CreateProjectContent() {
     requiredFields.forEach(field => {
       const value = formValues[field];
       if (!value || (typeof value === 'string' && value.trim() === '')) {
-        missingFields.push(field);
+        missingFields.push(String(field));
       }
     });
     
@@ -352,14 +352,14 @@ function CreateProjectContent() {
   }, [jumpToStep]);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-      <div className="container mx-auto px-6 py-6 md:py-8 max-w-6xl">
-        {/* BuildEase Header */}
-        <div className="text-center mb-8 md:mb-12">
-          <h1 className="text-2xl md:text-3xl font-bold mb-2 text-slate-900 dark:text-white font-inter">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
+      <div className="container mx-auto px-6 py-8 md:py-12 max-w-6xl">
+        {/* Enhanced BuildEase Header */}
+        <div className="text-center mb-10 md:mb-16">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-slate-900 dark:text-white font-inter bg-gradient-to-r from-[#2B6CB0] to-[#ED8936] bg-clip-text text-transparent">
             Create New Project
           </h1>
-          <p className="text-base text-slate-600 dark:text-slate-400 max-w-xl mx-auto font-opensans">
+          <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto font-opensans leading-relaxed">
             Let's build something amazing together
           </p>
         </div>
@@ -384,9 +384,9 @@ function CreateProjectContent() {
                   transition={{ duration: 0.3, ease: "easeOut" }}
                   className="space-y-6"
                 >
-                  {/* Simplified Step Content Card */}
-                  <Card className="bg-white dark:bg-slate-800 border-0 shadow-sm rounded-xl">
-                    <div className="p-6 md:p-8">
+                  {/* Enhanced Step Content Card */}
+                  <Card className="bg-white dark:bg-slate-800 border-0 shadow-lg shadow-slate-200/50 dark:shadow-slate-900/50 rounded-2xl backdrop-blur-sm">
+                    <div className="p-8 md:p-10">
                       {/* Step Content */}
                       <div className="max-w-2xl">
                         {renderStepContent()}
@@ -395,16 +395,16 @@ function CreateProjectContent() {
                   </Card>
                   
                   
-                  {/* BuildEase Navigation */}
-                  <div className="flex items-center justify-between pt-4">
+                  {/* Enhanced BuildEase Navigation */}
+                  <div className="flex items-center justify-between pt-6">
                     <Button
                       type="button"
                       variant="outline"
                       onClick={handleBack}
                       disabled={currentStep === 1}
-                      className="px-4 py-2 text-sm border border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 bg-white dark:bg-slate-800 rounded-lg transition-all duration-200 disabled:opacity-50 font-opensans"
+                      className="min-h-[44px] px-6 py-3 text-sm border-2 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 bg-white dark:bg-slate-800 rounded-xl transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:border-slate-200 dark:disabled:border-slate-700 disabled:bg-slate-50 dark:disabled:bg-slate-900 font-opensans shadow-sm hover:shadow-md disabled:shadow-none"
                     >
-                      <ChevronLeft className="mr-1 h-4 w-4" />
+                      <ChevronLeft className="mr-2 h-4 w-4" />
                       <span>Back</span>
                     </Button>
                       
@@ -412,10 +412,10 @@ function CreateProjectContent() {
                       type="button"
                       onClick={handleNext}
                       className={cn(
-                        "px-6 py-2 text-sm rounded-lg font-medium transition-all duration-200 font-opensans",
+                        "min-h-[44px] px-8 py-3 text-sm rounded-xl font-medium transition-all duration-200 font-opensans shadow-lg hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed disabled:shadow-md disabled:transform-none",
                         currentStep === totalSteps
-                          ? "bg-gradient-to-r from-[#ED8936] to-[#ED8936]/90 hover:from-[#ED8936]/90 hover:to-[#ED8936]/80 text-white shadow-sm"
-                          : "bg-gradient-to-r from-[#2B6CB0] to-[#2B6CB0]/90 hover:from-[#2B6CB0]/90 hover:to-[#2B6CB0]/80 text-white shadow-sm"
+                          ? "bg-gradient-to-r from-[#ED8936] to-[#ED8936]/90 hover:from-[#ED8936]/90 hover:to-[#ED8936]/80 text-white disabled:from-slate-400 disabled:to-slate-500"
+                          : "bg-gradient-to-r from-[#2B6CB0] to-[#2B6CB0]/90 hover:from-[#2B6CB0]/90 hover:to-[#2B6CB0]/80 text-white disabled:from-slate-400 disabled:to-slate-500"
                       )}
                       disabled={isSubmitting}
                     >

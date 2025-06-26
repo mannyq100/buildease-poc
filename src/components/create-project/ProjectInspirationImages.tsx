@@ -204,7 +204,7 @@ function ProjectInspirationImagesComponent({ control, className = '' }: ProjectI
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    className="bg-white/90 text-slate-800 hover:bg-white border-0 shadow-lg font-opensans"
+                                    className="min-h-[44px] px-4 py-2 bg-white/90 text-slate-800 hover:bg-white border-0 shadow-lg font-opensans rounded-xl"
                                     onClick={() => setProfileImage(preview.id)}
                                   >
                                     Set as Main
@@ -214,10 +214,10 @@ function ProjectInspirationImagesComponent({ control, className = '' }: ProjectI
                                   type="button"
                                   variant="destructive"
                                   size="icon"
-                                  className="h-8 w-8 bg-red-500/90 hover:bg-red-600 border-0 shadow-lg"
+                                  className="min-h-[44px] min-w-[44px] bg-red-500/90 hover:bg-red-600 border-0 shadow-lg rounded-xl"
                                   onClick={() => removeImage(preview.id)}
                                 >
-                                  <X className="h-4 w-4" />
+                                  <X className="h-5 w-5" />
                                 </Button>
                               </div>
                             </div>

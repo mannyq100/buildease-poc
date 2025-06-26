@@ -58,11 +58,13 @@ interface ReviewSectionProps {
 
 function ReviewSection({ title, icon, children, className = '' }: ReviewSectionProps) {
   return (
-    <Card className={cn("border-0 shadow-sm bg-white dark:bg-slate-800", className)}>
+    <Card className={cn("border border-slate-200 dark:border-slate-700 shadow-md bg-white dark:bg-slate-800 rounded-lg", className)}>
       <div className="p-6">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 bg-gradient-to-br from-[#2B6CB0]/10 to-[#ED8936]/10 rounded-xl flex items-center justify-center">
-            {icon}
+          <div className="w-10 h-10 bg-[#2B6CB0]/10 dark:bg-[#2B6CB0]/20 rounded-lg flex items-center justify-center border border-[#2B6CB0]/20">
+            <div className="text-[#2B6CB0]">
+              {icon}
+            </div>
           </div>
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white font-inter">
             {title}
@@ -83,12 +85,12 @@ interface InfoItemProps {
 
 function InfoItem({ label, value, className = '' }: InfoItemProps) {
   return (
-    <div className={cn("space-y-1", className)}>
-      <p className="text-sm font-medium text-slate-500 dark:text-slate-400 font-opensans">
+    <div className={cn("p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600 space-y-2", className)}>
+      <p className="text-sm font-medium text-slate-600 dark:text-slate-400 font-opensans">
         {label}
       </p>
-      <p className="text-base text-slate-900 dark:text-white font-inter">
-        {value || 'Not specified'}
+      <p className="text-base font-semibold text-slate-900 dark:text-white font-inter">
+        {value || <span className="text-slate-400 dark:text-slate-500 font-normal">Not specified</span>}
       </p>
     </div>
   );
@@ -140,12 +142,11 @@ export function ReviewSubmitForm() {
           >
             <ReviewSection
               title="Inspiration Images"
-              icon={<Camera className="h-5 w-5 text-[#2B6CB0]" />}
-              className="bg-gradient-to-br from-slate-50 to-white dark:from-slate-800 dark:to-slate-800"
+              icon={<Camera className="h-4 w-4" />}
             >
               <div className="space-y-4">
                 {/* Main Image Display */}
-                <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700">
+                <div className="relative aspect-video rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600">
                   {profileImage && (
                     <>
                       <img
@@ -153,7 +154,7 @@ export function ReviewSubmitForm() {
                         alt="Main inspiration"
                         className="w-full h-full object-cover"
                       />
-                      <div className="absolute top-4 left-4">
+                      <div className="absolute top-3 left-3">
                         <Badge className="bg-[#ED8936] hover:bg-[#ED8936]/90 text-white border-0">
                           <Star className="h-3 w-3 mr-1" />
                           Main Image
@@ -163,41 +164,50 @@ export function ReviewSubmitForm() {
                   )}
                 </div>
 
-                {/* Thumbnail Gallery */}
+                {/* Simple Thumbnail Gallery */}
                 {localFiles.length > 1 && (
-                  <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
-                    {localFiles.map((file, index) => (
-                      <button
-                        key={file.id}
-                        onClick={() => setSelectedImageIndex(index)}
-                        className={cn(
-                          "relative aspect-square rounded-lg overflow-hidden border-2 transition-all duration-300",
-                          file.id === localProfileImageId
-                            ? "border-[#ED8936] ring-2 ring-[#ED8936]/20"
-                            : "border-slate-200 dark:border-slate-600 hover:border-[#2B6CB0]"
-                        )}
-                      >
-                        <img
-                          src={file.previewUrl}
-                          alt={`Inspiration ${index + 1}`}
-                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
-                        />
-                        {file.id === localProfileImageId && (
-                          <div className="absolute top-1 right-1">
-                            <div className="w-4 h-4 bg-[#ED8936] rounded-full flex items-center justify-center">
-                              <Star className="h-2 w-2 text-white" />
+                  <div>
+                    <h4 className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-3 font-opensans">
+                      All Images ({localFiles.length})
+                    </h4>
+                    <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
+                      {localFiles.map((file, index) => (
+                        <div
+                          key={file.id}
+                          className={cn(
+                            "relative aspect-square rounded-lg overflow-hidden border-2",
+                            file.id === localProfileImageId
+                              ? "border-[#ED8936]"
+                              : "border-slate-200 dark:border-slate-600"
+                          )}
+                        >
+                          <img
+                            src={file.previewUrl}
+                            alt={`Inspiration ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          {file.id === localProfileImageId && (
+                            <div className="absolute top-1 right-1">
+                              <div className="w-4 h-4 bg-[#ED8936] rounded-full flex items-center justify-center">
+                                <Star className="h-2 w-2 text-white" />
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </button>
-                    ))}
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
-                <p className="text-sm text-slate-600 dark:text-slate-400 font-opensans">
-                  {localFiles.length} inspiration image{localFiles.length !== 1 ? 's' : ''} uploaded
-                  {profileImage && ' • Main image selected'}
-                </p>
+                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 border border-slate-200 dark:border-slate-600">
+                  <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 font-opensans">
+                    <Info className="h-4 w-4 text-[#2B6CB0]" />
+                    <span>
+                      {localFiles.length} inspiration image{localFiles.length !== 1 ? 's' : ''} uploaded
+                      {profileImage && ' • Main image selected'}
+                    </span>
+                  </div>
+                </div>
               </div>
             </ReviewSection>
           </m.div>
@@ -211,7 +221,7 @@ export function ReviewSubmitForm() {
         >
           <ReviewSection
             title="Project Overview"
-            icon={<Building className="h-5 w-5 text-[#2B6CB0]" />}
+            icon={<Building className="h-4 w-4" />}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <InfoItem label="Project Name" value={formValues.name} />
@@ -223,11 +233,13 @@ export function ReviewSubmitForm() {
               )}
             </div>
             
-            {/* Owner Details (if different) */}
+            {/* Owner Details */}
             {(formValues.owner || formValues.email || formValues.phoneNumber) && (
               <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
-                <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                  <User className="h-4 w-4" />
+                <h4 className="text-base font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2 font-inter">
+                  <div className="w-8 h-8 bg-[#2B6CB0]/10 dark:bg-[#2B6CB0]/20 rounded-lg flex items-center justify-center border border-[#2B6CB0]/20">
+                    <User className="h-4 w-4 text-[#2B6CB0]" />
+                  </div>
                   Owner Information
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -248,7 +260,7 @@ export function ReviewSubmitForm() {
         >
           <ReviewSection
             title="Location & Site"
-            icon={<MapPin className="h-5 w-5 text-[#2B6CB0]" />}
+            icon={<MapPin className="h-4 w-4" />}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <InfoItem label="Location" value={formValues.location} />
@@ -276,7 +288,7 @@ export function ReviewSubmitForm() {
         >
           <ReviewSection
             title="Building Specifications"
-            icon={<Home className="h-5 w-5 text-[#2B6CB0]" />}
+            icon={<Home className="h-4 w-4" />}
           >
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               <InfoItem 
@@ -305,7 +317,7 @@ export function ReviewSubmitForm() {
         >
           <ReviewSection
             title="Budget & Timeline"
-            icon={<DollarSign className="h-5 w-5 text-[#2B6CB0]" />}
+            icon={<DollarSign className="h-4 w-4" />}
           >
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <InfoItem 
@@ -327,7 +339,7 @@ export function ReviewSubmitForm() {
           >
             <ReviewSection
               title="Materials & Construction"
-              icon={<Layers className="h-5 w-5 text-[#2B6CB0]" />}
+              icon={<Layers className="h-4 w-4" />}
             >
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {formValues.structureType && <InfoItem label="Structure Type" value={capitalize(formValues.structureType)} />}
@@ -349,16 +361,16 @@ export function ReviewSubmitForm() {
           >
             <ReviewSection
               title="Special Features"
-              icon={<Sparkles className="h-5 w-5 text-[#2B6CB0]" />}
+              icon={<Sparkles className="h-4 w-4" />}
             >
               <div className="space-y-6">
-                {formValues.specialFeatures?.length > 0 && (
+                {(formValues.specialFeatures?.length ?? 0) > 0 && (
                   <div>
                     <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">
                       Special Features
                     </h4>
                     <div className="flex flex-wrap gap-2">
-                      {formValues.specialFeatures.map((feature, index) => (
+                      {formValues.specialFeatures?.map((feature: string, index: number) => (
                         <Badge 
                           key={index} 
                           variant="secondary" 
@@ -371,13 +383,13 @@ export function ReviewSubmitForm() {
                   </div>
                 )}
                 
-                {formValues.sustainabilityFeatures?.length > 0 && (
+                {(formValues.sustainabilityFeatures?.length ?? 0) > 0 && (
                   <div>
                     <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">
                       Sustainability Features
                     </h4>
                     <div className="flex flex-wrap gap-2">
-                      {formValues.sustainabilityFeatures.map((feature, index) => (
+                      {formValues.sustainabilityFeatures?.map((feature: string, index: number) => (
                         <Badge 
                           key={index} 
                           variant="secondary" 
@@ -403,7 +415,7 @@ export function ReviewSubmitForm() {
           >
             <ReviewSection
               title="Additional Information"
-              icon={<FileText className="h-5 w-5 text-[#2B6CB0]" />}
+              icon={<FileText className="h-4 w-4" />}
             >
               <div className="space-y-6">
                 {formValues.siteConstraints && (
