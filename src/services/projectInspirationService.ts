@@ -1,7 +1,7 @@
 /**
  * Service for handling project inspiration image uploads
  */
-import { uploadFile, deleteFile, FILE_TYPE_PRESETS } from '@/utils/core/fileUpload';
+import { uploadFile, deleteFile, FILE_TYPE_PRESETS } from '@/utils/core/storageUtils';
 import type { FileUploadResult, DeleteFileResult } from '@/types/fileUpload';
 
 const STORAGE_BUCKET = 'project-inspiration';

@@ -137,6 +137,14 @@ export async function createProject(formData: ProjectFormValues, userId: string)
       .eq('id', projectId)
       .single();
       
+    console.log('✅ Project retrieved from database:', {
+      id: createdProject?.id,
+      name: createdProject?.name,
+      profile_image: createdProject?.profile_image,
+      images: createdProject?.images,
+      imagesCount: createdProject?.images?.length || 0
+    });
+      
     
     if (fetchError || !createdProject) {
       console.error('Error fetching created project:', fetchError);
@@ -160,8 +168,10 @@ export async function createProject(formData: ProjectFormValues, userId: string)
       // Don't fail the entire operation for this
     }
     
-    // Log the project creation in audit log
-    await logProjectCreation(createdProject.id, userId);
+    // Log the project creation in audit log (non-blocking)
+    logProjectCreation(createdProject.id, userId).catch(error => {
+      console.warn('Audit log failed (non-critical):', error);
+    });
     
     return {
       success: true,
@@ -264,7 +274,8 @@ export function validateProjectData(formData: ProjectFormValues): { isValid: boo
  */
 async function logProjectCreation(projectId: string, userId: string): Promise<void> {
   try {
-    await supabase
+    console.log('📝 Attempting to log project creation to audit log...');
+    const { error } = await supabase
       .from(TABLE_NAMES.AUDIT_LOG)
       .insert([{
         user_id: userId,
@@ -273,11 +284,23 @@ async function logProjectCreation(projectId: string, userId: string): Promise<vo
         entity_id: projectId,
         details: {
           description: 'New project created through wizard',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          projectId,
+          userId
         }
       }]);
+      
+    if (error) {
+      console.error('❌ Audit log insertion failed:', error);
+      if (error.message?.includes('policy')) {
+        console.error('🔒 This appears to be a Row Level Security (RLS) policy issue');
+        console.error('💡 To fix: Run the audit log permissions SQL script in Supabase');
+      }
+    } else {
+      console.log('✅ Project creation logged to audit log successfully');
+    }
   } catch (error) {
     // Don't fail the entire operation if audit logging fails
-    console.warn('Could not log project creation:', error);
+    console.warn('⚠️ Could not log project creation (non-critical):', error);
   }
 }

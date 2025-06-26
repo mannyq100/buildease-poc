@@ -380,6 +380,13 @@ CREATE POLICY "Admins can view all audit logs"
     FOR SELECT
     USING (private.is_admin_direct(auth.uid()));
 
+CREATE POLICY "Authenticated users can create audit log entries"
+    ON construction_mgr.be_audit_log
+    FOR INSERT
+    WITH CHECK (
+        auth.uid() IS NOT NULL AND user_id = auth.uid()
+    );
+
 -- ==============================================================================
 -- TASK TABLE POLICIES
 -- ==============================================================================

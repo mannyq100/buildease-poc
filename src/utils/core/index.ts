@@ -38,10 +38,7 @@ export * from './ui';
 // Export all validation utilities
 export * from './validation';
 
-// Export all file upload utilities
-export * from './fileUpload';
-
-// Export all storage utilities
+// Export all storage utilities (includes file upload functionality)
 export * from './storageUtils';
 
 // Export logging utilities

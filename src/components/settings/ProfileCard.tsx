@@ -10,7 +10,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { User, Mail, Phone, Briefcase, Camera } from 'lucide-react';
-import { createPreviewUrl, revokePreviewUrl } from '@/utils/core/fileUpload';
+import { createPreviewUrl, revokePreviewUrl } from '@/utils/core/storageUtils';
 import { uploadProfilePicture } from '@/utils/core/storageUtils';
 import { useToast } from '@/hooks/use-toast';
 import type { SettingsFormData, ProfileUploadState } from '@/types/settings';

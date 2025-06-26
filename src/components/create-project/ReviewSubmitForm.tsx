@@ -1,13 +1,18 @@
 /**
  * ReviewSubmitForm.tsx
- * Final step of the project creation wizard
- * Shows summary of all entered information for review before submission
+ * Final step of the project creation wizard - Redesigned for BuildEase
+ * Features a stunning image gallery, professional layout, and comprehensive project summary
+ * Utilizes Zustand store for state management
  */
 import React from 'react';
 import { useFormContext } from 'react-hook-form';
-import { ProjectFormValues } from '../../pages/CreateProject';
+import { LazyMotion, domAnimation, m } from 'framer-motion';
+import { CreateProjectFormValues } from '../../pages/CreateProject';
+import { useCreateProjectImages } from '@/stores/createProjectStore';
 import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { cn } from '@/utils/core/ui';
 import { 
   Building, 
   MapPin, 
@@ -15,15 +20,14 @@ import {
   DollarSign, 
   Layers, 
   Sparkles, 
-  User, 
-  Phone, 
-  Mail,
-  ChevronDown,
-  ChevronUp,
-  Edit
+  User,
+  Camera,
+  Check,
+  Lightbulb,
+  FileText,
+  Info,
+  Star
 } from 'lucide-react';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Button } from '@/components/ui/button';
 
 // Helper function to format currency
 const formatCurrency = (value: string, currencyCode: string) => {
@@ -39,275 +43,416 @@ const formatCurrency = (value: string, currencyCode: string) => {
   }).format(numericValue);
 };
 
+// Helper function to capitalize text
+const capitalize = (text: string) => {
+  return text.charAt(0).toUpperCase() + text.slice(1).replace(/-/g, ' ');
+};
+
+// Section component for organized display
+interface ReviewSectionProps {
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+}
+
+function ReviewSection({ title, icon, children, className = '' }: ReviewSectionProps) {
+  return (
+    <Card className={cn("border-0 shadow-sm bg-white dark:bg-slate-800", className)}>
+      <div className="p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 bg-gradient-to-br from-[#2B6CB0]/10 to-[#ED8936]/10 rounded-xl flex items-center justify-center">
+            {icon}
+          </div>
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white font-inter">
+            {title}
+          </h3>
+        </div>
+        {children}
+      </div>
+    </Card>
+  );
+}
+
+// Info item component
+interface InfoItemProps {
+  label: string;
+  value: string | number;
+  className?: string;
+}
+
+function InfoItem({ label, value, className = '' }: InfoItemProps) {
+  return (
+    <div className={cn("space-y-1", className)}>
+      <p className="text-sm font-medium text-slate-500 dark:text-slate-400 font-opensans">
+        {label}
+      </p>
+      <p className="text-base text-slate-900 dark:text-white font-inter">
+        {value || 'Not specified'}
+      </p>
+    </div>
+  );
+}
+
 export function ReviewSubmitForm() {
-  const { getValues } = useFormContext<ProjectFormValues>();
+  const { getValues } = useFormContext<CreateProjectFormValues>();
+  const { localFiles, localProfileImageId } = useCreateProjectImages();
+  
+  // Get current form values from react-hook-form
   const formValues = getValues();
   
   // Format the expected start date
   const formattedStartDate = formValues.expectedStartDate ? 
     format(new Date(formValues.expectedStartDate), 'dd MMM yyyy') : 
-    'Not specified';
-  
-  // Format the budget
-  const formattedBudget = formValues.budget ? 
-    formatCurrency(formValues.budget, formValues.currency) : 
-    'Not specified';
-  
+    'To be determined';
+
+  // Get profile image
+  const profileImage = localFiles.find(file => file.id === localProfileImageId);
+
   return (
-    <div className="space-y-8">
-      <div className="text-center mb-8">
-        <h2 className="text-xl font-semibold text-slate-900 dark:text-white font-inter mb-2">
-          Review Your Project Details
-        </h2>
-        <p className="text-sm text-slate-600 dark:text-slate-400 font-opensans max-w-2xl mx-auto">
-          Please review all information before generating your project plan
-        </p>
-      </div>
-      
-      {/* Project Details Section */}
-      <ReviewSection
-        title="Project Details"
-        icon={<Building className="h-5 w-5" />}
-        editStep={1}
-      >
-        <div className="space-y-2">
-          <ReviewItem label="Project Name" value={formValues.name} />
-          <ReviewItem label="Project Type" value={formValues.projectType} />
-          <ReviewItem label="Description" value={formValues.description || 'Not provided'} />
-          <div className="pt-2 border-t border-gray-100 dark:border-gray-800 mt-2">
-            <h4 className="text-sm font-medium mb-2 flex items-center">
-              <User className="h-4 w-4 mr-1" />
-              Owner Information
-            </h4>
-            <div className="space-y-1 pl-5">
-              <ReviewItem label="Owner" value={formValues.owner || 'Not specified'} />
-              <div className="flex items-center text-sm">
-                <Phone className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400 mr-1.5" />
-                <span className="text-gray-600 dark:text-gray-400 mr-1">Phone:</span>
-                <span className="font-medium">{formValues.phoneNumber || 'Not provided'}</span>
-              </div>
-              <div className="flex items-center text-sm">
-                <Mail className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400 mr-1.5" />
-                <span className="text-gray-600 dark:text-gray-400 mr-1">Email:</span>
-                <span className="font-medium">{formValues.email || 'Not provided'}</span>
-              </div>
-            </div>
+    <LazyMotion features={domAnimation}>
+      <div className="space-y-8">
+        {/* Header Section */}
+        <m.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center"
+        >
+          <div className="w-16 h-16 bg-gradient-to-br from-[#2B6CB0] to-[#ED8936] rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Check className="h-8 w-8 text-white" />
           </div>
-        </div>
-      </ReviewSection>
-      
-      {/* Location Section */}
-      <ReviewSection
-        title="Location & Plot"
-        icon={<MapPin className="h-5 w-5" />}
-        editStep={2}
-      >
-        <div className="space-y-2">
-          <ReviewItem label="Address" value={formValues.location} />
-          <ReviewItem label="Region" value={formValues.region} />
-          <ReviewItem 
-            label="Plot Size" 
-            value={`${formValues.plotSize} ${formValues.plotSizeUnit === 'sq-m' ? 'square meters' : 
-                   formValues.plotSizeUnit === 'sq-ft' ? 'square feet' : 
-                   formValues.plotSizeUnit === 'acres' ? 'acres' : 'hectares'}`} 
-          />
-          <ReviewItem 
-            label="Terrain" 
-            value={formValues.terrain || 'Not specified'} 
-          />
-          <ReviewItem 
-            label="Nearby Landmarks" 
-            value={formValues.nearbyLandmarks || 'None specified'} 
-          />
-        </div>
-      </ReviewSection>
-      
-      {/* Building Specs Section */}
-      <ReviewSection
-        title="Building Specifications"
-        icon={<Home className="h-5 w-5" />}
-        editStep={3}
-      >
-        <div className="space-y-2">
-          <ReviewItem 
-            label="Building Size" 
-            value={`${formValues.buildingSize} ${formValues.buildingSizeUnit === 'sq-m' ? 'square meters' : 'square feet'}`} 
-          />
-          <ReviewItem label="Storeys" value={formValues.storeys} />
-          <ReviewItem label="Bedrooms" value={formValues.bedrooms} />
-          <ReviewItem label="Bathrooms" value={formValues.bathrooms} />
-          <ReviewItem label="Kitchens" value={formValues.kitchens || '1'} />
-          <ReviewItem label="Living Areas" value={formValues.livingAreas || '1'} />
-          <ReviewItem label="Building Style" value={formValues.buildingStyle || 'Not specified'} />
-        </div>
-      </ReviewSection>
-      
-      {/* Budget & Timeline Section */}
-      <ReviewSection
-        title="Budget & Timeline"
-        icon={<DollarSign className="h-5 w-5" />}
-        editStep={4}
-      >
-        <div className="space-y-2">
-          <ReviewItem label="Total Budget" value={formattedBudget} />
-          <ReviewItem label="Timeframe" value={formValues.timeframe ? `${formValues.timeframe} months` : 'Not specified'} />
-          <ReviewItem label="Expected Start Date" value={formattedStartDate} />
-        </div>
-      </ReviewSection>
-      
-      {/* Materials Section */}
-      <ReviewSection
-        title="Materials & Construction"
-        icon={<Layers className="h-5 w-5" />}
-        editStep={5}
-      >
-        <div className="space-y-2">
-          <ReviewItem label="Structure Type" value={formValues.structureType || 'Not specified'} />
-          <ReviewItem label="Foundation Type" value={formValues.foundationType || 'Not specified'} />
-          <ReviewItem label="Roof Type" value={formValues.roofType || 'Not specified'} />
-          <ReviewItem label="Wall Material" value={formValues.wallMaterial || 'Not specified'} />
-          <ReviewItem label="Floor Material" value={formValues.floorMaterial || 'Not specified'} />
-        </div>
-      </ReviewSection>
-      
-      {/* Features Section */}
-      <ReviewSection
-        title="Features & Sustainability"
-        icon={<Sparkles className="h-5 w-5" />}
-        editStep={6}
-      >
-        <div className="space-y-3">
-          <div>
-            <h4 className="text-sm font-semibold mb-2 text-slate-900 dark:text-white font-inter">Special Features</h4>
-            {formValues.specialFeatures && formValues.specialFeatures.length > 0 ? (
-              <ul className="list-disc pl-5 text-sm space-y-1 font-opensans">
-                {formValues.specialFeatures.map((feature) => (
-                  <li key={feature} className="text-slate-700 dark:text-slate-300 capitalize">
-                    {feature.replace(/-/g, ' ')}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-slate-500 dark:text-slate-400 font-opensans">No special features selected</p>
-            )}
-          </div>
-          
-          <div>
-            <h4 className="text-sm font-semibold mb-2 text-slate-900 dark:text-white font-inter">Sustainability Features</h4>
-            {formValues.sustainabilityFeatures && formValues.sustainabilityFeatures.length > 0 ? (
-              <ul className="list-disc pl-5 text-sm space-y-1 font-opensans">
-                {formValues.sustainabilityFeatures.map((feature) => (
-                  <li key={feature} className="text-slate-700 dark:text-slate-300 capitalize">
-                    {feature.replace(/-/g, ' ')}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-slate-500 dark:text-slate-400 font-opensans">No sustainability features selected</p>
-            )}
-          </div>
-          
-          <ReviewItem 
-            label="Site Constraints" 
-            value={formValues.siteConstraints || 'None specified'} 
-          />
-          
-          <ReviewItem 
-            label="Local Regulations" 
-            value={formValues.localRegulations || 'None specified'} 
-          />
-        </div>
-      </ReviewSection>
-      
-      {/* Final Confirmation */}
-      <Card className="p-6 bg-[#2B6CB0]/5 dark:bg-[#2B6CB0]/10 border border-[#2B6CB0]/20 dark:border-[#2B6CB0]/30 rounded-xl">
-        <div className="text-center">
-          <div className="w-12 h-12 bg-[#ED8936] rounded-xl flex items-center justify-center mx-auto mb-4">
-            <Sparkles className="h-6 w-6 text-white" />
-          </div>
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white font-inter mb-2">Ready to Generate Your Project Plan</h3>
-          <p className="text-sm text-slate-600 dark:text-slate-400 font-opensans leading-relaxed max-w-md mx-auto">
-            Click the "Generate Plan" button below to save your project and start the AI generation process
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white font-inter mb-2">
+            Review Your Project
+          </h2>
+          <p className="text-slate-600 dark:text-slate-400 font-opensans max-w-2xl mx-auto">
+            Please review all the details below. Once you submit, our AI will start generating 
+            a comprehensive construction plan tailored to your requirements.
           </p>
-        </div>
-      </Card>
-    </div>
-  );
-}
+        </m.div>
 
-// Component for each review section with collapsible content
-interface ReviewSectionProps {
-  title: string;
-  icon: React.ReactNode;
-  children: React.ReactNode;
-  editStep: number;
-}
-
-function ReviewSection({ title, icon, children, editStep }: ReviewSectionProps) {
-  const [isOpen, setIsOpen] = React.useState(true);
-  
-  return (
-    <Card className="overflow-hidden border-2 border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-300">
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <div className="flex items-center justify-between p-6 bg-slate-50 dark:bg-slate-900/50">
-          <div className="flex items-center gap-3">
-            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-[#2B6CB0] flex items-center justify-center text-white">
-              {icon}
-            </div>
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white font-inter">{title}</h3>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 px-3 text-[#2B6CB0] dark:text-[#2B6CB0] hover:text-[#2B6CB0]/80 hover:bg-[#2B6CB0]/10 font-opensans"
-              onClick={(e) => {
-                e.stopPropagation();
-                // This would be handled by the parent component to navigate to the specific step
-                // For now, we'll just log it
-                console.log(`Edit step ${editStep}`);
-              }}
+        {/* Project Images Gallery */}
+        {localFiles.length > 0 && (
+          <m.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <ReviewSection
+              title="Inspiration Images"
+              icon={<Camera className="h-5 w-5 text-[#2B6CB0]" />}
+              className="bg-gradient-to-br from-slate-50 to-white dark:from-slate-800 dark:to-slate-800"
             >
-              <Edit className="h-4 w-4 mr-1" />
-              <span className="text-xs font-medium">Edit</span>
-            </Button>
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">
-                {isOpen ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
+              <div className="space-y-4">
+                {/* Main Image Display */}
+                <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700">
+                  {profileImage && (
+                    <>
+                      <img
+                        src={profileImage.previewUrl}
+                        alt="Main inspiration"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-4 left-4">
+                        <Badge className="bg-[#ED8936] hover:bg-[#ED8936]/90 text-white border-0">
+                          <Star className="h-3 w-3 mr-1" />
+                          Main Image
+                        </Badge>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Thumbnail Gallery */}
+                {localFiles.length > 1 && (
+                  <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
+                    {localFiles.map((file, index) => (
+                      <button
+                        key={file.id}
+                        onClick={() => setSelectedImageIndex(index)}
+                        className={cn(
+                          "relative aspect-square rounded-lg overflow-hidden border-2 transition-all duration-300",
+                          file.id === localProfileImageId
+                            ? "border-[#ED8936] ring-2 ring-[#ED8936]/20"
+                            : "border-slate-200 dark:border-slate-600 hover:border-[#2B6CB0]"
+                        )}
+                      >
+                        <img
+                          src={file.previewUrl}
+                          alt={`Inspiration ${index + 1}`}
+                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+                        />
+                        {file.id === localProfileImageId && (
+                          <div className="absolute top-1 right-1">
+                            <div className="w-4 h-4 bg-[#ED8936] rounded-full flex items-center justify-center">
+                              <Star className="h-2 w-2 text-white" />
+                            </div>
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 )}
-                <span className="sr-only">Toggle</span>
-              </Button>
-            </CollapsibleTrigger>
-          </div>
-        </div>
-        <CollapsibleContent>
-          <div className="p-6 bg-white dark:bg-slate-800">
-            {children}
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
-    </Card>
-  );
-}
 
-// Component for each review item
-interface ReviewItemProps {
-  label: string;
-  value: string;
-}
+                <p className="text-sm text-slate-600 dark:text-slate-400 font-opensans">
+                  {localFiles.length} inspiration image{localFiles.length !== 1 ? 's' : ''} uploaded
+                  {profileImage && ' • Main image selected'}
+                </p>
+              </div>
+            </ReviewSection>
+          </m.div>
+        )}
 
-function ReviewItem({ label, value }: ReviewItemProps) {
-  return (
-    <div className="flex flex-col sm:flex-row sm:items-baseline text-sm">
-      <span className="text-slate-600 dark:text-slate-400 min-w-[140px] mb-0.5 sm:mb-0 font-opensans">
-        {label}:
-      </span>
-      <span className="font-medium text-slate-900 dark:text-white font-opensans">
-        {value}
-      </span>
-    </div>
+        {/* Project Overview */}
+        <m.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <ReviewSection
+            title="Project Overview"
+            icon={<Building className="h-5 w-5 text-[#2B6CB0]" />}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InfoItem label="Project Name" value={formValues.name} />
+              <InfoItem label="Project Type" value={capitalize(formValues.projectType)} />
+              {formValues.description && (
+                <div className="md:col-span-2">
+                  <InfoItem label="Description" value={formValues.description} />
+                </div>
+              )}
+            </div>
+            
+            {/* Owner Details (if different) */}
+            {(formValues.owner || formValues.email || formValues.phoneNumber) && (
+              <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+                <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Owner Information
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {formValues.owner && <InfoItem label="Owner" value={formValues.owner} />}
+                  {formValues.email && <InfoItem label="Email" value={formValues.email} />}
+                  {formValues.phoneNumber && <InfoItem label="Phone" value={formValues.phoneNumber} />}
+                </div>
+              </div>
+            )}
+          </ReviewSection>
+        </m.div>
+
+        {/* Location Details */}
+        <m.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <ReviewSection
+            title="Location & Site"
+            icon={<MapPin className="h-5 w-5 text-[#2B6CB0]" />}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <InfoItem label="Location" value={formValues.location} />
+              <InfoItem label="Region" value={capitalize(formValues.region)} />
+              <InfoItem label="Country" value={capitalize(formValues.country)} />
+              <InfoItem 
+                label="Plot Size" 
+                value={`${formValues.plotSize} ${formValues.plotSizeUnit?.replace('-', ' ')}`} 
+              />
+              {formValues.terrain && <InfoItem label="Terrain" value={capitalize(formValues.terrain)} />}
+              {formValues.nearbyLandmarks && (
+                <div className="lg:col-span-3">
+                  <InfoItem label="Nearby Landmarks" value={formValues.nearbyLandmarks} />
+                </div>
+              )}
+            </div>
+          </ReviewSection>
+        </m.div>
+
+        {/* Building Specifications */}
+        <m.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+        >
+          <ReviewSection
+            title="Building Specifications"
+            icon={<Home className="h-5 w-5 text-[#2B6CB0]" />}
+          >
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <InfoItem 
+                label="Building Size" 
+                value={`${formValues.buildingSize} ${formValues.buildingSizeUnit?.replace('-', ' ')}`} 
+              />
+              <InfoItem label="Storeys" value={formValues.storeys} />
+              <InfoItem label="Bedrooms" value={formValues.bedrooms} />
+              <InfoItem label="Bathrooms" value={formValues.bathrooms} />
+              {formValues.kitchens && <InfoItem label="Kitchens" value={formValues.kitchens} />}
+              {formValues.livingAreas && <InfoItem label="Living Areas" value={formValues.livingAreas} />}
+              {formValues.buildingStyle && (
+                <div className="col-span-2">
+                  <InfoItem label="Building Style" value={capitalize(formValues.buildingStyle)} />
+                </div>
+              )}
+            </div>
+          </ReviewSection>
+        </m.div>
+
+        {/* Budget & Timeline */}
+        <m.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+        >
+          <ReviewSection
+            title="Budget & Timeline"
+            icon={<DollarSign className="h-5 w-5 text-[#2B6CB0]" />}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <InfoItem 
+                label="Total Budget" 
+                value={formatCurrency(formValues.budget, formValues.currency)} 
+              />
+              {formValues.timeframe && <InfoItem label="Timeframe" value={formValues.timeframe} />}
+              <InfoItem label="Expected Start" value={formattedStartDate} />
+            </div>
+          </ReviewSection>
+        </m.div>
+
+        {/* Materials & Construction */}
+        {(formValues.structureType || formValues.foundationType || formValues.roofType || formValues.wallMaterial || formValues.floorMaterial) && (
+          <m.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.6 }}
+          >
+            <ReviewSection
+              title="Materials & Construction"
+              icon={<Layers className="h-5 w-5 text-[#2B6CB0]" />}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {formValues.structureType && <InfoItem label="Structure Type" value={capitalize(formValues.structureType)} />}
+                {formValues.foundationType && <InfoItem label="Foundation" value={capitalize(formValues.foundationType)} />}
+                {formValues.roofType && <InfoItem label="Roof Type" value={capitalize(formValues.roofType)} />}
+                {formValues.wallMaterial && <InfoItem label="Wall Material" value={capitalize(formValues.wallMaterial)} />}
+                {formValues.floorMaterial && <InfoItem label="Floor Material" value={capitalize(formValues.floorMaterial)} />}
+              </div>
+            </ReviewSection>
+          </m.div>
+        )}
+
+        {/* Special Features */}
+        {(formValues.specialFeatures?.length || formValues.sustainabilityFeatures?.length) && (
+          <m.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.7 }}
+          >
+            <ReviewSection
+              title="Special Features"
+              icon={<Sparkles className="h-5 w-5 text-[#2B6CB0]" />}
+            >
+              <div className="space-y-6">
+                {formValues.specialFeatures?.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">
+                      Special Features
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {formValues.specialFeatures.map((feature, index) => (
+                        <Badge 
+                          key={index} 
+                          variant="secondary" 
+                          className="bg-[#2B6CB0]/10 text-[#2B6CB0] border-[#2B6CB0]/20"
+                        >
+                          {capitalize(feature)}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {formValues.sustainabilityFeatures?.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">
+                      Sustainability Features
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {formValues.sustainabilityFeatures.map((feature, index) => (
+                        <Badge 
+                          key={index} 
+                          variant="secondary" 
+                          className="bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300"
+                        >
+                          {capitalize(feature)}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </ReviewSection>
+          </m.div>
+        )}
+
+        {/* Additional Notes */}
+        {(formValues.siteConstraints || formValues.localRegulations || formValues.additionalNotes) && (
+          <m.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.8 }}
+          >
+            <ReviewSection
+              title="Additional Information"
+              icon={<FileText className="h-5 w-5 text-[#2B6CB0]" />}
+            >
+              <div className="space-y-6">
+                {formValues.siteConstraints && (
+                  <InfoItem label="Site Constraints" value={formValues.siteConstraints} />
+                )}
+                {formValues.localRegulations && (
+                  <InfoItem label="Local Regulations" value={formValues.localRegulations} />
+                )}
+                {formValues.additionalNotes && (
+                  <InfoItem label="Additional Notes" value={formValues.additionalNotes} />
+                )}
+              </div>
+            </ReviewSection>
+          </m.div>
+        )}
+
+        {/* Submission Information */}
+        <m.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.9 }}
+        >
+          <Card className="border-2 border-[#2B6CB0]/20 bg-gradient-to-br from-[#2B6CB0]/5 to-[#ED8936]/5">
+            <div className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-[#2B6CB0] to-[#ED8936] rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Lightbulb className="h-6 w-6 text-white" />
+                </div>
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white font-inter">
+                    Ready to Generate Your Plan?
+                  </h3>
+                  <p className="text-slate-600 dark:text-slate-400 font-opensans">
+                    Our AI will analyze your requirements and create a detailed construction plan including 
+                    phases, timelines, material estimates, and cost breakdowns. This process typically takes 
+                    a few minutes.
+                  </p>
+                  <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                    <Info className="h-4 w-4" />
+                    <span className="font-opensans">
+                      You can modify your project details even after submission.
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </m.div>
+      </div>
+    </LazyMotion>
   );
 }

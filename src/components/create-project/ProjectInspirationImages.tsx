@@ -3,7 +3,7 @@
  * 
  * Handles the project inspiration images section
  * Allows users to upload, preview, and manage project images
- * Enhanced with local storage persistence for form state
+ * Refactored to use Zustand store for state management
  */
 import React, { useCallback } from 'react';
 import { X, Upload, Camera, AlertCircle } from 'lucide-react';
@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { Control } from 'react-hook-form';
 import { ProjectFormValues } from '@/pages/CreateProject';
-import { useProjectCreation } from '@/contexts/ProjectCreationContext';
+import { useCreateProjectImages } from '@/stores/createProjectStore';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/utils/core/ui';
 
@@ -24,19 +24,19 @@ interface ProjectInspirationImagesProps {
 /**
  * ProjectInspirationImages component
  * Allows users to upload and manage project inspiration images
- * Enhanced with local storage persistence for uploaded images
+ * Now uses Zustand store for state management
  */
 function ProjectInspirationImagesComponent({ control, className = '' }: ProjectInspirationImagesProps) {
-  // Use project creation context for Supabase integration
+  // Use Zustand store for image management
   const {
     localFiles,
     localProfileImageId,
     isUploading: isLoading,
     uploadError: error,
     handleFileSelection,
-    handleRemoveImage: removeImage,
-    handleSetProfileImage: setProfileImage
-  } = useProjectCreation();
+    removeImage,
+    setProfileImage
+  } = useCreateProjectImages();
   
 
 
@@ -98,9 +98,9 @@ function ProjectInspirationImagesComponent({ control, className = '' }: ProjectI
                   There was an error loading the image uploader. Please try refreshing the page.
                 </div>}>
                   <div className="space-y-4">
-                    {/* Image Upload Area with Drag & Drop */}
+                    {/* Enhanced Image Upload Area with Drag & Drop */}
                     <div 
-                      className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-6 text-center"
+                      className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-8 text-center transition-all duration-300 hover:border-[#2B6CB0] hover:bg-[#2B6CB0]/5 group"
                       onDragOver={handleDragOver}
                       onDrop={handleDrop}
                     >
@@ -116,36 +116,49 @@ function ProjectInspirationImagesComponent({ control, className = '' }: ProjectI
                         htmlFor="inspiration-image-upload"
                         className="cursor-pointer flex flex-col items-center justify-center"
                       >
-                        <div className="w-12 h-12 bg-[#2B6CB0]/10 dark:bg-[#2B6CB0]/20 rounded-full flex items-center justify-center mb-3">
-                          <Upload className="h-6 w-6 text-[#2B6CB0]" />
+                        <div className="w-16 h-16 bg-gradient-to-br from-[#2B6CB0]/10 to-[#ED8936]/10 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                          <Upload className="h-8 w-8 text-[#2B6CB0] group-hover:text-[#ED8936] transition-colors duration-300" />
                         </div>
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2 font-inter">
+                          Upload Inspiration Images
+                        </h3>
                         <p className="text-sm text-slate-600 dark:text-slate-400 mb-1 font-opensans">
-                          Drag and drop or click to upload
+                          Drag and drop your images here, or click to browse
                         </p>
                         <p className="text-xs text-slate-500 dark:text-slate-500 font-opensans">
-                          JPG, PNG or WebP (max. 5MB)
+                          JPG, PNG or WebP • Max 5 images • 5MB each
                         </p>
                       </label>
                     </div>
                     
-                    {/* Loading Indicator */}
+                    {/* Enhanced Loading Indicator */}
                     {isLoading && (
-                      <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-slate-700 dark:text-slate-300 font-opensans">
-                            Processing image...
-                          </span>
+                      <div className="bg-gradient-to-r from-[#2B6CB0]/5 to-[#ED8936]/5 border border-[#2B6CB0]/20 p-6 rounded-xl">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-5 h-5 bg-[#2B6CB0] rounded-full animate-pulse"></div>
+                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300 font-opensans">
+                              Processing your inspiration image...
+                            </span>
+                          </div>
                         </div>
                         <Progress value={50} className="h-2" />
                       </div>
                     )}
                     
-                    {/* Error Message */}
+                    {/* Enhanced Error Message */}
                     {error && (
-                      <div className="p-4 border border-red-300 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 rounded-md">
-                        <div className="flex items-start gap-2">
-                          <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
-                          <p className="text-sm font-opensans">{error}</p>
+                      <div className="p-4 border border-red-300 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 rounded-xl">
+                        <div className="flex items-start gap-3">
+                          <div className="w-5 h-5 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center mt-0.5">
+                            <AlertCircle className="h-3 w-3 text-red-600 dark:text-red-400" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-red-800 dark:text-red-300 font-inter mb-1">
+                              Upload Error
+                            </p>
+                            <p className="text-sm text-red-700 dark:text-red-400 font-opensans">{error}</p>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -153,19 +166,21 @@ function ProjectInspirationImagesComponent({ control, className = '' }: ProjectI
                     {/* Image Grid */}
                     {previewImages.length > 0 && (
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
-                        {/* Stored Images with Previews */}
+                        {/* Local Images with Previews */}
                         {previewImages.map((preview) => (
                           <div 
                             key={preview.id} 
                             className={cn(
-                              "relative aspect-square rounded-lg overflow-hidden border-2",
-                              localProfileImageId === preview.id ? "border-[#ED8936]" : "border-transparent"
+                              "relative aspect-square rounded-lg overflow-hidden border-2 transition-all duration-300",
+                              localProfileImageId === preview.id 
+                                ? "border-[#ED8936] ring-2 ring-[#ED8936]/20" 
+                                : "border-slate-200 dark:border-slate-600 hover:border-[#2B6CB0]"
                             )}
                           >
                             <img 
                               src={preview.previewUrl} 
                               alt={preview.file.name || "Project inspiration"} 
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                               onError={(e) => {
                                 // Show a placeholder instead of hiding the image
                                 e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIEVycm9yPC90ZXh0Pjwvc3ZnPg==';
@@ -175,29 +190,31 @@ function ProjectInspirationImagesComponent({ control, className = '' }: ProjectI
                             {/* Profile Image Indicator */}
                             {localProfileImageId === preview.id && (
                               <div className="absolute top-2 left-2">
-                                <div className="bg-[#ED8936] p-1 rounded-full">
-                                  <Camera className="h-4 w-4 text-white" />
+                                <div className="bg-[#ED8936] p-1.5 rounded-full shadow-lg">
+                                  <Camera className="h-3 w-3 text-white" />
                                 </div>
                               </div>
                             )}
                             
                             {/* Hover Controls */}
-                            <div className="absolute inset-0 bg-black/0 hover:bg-black/40 transition-all flex items-center justify-center opacity-0 hover:opacity-100">
+                            <div className="absolute inset-0 bg-black/0 hover:bg-black/50 transition-all duration-300 flex items-center justify-center opacity-0 hover:opacity-100">
                               <div className="flex gap-2">
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  className="bg-white text-slate-800 hover:bg-slate-100"
-                                  onClick={() => setProfileImage(preview.id)}
-                                >
-                                  Set Profile
-                                </Button>
+                                {localProfileImageId !== preview.id && (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="bg-white/90 text-slate-800 hover:bg-white border-0 shadow-lg font-opensans"
+                                    onClick={() => setProfileImage(preview.id)}
+                                  >
+                                    Set as Main
+                                  </Button>
+                                )}
                                 <Button
                                   type="button"
                                   variant="destructive"
                                   size="icon"
-                                  className="h-8 w-8"
+                                  className="h-8 w-8 bg-red-500/90 hover:bg-red-600 border-0 shadow-lg"
                                   onClick={() => removeImage(preview.id)}
                                 >
                                   <X className="h-4 w-4" />

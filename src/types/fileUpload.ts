@@ -21,11 +21,6 @@ export interface FileUploadResult {
   error?: string;
 }
 
-export interface ProgressSimulator {
-  start: () => void;
-  stop: () => void;
-}
-
 export interface DeleteFileResult {
   success: boolean;
   error?: string;
