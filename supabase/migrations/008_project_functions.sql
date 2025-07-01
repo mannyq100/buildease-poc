@@ -1,13 +1,5 @@
--- Create utility functions for timestamps and RLS policies
-
--- Function to update 'updated_at' column on row updates
-CREATE OR REPLACE FUNCTION construction_mgr.update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- Migration: 008_project_functions.sql
+-- Purpose: Defines helper functions for the project management domain, primarily for RLS.
 
 -- Helper function to get the real user ID (for shadow users)
 CREATE OR REPLACE FUNCTION construction_mgr.get_real_user_id()
@@ -242,3 +234,65 @@ BEGIN
     RETURN private.has_permission_direct(project_id, user_id, required_permission);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to get user project access efficiently (cached result)
+CREATE OR REPLACE FUNCTION private.user_has_project_access_cached(
+    p_project_id UUID,
+    p_user_id UUID DEFAULT auth.uid()
+)
+RETURNS BOOLEAN AS $$
+DECLARE
+    cached_result BOOLEAN;
+BEGIN
+    -- Simple ownership check (fastest)
+    IF EXISTS (
+        SELECT 1 FROM construction_mgr.be_project 
+        WHERE id = p_project_id AND owner_id = p_user_id
+    ) THEN
+        RETURN TRUE;
+    END IF;
+    
+    -- Membership check (with index)
+    RETURN EXISTS (
+        SELECT 1 FROM construction_mgr.be_project_member 
+        WHERE project_id = p_project_id AND user_id = p_user_id
+    );
+END;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
+
+-- Optimized function for checking financial permissions
+CREATE OR REPLACE FUNCTION private.has_financial_permission_fast(
+    p_project_id UUID,
+    p_user_id UUID DEFAULT auth.uid(),
+    p_permission construction_mgr.permission_type DEFAULT 'VIEW_FINANCIALS'
+)
+RETURNS BOOLEAN AS $$
+BEGIN
+    -- Owner check (fastest path)
+    IF EXISTS (
+        SELECT 1 FROM construction_mgr.be_project 
+        WHERE id = p_project_id AND owner_id = p_user_id
+    ) THEN
+        RETURN TRUE;
+    END IF;
+    
+    -- Admin role check (second fastest)
+    IF EXISTS (
+        SELECT 1 FROM construction_mgr.be_project_member 
+        WHERE project_id = p_project_id 
+        AND user_id = p_user_id 
+        AND role = 'ADMIN'
+    ) THEN
+        RETURN TRUE;
+    END IF;
+    
+    -- Specific permission check (uses partial index)
+    RETURN EXISTS (
+        SELECT 1 FROM construction_mgr.be_project_permission 
+        WHERE project_id = p_project_id 
+        AND user_id = p_user_id 
+        AND permission = p_permission 
+        AND active = TRUE
+    );
+END;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;

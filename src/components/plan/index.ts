@@ -31,3 +31,11 @@ export { VirtualizedTeamGrid } from './VirtualizedTeamGrid';
 // Export lazy loading utilities
 export * from './LazyViews';
 export * from './LoadingBoundary';
+
+// Phase 3: Plan Status and Progress Tracking components
+export { default as PlanProgressTracker } from './PlanProgressTracker';
+export { default as PlanVersionManager } from './PlanVersionManager';
+export { default as PlanStatusCard } from './PlanStatusCard';
+export { default as PlanStatusDashboard } from './PlanStatusDashboard';
+
+// Phase 4: Reverted - Use GeneratedPlan.tsx as source of truth for plan viewing

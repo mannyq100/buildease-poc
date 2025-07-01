@@ -7,7 +7,20 @@ import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Bell, Search, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/utils/core/ui';
+import { NotificationCenter } from '@/components/notifications';
+import { 
+  useNotifications, 
+  useNotificationCenter,
+  useRealTimeNotifications,
+  useNotificationStore
+} from '@/stores/notificationStore';
+import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 
 interface AppLayoutProps {
   showBreadcrumbs?: boolean;
@@ -24,6 +37,16 @@ export function AppLayout({ showBreadcrumbs = true, className }: AppLayoutProps)
   const [isSmallTablet, setIsSmallTablet] = useState(false);
   const [_mobileMenuOpen, _setMobileMenuOpen] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+  
+  // Auth context
+  const { user, isAuthenticated } = useSupabaseAuth();
+  
+  // Notification hooks
+  const { unreadCount } = useNotifications();
+  const { isOpen: isNotificationCenterOpen, toggleNotificationCenter } = useNotificationCenter();
+  const { connectRealTime, disconnectRealTime } = useRealTimeNotifications();
+  const fetchNotifications = useNotificationStore(state => state.fetchNotifications);
+  const setUserId = useNotificationStore(state => state.setUserId);
   
   // Detect mobile/tablet screen sizes - mobile-first approach
   useEffect(() => {
@@ -55,6 +78,29 @@ export function AppLayout({ showBreadcrumbs = true, className }: AppLayoutProps)
     window.addEventListener('sidebar-toggle', handleSidebarToggle as EventListener);
     return () => window.removeEventListener('sidebar-toggle', handleSidebarToggle as EventListener);
   }, []);
+
+  // Initialize notifications when user is authenticated
+  useEffect(() => {
+    if (isAuthenticated && user?.id) {
+      setUserId(user.id);
+      
+      // Fetch initial notifications
+      setTimeout(() => {
+        fetchNotifications();
+        
+        // Connect to real-time updates
+        connectRealTime();
+      }, 100); // Small delay to ensure userId is set
+    } else {
+      // Disconnect when user is not authenticated
+      disconnectRealTime();
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      disconnectRealTime();
+    };
+  }, [isAuthenticated, user?.id, setUserId, fetchNotifications, connectRealTime, disconnectRealTime]);
 
   // Content left margin based on sidebar state and screen size
   const getContentMargin = () => {
@@ -121,14 +167,33 @@ export function AppLayout({ showBreadcrumbs = true, className }: AppLayoutProps)
                   />
                   
                   {/* Notifications */}
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full p-1.5 min-w-[40px] min-h-[40px] relative"
-                  >
-                    <Bell className="h-4 w-4" />
-                    <Badge className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs min-w-[16px] h-[16px] flex items-center justify-center p-0 rounded-full">3</Badge>
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full p-1.5 min-w-[40px] min-h-[40px] relative"
+                      >
+                        <Bell className="h-4 w-4" />
+                        {unreadCount > 0 && (
+                          <Badge className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs min-w-[16px] h-[16px] flex items-center justify-center p-0 rounded-full">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                          </Badge>
+                        )}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent 
+                      align="end" 
+                      className="w-80 sm:w-96 p-0 bg-transparent border-none shadow-none"
+                      sideOffset={8}
+                    >
+                      <NotificationCenter 
+                        isOpen={true}
+                        maxHeight="400px"
+                        className="border border-gray-200 dark:border-slate-700 shadow-lg"
+                      />
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             )}
@@ -193,10 +258,33 @@ export function AppLayout({ showBreadcrumbs = true, className }: AppLayoutProps)
                 </div>
 
                 {/* Notifications */}
-                <Button variant="ghost" size="sm" className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full p-1.5 sm:p-2 min-w-[40px] min-h-[40px] relative transform transition-transform duration-200 hover:scale-105">
-                  <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
-                  <Badge className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs min-w-[18px] h-[18px] flex items-center justify-center p-0 rounded-full">3</Badge>
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full p-1.5 sm:p-2 min-w-[40px] min-h-[40px] relative transform transition-transform duration-200 hover:scale-105"
+                    >
+                      <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
+                      {unreadCount > 0 && (
+                        <Badge className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs min-w-[18px] h-[18px] flex items-center justify-center p-0 rounded-full">
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </Badge>
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent 
+                    align="end" 
+                    className="w-80 sm:w-96 p-0 bg-transparent border-none shadow-none"
+                    sideOffset={8}
+                  >
+                    <NotificationCenter 
+                      isOpen={true}
+                      maxHeight="500px"
+                      className="border border-gray-200 dark:border-slate-700 shadow-lg"
+                    />
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
                 {/* Theme Toggle */}
                 <ThemeToggle variant="ghost" iconSize={isMobile ? 16 : 18} className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full p-1.5 sm:p-2 min-w-[40px] min-h-[40px] transform transition-transform duration-200 hover:scale-105" />

@@ -7,6 +7,7 @@ import {
   Info
 } from 'lucide-react';
 import { cn } from '@/utils/core/ui';
+import { Notification, NotificationType } from '@/types/database';
 
 export interface NotificationAction {
   label: string;
@@ -14,13 +15,9 @@ export interface NotificationAction {
   variant?: 'default' | 'primary' | 'destructive';
 }
 
-export interface NotificationDetails {
-  id: string | number;
-  title: string;
-  message: string;
+export interface NotificationDetails extends Omit<Notification, 'notification_type' | 'created_at' | 'updated_at'> {
   type: 'info' | 'success' | 'warning' | 'error';
   timestamp: string;
-  read: boolean;
   sender?: {
     id: string | number;
     name: string;

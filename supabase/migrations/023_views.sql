@@ -1,4 +1,5 @@
--- Create views for common queries
+-- Migration: 020_views.sql
+-- Purpose: Defines all views for the application.
 
 -- View to show project summary information for user
 CREATE OR REPLACE VIEW construction_mgr.project_summary AS
@@ -197,9 +198,3 @@ ALTER VIEW construction_mgr.project_members SET (security_invoker = on);
 ALTER VIEW construction_mgr.project_financial_summary SET (security_invoker = on);
 ALTER VIEW construction_mgr.phase_details SET (security_invoker = on);
 ALTER VIEW construction_mgr.financial_summary SET (security_invoker = on);
-
--- Grant select on views
-GRANT SELECT ON 
-  construction_mgr.project_financial_summary,
-  construction_mgr.material_inventory
-  TO authenticated;

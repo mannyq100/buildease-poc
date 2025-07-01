@@ -1,14 +1,5 @@
--- Supabase Auth Integration for BuildEase Platform
--- Simplified auth user sync - only creates new users, no updates
-
--- Ensure the private schema exists first
-CREATE SCHEMA IF NOT EXISTS private;
-
--- Drop any existing implementation
-DROP TRIGGER IF EXISTS auth_user_created ON auth.users;
-
--- Drop existing sync function if it exists
-DROP FUNCTION IF EXISTS construction_mgr.sync_new_auth_user();
+-- Migration: 004_user_auth_functions.sql
+-- Purpose: Defines functions for user authentication, authorization, and profile management.
 
 -- Function to get provider from raw_app_meta_data
 CREATE OR REPLACE FUNCTION private.get_auth_provider(app_meta_data JSONB)
@@ -264,70 +255,146 @@ CREATE TRIGGER auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION construction_mgr.sync_new_auth_user();
 
--- Grant necessary permissions to the trigger function
-GRANT USAGE ON SCHEMA construction_mgr TO service_role, authenticated, anon;
-GRANT EXECUTE ON FUNCTION construction_mgr.sync_new_auth_user() TO service_role;
-GRANT EXECUTE ON FUNCTION private.get_auth_provider(JSONB) TO service_role;
+-- Core permission function used by all other functions
+CREATE OR REPLACE FUNCTION construction_mgr.get_user_project_permissions(
+    p_project_id UUID,
+    p_user_id UUID,
+    p_role construction_mgr.user_role,
+    p_is_owner BOOLEAN
+) RETURNS jsonb
+LANGUAGE plpgsql
+STABLE SECURITY INVOKER
+AS $$
+DECLARE
+    permission_names jsonb := '[]'::jsonb;
+BEGIN
+    
+    -- Add explicit permissions from be_project_permission table
+    WITH explicit_perms AS (
+        SELECT lower(permission::text) as perm_name
+        FROM construction_mgr.be_project_permission
+        WHERE project_id = p_project_id
+          AND user_id = p_user_id
+          AND active = TRUE
+    )
+    SELECT jsonb_agg(DISTINCT perm_name)
+    INTO permission_names
+    FROM explicit_perms;
+    
+    RETURN COALESCE(permission_names, '[]'::jsonb);
+END;
+$$;
 
--- Grant insert rights to audit log for error logging
-GRANT INSERT ON construction_mgr.be_audit_log TO service_role;
+-- Main user profile function used by the edge function
+CREATE OR REPLACE FUNCTION construction_mgr.get_user_profile(user_uuid UUID DEFAULT auth.uid())
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    result JSON;
+    user_data RECORD;
+    memberships JSON;
+BEGIN
+    -- Check if the requesting user has permission to access this profile
+    IF user_uuid != auth.uid() AND NOT private.is_admin() THEN
+        RAISE EXCEPTION 'Access denied: You can only access your own profile';
+    END IF;
 
--- Grant insert rights to be_user table
-GRANT INSERT ON construction_mgr.be_user TO service_role;
+    -- Fetch basic user details
+    SELECT 
+        id,
+        email,
+        first_name,
+        last_name,
+        phone,
+        company_name,
+        settings,
+        status,
+        tier,
+        created_at,
+        updated_at
+    INTO user_data
+    FROM construction_mgr.be_user
+    WHERE id = user_uuid;
 
--- Add comment to explain the last update
-COMMENT ON FUNCTION construction_mgr.sync_new_auth_user IS 'Syncs auth users to be_user table. Updated on Jun 9, 2025 to better handle different auth provider metadata formats.';
+    -- Check if user exists
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'User not found';
+    END IF;
 
--- Grant comprehensive permissions to all Supabase internal roles
--- These roles are used by Supabase for various operations including auth triggers
+    -- Fetch project memberships
+    SELECT COALESCE(
+        JSON_AGG(
+            JSON_BUILD_OBJECT(
+                'projectId', p.id,
+                'projectName', p.name,
+                'projectStatus', p.status,
+                'role', pm.role,
+                'permissions', (
+                    SELECT jsonb_agg(elem)
+                    FROM jsonb_array_elements_text(
+                        construction_mgr.get_user_project_permissions(
+                            p.id, 
+                            user_uuid, 
+                            pm.role, 
+                            p.owner_id = user_uuid
+                        )
+                    ) as elem
+                ),
+                'joinedAt', pm.joined_at,
+                'isOwner', (p.owner_id = user_uuid)
+            )
+        ),
+        '[]'::JSON
+    ) INTO memberships
+    FROM construction_mgr.be_project_member pm
+    JOIN construction_mgr.be_project p ON pm.project_id = p.id
+    WHERE pm.user_id = user_uuid;
 
--- Schema permissions
-GRANT USAGE ON SCHEMA construction_mgr TO postgres, service_role, supabase_auth_admin, supabase_admin;
-GRANT USAGE ON SCHEMA private TO postgres, service_role, supabase_auth_admin, supabase_admin;
 
--- Table permissions for be_user
-GRANT ALL ON construction_mgr.be_user TO postgres, service_role, supabase_auth_admin, supabase_admin;
+    -- Build the complete profile response
+    result := (
+        SELECT jsonb_build_object(
+            'id', user_data.id,
+            'email', user_data.email,
+            'firstName', user_data.first_name,
+            'lastName', user_data.last_name,
+            'phone', user_data.phone,
+            'companyName', user_data.company_name,
+            'avatarUrl', user_data.settings->>'picture_url',
+            'settings', user_data.settings,
+            'status', user_data.status,
+            'tier', user_data.tier,
+            'createdAt', user_data.created_at,
+            'updatedAt', user_data.updated_at,
+            'projectMemberships', memberships,
+            'metadata', jsonb_build_object(
+                'totalProjects', (
+                    SELECT COUNT(*) 
+                    FROM construction_mgr.be_project_member 
+                    WHERE user_id = user_uuid
+                ),
+                'ownedProjects', (
+                    SELECT COUNT(*) 
+                    FROM construction_mgr.be_project 
+                    WHERE owner_id = user_uuid
+                )
+            )
+        )
+    )::json;
 
--- Table permissions for audit log
-GRANT ALL ON construction_mgr.be_audit_log TO postgres, service_role, supabase_auth_admin, supabase_admin;
+    RETURN result;
+END;
+$$;
 
--- Function permissions
-GRANT EXECUTE ON FUNCTION construction_mgr.sync_new_auth_user() TO postgres, service_role, supabase_auth_admin, supabase_admin;
-GRANT EXECUTE ON FUNCTION private.get_auth_provider(JSONB) TO postgres, service_role, supabase_auth_admin, supabase_admin;
+-- Create a convenience function for the current user
+CREATE OR REPLACE FUNCTION construction_mgr.get_current_user_profile()
+RETURNS JSONB
+LANGUAGE sql
+STABLE SECURITY DEFINER
+AS $$
+    SELECT construction_mgr.get_user_profile(auth.uid())::jsonb;
+$$;
 
--- Sequence permissions (if any sequences exist for UUID generation)
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA construction_mgr TO postgres, service_role, supabase_auth_admin, supabase_admin;
 
--- Grant permissions for application use
-GRANT EXECUTE ON FUNCTION private.get_auth_provider TO authenticated;
-
--- Add explicit permissions for the trigger to bypass RLS when needed
--- This is critical for the auth trigger to work properly
-
--- Temporarily disable RLS to ensure clean policy creation
-ALTER TABLE construction_mgr.be_user DISABLE ROW LEVEL SECURITY;
-ALTER TABLE construction_mgr.be_audit_log DISABLE ROW LEVEL SECURITY;
-
--- Re-enable RLS 
-ALTER TABLE construction_mgr.be_user ENABLE ROW LEVEL SECURITY;
-ALTER TABLE construction_mgr.be_audit_log ENABLE ROW LEVEL SECURITY;
-
--- Create policies that allow the service_role to bypass RLS for inserts
--- This is specifically for the auth trigger
-
--- Drop existing policies if they exist
-DROP POLICY IF EXISTS "Allow service_role to insert users" ON construction_mgr.be_user;
-DROP POLICY IF EXISTS "Allow service_role to insert audit logs" ON construction_mgr.be_audit_log;
-
--- Create new policies
-CREATE POLICY "Allow service_role to insert users" ON construction_mgr.be_user
-    FOR INSERT TO service_role
-    WITH CHECK (true);
-
-CREATE POLICY "Allow service_role to insert audit logs" ON construction_mgr.be_audit_log
-    FOR INSERT TO service_role
-    WITH CHECK (true);
-
--- Add comprehensive comments
-COMMENT ON FUNCTION private.get_auth_provider IS 'Gets auth provider from raw_app_meta_data with fallback to email';
-COMMENT ON FUNCTION construction_mgr.sync_new_auth_user IS 'Syncs auth users to be_user table. Updated on Jun 9, 2025 with comprehensive permissions and RLS policies for proper auth trigger operation.';

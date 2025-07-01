@@ -1,3 +1,10 @@
+-- Migration: 001_core_setup.sql
+-- Purpose: Foundational setup for the entire database.
+-- Contains:
+-- - Schema creation (construction_mgr, private)
+-- - Extension enablement (uuid-ossp, pgcrypto, etc.)
+-- - Core utility functions (update_updated_at_column)
+
 -- Create a new schema for all BuildEase database objects
 CREATE SCHEMA IF NOT EXISTS construction_mgr;
 
@@ -18,3 +25,17 @@ CREATE SCHEMA IF NOT EXISTS private;
 
 -- Grant usage on private schema only to service_role
 GRANT USAGE ON SCHEMA private TO service_role;
+
+-- Enable required extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA extensions;
+CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA extensions;
+CREATE EXTENSION IF NOT EXISTS "pg_jsonschema" WITH SCHEMA extensions;
+
+-- Function to update 'updated_at' column on row updates
+CREATE OR REPLACE FUNCTION construction_mgr.update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

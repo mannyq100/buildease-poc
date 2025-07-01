@@ -6,6 +6,8 @@ import { supabase } from '@/lib/supabase';
 import { ProjectFormValues } from '@/pages/CreateProject';
 import { validateBuildingPlotSizeRatio, validateStoreysBuildingSizeRatio } from '@/utils/projectFormUtils';
 import { Currency, Project, ProjectInsert, TABLE_NAMES, UserRole } from '@/types/database';
+import { AIPlanService } from './aiPlanService';
+import NotificationService from './notificationService';
 
 export interface CreateProjectResult {
   success: boolean;
@@ -27,6 +29,9 @@ export async function createProject(formData: ProjectFormValues, userId: string)
       plan_approved: false,
       profile_image: formData.profileImage || null,
       images: formData.images || [],
+      plan_generation_status: 'not_started',
+      plan_generation_requested_at: null,
+      plan_generation_completed_at: null,
       
       // Structure details in JSONB format according to schema
       details: {
@@ -173,6 +178,11 @@ export async function createProject(formData: ProjectFormValues, userId: string)
       console.warn('Audit log failed (non-critical):', error);
     });
     
+    // Trigger AI plan generation (non-blocking)
+    initiateAIPlanGeneration(createdProject as Project, formData).catch(error => {
+      console.warn('AI plan generation failed to start (non-critical):', error);
+    });
+    
     return {
       success: true,
       project: createdProject as Project
@@ -303,4 +313,127 @@ async function logProjectCreation(projectId: string, userId: string): Promise<vo
     // Don't fail the entire operation if audit logging fails
     console.warn('⚠️ Could not log project creation (non-critical):', error);
   }
+}
+
+/**
+ * Initiates AI plan generation for a newly created project
+ */
+async function initiateAIPlanGeneration(project: Project, formData: ProjectFormValues): Promise<void> {
+  try {
+    console.log('🤖 Initiating AI plan generation for project:', project.id);
+    
+    // Update project status to 'requested'
+    await AIPlanService.updateProjectPlanStatus(project.id, 'requested');
+    
+    // Create notification for plan generation start
+    try {
+      await NotificationService.createAIPlanNotification(
+        project.owner_id,
+        project.id,
+        project.name,
+        'started'
+      );
+    } catch (notificationError) {
+      console.warn('Failed to create start notification (non-critical):', notificationError);
+    }
+    
+    // Prepare AI plan generation request
+    const aiRequest = {
+      projectId: project.id,
+      projectDetails: {
+        name: project.name,
+        description: project.description || undefined,
+        type: project.details.project_type,
+        location: project.details.location.address,
+        budget: project.budget.allocated,
+        specs: {
+          plotSize: project.details.specs.plot_size,
+          buildingSize: project.details.specs.building_size,
+          floors: project.details.specs.floors,
+          rooms: project.details.specs.rooms
+        },
+        features: [
+          ...project.details.features.special_features,
+          ...project.details.features.sustainability_features
+        ],
+        materials: project.details.materials
+      }
+    };
+    
+    // Request AI plan generation
+    const jobId = await AIPlanService.requestPlanGeneration(aiRequest);
+    
+    // Update project status to 'processing'
+    await AIPlanService.updateProjectPlanStatus(project.id, 'processing');
+    
+    console.log('✅ AI plan generation started successfully. Job ID:', jobId);
+    
+    // Set up completion handling (in production, this would be handled by webhooks)
+    setupAIPlanCompletionHandler(project.owner_id, project.id, project.name, jobId);
+    
+  } catch (error) {
+    console.error('❌ Failed to initiate AI plan generation:', error);
+    
+    // Update project status to 'failed' 
+    await AIPlanService.updateProjectPlanStatus(project.id, 'failed');
+    
+    // Create failure notification
+    try {
+      await NotificationService.createAIPlanNotification(
+        project.owner_id,
+        project.id,
+        project.name,
+        'failed',
+        { error: error instanceof Error ? error.message : 'Unknown error' }
+      );
+    } catch (notificationError) {
+      console.warn('Failed to create failure notification (non-critical):', notificationError);
+    }
+  }
+}
+
+/**
+ * Set up completion handler for AI plan generation
+ * In production, this would be replaced by webhook handlers
+ */
+function setupAIPlanCompletionHandler(
+  userId: string, 
+  projectId: string, 
+  projectName: string, 
+  jobId: string
+): void {
+  // Listen for the custom completion event from AIPlanService
+  const handleCompletion = async (event: CustomEvent) => {
+    if (event.detail?.jobId === jobId) {
+      try {
+        // Create completion notification
+        await NotificationService.createAIPlanNotification(
+          userId,
+          projectId,
+          projectName,
+          'completed',
+          { 
+            jobId,
+            completedAt: new Date().toISOString()
+          }
+        );
+        
+        console.log('✅ AI plan completion notification created');
+        
+        // Remove event listener after handling
+        window.removeEventListener('ai-plan-completed', handleCompletion);
+        
+      } catch (error) {
+        console.warn('Failed to create completion notification:', error);
+      }
+    }
+  };
+  
+  // Add event listener for completion
+  window.addEventListener('ai-plan-completed', handleCompletion as EventListener);
+  
+  // Clean up after 10 minutes (timeout)
+  setTimeout(() => {
+    window.removeEventListener('ai-plan-completed', handleCompletion as EventListener);
+  }, 10 * 60 * 1000);
 }

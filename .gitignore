@@ -34,9 +34,8 @@ dist-ssr
 .vercel
 .cursor
 .windsurf*
-refactoring-plan.md
-refactoring-plan-new.md
-implementation-plan.md
+supabase-backup
+AI-Plan-Generation-*.md
 
 # Added by Task Master AI
 dev-debug.log
