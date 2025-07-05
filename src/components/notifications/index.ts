@@ -9,7 +9,5 @@ export type { NotificationCenterProps } from './NotificationCenter';
 export {
   useNotifications,
   useNotificationActions,
-  useNotificationFilters,
-  useNotificationCenter,
-  useRealTimeNotifications
+  useNotificationStore
 } from '@/stores/notificationStore';

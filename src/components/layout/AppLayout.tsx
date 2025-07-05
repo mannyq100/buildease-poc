@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
+import { motion as m } from 'framer-motion';
 
 import MainNavigation from './MainNavigation';
 import Breadcrumb from '@/components/navigation/Breadcrumb';
@@ -16,8 +17,6 @@ import { cn } from '@/utils/core/ui';
 import { NotificationCenter } from '@/components/notifications';
 import { 
   useNotifications, 
-  useNotificationCenter,
-  useRealTimeNotifications,
   useNotificationStore
 } from '@/stores/notificationStore';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
@@ -43,10 +42,10 @@ export function AppLayout({ showBreadcrumbs = true, className }: AppLayoutProps)
   
   // Notification hooks
   const { unreadCount } = useNotifications();
-  const { isOpen: isNotificationCenterOpen, toggleNotificationCenter } = useNotificationCenter();
-  const { connectRealTime, disconnectRealTime } = useRealTimeNotifications();
   const fetchNotifications = useNotificationStore(state => state.fetchNotifications);
   const setUserId = useNotificationStore(state => state.setUserId);
+  const connectRealTime = useNotificationStore(state => state.connectRealTime);
+  const disconnectRealTime = useNotificationStore(state => state.disconnectRealTime);
   
   // Detect mobile/tablet screen sizes - mobile-first approach
   useEffect(() => {
@@ -172,13 +171,20 @@ export function AppLayout({ showBreadcrumbs = true, className }: AppLayoutProps)
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full p-1.5 min-w-[40px] min-h-[40px] relative"
+                        className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full p-1.5 min-w-[40px] min-h-[40px] relative transition-all duration-200"
                       >
-                        <Bell className="h-4 w-4" />
+                        <Bell className={cn("h-4 w-4 transition-transform duration-200", unreadCount > 0 && "animate-pulse")} />
                         {unreadCount > 0 && (
-                          <Badge className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs min-w-[16px] h-[16px] flex items-center justify-center p-0 rounded-full">
-                            {unreadCount > 99 ? '99+' : unreadCount}
-                          </Badge>
+                          <m.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                            className="absolute -top-1 -right-1"
+                          >
+                            <Badge className="bg-orange-500 text-white text-xs min-w-[16px] h-[16px] flex items-center justify-center p-0 rounded-full shadow-lg border-2 border-white dark:border-slate-800">
+                              {unreadCount > 99 ? '99+' : unreadCount}
+                            </Badge>
+                          </m.div>
                         )}
                       </Button>
                     </DropdownMenuTrigger>
@@ -188,9 +194,7 @@ export function AppLayout({ showBreadcrumbs = true, className }: AppLayoutProps)
                       sideOffset={8}
                     >
                       <NotificationCenter 
-                        isOpen={true}
                         maxHeight="400px"
-                        className="border border-gray-200 dark:border-slate-700 shadow-lg"
                       />
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -263,13 +267,20 @@ export function AppLayout({ showBreadcrumbs = true, className }: AppLayoutProps)
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full p-1.5 sm:p-2 min-w-[40px] min-h-[40px] relative transform transition-transform duration-200 hover:scale-105"
+                      className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full p-1.5 sm:p-2 min-w-[40px] min-h-[40px] relative transform transition-all duration-200 hover:scale-105"
                     >
-                      <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <Bell className={cn("h-4 w-4 sm:h-5 sm:w-5 transition-transform duration-200", unreadCount > 0 && "animate-pulse")} />
                       {unreadCount > 0 && (
-                        <Badge className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs min-w-[18px] h-[18px] flex items-center justify-center p-0 rounded-full">
-                          {unreadCount > 99 ? '99+' : unreadCount}
-                        </Badge>
+                        <m.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                          className="absolute -top-1 -right-1"
+                        >
+                          <Badge className="bg-orange-500 text-white text-xs min-w-[18px] h-[18px] flex items-center justify-center p-0 rounded-full shadow-lg border-2 border-white dark:border-slate-800">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                          </Badge>
+                        </m.div>
                       )}
                     </Button>
                   </DropdownMenuTrigger>
@@ -279,9 +290,7 @@ export function AppLayout({ showBreadcrumbs = true, className }: AppLayoutProps)
                     sideOffset={8}
                   >
                     <NotificationCenter 
-                      isOpen={true}
                       maxHeight="500px"
-                      className="border border-gray-200 dark:border-slate-700 shadow-lg"
                     />
                   </DropdownMenuContent>
                 </DropdownMenu>

@@ -32,22 +32,16 @@ CREATE TABLE construction_mgr.be_project (
       "currency": "GHS"
     }',
     owner_id UUID NOT NULL,
-    ai_generated_plan JSONB,
-    plan_approved BOOLEAN NOT NULL DEFAULT FALSE,
     profile_image TEXT,
     images TEXT[],
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    plan_generation_status VARCHAR(20) DEFAULT 'not_started',
-    plan_generation_requested_at TIMESTAMPTZ,
-    plan_generation_completed_at TIMESTAMPTZ,
     CONSTRAINT chk_timeline CHECK (
         (timeline ->> 'planned_start')::date <= (timeline ->> 'planned_end')::date
     ),
-    CONSTRAINT fk_owner FOREIGN KEY (owner_id) REFERENCES construction_mgr.be_user(id),
-    CONSTRAINT check_plan_generation_status 
-    CHECK (plan_generation_status IN ('not_started', 'requested', 'processing', 'completed', 'failed'))
+    CONSTRAINT fk_owner FOREIGN KEY (owner_id) REFERENCES construction_mgr.be_user(id)
 );
+
 CREATE TRIGGER update_project_modtime
     BEFORE UPDATE ON construction_mgr.be_project
     FOR EACH ROW
