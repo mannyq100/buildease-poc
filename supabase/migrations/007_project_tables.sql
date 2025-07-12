@@ -33,7 +33,7 @@ CREATE TABLE construction_mgr.be_project (
     }',
     owner_id UUID NOT NULL,
     profile_image TEXT,
-    images TEXT[],
+    inspiration_images TEXT[],
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_timeline CHECK (
