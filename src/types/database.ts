@@ -42,15 +42,17 @@ export interface ProgressStep {
 // Project related interfaces
 export interface ProjectDetails {
   location: {
-    address: string;
-    country: string;
-    region: string;
-    terrain?: string | null;
-    nearby_landmarks?: string | null;
+    region?: string | null;
+    district?: string | null;
+    gps_code?: string | null;
     coordinates?: {
       lat: number;
       lng: number;
     } | null;
+    // Additional location data
+    country?: string;
+    terrain?: string | null;
+    nearby_landmarks?: string | null;
   };
   specs: {
     plot_size?: {
@@ -62,27 +64,27 @@ export interface ProjectDetails {
       unit: string;
     } | null;
     floors?: number | null;
-    rooms: {
+    rooms?: {
       bedrooms?: number | null;
       bathrooms?: number | null;
       kitchens?: number;
       living_areas?: number;
     };
   };
-  project_type: string;
+  project_type?: string;
   building_style?: string | null;
-  materials: {
+  materials?: {
     structure_type?: string | null;
     foundation_type?: string | null;
     roof_type?: string | null;
     wall_material?: string | null;
     floor_material?: string | null;
   };
-  features: {
+  features?: {
     special_features: string[];
     sustainability_features: string[];
   };
-  constraints: {
+  constraints?: {
     site_constraints?: string | null;
     local_regulations?: string | null;
     additional_notes?: string | null;
@@ -92,7 +94,6 @@ export interface ProjectDetails {
     phone?: string | null;
     email?: string | null;
   } | null;
-  images: string[];
 }
 
 export interface ProjectTimeline {
@@ -186,12 +187,7 @@ export interface Project {
   budget: ProjectBudget;
   owner_id: string;
   profile_image?: string | null;
-  images?: string[];
-  ai_generated_plan?: Record<string, unknown> | null;
-  plan_approved: boolean;
-  plan_generation_status: PlanGenerationStatus;
-  plan_generation_requested_at?: string | null;
-  plan_generation_completed_at?: string | null;
+  inspiration_images?: string[];
   created_at: string;
   updated_at: string;
 }

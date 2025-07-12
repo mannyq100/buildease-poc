@@ -18,6 +18,7 @@ export * from './user';
 export * from './dashboard';
 export * from './schedule';
 export * from './documents';
+export * from './ai';
 
 // Domain-specific exports
 export * from './materials';

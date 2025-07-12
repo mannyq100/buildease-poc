@@ -3,11 +3,10 @@
  * Handles the database operations for creating new projects
  */
 import { supabase } from '@/lib/supabase';
-import { ProjectFormValues } from '@/pages/CreateProject';
+import { CreateProjectFormValues } from '@/pages/CreateProject';
 import { validateBuildingPlotSizeRatio, validateStoreysBuildingSizeRatio } from '@/utils/projectFormUtils';
 import { Currency, Project, ProjectInsert, TABLE_NAMES, UserRole } from '@/types/database';
 import { AIPlanService } from './aiPlanService';
-import NotificationService from './notificationService';
 
 export interface CreateProjectResult {
   success: boolean;
@@ -18,7 +17,7 @@ export interface CreateProjectResult {
 /**
  * Creates a new project in the database with all form data
  */
-export async function createProject(formData: ProjectFormValues, userId: string): Promise<CreateProjectResult> {
+export async function createProject(formData: CreateProjectFormValues, userId: string): Promise<CreateProjectResult> {
   try {
     // Prepare the project data to match the database schema
     const projectData: ProjectInsert = {
@@ -26,23 +25,21 @@ export async function createProject(formData: ProjectFormValues, userId: string)
       description: formData.description || null,
       status: 'PLANNING', // Match the enum from schema
       owner_id: userId,
-      plan_approved: false,
       profile_image: formData.profileImage || null,
-      images: formData.images || [],
-      plan_generation_status: 'not_started',
-      plan_generation_requested_at: null,
-      plan_generation_completed_at: null,
+      inspiration_images: formData.images || [],
       
       // Structure details in JSONB format according to schema
       details: {
-        // Location information
+        // Location information - simplified structure to match migration
         location: {
-          address: formData.location,
-          country: formData.country,
           region: formData.region,
+          district: formData.location, // Using location as district
+          gps_code: null,
+          coordinates: null,
+          // Additional location data
+          country: formData.country,
           terrain: formData.terrain || null,
-          nearby_landmarks: formData.nearbyLandmarks || null,
-          coordinates: null // Could be added later with geocoding
+          nearby_landmarks: formData.nearbyLandmarks || null
         },
         
         // Specifications
@@ -97,8 +94,6 @@ export async function createProject(formData: ProjectFormValues, userId: string)
           email: formData.email || null
         } : null,
         
-        // References
-        images: formData.images || []
       },
       
       // Timeline information
@@ -138,7 +133,7 @@ export async function createProject(formData: ProjectFormValues, userId: string)
     // Fetch the project by the known ID
     const { data: createdProject, error: fetchError } = await supabase
       .from(TABLE_NAMES.PROJECTS)
-      .select('id, name, description, status, details, timeline, budget, owner_id, plan_approved, profile_image, images, created_at, updated_at')
+      .select('id, name, description, status, details, timeline, budget, owner_id, profile_image, inspiration_images, created_at, updated_at')
       .eq('id', projectId)
       .single();
       
@@ -146,8 +141,8 @@ export async function createProject(formData: ProjectFormValues, userId: string)
       id: createdProject?.id,
       name: createdProject?.name,
       profile_image: createdProject?.profile_image,
-      images: createdProject?.images,
-      imagesCount: createdProject?.images?.length || 0
+      inspiration_images: createdProject?.inspiration_images,
+      imagesCount: createdProject?.inspiration_images?.length || 0
     });
       
     
@@ -201,7 +196,7 @@ export async function createProject(formData: ProjectFormValues, userId: string)
 /**
  * Validates project form data before submission
  */
-export function validateProjectData(formData: ProjectFormValues): { isValid: boolean; errors: string[] } {
+export function validateProjectData(formData: CreateProjectFormValues): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
   
   // Required fields validation
@@ -318,7 +313,7 @@ async function logProjectCreation(projectId: string, userId: string): Promise<vo
 /**
  * Initiates AI plan generation for a newly created project
  */
-async function initiateAIPlanGeneration(project: Project, formData: ProjectFormValues): Promise<void> {
+async function initiateAIPlanGeneration(project: Project, _formData: CreateProjectFormValues): Promise<void> {
   try {
     console.log('🤖 Initiating AI plan generation for project:', project.id);
     
@@ -327,12 +322,8 @@ async function initiateAIPlanGeneration(project: Project, formData: ProjectFormV
     
     // Create notification for plan generation start
     try {
-      await NotificationService.createAIPlanNotification(
-        project.owner_id,
-        project.id,
-        project.name,
-        'started'
-      );
+      console.log('🔔 AI plan generation started for project:', project.name);
+      // TODO: Implement createAIPlanNotification method in NotificationService
     } catch (notificationError) {
       console.warn('Failed to create start notification (non-critical):', notificationError);
     }
@@ -343,20 +334,20 @@ async function initiateAIPlanGeneration(project: Project, formData: ProjectFormV
       projectDetails: {
         name: project.name,
         description: project.description || undefined,
-        type: project.details.project_type,
-        location: project.details.location.address,
-        budget: project.budget.allocated,
+        type: project.details?.project_type || '',
+        location: project.details?.location?.district || '',
+        budget: project.budget?.allocated || 0,
         specs: {
-          plotSize: project.details.specs.plot_size,
-          buildingSize: project.details.specs.building_size,
-          floors: project.details.specs.floors,
-          rooms: project.details.specs.rooms
+          plotSize: project.details?.specs?.plot_size || null,
+          buildingSize: project.details?.specs?.building_size || null,
+          floors: project.details?.specs?.floors || null,
+          rooms: project.details?.specs?.rooms || null
         },
         features: [
-          ...project.details.features.special_features,
-          ...project.details.features.sustainability_features
+          ...(project.details?.features?.special_features || []),
+          ...(project.details?.features?.sustainability_features || [])
         ],
-        materials: project.details.materials
+        materials: project.details?.materials || {}
       }
     };
     
@@ -379,13 +370,8 @@ async function initiateAIPlanGeneration(project: Project, formData: ProjectFormV
     
     // Create failure notification
     try {
-      await NotificationService.createAIPlanNotification(
-        project.owner_id,
-        project.id,
-        project.name,
-        'failed',
-        { error: error instanceof Error ? error.message : 'Unknown error' }
-      );
+      console.log('🔔 AI plan generation failed for project:', project.name);
+      // TODO: Implement createAIPlanNotification method in NotificationService
     } catch (notificationError) {
       console.warn('Failed to create failure notification (non-critical):', notificationError);
     }
@@ -397,26 +383,19 @@ async function initiateAIPlanGeneration(project: Project, formData: ProjectFormV
  * In production, this would be replaced by webhook handlers
  */
 function setupAIPlanCompletionHandler(
-  userId: string, 
-  projectId: string, 
+  _userId: string, 
+  _projectId: string, 
   projectName: string, 
   jobId: string
 ): void {
   // Listen for the custom completion event from AIPlanService
-  const handleCompletion = async (event: CustomEvent) => {
-    if (event.detail?.jobId === jobId) {
+  const handleCompletion = async (event: Event) => {
+    const customEvent = event as CustomEvent;
+    if (customEvent.detail?.jobId === jobId) {
       try {
         // Create completion notification
-        await NotificationService.createAIPlanNotification(
-          userId,
-          projectId,
-          projectName,
-          'completed',
-          { 
-            jobId,
-            completedAt: new Date().toISOString()
-          }
-        );
+        console.log('🔔 AI plan generation completed for project:', projectName);
+        // TODO: Implement createAIPlanNotification method in NotificationService
         
         console.log('✅ AI plan completion notification created');
         
@@ -430,10 +409,10 @@ function setupAIPlanCompletionHandler(
   };
   
   // Add event listener for completion
-  window.addEventListener('ai-plan-completed', handleCompletion as EventListener);
+  window.addEventListener('ai-plan-completed', handleCompletion);
   
   // Clean up after 10 minutes (timeout)
   setTimeout(() => {
-    window.removeEventListener('ai-plan-completed', handleCompletion as EventListener);
+    window.removeEventListener('ai-plan-completed', handleCompletion);
   }, 10 * 60 * 1000);
 }

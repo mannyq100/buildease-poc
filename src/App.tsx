@@ -28,7 +28,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 
 // Page Components - Lazy loaded for better performance and code splitting
 const Dashboard = lazy(() => import("./pages/Dashboard").then(m => ({ default: m.Dashboard })));
-const ProjectDetails = lazy(() => import("./pages/ProjectDetails").then(m => ({ default: m.ProjectDetails })));
+const ProjectDetails = lazy(() => import("./pages/ProjectDetails").then(m => ({ default: m.ProjectDetailsPage })));
 const PhaseDetails = lazy(() => import("./pages/PhaseDetails"));
 const GeneratedPlan = lazy(() => import("./pages/GeneratedPlan"));
 const TaskPlanningSetup = lazy(() => import("./pages/TaskPlanningSetup"));

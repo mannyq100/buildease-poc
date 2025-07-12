@@ -25,7 +25,7 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { cn } from '@/utils/core/ui';
-import { PlanProgress, ProgressStep, ProgressStage } from '@/types/database';
+import { PlanProgress, ProgressStep } from '@/types/database';
 import PlanStatusService from '@/services/planStatusService';
 
 interface PlanProgressTrackerProps {

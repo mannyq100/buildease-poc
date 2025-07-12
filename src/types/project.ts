@@ -1,5 +1,7 @@
+import { TaskStatus } from './common';
+import { Activity } from './activity';
+
 export type ProjectStatus = 'active' | 'planning' | 'completed' | 'upcoming' | 'on-hold';
-export type TaskStatus = 'Completed' | 'In Progress' | 'Not Started' | 'Delayed';
 export type PriorityLevel = 'High' | 'Medium' | 'Low';
 export type ViewMode = 'grid' | 'list';
 
@@ -14,12 +16,13 @@ export interface Project {
   spent: number;
   progress: number;
   status: ProjectStatus;
-  startDate: string;
-  endDate: string;
+  startDate: Date;
+  endDate: Date;
   imageUrl: string;
   teamMembers: string[];
   tags: string[];
-  phases?: Phase[];
+  phases: Phase[];
+  activities: Activity[];
 }
 
 export interface Phase {
@@ -31,20 +34,20 @@ export interface Phase {
   description: string;
   status: string;
   completion: number;
-  tasks?: Task[];
+  tasks: Task[];
 }
 
 export interface Task {
   id: string;
-  title: string;
-  phaseId: number;
-  startDate: Date;
-  endDate: Date;
-  priority: PriorityLevel;
-  assignee: string;
-  description: string;
+  name: string;
+  description?: string;
   status: TaskStatus;
-  completion: number;
+  startDate?: Date;
+  endDate?: Date;
+  assignedTo?: string;
+  progress?: number;
+  phaseId: string;
+  priority: PriorityLevel;
 }
 
 export interface TeamMember {

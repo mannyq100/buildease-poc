@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion as m, AnimatePresence } from 'framer-motion';
-import { Bell, Check, Trash2, RefreshCw, X } from 'lucide-react';
+import { Bell, Check, RefreshCw, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -39,7 +39,7 @@ export function NotificationCenter({
   }, [fetchNotifications]);
 
   // Handle notification click
-  const handleNotificationClick = async (notification: any) => {
+  const handleNotificationClick = async (notification: Notification) => {
     if (!notification.read) {
       await markAsRead(notification.id);
     }

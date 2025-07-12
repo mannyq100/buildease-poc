@@ -7,7 +7,7 @@ import {
   Info
 } from 'lucide-react';
 import { cn } from '@/utils/core/ui';
-import { Notification, NotificationType } from '@/types/database';
+import { Notification } from '@/types/database';
 
 export interface NotificationAction {
   label: string;

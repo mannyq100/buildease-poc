@@ -15,7 +15,29 @@
       "endDate": "2024-11-30",
       "imageUrl": "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1000&auto=format&fit=crop",
       "teamMembers": ["user1", "user2", "user3", "user5"],
-      "tags": ["residential", "large-scale", "urban"]
+      "tags": ["residential", "large-scale", "urban"],
+      "phases": [
+        {
+          "id": "phase-1",
+          "name": "Site Preparation",
+          "startDate": "2023-03-15T00:00:00.000Z",
+          "endDate": "2023-04-15T00:00:00.000Z",
+          "budget": "500000",
+          "description": "Clearing the site and preparing for foundation work.",
+          "status": "completed",
+          "completion": 100
+        },
+        {
+          "id": "phase-2",
+          "name": "Foundation and Framing",
+          "startDate": "2023-04-16T00:00:00.000Z",
+          "endDate": "2023-07-31T00:00:00.000Z",
+          "budget": "2500000",
+          "description": "Pouring the foundation and erecting the structural frame.",
+          "status": "in-progress",
+          "completion": 60
+        }
+      ]
     },
     {
       "id": "2",
@@ -32,7 +54,8 @@
       "endDate": "2025-01-15",
       "imageUrl": "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1000&auto=format&fit=crop",
       "teamMembers": ["user1", "user4", "user5", "user7"],
-      "tags": ["commercial", "high-rise", "leed"]
+      "tags": ["commercial", "high-rise", "leed"],
+      "phases": []
     },
     {
       "id": "3",
@@ -49,7 +72,8 @@
       "endDate": "2023-08-15",
       "imageUrl": "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=1000&auto=format&fit=crop",
       "teamMembers": ["user3", "user5", "user8"],
-      "tags": ["educational", "public", "completed"]
+      "tags": ["educational", "public", "completed"],
+      "phases": []
     },
     {
       "id": "4",
@@ -66,7 +90,8 @@
       "endDate": "2024-06-30",
       "imageUrl": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=1000&auto=format&fit=crop",
       "teamMembers": ["user1", "user2", "user4", "user6", "user7"],
-      "tags": ["healthcare", "renovation", "expansion"]
+      "tags": ["healthcare", "renovation", "expansion"],
+      "phases": []
     },
     {
       "id": "5",
@@ -83,7 +108,8 @@
       "endDate": "2024-08-15",
       "imageUrl": "https://images.unsplash.com/photo-1545438102-799c3991ffb2?q=80&w=1000&auto=format&fit=crop",
       "teamMembers": ["user2", "user4", "user7"],
-      "tags": ["infrastructure", "bridge", "government"]
+      "tags": ["infrastructure", "bridge", "government"],
+      "phases": []
     },
     {
       "id": "6",
@@ -100,7 +126,8 @@
       "endDate": "2026-06-30",
       "imageUrl": "https://images.unsplash.com/photo-1497366754035-f200968a6e72?q=80&w=1000&auto=format&fit=crop",
       "teamMembers": ["user1", "user3", "user8"],
-      "tags": ["commercial", "tech", "planning"]
+      "tags": ["commercial", "tech", "planning"],
+      "phases": []
     }
   ],
   "statuses": [

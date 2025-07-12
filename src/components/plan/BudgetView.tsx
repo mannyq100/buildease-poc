@@ -167,7 +167,7 @@ export function BudgetView({ plan }: BudgetViewProps) {
                 title="Equipment" 
                 amount={calculatedTotals.equipmentCost} 
                 percentage={calculatedTotals.equipmentPercentage} 
-                color="text-buildease-earth-700/10 dark:text-buildease-earth-500/10"
+                color="text-secondary/10 dark:text-muted-foreground/10"
               />
               <BudgetItemSummary 
                 icon={<FileText className="h-5 w-5 text-buildease-earth-800 dark:text-buildease-earth-600" />} 

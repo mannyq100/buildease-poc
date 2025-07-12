@@ -119,7 +119,7 @@ export const getTimelineTextColor = (status: string) => {
     case 'planning':
       return 'text-buildease-blue-700 dark:text-buildease-blue-300';
     case 'on-hold':
-      return 'text-buildease-earth-700 dark:text-buildease-earth-300';
+      return 'text-secondary dark:text-muted-foreground';
     default:
       return 'text-buildease-earth-600 dark:text-buildease-earth-400';
   }

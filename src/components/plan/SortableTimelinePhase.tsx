@@ -137,7 +137,7 @@ export const SortableTimelinePhase = React.memo(function SortableTimelinePhase({
               </Button>
             </div>
           </div>
-          <p className="text-sm text-buildease-earth-700 dark:text-buildease-earth-300 mb-4 leading-relaxed">{phase.description}</p>
+          <p className="text-sm text-secondary dark:text-muted-foreground mb-4 leading-relaxed">{phase.description}</p>
           
           <div className="flex flex-wrap items-center gap-3 mb-4">
             <div className="flex items-center bg-buildease-blue-50 dark:bg-buildease-blue-900/30 px-3 py-2 rounded-lg">

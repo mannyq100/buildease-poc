@@ -142,7 +142,7 @@ export const PhaseCard = React.memo(function PhaseCard({
                 </div>
               </div>
               
-              <div className="text-construction-body text-buildease-earth-700 dark:text-buildease-earth-300 mb-4 bg-white/80 dark:bg-gray-800/60 p-5 rounded-xl border border-buildease-blue-200/30 dark:border-buildease-blue-800/30 shadow-md backdrop-blur-md ring-1 ring-buildease-blue-100/20 dark:ring-buildease-blue-900/20">
+              <div className="text-construction-body text-secondary dark:text-muted-foreground mb-4 bg-white/80 dark:bg-gray-800/60 p-5 rounded-xl border border-primary/30 dark:border-primary/30 shadow-md backdrop-blur-md ring-1 ring-primary/20 dark:ring-primary/20">
                 {phase.description}
               </div>
               

@@ -256,14 +256,14 @@ export function TeamView({ plan }: TeamViewProps) {
                     </div>
                   
                     <div className="mt-4 space-y-2 text-sm">
-                      <div className="flex items-center text-buildease-earth-700 dark:text-buildease-earth-300">
+                      <div className="flex items-center text-secondary dark:text-muted-foreground">
                         <Mail className="h-4 w-4 mr-2 text-buildease-blue-600 dark:text-buildease-blue-400" />
                         <a href={`mailto:${member.email}`} className="hover:text-buildease-blue-700 dark:hover:text-buildease-blue-300 transition-colors font-medium">
                           {member.email}
                         </a>
                       </div>
                       {member.phone && (
-                        <div className="flex items-center text-buildease-earth-700 dark:text-buildease-earth-300">
+                        <div className="flex items-center text-secondary dark:text-muted-foreground">
                           <Phone className="h-4 w-4 mr-2 text-gray-400 dark:text-gray-500" />
                           <a href={`tel:${member.phone.replace(/[^0-9]/g, '')}`} className="hover:text-[#2B6CB0] dark:hover:text-[#93C5FD] transition-colors">
                             {member.phone}

@@ -10,7 +10,7 @@
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { Notification, NotificationInsert } from '@/types/database';
+import { Notification } from '@/types/database';
 import NotificationService from '@/services/notificationService';
 
 // Simple notification store state

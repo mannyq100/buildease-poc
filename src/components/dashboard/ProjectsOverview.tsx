@@ -77,7 +77,7 @@ export function ProjectsOverview({ projects, className = '' }: ProjectsOverviewP
                       
                       <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Budget: ${project.budget.toLocaleString()}
+                          Budget: ${project.budget?.toLocaleString() ?? 'N/A'}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           Progress: {project.progress}%

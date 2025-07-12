@@ -10,7 +10,7 @@ import {
   Users,
   LayoutDashboard
 } from 'lucide-react';
-import { Phase } from '@/types/phase';
+import { Phase, Project } from '@/types';
 
 /**
  * Navigation items for the project
@@ -175,7 +175,7 @@ export const RECENT_DOCUMENTS = [
  */
 export const INITIAL_PHASES: Phase[] = [
   {
-    id: 1,
+    id: "1",
     name: 'Demolition & Site Preparation',
     progress: 100,
     startDate: 'Jan 15, 2023',
@@ -183,10 +183,14 @@ export const INITIAL_PHASES: Phase[] = [
     status: 'completed',
     budget: '$12,000',
     spent: '$11,450',
-    description: 'Removal of existing structures and preparation of the site for construction.'
+    description: 'Removal of existing structures and preparation of the site for construction.',
+    tasks: [
+      { id: "1", name: "Clear site", status: "completed", duration: 5, startDate: "", endDate: "" },
+      { id: "2", name: "Demolish old structure", status: "completed", duration: 10, startDate: "", endDate: "" },
+    ],
   },
   {
-    id: 2,
+    id: "2",
     name: 'Foundation & Framing',
     progress: 85,
     startDate: 'Feb 6, 2023',
@@ -194,10 +198,14 @@ export const INITIAL_PHASES: Phase[] = [
     status: 'in-progress',
     budget: '$45,000',
     spent: '$38,500',
-    description: 'Laying of foundation and construction of the frame structure.'
+    description: 'Laying of foundation and construction of the frame structure.',
+    tasks: [
+      { id: "3", name: "Pour foundation", status: "completed", duration: 7, startDate: "", endDate: "" },
+      { id: "4", name: "Erect framing", status: "in-progress", duration: 15, startDate: "", endDate: "" },
+    ],
   },
   {
-    id: 3,
+    id: "3",
     name: 'Electrical & Plumbing',
     progress: 10,
     startDate: 'Mar 15, 2023',
@@ -205,10 +213,14 @@ export const INITIAL_PHASES: Phase[] = [
     status: 'in-progress',
     budget: '$28,000',
     spent: '$4,200',
-    description: 'Installation of electrical wiring and plumbing systems.'
+    description: 'Installation of electrical wiring and plumbing systems.',
+    tasks: [
+      { id: "5", name: "Rough-in electrical", status: "pending", duration: 10, startDate: "", endDate: "" },
+      { id: "6", name: "Rough-in plumbing", status: "pending", duration: 10, startDate: "", endDate: "" },
+    ],
   },
   {
-    id: 4,
+    id: "4",
     name: 'Interior Finishing',
     progress: 0,
     startDate: 'May 1, 2023',
@@ -216,10 +228,11 @@ export const INITIAL_PHASES: Phase[] = [
     status: 'upcoming',
     budget: '$35,000',
     spent: '$0',
-    description: 'Installation of interior fixtures, flooring, and finishes.'
+    description: 'Installation of interior fixtures, flooring, and finishes.',
+    tasks: [],
   },
   {
-    id: 5,
+    id: "5",
     name: 'Final Inspection & Handover',
     progress: 0,
     startDate: 'Jun 16, 2023',
@@ -227,6 +240,44 @@ export const INITIAL_PHASES: Phase[] = [
     status: 'upcoming',
     budget: '$8,000',
     spent: '$0',
-    description: 'Final inspections, punch list completion, and handover to client.'
+    description: 'Final inspections, punch list completion, and handover to client.',
+    tasks: [],
   }
+];
+
+export const projectData: Project[] = [
+  {
+    id: "1",
+    name: "Luxury Home Build",
+    description: "Construction of a modern luxury home in the hills.",
+    budget: 500000,
+    startDate: "2023-01-15",
+    endDate: "2023-07-01",
+    status: "in-progress",
+    progress: 60,
+    teamMembers: [
+      { id: "1", name: "John Doe", role: "Project Manager", avatar: "" },
+      { id: "2", name: "Jane Smith", role: "Architect", avatar: "" },
+    ],
+    phases: INITIAL_PHASES,
+    activities: RECENT_ACTIVITY,
+    documents: RECENT_DOCUMENTS,
+  },
+  {
+    id: "2",
+    name: "Office Renovation",
+    description: "Complete renovation of a 3-story office building.",
+    budget: 250000,
+    startDate: "2023-03-01",
+    endDate: "2023-09-30",
+    status: "planning",
+    progress: 10,
+    teamMembers: [
+      { id: "3", name: "Mike Johnson", role: "Project Manager", avatar: "" },
+      { id: "4", name: "Emily White", role: "Interior Designer", avatar: "" },
+    ],
+    phases: [],
+    activities: [],
+    documents: [],
+  },
 ];

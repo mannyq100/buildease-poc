@@ -2,8 +2,7 @@ import {
   AIPlanJob, 
   AIPlanJobInsert, 
   AIPlanJobStatus, 
-  PlanGenerationStatus,
-  TABLE_NAMES 
+  PlanGenerationStatus 
 } from '@/types/database';
 
 /**

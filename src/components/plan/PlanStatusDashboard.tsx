@@ -27,11 +27,10 @@ import {
   Share
 } from 'lucide-react';
 import { cn } from '@/utils/core/ui';
-import { Project, PlanGenerationStatus } from '@/types/database';
+import { Project } from '@/types/database';
 import { PlanProgressTracker } from './PlanProgressTracker';
 import { PlanVersionManager } from './PlanVersionManager';
 import { PlanStatusCard } from './PlanStatusCard';
-import { AIPlanService } from '@/services/aiPlanService';
 
 interface PlanStatusDashboardProps {
   project: Project;
