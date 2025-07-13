@@ -1,7 +1,7 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/utils/core/ui";
-import type { ProjectStatus } from '@/types/database';
+import type { ProjectStatus } from '@/types/project';
 
 const statusBadgeVariants = cva(
   "inline-flex items-center font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
@@ -18,6 +18,7 @@ const statusBadgeVariants = cva(
         planning: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
         // Active work - Orange (BuildEase accent)
         "in-progress": "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
+        active: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
         // Completed - Green
         completed: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
         // On hold - Yellow/Amber

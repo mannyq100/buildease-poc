@@ -65,7 +65,7 @@ import { usePageActions } from '@/hooks/usePageActions'
 import { StatCard } from '@/components/shared/StatCard'
 
 // Custom Components
-import { DocumentItem } from '@/components/documents/DocumentItem'
+import { DocumentItem } from '@/components/shared/DocumentItem'
 import { DocumentQuickAction } from '@/components/documents/DocumentQuickAction'
 import { EmptyDocumentState } from '@/components/documents/EmptyDocumentState'
 

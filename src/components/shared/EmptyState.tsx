@@ -1,4 +1,5 @@
 import React from 'react'
+import { cn } from '@/utils/core/ui'
 import { Frown } from 'lucide-react'
 
 export interface EmptyStateProps {

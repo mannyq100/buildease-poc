@@ -1,7 +1,7 @@
 import React, { useMemo, useCallback } from 'react';
 import { Task, TaskViewLayout } from '@/types/schedule';
 import { TaskCard } from '@/components/shared/TaskCard';
-import { EmptyState } from '@/components/EmptyState';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { sortTasks } from '@/utils/scheduleUtils';
 import { formatDate } from '@/utils/core/date';
 import { Badge } from '@/components/ui/badge';

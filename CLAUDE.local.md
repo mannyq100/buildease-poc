@@ -151,7 +151,7 @@ Limited font variations to maintain consistency
    - Add swipe gestures for touch interaction where appropriate
 
 10. **State & Data Management**
-    - Use React Query for server-state management
+    - Use (TanStack Query)React Query for server-state management and data fetching
     - Use zustand for client-side state management
     - Use react-hook-form for form handling
     - Implement context or zustand for shared state when appropriate

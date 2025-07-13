@@ -2,16 +2,13 @@ import * as React from "react";
 import { cn } from "@/utils/core/ui";
 import type { Project } from "@/types/project";
 import { Card, CardContent } from "@/components/ui/card";
-import { ProgressBar } from "@/components/ui/ProgressBar";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { Badge } from "@/components/ui/badge";
-import { CalendarDays, DollarSign, Users, MapPin, Clock, Target } from "lucide-react";
+import { DollarSign, Users, MapPin, Clock } from "lucide-react";
 
 export interface ProjectStatusHeroProps {
   project: Project;
   progress: number;
-  healthStatus: "healthy" | "warning" | "critical";
-  variant?: "compact" | "expanded";
+  healthStatus?: "healthy" | "warning" | "critical";
   className?: string;
 }
 
@@ -22,14 +19,7 @@ export interface ProjectStatusHeroProps {
 const ProjectStatusHero = React.forwardRef<
   HTMLDivElement,
   ProjectStatusHeroProps
->(({ className, project, progress, healthStatus, variant = "expanded", ...props }, ref) => {
-  const healthColors = {
-    healthy: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
-    warning: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
-    critical: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800'
-  };
-
-  const progressColor = 'primary'; // Simplified to single color
+>(({ className, project, progress, ...props }, ref) => {
 
   // Calculate days left
   const daysLeft = React.useMemo(() => {
@@ -41,8 +31,7 @@ const ProjectStatusHero = React.forwardRef<
     return diffDays > 0 ? diffDays : 0;
   }, [project.endDate]);
 
-  if (variant === 'compact') {
-    return (
+  return (
       <Card 
         ref={ref} 
         className={cn('overflow-hidden border border-slate-200/60 dark:border-slate-800/60 shadow-lg hover:shadow-xl transition-all duration-500 bg-gradient-to-br from-white via-buildease-blue-50/20 to-buildease-orange-50/10 dark:from-gray-900 dark:via-buildease-blue-950/20 dark:to-buildease-orange-950/10 backdrop-blur-sm rounded-xl relative', className)}
@@ -148,181 +137,6 @@ const ProjectStatusHero = React.forwardRef<
         </CardContent>
       </Card>
     );
-  }
-
-  // Expanded variant
-  return (
-    <Card 
-      ref={ref} 
-      className={cn('overflow-hidden border shadow-lg hover:shadow-xl transition-all duration-300', className)}
-      {...props}
-    >
-      {/* Decorative top bar */}
-      <div className="h-1 bg-gradient-to-r from-slate-800 to-slate-600" />
-      
-      <CardContent className="p-8">
-        <div className="flex items-start justify-between mb-8">
-          <div className="flex-1 min-w-0">
-            {/* Header with status */}
-            <div className="flex flex-wrap items-center gap-3 mb-4">
-              <StatusBadge 
-                status={project.status} 
-                variant="outline"
-                size="md"
-              />
-              <Badge className={cn('text-sm font-medium px-3 py-1', healthColors[healthStatus])}>
-                {healthStatus}
-              </Badge>
-              {project.location && (
-                <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                  <MapPin className="h-4 w-4 mr-1" />
-                  {project.location}
-                </div>
-              )}
-            </div>
-            
-            {/* Project name and description */}
-            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3 leading-tight">
-              {project.name}
-            </h1>
-            <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-6 max-w-2xl">
-              {project.description}
-            </p>
-          </div>
-          
-          {/* Project image */}
-          {project.imageUrl && (
-            <div className="ml-8 flex-shrink-0">
-              <div className="relative">
-                <img 
-                  src={project.imageUrl} 
-                  className="w-32 h-32 rounded-2xl object-cover shadow-xl"
-                  alt={project.name}
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-transparent via-transparent to-white/10" />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Main metrics section */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-center">
-          {/* Large progress circle */}
-          <div className="flex justify-center lg:justify-start">
-            <div className="relative">
-              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center shadow-inner">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                    {progress}%
-                  </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                    Complete
-                  </div>
-                </div>
-              </div>
-              <div className="absolute inset-0">
-                <ProgressBar 
-                  value={progress} 
-                  variant="circular" 
-                  color={progressColor}
-                  className="w-32 h-32"
-                />
-              </div>
-            </div>
-          </div>
-          
-          {/* Key metrics grid */}
-          <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {/* Budget */}
-            <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
-              <div className="flex items-center mb-3">
-                <div className="w-10 h-10 rounded-xl bg-slate-700 dark:bg-slate-300 flex items-center justify-center">
-                  <DollarSign className="h-5 w-5 text-white dark:text-slate-900" />
-                </div>
-                <div className="ml-3">
-                  <div className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-                    Budget
-                  </div>
-                </div>
-              </div>
-              <div className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-                ${project.budget.toLocaleString()}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-300">
-                ${project.spent?.toLocaleString() || '0'} spent
-              </div>
-            </div>
-            
-            {/* Timeline */}
-            <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
-              <div className="flex items-center mb-3">
-                <div className="w-10 h-10 rounded-xl bg-slate-700 dark:bg-slate-300 flex items-center justify-center">
-                  <CalendarDays className="h-5 w-5 text-white dark:text-slate-900" />
-                </div>
-                <div className="ml-3">
-                  <div className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-                    Timeline
-                  </div>
-                </div>
-              </div>
-              <div className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-                {daysLeft !== null ? `${daysLeft} days` : 'TBD'}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-300">
-                {project.endDate ? `Due ${new Date(project.endDate).toLocaleDateString()}` : 'No deadline set'}
-              </div>
-            </div>
-            
-            {/* Team */}
-            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900 rounded-2xl p-6 border border-emerald-200 dark:border-emerald-800">
-              <div className="flex items-center mb-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center">
-                  <Users className="h-5 w-5 text-white" />
-                </div>
-                <div className="ml-3">
-                  <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">
-                    Team
-                  </div>
-                </div>
-              </div>
-              <div className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-                {project.teamMembers?.length || 0}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-300">
-                Active members
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Additional project details */}
-        <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-            <div className="flex items-center">
-              <Target className="h-4 w-4 mr-1" />
-              Project Type: {project.type}
-            </div>
-            <div className="flex items-center">
-              <Users className="h-4 w-4 mr-1" />
-              Client: {project.client}
-            </div>
-            {project.tags && project.tags.length > 0 && (
-              <div className="flex items-center gap-2">
-                {project.tags.slice(0, 3).map((tag, index) => (
-                  <Badge key={index} variant="secondary" className="text-xs">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
 });
 
 ProjectStatusHero.displayName = "ProjectStatusHero";
