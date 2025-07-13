@@ -27,12 +27,12 @@ export function TeamMembersSection({
   onManageTeam,
   className
 }: TeamMembersSectionProps) {
-  // Process members to handle both string IDs and full TeamMember objects
+  // Process members to handle both string names and full TeamMember objects
   const processedMembers = members.map((member, index) => {
     if (typeof member === 'string') {
       return {
-        id: member,
-        name: `Team Member ${index + 1}`,
+        id: `member-${index}`,
+        name: member, // Use the actual name from the string
         role: 'Team Member',
       };
     }

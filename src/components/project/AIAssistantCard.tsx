@@ -36,20 +36,29 @@ const AIAssistantCard = React.forwardRef<
   return (
     <Card 
       ref={ref} 
-      className={cn("w-full border border-buildease-orange-200/50 dark:border-buildease-orange-800/50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm shadow-lg", className)} 
+      className={cn("w-full border-0 shadow-sm bg-white dark:bg-gray-900", className)} 
       {...props}
     >
-      <CardHeader className="pb-3">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-buildease-orange-500 dark:bg-buildease-orange-600 text-white shadow-md">
-            <Sparkles className="h-4 w-4" />
+      <CardHeader className="pb-5">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-md bg-slate-700 dark:bg-slate-300 flex items-center justify-center">
+                <Sparkles className="h-3 w-3 text-white dark:text-slate-900" />
+              </div>
+              <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">
+                AI Insights
+              </CardTitle>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Smart recommendations
+            </p>
           </div>
-          <CardTitle className="text-lg font-bold bg-gradient-to-r from-buildease-orange-900 via-buildease-orange-800 to-buildease-orange-900 dark:from-buildease-orange-100 dark:via-white dark:to-buildease-orange-100 bg-clip-text text-transparent">
-            AI Project Assistant
-          </CardTitle>
-          <Badge className="ml-auto text-xs bg-buildease-orange-100 dark:bg-buildease-orange-900/40 text-buildease-orange-800 dark:text-buildease-orange-200 border border-buildease-orange-200 dark:border-buildease-orange-700">
-            {insights.length} insights
-          </Badge>
+          {insights.length > 0 && (
+            <Badge variant="secondary" className="text-xs">
+              {insights.length}
+            </Badge>
+          )}
         </div>
       </CardHeader>
       
@@ -58,67 +67,68 @@ const AIAssistantCard = React.forwardRef<
           insights.slice(0, compact ? 2 : 3).map((insight) => (
             <div 
               key={insight.id} 
-              className="flex items-start gap-3 p-3 bg-buildease-orange-50 dark:bg-buildease-orange-950/30 rounded-lg border border-buildease-orange-200/40 dark:border-buildease-orange-700/40 hover:shadow-md hover:scale-[1.01] transition-all duration-300 group"
+              className="p-4 rounded-lg border border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700 transition-colors"
             >
-              <div className={cn(
-                "flex items-center justify-center w-8 h-8 rounded-full text-xs border",
-                insight.type === 'optimization' && "bg-status-completed/10 text-status-completed border-status-completed/20",
-                insight.type === 'risk' && "bg-destructive/10 text-destructive border-destructive/20",
-                insight.type === 'budget' && "bg-buildease-blue-100/50 text-buildease-blue-700 border-buildease-blue-200 dark:bg-buildease-blue-900/20 dark:text-buildease-blue-400 dark:border-buildease-blue-800",
-                insight.type === 'schedule' && "bg-buildease-orange-100/50 text-buildease-orange-700 border-buildease-orange-200 dark:bg-buildease-orange-900/20 dark:text-buildease-orange-400 dark:border-buildease-orange-800",
-                !insight.type && "bg-buildease-orange-100/50 text-buildease-orange-700 border-buildease-orange-200 dark:bg-buildease-orange-900/20 dark:text-buildease-orange-400 dark:border-buildease-orange-800"
-              )}>
-                {getInsightIcon(insight.type)}
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-buildease-orange-900 dark:text-buildease-orange-100 mb-1">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 mt-0.5">
+                  <div className="w-5 h-5 rounded bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-400">
+                    {getInsightIcon(insight.type)}
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <h4 className="font-medium text-gray-900 dark:text-white text-sm leading-tight">
                       {insight.title}
-                    </p>
-                    <p className="text-xs text-buildease-orange-700 dark:text-buildease-orange-300 leading-relaxed">
-                      {insight.recommendation}
-                    </p>
-                  </div>
-                  <div className="flex gap-2 flex-shrink-0">
-                    <Button 
-                      size="sm" 
-                      className="h-7 px-3 text-xs bg-buildease-orange-600 hover:bg-buildease-orange-700 text-white border-0"
-                      onClick={() => onAcceptRecommendation(insight)}
+                    </h4>
+                    <Badge 
+                      variant="secondary" 
+                      className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 flex-shrink-0"
                     >
-                      <CheckCircle2 className="h-3 w-3 mr-1" />
-                      Apply
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      className="h-7 w-7 p-0 text-buildease-orange-400 hover:text-buildease-orange-600 hover:bg-buildease-orange-100/50 dark:hover:bg-buildease-orange-950/30 rounded-md"
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
+                      {insight.type}
+                    </Badge>
                   </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-3">
+                    {insight.recommendation}
+                  </p>
+                  {!compact && (
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        size="sm" 
+                        className="text-xs"
+                        onClick={() => onAcceptRecommendation(insight)}
+                      >
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Apply
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        className="text-xs"
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        Dismiss
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           ))
         ) : (
-          <div className="text-center py-6">
-            <Sparkles className="h-8 w-8 mx-auto mb-2 text-buildease-orange-400 dark:text-buildease-orange-500 opacity-50" />
-            <p className="text-sm text-buildease-orange-700 dark:text-buildease-orange-300 mb-1">
-              AI Assistant is analyzing your project
-            </p>
-            <p className="text-xs text-buildease-orange-600 dark:text-buildease-orange-400">
-              Check back soon for personalized recommendations
-            </p>
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-3">
+              <Sparkles className="h-6 w-6 opacity-50" />
+            </div>
+            <p className="text-sm font-medium mb-1">No insights yet</p>
+            <p className="text-xs">AI will analyze your project soon</p>
           </div>
         )}
         
         {insights.length > (compact ? 2 : 3) && (
           <Button 
-            variant="ghost" 
+            variant="outline" 
             size="sm" 
-            className="w-full text-buildease-orange-700 dark:text-buildease-orange-300 hover:text-buildease-orange-800 dark:hover:text-buildease-orange-200 hover:bg-buildease-orange-100/50 dark:hover:bg-buildease-orange-950/30"
+            className="w-full"
           >
             View {insights.length - (compact ? 2 : 3)} more insights
           </Button>

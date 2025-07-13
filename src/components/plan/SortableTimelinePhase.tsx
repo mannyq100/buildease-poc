@@ -72,7 +72,7 @@ export const SortableTimelinePhase = React.memo(function SortableTimelinePhase({
   const containerClasses = `
     flex relative transition-all duration-200
     ${isDragging ? 'scale-105' : ''}
-    ${isOver && !isDragging ? 'ring-2 ring-buildease-orange-400 ring-opacity-50 rounded-lg' : ''}
+    ${isOver && !isDragging ? 'ring-2 ring-slate-400 ring-opacity-50 rounded-lg' : ''}
   `;
 
   const handleEditPhase = () => onEditPhase?.(phase.id.toString());
@@ -104,23 +104,23 @@ export const SortableTimelinePhase = React.memo(function SortableTimelinePhase({
         )}
         
         {/* Timeline Bubble */}
-        <div className={`h-16 w-16 rounded-full ${getTimelineStatusColor(phase.status)} border-4 border-white dark:border-gray-900 shadow-lg flex items-center justify-center relative z-10 group`}>
+        <div className="h-16 w-16 rounded-full bg-white dark:bg-gray-800 border-4 border-slate-200 dark:border-slate-600 shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center relative z-10 group">
           <div className="flex flex-col items-center">
-            <span className={`font-bold text-xs ${getTimelineTextColor(phase.status)}`}>{phase.order}</span>
+            <span className="font-bold text-xs text-slate-900 dark:text-slate-100">{phase.order}</span>
             {React.createElement(getStatusIcon(phase.status), {
-              className: `h-4 w-4 ${getTimelineTextColor(phase.status)} mt-0.5`
+              className: "h-4 w-4 text-slate-600 dark:text-slate-400 mt-0.5"
             })}
           </div>
         </div>
       </div>
       
       <div className="ml-6 mt-1 w-full group">
-        <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg p-4 border border-buildease-blue-100/50 dark:border-buildease-blue-800/50 shadow-sm hover:shadow-md transition-all duration-200">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border shadow-sm hover:shadow-md transition-all duration-200">
           <div className="flex items-start justify-between mb-3">
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-buildease-blue-800 dark:text-buildease-blue-200 flex items-center mb-1">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center mb-1">
                 {phase.name}
-                <span className={`ml-3 px-3 py-1 text-xs font-medium rounded-full ${getTimelineStatusColor(phase.status)} ${getTimelineTextColor(phase.status)} shadow-sm`}>
+                <span className="ml-3 px-3 py-1 text-xs font-medium rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200">
                   {getStatusText(phase.status)}
                 </span>
               </h3>
@@ -130,7 +130,7 @@ export const SortableTimelinePhase = React.memo(function SortableTimelinePhase({
                 variant="ghost" 
                 size="sm" 
                 onClick={handleEditPhase}
-                className="h-11 px-4 sm:h-8 sm:px-3 text-buildease-orange-600 dark:text-buildease-orange-400 hover:text-buildease-orange-700 dark:hover:text-buildease-orange-300 hover:bg-buildease-orange-50 dark:hover:bg-buildease-orange-900/20 rounded-md transition-all duration-200"
+                className="h-11 px-4 sm:h-8 sm:px-3"
               >
                 <Edit className="h-4 w-4 sm:h-3.5 sm:w-3.5 mr-1" />
                 <span className="hidden sm:inline text-xs">Edit</span>
@@ -140,37 +140,37 @@ export const SortableTimelinePhase = React.memo(function SortableTimelinePhase({
           <p className="text-sm text-secondary dark:text-muted-foreground mb-4 leading-relaxed">{phase.description}</p>
           
           <div className="flex flex-wrap items-center gap-3 mb-4">
-            <div className="flex items-center bg-buildease-blue-50 dark:bg-buildease-blue-900/30 px-3 py-2 rounded-lg">
-              <Clock className="h-4 w-4 mr-2 text-buildease-blue-600 dark:text-buildease-blue-400" />
-              <span className="text-xs font-semibold text-buildease-blue-800 dark:text-buildease-blue-200">{phase.duration}</span>
+            <div className="flex items-center bg-slate-100 dark:bg-slate-700 px-3 py-2 rounded-lg">
+              <Clock className="h-4 w-4 mr-2 text-slate-600 dark:text-slate-400" />
+              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{phase.duration}</span>
             </div>
             {phase.startDate && phase.endDate && (
-              <div className="flex items-center bg-buildease-earth-50 dark:bg-buildease-earth-900/30 px-3 py-2 rounded-lg group cursor-pointer hover:bg-buildease-earth-100 dark:hover:bg-buildease-earth-800/50 transition-colors duration-200" onClick={handleEditDates}>
-                <CalendarDays className="h-4 w-4 mr-2 text-buildease-earth-600 dark:text-buildease-earth-400 group-hover:text-buildease-orange-600 dark:group-hover:text-buildease-orange-400" />
-                <span className="text-xs font-semibold text-buildease-earth-800 dark:text-buildease-earth-200 group-hover:text-buildease-orange-700 dark:group-hover:text-buildease-orange-300">
+              <div className="flex items-center bg-slate-100 dark:bg-slate-700 px-3 py-2 rounded-lg group cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600 transition-all duration-200" onClick={handleEditDates}>
+                <CalendarDays className="h-4 w-4 mr-2 text-slate-600 dark:text-slate-400" />
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
                   {new Date(phase.startDate).toLocaleDateString()} - {new Date(phase.endDate).toLocaleDateString()}
                 </span>
               </div>
             )}
-            <div className="flex items-center bg-status-completed/10 dark:bg-status-completed/20 px-3 py-2 rounded-lg">
-              <CheckCircle className="h-4 w-4 mr-2 text-status-completed" />
-              <span className="text-xs font-semibold text-status-completed">{phase.tasks.filter(t => t.status === 'completed').length}/{phase.tasks.length} tasks</span>
+            <div className="flex items-center bg-emerald-50 dark:bg-emerald-900/20 px-3 py-2 rounded-lg">
+              <CheckCircle className="h-4 w-4 mr-2 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">{phase.tasks.filter(t => t.status === 'completed').length}/{phase.tasks.length} tasks</span>
             </div>
           </div>
 
           {/* Enhanced Tasks preview */}
           {phase.tasks.length > 0 && (
-            <div className="border-t border-buildease-blue-100/50 dark:border-buildease-blue-800/50 pt-4">
+            <div className="border-t pt-4">
               <div className="flex justify-between items-center mb-3">
-                <h4 className="text-sm font-semibold text-buildease-blue-800 dark:text-buildease-blue-200 flex items-center">
-                  <CheckCircle className="h-4 w-4 mr-2 text-buildease-blue-600 dark:text-buildease-blue-400" />
+                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center">
+                  <CheckCircle className="h-4 w-4 mr-2 text-slate-600 dark:text-slate-400" />
                   Phase Tasks ({phase.tasks.length})
                 </h4>
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={handleAddTask}
-                  className="h-11 px-4 sm:h-7 sm:px-3 text-xs border-buildease-orange-200 dark:border-buildease-orange-700 text-buildease-orange-600 dark:text-buildease-orange-400 hover:bg-buildease-orange-50 dark:hover:bg-buildease-orange-900/20 rounded-md shadow-sm transition-all duration-200"
+                  className="h-11 px-4 sm:h-7 sm:px-3 text-xs"
                 >
                   <Plus className="h-4 w-4 sm:h-3 sm:w-3 mr-1" />
                   <span className="hidden sm:inline">Add Task</span>
@@ -180,22 +180,22 @@ export const SortableTimelinePhase = React.memo(function SortableTimelinePhase({
                 {phase.tasks.slice(0, 6).map(task => (
                   <div
                     key={task.id} 
-                    className="text-xs px-3 py-2 bg-buildease-earth-50/60 dark:bg-buildease-earth-900/30 text-buildease-earth-800 dark:text-buildease-earth-200 rounded-lg flex items-center justify-between cursor-pointer hover:bg-buildease-earth-100/80 dark:hover:bg-buildease-earth-800/50 transition-all duration-200 border border-buildease-earth-200/60 dark:border-buildease-earth-800/60 group"
+                    className="text-xs px-3 py-2 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-lg flex items-center justify-between cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 transition-all duration-200 border group"
                     onClick={() => handleEditTask(phase.id.toString(), task.id.toString())}
                   >
                     <span className="font-medium truncate flex-1">{task.name}</span>
                     <div className="flex items-center gap-1 ml-2">
                       <span className={`w-2 h-2 rounded-full ${
-                        task.status === 'completed' ? 'bg-status-completed' :
-                        task.status === 'in-progress' ? 'bg-status-in-progress' :
-                        'bg-status-pending'
+                        task.status === 'completed' ? 'bg-green-500' :
+                        task.status === 'in-progress' ? 'bg-blue-500' :
+                        'bg-gray-400'
                       }`}></span>
                       <Edit className="h-3 w-3 opacity-0 group-hover:opacity-70 transition-opacity duration-200" />
                     </div>
                   </div>
                 ))}
                 {phase.tasks.length > 6 && (
-                  <div className="text-xs px-3 py-2 bg-buildease-earth-100/60 dark:bg-buildease-earth-900/30 text-buildease-earth-600 dark:text-buildease-earth-400 rounded-lg flex items-center justify-center border border-dashed border-buildease-earth-300/60 dark:border-buildease-earth-700/60">
+                  <div className="text-xs px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-lg flex items-center justify-center border border-dashed">
                     +{phase.tasks.length - 6} more tasks
                   </div>
                 )}

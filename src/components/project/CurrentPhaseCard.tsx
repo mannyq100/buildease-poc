@@ -3,7 +3,6 @@ import { cn } from "@/utils/core/ui";
 import type { Phase, Task } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ProgressBar } from "@/components/ui/ProgressBar";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PlusCircle, Clock, Calendar, CheckCircle2 } from "lucide-react";
 
@@ -28,56 +27,66 @@ const CurrentPhaseCard = React.forwardRef<
   const urgentTasks = tasks.slice(0, 3);
 
   return (
-    <Card ref={ref} className={cn("w-full border border-buildease-blue-200/50 dark:border-buildease-blue-800/50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm shadow-lg", className)} {...props}>
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <CardTitle className="text-xl font-bold bg-gradient-to-r from-buildease-blue-900 via-buildease-blue-800 to-buildease-blue-900 dark:from-buildease-blue-100 dark:via-white dark:to-buildease-blue-100 bg-clip-text text-transparent">What's Happening Now</CardTitle>
-            <StatusBadge status="in-progress" size="sm" />
+    <Card ref={ref} className={cn("w-full border border-slate-200/60 dark:border-slate-800/60 shadow-lg hover:shadow-xl transition-all duration-500 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-xl overflow-hidden", className)} {...props}>
+      
+      <CardHeader className="pb-4 pt-5">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <CardTitle className="text-lg font-bold text-slate-900 dark:text-white">
+              Current Phase <span className="text-sm text-slate-600 dark:text-slate-400">(What's happening right now)</span>
+            </CardTitle>
           </div>
-          {showTimeline && (
-            <div className="flex items-center text-sm text-buildease-orange-600 dark:text-buildease-orange-400">
-              <Calendar className="h-4 w-4 mr-1" />
-              {phase.endDate ? new Date(phase.endDate).toLocaleDateString() : 'No deadline'}
-            </div>
-          )}
+          <StatusBadge status="in-progress" size="sm" variant="outline" />
         </div>
       </CardHeader>
       
-      <CardContent className="space-y-6">
-        {/* Current Phase Info */}
-        <div className="bg-buildease-blue-50/30 dark:bg-buildease-blue-950/20 rounded-lg p-4 border border-buildease-blue-200/30 dark:border-buildease-blue-700/30">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold bg-gradient-to-r from-buildease-blue-800 to-buildease-blue-900 dark:from-buildease-blue-200 dark:to-buildease-blue-100 bg-clip-text text-transparent">
-              {phase.name}
-            </h3>
-            <div className="flex items-center gap-2">
-              <ProgressBar 
-                value={progress} 
-                color={progress >= 75 ? "success" : "primary"}
-                className="w-16"
-              />
-              <span className="text-sm font-medium text-buildease-blue-700 dark:text-buildease-blue-300">
-                {Math.round(progress)}%
-              </span>
+      <CardContent className="space-y-5 px-5 pb-5">
+        {/* Phase Overview */}
+        <div className="space-y-4">
+          <div className="rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                {phase.name}
+              </h3>
+              {showTimeline && phase.endDate && (
+                <div className="flex items-center text-xs text-slate-500 dark:text-slate-400">
+                  <Calendar className="h-3 w-3 mr-1" />
+                  Due {new Date(phase.endDate).toLocaleDateString()}
+                </div>
+              )}
             </div>
+          
+            {/* Progress */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">Progress</span>
+                <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-lg">{Math.round(progress)}%</span>
+              </div>
+              <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2">
+                <div 
+                  className="h-2 bg-gradient-to-r from-buildease-blue-500 to-emerald-500 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.min(progress, 100)}%` }}
+                />
+              </div>
+            </div>
+            
+            {phase.description && (
+              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mt-3">
+                {phase.description}
+              </p>
+            )}
           </div>
-          {phase.description && (
-            <p className="text-sm text-buildease-blue-600 dark:text-buildease-blue-400">
-              {phase.description}
-            </p>
-          )}
         </div>
 
-        {/* Urgent Tasks */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="font-medium flex items-center text-buildease-blue-900 dark:text-buildease-blue-100">
-              <Clock className="h-4 w-4 mr-2 text-buildease-orange-600 dark:text-buildease-orange-400" />
-              Next 3 Tasks
+        {/* Task List */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-base font-bold text-slate-900 dark:text-white flex items-center">
+              <CheckCircle2 className="h-4 w-4 mr-2 text-slate-600 dark:text-slate-400" />
+              Upcoming Tasks
             </h4>
-            <span className="text-sm text-buildease-blue-600 dark:text-buildease-blue-400">
-              {completedTasks}/{tasks.length} completed
+            <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-lg">
+              {completedTasks}/{tasks.length} complete
             </span>
           </div>
           
@@ -86,55 +95,56 @@ const CurrentPhaseCard = React.forwardRef<
               {urgentTasks.map((task) => (
                 <div 
                   key={task.id} 
-                  className="flex items-center justify-between p-3 rounded-lg bg-white dark:bg-gray-800 hover:bg-buildease-blue-50 dark:hover:bg-buildease-blue-950/50 transition-all duration-300 border border-buildease-blue-200/30 dark:border-buildease-blue-700/30 hover:shadow-md hover:scale-[1.01] group"
+                  className="flex items-center gap-3 p-3 rounded-lg border border-slate-200/60 dark:border-slate-700/60 hover:bg-slate-50/80 dark:hover:bg-slate-800/80 hover:border-slate-300/80 dark:hover:border-slate-600/80 transition-all duration-300 group"
                 >
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 
-                      className={cn("h-4 w-4", 
-                        task.status === "completed" 
-                          ? "text-status-completed" 
-                          : "text-buildease-blue-400 dark:text-buildease-blue-500"
-                      )} 
-                    />
-                    <span className={cn(
-                      "text-sm",
+                  <CheckCircle2 
+                    className={cn("h-4 w-4 flex-shrink-0 transition-all duration-300 group-hover:scale-110", 
                       task.status === "completed" 
-                        ? "line-through text-buildease-blue-500 dark:text-buildease-blue-600" 
-                        : "text-buildease-blue-900 dark:text-buildease-blue-100"
-                    )}>
-                      {task.name}
-                    </span>
-                  </div>
+                        ? "text-emerald-600 dark:text-emerald-400" 
+                        : "text-slate-400 dark:text-slate-500 group-hover:text-buildease-blue-500 dark:group-hover:text-buildease-blue-400"
+                    )} 
+                  />
+                  <span className={cn(
+                    "text-sm flex-1 min-w-0 font-medium",
+                    task.status === "completed" 
+                      ? "line-through text-slate-500 dark:text-slate-500" 
+                      : "text-slate-900 dark:text-white"
+                  )}>
+                    {task.name}
+                  </span>
                   <StatusBadge 
                     status={task.status as any} 
                     size="sm" 
-                    variant="dot"
+                    variant="outline"
                   />
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-4 text-muted-foreground">
-              <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No tasks in this phase yet</p>
+            <div className="text-center py-6 text-slate-500 dark:text-slate-400">
+              <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3">
+                <Clock className="h-6 w-6 opacity-50" />
+              </div>
+              <p className="text-sm font-medium">No tasks scheduled yet</p>
             </div>
           )}
         </div>
 
-        {/* Quick Actions */}
-        <div className="flex gap-2 pt-2">
+        {/* Actions */}
+        <div className="flex gap-3 pt-4">
           <Button 
             onClick={() => onQuickAction("add_task")}
-            className="flex-1"
-            variant="default"
+            size="sm"
+            className="flex-1 h-10 text-sm font-semibold bg-buildease-blue-600 hover:bg-buildease-blue-700 text-white dark:bg-buildease-blue-500 dark:hover:bg-buildease-blue-600 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
           >
-            <PlusCircle className="h-4 w-4 mr-2" />
+            <PlusCircle className="h-4 w-4 mr-2 transition-transform duration-300 group-hover:rotate-90" />
             Add Task
           </Button>
           <Button 
             onClick={() => onQuickAction("update_status")}
             variant="outline"
-            className="flex-1"
+            size="sm"
+            className="flex-1 h-10 text-sm font-semibold transition-all duration-300 hover:scale-[1.02] hover:shadow-md border-buildease-orange-300 text-buildease-orange-700 hover:bg-buildease-orange-50 dark:border-buildease-orange-600 dark:text-buildease-orange-400 dark:hover:bg-buildease-orange-900/20"
           >
             Update Status
           </Button>

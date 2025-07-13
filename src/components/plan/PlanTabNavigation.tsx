@@ -75,10 +75,10 @@ export const PlanTabNavigation = React.memo(function PlanTabNavigation({
   onExportPDF
 }: PlanTabNavigationProps) {
   return (
-    <div className={`border-b border-buildease-blue-100/50 dark:border-buildease-blue-900/30 bg-buildease-blue-50/20 dark:bg-buildease-blue-950/10 sticky top-0 z-10 shadow-sm backdrop-blur-sm ${className}`}>
+    <div className={`border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-white via-blue-50/30 to-white dark:from-gray-900 dark:via-blue-950/20 dark:to-gray-900 sticky top-0 z-10 shadow-md backdrop-blur-sm ${className}`}>
       {/* Plan Actions Bar - moved from PageHeader */}
       {(onSave || onRegenerate || onDistribute) && (
-        <div className="border-b border-buildease-blue-100/30 dark:border-buildease-blue-900/20">
+        <div className="border-b border-blue-100 dark:border-blue-800/50">
           <div className="container mx-auto px-3 sm:px-6">
             <PlanActionBar
               isGenerating={isGenerating || false}
@@ -111,8 +111,8 @@ export const PlanTabNavigation = React.memo(function PlanTabNavigation({
                 icon={tab.icon}
                 className={`whitespace-nowrap font-medium transition-all duration-200 px-3 py-2 text-xs
                   ${activeView === tab.id 
-                    ? 'text-buildease-blue-700 dark:text-buildease-blue-300 border-b-2 border-buildease-blue-600 dark:border-buildease-blue-400 bg-buildease-blue-50/50 dark:bg-buildease-blue-950/20' 
-                    : 'text-buildease-earth-600 dark:text-buildease-earth-400 hover:text-buildease-blue-600 dark:hover:text-buildease-blue-400 hover:bg-buildease-blue-50/30 dark:hover:bg-buildease-blue-950/10'
+                    ? 'text-blue-900 dark:text-blue-100 border-b-2 border-blue-600 dark:border-blue-400 bg-gradient-to-b from-blue-50 to-white dark:from-blue-900/30 dark:to-gray-800' 
+                    : 'text-slate-600 dark:text-slate-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50/50 dark:hover:bg-blue-900/20'
                   }`}
               >
                 <div className="flex items-center gap-1.5">
@@ -124,8 +124,6 @@ export const PlanTabNavigation = React.memo(function PlanTabNavigation({
         </Tabs>
       </div>
       
-      {/* Professional construction industry accent line */}
-      <div className="h-0.5 bg-gradient-to-r from-buildease-blue-300/40 via-buildease-orange-400/40 to-buildease-blue-300/40 dark:from-buildease-blue-600/40 dark:via-buildease-orange-600/40 dark:to-buildease-blue-600/40"></div>
     </div>
   );
 });
