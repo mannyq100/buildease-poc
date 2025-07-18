@@ -55,6 +55,7 @@ export interface TeamMember {
   name: string;
   role: string;
   avatar: string;
+  status?: 'active' | 'inactive' | 'pending';
 }
 
 export interface MaterialItem {

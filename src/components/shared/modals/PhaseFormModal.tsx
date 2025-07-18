@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect } from 'react';
 import { Layers, Calendar, ListOrdered, ClipboardList } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
-import { BaseModal } from './BaseModal';
+import { BaseModal } from '@/components/ui/BaseModal';
 import { FormField, SelectField, ModalFooter } from '@/components/ui/form-fields';
 import { v4 as uuidv4 } from 'uuid';
 import { ModalPhase } from '@/types/plan/index';
@@ -10,7 +10,7 @@ import { ModalPhase } from '@/types/plan/index';
 export type Phase = ModalPhase;
 
 interface PhaseFormModalProps {
-  show: boolean;
+  isOpen: boolean;
   onClose: () => void;
   onSave: (phase: Phase) => void;
   phase?: Partial<Phase>;
@@ -20,7 +20,7 @@ interface PhaseFormModalProps {
 }
 
 export function PhaseFormModal({
-  show,
+  isOpen,
   onClose,
   onSave,
   phase,
@@ -60,10 +60,10 @@ export function PhaseFormModal({
 
   // Reset form when modal opens/closes
   useEffect(() => {
-    if (show) {
+    if (isOpen) {
       reset(getDefaultValues());
     }
-  }, [show, reset, getDefaultValues]);
+  }, [isOpen, reset, getDefaultValues]);
 
   // Handle form submission
   const onSubmit = useCallback((data: Phase) => {
@@ -98,7 +98,7 @@ export function PhaseFormModal({
 
   return (
     <BaseModal
-      show={show}
+      isOpen={isOpen}
       onClose={onClose}
       title={isNew ? 'Add New Phase' : 'Edit Phase'}
       description={modalDescription}

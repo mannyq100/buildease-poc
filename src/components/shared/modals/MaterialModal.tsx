@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect } from 'react';
 import { Package, DollarSign, CirclePlus, Truck, ShoppingCart, Calendar, ListMinus, ArrowUpDown, Hash } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
-import { BaseModal } from './BaseModal';
+import { BaseModal } from '@/components/ui/BaseModal';
 import { FormField, SelectField, ModalFooter } from '@/components/ui/form-fields';
 import { v4 as uuidv4 } from 'uuid';
 import { ModalMaterial } from '@/types/plan/index';
@@ -10,7 +10,7 @@ import { ModalMaterial } from '@/types/plan/index';
 export type Material = ModalMaterial;
 
 interface MaterialModalProps {
-  show: boolean;
+  isOpen: boolean;
   onClose: () => void;
   onSave: (material: Material) => void;
   material?: Partial<Material>;
@@ -22,7 +22,7 @@ interface MaterialModalProps {
 }
 
 export function MaterialModal({
-  show,
+  isOpen,
   onClose,
   onSave,
   material,
@@ -74,10 +74,10 @@ export function MaterialModal({
 
   // Reset form when modal opens/closes
   useEffect(() => {
-    if (show) {
+    if (isOpen) {
       reset(getDefaultValues());
     }
-  }, [show, reset, getDefaultValues]);
+  }, [isOpen, reset, getDefaultValues]);
 
   // Update total price when quantity or unit price changes
   useEffect(() => {
@@ -120,7 +120,7 @@ export function MaterialModal({
 
   return (
     <BaseModal
-      show={show}
+      isOpen={isOpen}
       onClose={onClose}
       title={isNew ? 'Add New Material' : 'Edit Material'}
       description={modalDescription}

@@ -5,19 +5,12 @@
  */
 
 import React from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { BaseModal } from '@/components/ui/BaseModal';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, Trash2, Info, CheckCircle } from 'lucide-react';
 
 export interface ConfirmationModalProps {
-  show: boolean;
+  isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
   title: string;
@@ -52,7 +45,7 @@ const variantConfig = {
 };
 
 export function ConfirmationModal({
-  show,
+  isOpen,
   onClose,
   onConfirm,
   title,
@@ -73,22 +66,27 @@ export function ConfirmationModal({
   };
 
   return (
-    <Dialog open={show} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <div className="flex items-center gap-3 mb-2">
-            <div className={`p-2 rounded-full bg-gray-100 dark:bg-gray-800 ${config.iconColor}`}>
-              <IconComponent className="h-5 w-5" />
-            </div>
-            <DialogTitle className="text-buildease-blue-800 dark:text-buildease-blue-200">
-              {title}
-            </DialogTitle>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      size="sm"
+    >
+      <div className="space-y-6">
+        {/* Icon and Content */}
+        <div className="flex items-center gap-4">
+          <div className={`p-3 rounded-full bg-slate-100 dark:bg-slate-800 ${config.iconColor}`}>
+            <IconComponent className="h-6 w-6" />
           </div>
-          <DialogDescription className="text-buildease-earth-600 dark:text-buildease-earth-400 leading-relaxed">
-            {description}
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="flex gap-2 sm:gap-2">
+          <div className="flex-1">
+            <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+              {description}
+            </p>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
           <Button
             variant="outline"
             onClick={onClose}
@@ -104,9 +102,9 @@ export function ConfirmationModal({
           >
             {isLoading ? 'Processing...' : confirmText}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </BaseModal>
   );
 }
 

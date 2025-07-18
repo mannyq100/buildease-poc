@@ -29,7 +29,7 @@ const realTaskService = {
       return response
     } catch (error: unknown) {
       if (error && typeof error === 'object' && 'response' in error && 
-          (error as any).response?.status === 404) {
+          (error as {response?: {status?: number}}).response?.status === 404) {
         return null
       }
       throw error
@@ -105,7 +105,7 @@ const realTaskService = {
       return response
     } catch (error: unknown) {
       if (error && typeof error === 'object' && 'response' in error && 
-          (error as any).response?.status === 404) {
+          (error as {response?: {status?: number}}).response?.status === 404) {
         return null
       }
       throw error
@@ -121,7 +121,7 @@ const realTaskService = {
     try {
       await apiClient.delete(`/tasks/${id}`)
       return true
-    } catch (error) {
+    } catch (_error) {
       return false
     }
   }

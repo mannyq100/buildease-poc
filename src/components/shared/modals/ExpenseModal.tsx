@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { BaseModal } from './BaseModal';
+import { BaseModal } from '@/components/ui/BaseModal';
 import { FormField, ModalFooter, SelectField } from '@/components/ui/form-fields';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,7 @@ export interface ExpenseFormData {
 }
 
 interface ExpenseModalProps {
-  show: boolean;
+  isOpen: boolean;
   onClose: () => void;
   onSave: (expense: ExpenseFormData) => void;
   expense?: ExpenseFormData;
@@ -34,7 +34,7 @@ interface ExpenseModalProps {
 }
 
 export function ExpenseModal({
-  show,
+  isOpen,
   onClose,
   onSave,
   expense,
@@ -75,10 +75,10 @@ export function ExpenseModal({
 
   // Reset form when modal opens/closes
   useEffect(() => {
-    if (show) {
+    if (isOpen) {
       reset(getDefaultValues());
     }
-  }, [show, reset, getDefaultValues]);
+  }, [isOpen, reset, getDefaultValues]);
 
   // For file upload handling
   const [receipt, setReceipt] = useState<File | null>(null);
@@ -139,7 +139,7 @@ export function ExpenseModal({
 
   return (
     <BaseModal
-      show={show}
+      isOpen={isOpen}
       onClose={onClose}
       title={title}
       description={description}

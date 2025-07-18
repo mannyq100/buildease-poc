@@ -18,6 +18,8 @@ export interface Expense {
   status: 'approved' | 'pending' | 'rejected';
   receiptUploaded: boolean;
   notes?: string;
+  vendor?: string;
+  phase?: string;
 }
 
 /**
@@ -47,6 +49,15 @@ export interface BudgetData {
   total: number;
   spent: number;
   remaining: number;
+  allocations?: BudgetAllocation[];
+}
+
+/**
+ * Represents a budget allocation for a category
+ */
+export interface BudgetAllocation {
+  category: string;
+  amount: number;
 }
 
 /**

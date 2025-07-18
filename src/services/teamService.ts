@@ -29,7 +29,7 @@ const realTeamService = {
       return response
     } catch (error: unknown) {
       if (error && typeof error === 'object' && 'response' in error && 
-          (error as any).response?.status === 404) {
+          (error as {response?: {status?: number}}).response?.status === 404) {
         return null
       }
       throw error
@@ -95,7 +95,7 @@ const realTeamService = {
       return response
     } catch (error: unknown) {
       if (error && typeof error === 'object' && 'response' in error && 
-          (error as any).response?.status === 404) {
+          (error as {response?: {status?: number}}).response?.status === 404) {
         return null
       }
       throw error
@@ -111,7 +111,7 @@ const realTeamService = {
     try {
       await apiClient.delete(`/team/${id}`)
       return true
-    } catch (error) {
+    } catch (_error) {
       return false
     }
   }

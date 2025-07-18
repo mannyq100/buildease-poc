@@ -2,7 +2,6 @@ import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { useParams } from "react-router-dom";
 import { useRef, useMemo, useCallback, useState } from "react";
-import { PageContainer } from "@/components/layout/PageContainer";
 import { ProjectStatusHero } from "@/components/project/ProjectStatusHero";
 import { CurrentPhaseCard } from "@/components/project/CurrentPhaseCard";
 import { AIAssistantCard } from "@/components/project/AIAssistantCard";
@@ -10,12 +9,16 @@ import { DetailsAccordion } from "@/components/project/DetailsAccordion";
 import { QuickActionBar } from "@/components/project/QuickActionBar";
 import { EditProjectModal } from "@/components/project/EditProjectModal";
 import { UpdateStatusModal } from "@/components/project/UpdateStatusModal";
-import { PlanModalManager, PlanModalManagerHandlers, TimelineView } from "@/components/plan";
+import { PlanModalManager, PlanModalManagerHandlers } from "@/components/plan";
 import { adaptProjectToPlan } from "@/utils/projectDataAdapter";
 import { projectData } from "@/data/projectData";
-import { TeamMembersSection } from "@/components/project/TeamMembersSection";
+import { TeamManagementModal } from "@/components/team/TeamManagementModal";
+import { ProjectSettingsModal } from "@/components/project/ProjectSettingsModal";
+import { ProgressAndExecution } from "@/components/project/ProgressAndExecution";
+import { TeamAndResources } from "@/components/project/TeamAndResources";
+import { SettingsAndConfiguration } from "@/components/project/SettingsAndConfiguration";
 import { toast } from "sonner";
-import { PlusCircle, Edit, Calendar, Users, DollarSign, Settings, FileText, Clock, TrendingUp } from "lucide-react";
+import { PlusCircle, Users, Settings, Clock, TrendingUp } from "lucide-react";
 import type { Project, ProjectStatus } from "@/types/project";
 
 export function ProjectDetailsPage() {
@@ -41,6 +44,8 @@ function ProjectDetails({ projectId }: { projectId: string }) {
   // Modal state management
   const [editProjectModalOpen, setEditProjectModalOpen] = useState(false);
   const [updateStatusModalOpen, setUpdateStatusModalOpen] = useState(false);
+  const [teamManagementModalOpen, setTeamManagementModalOpen] = useState(false);
+  const [projectSettingsModalOpen, setProjectSettingsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
   // Mock data for now
@@ -169,99 +174,75 @@ function ProjectDetails({ projectId }: { projectId: string }) {
     },
   ];
 
-  const accordionSections = [
+  const workflowSections = [
     {
-      id: "all-phases",
-      title: "All Phases & Timeline",
-      badge: project.phases.length,
+      id: "progress-execution",
+      title: "Progress & Execution",
       icon: <Clock className="h-4 w-4" />,
       priority: "high" as const,
-      content: adaptedProject ? (
-        <TimelineView
+      content: (
+        <ProgressAndExecution 
           plan={adaptedProject}
-          onEditPhase={(phaseId) => modalHandlersRef.current?.openPhaseModal(phaseId)}
-          onAddTask={(phaseId) => modalHandlersRef.current?.openTaskModal(phaseId, '', true)}
-          onEditTask={(phaseId, taskId) => modalHandlersRef.current?.openTaskModal(phaseId, taskId)}
-          onEditDates={(type, phaseId) => modalHandlersRef.current?.openDateModal(type, phaseId)}
-          onReorderPhase={(activeId, overId) => console.log('Reorder:', activeId, overId)}
+          projectId={project.id}
+          modalHandlersRef={modalHandlersRef}
         />
-      ) : (
-        <div className="text-sm text-gray-600">Loading timeline...</div>
       ),
     },
     {
-      id: "team-documents",
-      title: "Team & Documents",
-      badge: project.teamMembers.length,
+      id: "team-resources",
+      title: "Team & Resources",
       icon: <Users className="h-4 w-4" />,
-      priority: "medium" as const,
-      content: <TeamMembersSection members={project.teamMembers} />,
-    },
-    {
-      id: "budget-breakdown", 
-      title: "Budget & Financial Tracking",
-      badge: `$${project.budget?.allocated?.toLocaleString() ?? 'N/A'}`,
-      badgeVariant: "outline" as const,
-      icon: <DollarSign className="h-4 w-4" />,
       priority: "high" as const,
-      content: <div className="text-sm text-gray-600">Detailed cost breakdown, expense tracking, and budget variance analysis.</div>,
+      content: (
+        <TeamAndResources
+          projectId={project.id}
+          projectName={project.name}
+          teamMembers={project.teamMembers}
+          budget={{ allocated: project.budget, spent: project.budget * 0.65 }}
+          onManageTeam={() => setTeamManagementModalOpen(true)}
+        />
+      ),
     },
     {
-      id: "documents",
-      title: "Project Documents & Files",
-      badge: "12",
-      icon: <FileText className="h-4 w-4" />,
-      priority: "medium" as const,
-      content: <div className="text-sm text-gray-600">Contracts, permits, plans, photos, and other project documentation.</div>,
-    },
-    {
-      id: "project-settings",
-      title: "Project Settings & Preferences",
+      id: "settings-configuration",
+      title: "Settings & Configuration",
       icon: <Settings className="h-4 w-4" />,
-      priority: "low" as const,
-      content: <div className="text-sm text-gray-600">Project configuration, notification settings, and access permissions.</div>,
+      priority: "medium" as const,
+      content: (
+        <SettingsAndConfiguration
+          projectId={project.id}
+          onOpenFullSettings={() => setProjectSettingsModalOpen(true)}
+        />
+      ),
     },
   ];
 
   const quickActions = [
     {
-      id: "add-phase",
-      label: "Add Phase",
-      icon: <PlusCircle className="h-4 w-4" />,
-      priority: "high" as const,
-      onClick: () => modalHandlersRef.current?.openPhaseModal('', true)
-    },
-    {
-      id: "edit-project",
-      label: "Edit Project",
-      icon: <Edit className="h-4 w-4" />,
-      priority: "medium" as const,
-      variant: "outline" as const,
-      onClick: () => setEditProjectModalOpen(true)
-    },
-    {
-      id: "update-status",
-      label: "Update Status",
+      id: "update-progress",
+      label: "Update Progress",
       icon: <TrendingUp className="h-4 w-4" />,
-      priority: "medium" as const,
-      variant: "outline" as const,
+      priority: "high" as const,
+      variant: "default" as const,
+      className: "bg-buildease-orange-600 hover:bg-buildease-orange-700 text-white",
       onClick: () => setUpdateStatusModalOpen(true)
     },
     {
-      id: "schedule-meeting",
-      label: "Schedule Meeting",
-      icon: <Calendar className="h-4 w-4" />,
-      priority: "low" as const,
-      variant: "ghost" as const,
-      onClick: () => console.log('Schedule meeting') // TODO: implement
+      id: "add-task-phase",
+      label: "Add Task/Phase",
+      icon: <PlusCircle className="h-4 w-4" />,
+      priority: "high" as const,
+      variant: "outline" as const,
+      className: "border-buildease-blue-300 text-buildease-blue-600 hover:bg-buildease-blue-50",
+      onClick: () => modalHandlersRef.current?.openPhaseModal('', true)
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-buildease-blue-50/30 via-white to-buildease-orange-50/20 dark:from-buildease-blue-950/20 dark:via-gray-900 dark:to-buildease-orange-950/10">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-buildease-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-buildease-blue-950/30">
       <div className="max-w-7xl mx-auto">
-        {/* Hero Section - Full width at top */}
-        <div className="px-4 sm:px-6 lg:px-8 pb-8">
+        {/* Enhanced Hero Section */}
+        <div className="px-3 sm:px-6 lg:px-8 pt-4 pb-6">
           <ProjectStatusHero
             project={project}
             progress={project.progress} 
@@ -271,52 +252,66 @@ function ProjectDetails({ projectId }: { projectId: string }) {
           />
         </div>
         
-        {/* Main Content Area */}
-        <div className="px-4 sm:px-6 lg:px-8 pb-12">
-          <div className="space-y-8">
+        {/* Enhanced Main Content Area */}
+        <div className="px-3 sm:px-6 lg:px-8 pb-12">
+          <div className="space-y-6">
             
-            {/* Primary Information Section */}
-            <section className="animate-in fade-in duration-500">
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <div className="xl:col-span-2">
+            {/* Primary Information Section with improved layout */}
+            <section className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
+                {/* Current Phase - Takes more space on larger screens */}
+                <div className="lg:col-span-8">
                   <CurrentPhaseCard
                     phase={activePhase}
                     tasks={urgentTasks}
                     onQuickAction={handleCurrentPhaseAction}
                     showTimeline={true}
-                    className="h-full transform hover:scale-[1.005] transition-all duration-300"
+                    className="h-full transform hover:scale-[1.01] transition-all duration-300 hover:shadow-xl"
                   />
                 </div>
                 
-                <div className="xl:col-span-1">
+                {/* AI Assistant - Compact on larger screens */}
+                <div className="lg:col-span-4">
                   <AIAssistantCard
                     projectId={project.id}
                     insights={aiInsights}
                     onAcceptRecommendation={() => {}}
                     compact={true}
-                    className="h-full transform hover:scale-[1.005] transition-all duration-300"
+                    className="h-full transform hover:scale-[1.01] transition-all duration-300 hover:shadow-xl"
                   />
                 </div>
               </div>
             </section>
             
-            {/* Quick Actions Section */}
-            <section className="animate-in slide-in-from-bottom-4 duration-700">
-              <QuickActionBar 
-                actions={quickActions} 
-                layout="horizontal"
-                className="justify-center transform hover:scale-[1.02] transition-all duration-300"
-              />
+            {/* Enhanced Quick Actions Section */}
+            <section className="py-2">
+              <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl p-4 border border-slate-200/60 dark:border-slate-700/60 shadow-lg">
+                <QuickActionBar 
+                  actions={quickActions} 
+                  layout="horizontal"
+                  className="justify-center gap-3"
+                />
+              </div>
             </section>
             
-            {/* Detailed Information Section */}
-            <section className="animate-in slide-in-from-bottom-6 duration-1000">
+            {/* Enhanced Workflow Sections */}
+            <section className="space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <div className="w-1 h-6 bg-gradient-to-b from-buildease-blue-500 to-buildease-orange-500 rounded-full"></div>
+                  Project Details
+                </h2>
+                <div className="text-sm text-slate-500 dark:text-slate-400">
+                  Last updated: {new Date().toLocaleDateString()}
+                </div>
+              </div>
+              
               <DetailsAccordion 
-                sections={accordionSections}
-                variant="minimal"
+                sections={workflowSections}
+                variant="default"
                 allowMultiple={false}
-                defaultExpanded="all-phases"
-                className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-slate-200/50 dark:border-slate-800/50"
+                defaultExpanded="progress-execution"
+                className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm rounded-2xl shadow-lg border border-slate-200/60 dark:border-slate-700/60 overflow-hidden"
               />
             </section>
             
@@ -339,6 +334,22 @@ function ProjectDetails({ projectId }: { projectId: string }) {
         onSave={handleUpdateStatus}
         project={project}
         isSaving={isSaving}
+      />
+      
+      <TeamManagementModal
+        isOpen={teamManagementModalOpen}
+        onClose={() => setTeamManagementModalOpen(false)}
+        projectId={project.id}
+      />
+      
+      <ProjectSettingsModal
+        isOpen={projectSettingsModalOpen}
+        onClose={() => setProjectSettingsModalOpen(false)}
+        projectId={project.id}
+        onSettingsUpdate={() => {
+          // Refresh project data after settings update
+          console.log('Settings updated for project:', project.id);
+        }}
       />
       
       {/* Plan Modal Manager */}

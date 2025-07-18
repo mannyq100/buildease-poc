@@ -3,12 +3,12 @@ import React, { useCallback, useEffect } from 'react';
 import { User, Briefcase, Mail, Phone, Activity, ShieldQuestion } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { TeamMember, TeamMemberStatus } from '@/types/team';
-import { BaseModal } from './BaseModal';
+import { BaseModal } from '@/components/ui/BaseModal';
 import { FormField, SelectField, ModalFooter } from '@/components/ui/form-fields';
 import { v4 as uuidv4 } from 'uuid';
 
 interface TeamModalProps {
-  show: boolean;
+  isOpen: boolean;
   onClose: () => void;
   onSave: (item: Partial<TeamMember>) => void;
   initialData: TeamMember | null;
@@ -41,7 +41,7 @@ function isValidEmail(email: string): boolean {
   return emailRegex.test(email);
 }
 
-export function TeamModal({ show, onClose, initialData, isNewItem, onSave }: TeamModalProps) {
+export function TeamModal({ isOpen, onClose, initialData, isNewItem, onSave }: TeamModalProps) {
   // Default form values
   const getDefaultValues = useCallback((): Partial<TeamMember> => ({
     id: initialData?.id || uuidv4(),
@@ -66,10 +66,10 @@ export function TeamModal({ show, onClose, initialData, isNewItem, onSave }: Tea
 
   // Reset form when modal opens/closes
   useEffect(() => {
-    if (show) {
+    if (isOpen) {
       reset(getDefaultValues());
     }
-  }, [show, reset, getDefaultValues]);
+  }, [isOpen, reset, getDefaultValues]);
 
   // Handle form submission
   const onSubmit = useCallback((data: Partial<TeamMember>) => {
@@ -98,7 +98,7 @@ export function TeamModal({ show, onClose, initialData, isNewItem, onSave }: Tea
 
   return (
     <BaseModal
-      show={show}
+      isOpen={isOpen}
       onClose={onClose}
       title={isNewItem ? 'Add New Team Member' : 'Edit Team Member'}
       footer={modalFooter}

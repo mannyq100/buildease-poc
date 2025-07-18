@@ -4,7 +4,7 @@
  * Collects budget and timeline information
  */
 import { useFormContext } from 'react-hook-form';
-import { ProjectFormValues } from '../../pages/CreateProject';
+import { CreateProjectFormValues } from '../../pages/CreateProject';
 import { Input } from '@/components/ui/input';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -26,7 +26,7 @@ const CURRENCIES = [
 ];
 
 export function BudgetTimelineForm() {
-  const { control, watch } = useFormContext<ProjectFormValues>();
+  const { control, watch } = useFormContext<CreateProjectFormValues>();
   
   // Watch currency to provide appropriate guidance
   const currency = watch('currency');

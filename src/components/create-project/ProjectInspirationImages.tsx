@@ -11,13 +11,13 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/comp
 import { Button } from '@/components/ui/button';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { Control } from 'react-hook-form';
-import { ProjectFormValues } from '@/pages/CreateProject';
+import { CreateProjectFormValues } from '@/pages/CreateProject';
 import { useCreateProjectImages } from '@/stores/createProjectStore';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/utils/core/ui';
 
 interface ProjectInspirationImagesProps {
-  control: Control<ProjectFormValues>;
+  control: Control<CreateProjectFormValues>;
   className?: string;
 }
 

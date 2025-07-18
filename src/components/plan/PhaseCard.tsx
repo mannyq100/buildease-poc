@@ -42,7 +42,7 @@ export const PhaseCard = React.memo(function PhaseCard({
   const [materialsExpanded, setMaterialsExpanded] = useState(false);
   
   // Memoized computed values
-  const statusColorClass = useMemo(() => getStatusColor(phase.status), [phase.status]);
+  const _statusColorClass = useMemo(() => getStatusColor(phase.status), [phase.status]);
   const statusText = useMemo(() => getStatusText(phase.status), [phase.status]);
   const formattedStartDate = useMemo(() => formatDate(phase.startDate), [phase.startDate]);
   const formattedEndDate = useMemo(() => formatDate(phase.endDate), [phase.endDate]);

@@ -136,7 +136,7 @@ export function PlanProgressTracker({
     }
   };
 
-  const getStepStatusColor = (status: ProgressStep['status']) => {
+  const _getStepStatusColor = (status: ProgressStep['status']) => {
     switch (status) {
       case 'completed':
         return 'bg-green-500';

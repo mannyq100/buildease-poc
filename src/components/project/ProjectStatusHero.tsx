@@ -9,6 +9,7 @@ export interface ProjectStatusHeroProps {
   project: Project;
   progress: number;
   healthStatus?: "healthy" | "warning" | "critical";
+  variant?: "default" | "compact";
   className?: string;
 }
 
@@ -19,7 +20,7 @@ export interface ProjectStatusHeroProps {
 const ProjectStatusHero = React.forwardRef<
   HTMLDivElement,
   ProjectStatusHeroProps
->(({ className, project, progress, ...props }, ref) => {
+>(({ className, project, progress, healthStatus, variant, ...props }, ref) => {
 
   // Calculate days left
   const daysLeft = React.useMemo(() => {
@@ -34,7 +35,7 @@ const ProjectStatusHero = React.forwardRef<
   return (
       <Card 
         ref={ref} 
-        className={cn('overflow-hidden border border-slate-200/60 dark:border-slate-800/60 shadow-lg hover:shadow-xl transition-all duration-500 bg-gradient-to-br from-white via-buildease-blue-50/20 to-buildease-orange-50/10 dark:from-gray-900 dark:via-buildease-blue-950/20 dark:to-buildease-orange-950/10 backdrop-blur-sm rounded-xl relative', className)}
+        className={cn('overflow-hidden border border-slate-200/40 dark:border-slate-700/40 shadow-xl hover:shadow-2xl transition-all duration-700 bg-gradient-to-br from-white via-buildease-blue-50/30 to-buildease-orange-50/20 dark:from-gray-900 dark:via-buildease-blue-950/30 dark:to-buildease-orange-950/20 backdrop-blur-md rounded-2xl relative group', className)}
         {...props}
       >
         
@@ -54,84 +55,113 @@ const ProjectStatusHero = React.forwardRef<
           )}
         </div>
 
-        <CardContent className="p-5">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1 min-w-0 pr-20">
+        <CardContent className="p-6 sm:p-8">
+          <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-6">
+            <div className="flex-1 min-w-0">
               {/* Project name and description */}
-              <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mb-2 leading-tight">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white mb-3 leading-tight">
                 {project.name}
               </h1>
-              <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mb-4 leading-relaxed">
+              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 line-clamp-2 mb-4 leading-relaxed max-w-2xl">
                 {project.description}
               </p>
             </div>
             
             {/* Project image */}
             {project.imageUrl && (
-              <div className="ml-4 flex-shrink-0">
-                <div className="relative">
+              <div className="flex-shrink-0">
+                <div className="relative group">
                   <img 
                     src={project.imageUrl} 
-                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover shadow-md"
+                    className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-2xl object-cover shadow-lg group-hover:shadow-xl transition-all duration-300 ring-2 ring-white/50 dark:ring-slate-700/50"
                     alt={project.name}
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
                     }}
                   />
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-tr from-transparent via-transparent to-white/10" />
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-transparent via-transparent to-white/20 group-hover:to-white/30 transition-all duration-300" />
                 </div>
               </div>
             )}
           </div>
           
-          {/* Progress section */}
-          <div className="mb-5">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+          {/* Enhanced Progress section */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-base font-bold text-slate-800 dark:text-slate-200">
                 Overall Progress
               </span>
-              <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-lg">
-                {progress}%
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-bold text-emerald-700 dark:text-emerald-300">
+                  {progress}%
+                </span>
+                <div className="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 rounded-full border border-emerald-200/50 dark:border-emerald-700/50">
+                  <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                    {progress >= 75 ? 'Excellent' : progress >= 50 ? 'Good' : progress >= 25 ? 'Fair' : 'Starting'}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2">
-              <div 
-                className="h-2 bg-gradient-to-r from-buildease-blue-500 to-emerald-500 rounded-full transition-all duration-300"
-                style={{ width: `${Math.min(progress, 100)}%` }}
-              />
+            <div className="relative">
+              <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 shadow-inner">
+                <div 
+                  className="h-3 bg-gradient-to-r from-buildease-blue-500 via-buildease-blue-400 to-emerald-500 rounded-full transition-all duration-700 ease-out shadow-sm relative overflow-hidden"
+                  style={{ width: `${Math.min(progress, 100)}%` }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
+                </div>
+              </div>
+              {/* Progress milestones */}
+              <div className="flex justify-between mt-2 px-1">
+                {[25, 50, 75, 100].map((milestone) => (
+                  <div key={milestone} className="flex flex-col items-center">
+                    <div className={cn(
+                      "w-2 h-2 rounded-full transition-all duration-300",
+                      progress >= milestone 
+                        ? "bg-emerald-500 shadow-lg" 
+                        : "bg-slate-300 dark:bg-slate-600"
+                    )} />
+                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-1">{milestone}%</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
           
-          {/* Key metrics grid */}
-          <div className="grid grid-cols-3 gap-6">
-            <div className="text-center group">
-              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 rounded-xl bg-buildease-blue-50 dark:bg-buildease-blue-900/20 hover:bg-buildease-blue-100 dark:hover:bg-buildease-blue-800/30 transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg border border-buildease-blue-200/30 dark:border-buildease-blue-700/30">
-                <DollarSign className="h-5 w-5 text-buildease-blue-600 dark:text-buildease-blue-400 transition-transform duration-300 group-hover:scale-110" />
+          {/* Enhanced Key metrics grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+            <div className="text-center group cursor-pointer">
+              <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-buildease-blue-50 to-buildease-blue-100 dark:from-buildease-blue-900/20 dark:to-buildease-blue-800/30 hover:from-buildease-blue-100 hover:to-buildease-blue-200 dark:hover:from-buildease-blue-800/30 dark:hover:to-buildease-blue-700/40 transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl border border-buildease-blue-200/50 dark:border-buildease-blue-700/50 group-hover:border-buildease-blue-300 dark:group-hover:border-buildease-blue-600">
+                <DollarSign className="h-7 w-7 text-buildease-blue-600 dark:text-buildease-blue-400 transition-all duration-300 group-hover:scale-110 group-hover:text-buildease-blue-700 dark:group-hover:text-buildease-blue-300" />
               </div>
-              <div className="text-base font-bold text-slate-900 dark:text-white mb-1 transition-colors duration-200">
+              <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-2 transition-colors duration-200 group-hover:text-buildease-blue-700 dark:group-hover:text-buildease-blue-300">
                 ${Math.round(project.budget / 1000)}K
               </div>
-              <div className="text-xs text-buildease-blue-600 dark:text-buildease-blue-400 font-semibold">Budget</div>
+              <div className="text-sm text-buildease-blue-600 dark:text-buildease-blue-400 font-semibold">Total Budget</div>
             </div>
             
-            <div className="text-center group">
-              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 rounded-xl bg-buildease-orange-50 dark:bg-buildease-orange-900/20 hover:bg-buildease-orange-100 dark:hover:bg-buildease-orange-800/30 transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg border border-buildease-orange-200/30 dark:border-buildease-orange-700/30">
-                <Clock className="h-5 w-5 text-buildease-orange-600 dark:text-buildease-orange-400 transition-transform duration-300 group-hover:scale-110" />
+            <div className="text-center group cursor-pointer">
+              <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-buildease-orange-50 to-buildease-orange-100 dark:from-buildease-orange-900/20 dark:to-buildease-orange-800/30 hover:from-buildease-orange-100 hover:to-buildease-orange-200 dark:hover:from-buildease-orange-800/30 dark:hover:to-buildease-orange-700/40 transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl border border-buildease-orange-200/50 dark:border-buildease-orange-700/50 group-hover:border-buildease-orange-300 dark:group-hover:border-buildease-orange-600">
+                <Clock className="h-7 w-7 text-buildease-orange-600 dark:text-buildease-orange-400 transition-all duration-300 group-hover:scale-110 group-hover:text-buildease-orange-700 dark:group-hover:text-buildease-orange-300" />
               </div>
-              <div className="text-base font-bold text-slate-900 dark:text-white mb-1 transition-colors duration-200">
+              <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-2 transition-colors duration-200 group-hover:text-buildease-orange-700 dark:group-hover:text-buildease-orange-300">
                 {daysLeft !== null ? daysLeft : '---'}
               </div>
-              <div className="text-xs text-buildease-orange-600 dark:text-buildease-orange-400 font-semibold">Days Left</div>
+              <div className="text-sm text-buildease-orange-600 dark:text-buildease-orange-400 font-semibold">
+                {daysLeft !== null && daysLeft > 0 ? 'Days Remaining' : 'Timeline'}
+              </div>
             </div>
             
-            <div className="text-center group">
-              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-800/30 transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg border border-emerald-200/30 dark:border-emerald-700/30">
-                <Users className="h-5 w-5 text-emerald-600 dark:text-emerald-400 transition-transform duration-300 group-hover:scale-110" />
+            <div className="text-center group cursor-pointer">
+              <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/30 hover:from-emerald-100 hover:to-emerald-200 dark:hover:from-emerald-800/30 dark:hover:to-emerald-700/40 transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl border border-emerald-200/50 dark:border-emerald-700/50 group-hover:border-emerald-300 dark:group-hover:border-emerald-600">
+                <Users className="h-7 w-7 text-emerald-600 dark:text-emerald-400 transition-all duration-300 group-hover:scale-110 group-hover:text-emerald-700 dark:group-hover:text-emerald-300" />
               </div>
-              <div className="text-base font-bold text-slate-900 dark:text-white mb-1 transition-colors duration-200">
+              <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-2 transition-colors duration-200 group-hover:text-emerald-700 dark:group-hover:text-emerald-300">
                 {project.teamMembers?.length || 0}
               </div>
-              <div className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">Team</div>
+              <div className="text-sm text-emerald-600 dark:text-emerald-400 font-semibold">
+                {(project.teamMembers?.length || 0) === 1 ? 'Team Member' : 'Team Members'}
+              </div>
             </div>
           </div>
         </CardContent>

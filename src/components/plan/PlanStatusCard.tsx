@@ -47,7 +47,7 @@ interface PlanStatusCardProps {
  */
 export function PlanStatusCard({
   projectId,
-  projectName,
+  projectName: _projectName,
   planGenerationStatus,
   onViewProgress,
   onViewPlans,

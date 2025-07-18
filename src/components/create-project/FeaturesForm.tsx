@@ -4,7 +4,7 @@
  * Collects special features and sustainability information
  */
 import { useFormContext } from 'react-hook-form';
-import { ProjectFormValues } from '../../pages/CreateProject';
+import { CreateProjectFormValues } from '../../pages/CreateProject';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -45,7 +45,7 @@ const SUSTAINABILITY_FEATURES = [
 
 
 export function FeaturesForm() {
-  const { control } = useFormContext<ProjectFormValues>();
+  const { control } = useFormContext<CreateProjectFormValues>();
 
   return (
     <div className="space-y-8">

@@ -194,7 +194,7 @@ export const PlanModalManager = React.memo(function PlanModalManager({
     <>
       {/* Phase Modal */}
       <PhaseFormModal
-        show={phaseModal.isOpen}
+        isOpen={phaseModal.isOpen}
         onClose={phaseModal.actions.close}
         onSave={handleSavePhaseModal}
         phase={phaseModal.data}
@@ -205,7 +205,7 @@ export const PlanModalManager = React.memo(function PlanModalManager({
       
       {/* Task Modal */}
       <TaskFormModal
-        show={taskModal.isOpen}
+        isOpen={taskModal.isOpen}
         onClose={taskModal.actions.close}
         onSave={handleSaveTaskModal}
         task={taskModal.data}
@@ -217,7 +217,7 @@ export const PlanModalManager = React.memo(function PlanModalManager({
       
       {/* Material Modal */}
       <MaterialModal
-        show={materialModal.isOpen}
+        isOpen={materialModal.isOpen}
         onClose={materialModal.actions.close}
         onSave={handleSaveMaterialModal}
         material={materialModal.data}
@@ -227,7 +227,7 @@ export const PlanModalManager = React.memo(function PlanModalManager({
       
       {/* Date Edit Modal */}
       <DateEditModal
-        show={dateModal.isOpen}
+        isOpen={dateModal.isOpen}
         onClose={dateModal.actions.close}
         onSave={handleSaveDateModal}
         title={dateModal.data?.dateEditType === 'project' ? 'Edit Project Timeline' : 'Edit Phase Timeline'}
@@ -242,7 +242,7 @@ export const PlanModalManager = React.memo(function PlanModalManager({
       
       {/* Distribute Modal */}
       <DistributeModal
-        show={distributeModal.isOpen}
+        isOpen={distributeModal.isOpen}
         onClose={distributeModal.actions.close}
         onDistribute={handleSaveDistributeModal}
         saving={isSaving}
@@ -250,7 +250,7 @@ export const PlanModalManager = React.memo(function PlanModalManager({
       
       {/* Confirmation Modal */}
       <ConfirmationModal
-        show={confirmationModal.isOpen}
+        isOpen={confirmationModal.isOpen}
         onClose={confirmationModal.actions.close}
         onConfirm={confirmationModal.data?.onConfirm || (() => {})}
         title={confirmationModal.data?.title || ''}

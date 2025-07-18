@@ -10,7 +10,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { motion as m } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Clock, Edit, Plus, CalendarDays, CheckCircle, Circle, AlertCircle, Pause, GripVertical } from 'lucide-react';
-import { getTimelineStatusColor, getTimelineTextColor, getStatusText } from '@/utils/plan-helpers';
+import { getStatusText } from '@/utils/plan-helpers';
 import { Phase } from '@/data/mock/generatedPlan/planData';
 
 interface SortableTimelinePhaseProps {

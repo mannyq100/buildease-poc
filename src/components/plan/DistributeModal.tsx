@@ -1,88 +1,77 @@
 // src/components/plan/DistributeModal.tsx
 import { Button } from "@/components/ui/button"
-import { m } from "framer-motion"
+import { BaseModal } from "@/components/ui/BaseModal"
 import {
   Calendar,
   Loader2,
   Package,
-  Users,
-  X
+  Users
 } from "lucide-react"
 
 interface DistributeModalProps {
-  show: boolean
+  isOpen: boolean
   onClose: () => void
   onDistribute: () => void
   saving: boolean
 }
 
 export function DistributeModal({
-  show,
+  isOpen,
   onClose,
   onDistribute,
   saving
 }: DistributeModalProps) {
-  if (!show) return null
-  
   return (
-    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
-      <m.div
-        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 20, scale: 0.95 }}
-        transition={{ duration: 0.2 }}
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full"
-      >
-        <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Distribute Plan</h3>
-          <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        
-        <div className="p-5">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            This will distribute your plan details to the following areas of your project:
-          </p>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Distribute Plan"
+      description="This will distribute your plan details to the following areas of your project"
+      size="md"
+    >
+      <div className="space-y-6">
+        <div className="space-y-4">
+          <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg flex items-start">
+            <Calendar className="h-5 w-5 text-buildease-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+            <div>
+              <h4 className="font-medium text-slate-900 dark:text-slate-100">Project Phases</h4>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Creates timeline and milestone entries
+              </p>
+            </div>
+          </div>
           
-          <div className="space-y-4">
-            <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-md flex items-start">
-              <Calendar className="h-5 w-5 text-blue-500 mt-0.5 mr-3 flex-shrink-0" />
-              <div>
-                <h4 className="font-medium text-gray-900 dark:text-gray-100">Project Phases</h4>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Creates timeline and milestone entries
-                </p>
-              </div>
+          <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg flex items-start">
+            <Package className="h-5 w-5 text-buildease-orange-600 mt-0.5 mr-3 flex-shrink-0" />
+            <div>
+              <h4 className="font-medium text-slate-900 dark:text-slate-100">Materials</h4>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Extracts required materials and quantities
+              </p>
             </div>
-            
-            <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-md flex items-start">
-              <Package className="h-5 w-5 text-green-500 mt-0.5 mr-3 flex-shrink-0" />
-              <div>
-                <h4 className="font-medium text-gray-900 dark:text-gray-100">Materials</h4>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Extracts required materials and quantities
-                </p>
-              </div>
-            </div>
-            
-            <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-md flex items-start">
-              <Users className="h-5 w-5 text-amber-500 mt-0.5 mr-3 flex-shrink-0" />
-              <div>
-                <h4 className="font-medium text-gray-900 dark:text-gray-100">Team & Tasks</h4>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Creates roles and responsibilities
-                </p>
-              </div>
+          </div>
+          
+          <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg flex items-start">
+            <Users className="h-5 w-5 text-green-600 mt-0.5 mr-3 flex-shrink-0" />
+            <div>
+              <h4 className="font-medium text-slate-900 dark:text-slate-100">Team & Tasks</h4>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Creates roles and responsibilities
+              </p>
             </div>
           </div>
         </div>
-        
-        <div className="p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
+
+        {/* Footer */}
+        <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
           <Button variant="outline" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
-          <Button onClick={onDistribute} disabled={saving}>
+          <Button 
+            onClick={onDistribute} 
+            disabled={saving}
+            className="bg-buildease-blue-600 hover:bg-buildease-blue-700"
+          >
             {saving ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -93,7 +82,7 @@ export function DistributeModal({
             )}
           </Button>
         </div>
-      </m.div>
-    </div>
+      </div>
+    </BaseModal>
   )
 }

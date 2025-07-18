@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-// import { useNavigate } from 'react-router-dom' // Reserved for future use
 import { Helmet } from 'react-helmet-async'
 import { motion as m } from 'framer-motion'
 import { Loader2 } from 'lucide-react'

@@ -2,8 +2,8 @@ import React, { useCallback, useMemo, useEffect, useState } from 'react';
 import { ListTodo, Calendar, User, Clock, Activity } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
-import { BaseModal } from './BaseModal';
-import { FormField, SelectField, ModalFooter } from '@/components/ui/form-fields';
+import { BaseModal } from '@/components/ui/BaseModal';
+import { FormField, SelectField } from '@/components/ui/form-fields';
 import { v4 as uuidv4 } from 'uuid';
 import { ModalTask } from '@/types/plan/index';
 
@@ -11,7 +11,7 @@ import { ModalTask } from '@/types/plan/index';
 export type Task = ModalTask;
 
 interface TaskFormModalProps {
-  show: boolean;
+  isOpen: boolean;
   onClose: () => void;
   onSave: (task: Task) => void;
   task?: Partial<Task>;
@@ -23,7 +23,7 @@ interface TaskFormModalProps {
 
 // Export as default for better module compatibility
 export default function TaskFormModal({
-  show,
+  isOpen,
   onClose,
   onSave,
   task,
@@ -95,7 +95,7 @@ export default function TaskFormModal({
 
   // Reset form when modal visibility changes
   useEffect(() => {
-    if (show) {
+    if (isOpen) {
       // Clean reset when opening the modal, calculating fresh defaults inline
       const defaultDate = new Date().toISOString().split('T')[0];
       const defaultStatus = (statuses && statuses.length > 0) ? statuses[0] : 'not-started';
@@ -126,7 +126,7 @@ export default function TaskFormModal({
       
       reset(defaultValues);
     }
-  }, [show, task, statuses, phaseId, reset]);
+  }, [isOpen, task, statuses, phaseId, reset]);
 
   // Prepare options for select fields
   const statusOptions = useMemo(() => 
@@ -163,28 +163,17 @@ export default function TaskFormModal({
     handleSubmit(onSubmit)(e);
   }, [handleSubmit, onSubmit]);
 
-  // Create the modal footer - memoized to prevent recreation on every render
-  const modalFooter = useMemo(() => (
-    <ModalFooter
-      onClose={onClose}
-      onSubmit={handleFormSubmit}
-      isNew={isNew}
-      saving={saving}
-      submitText={isNew ? 'Create Task' : 'Save Changes'}
-    />
-  ), [onClose, handleFormSubmit, isNew, saving]);
 
   // Define the heading based on whether this is a new task
   const modalHeading = isNew ? 'Add New Task' : 'Edit Task';
 
   return (
     <BaseModal 
-      show={show}
+      isOpen={isOpen}
       title={modalHeading}
       onClose={onClose}
-      footer={modalFooter}
     >
-      <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+      <form id="task-form" className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
         <Controller
           control={control}
           name="name"
@@ -346,6 +335,25 @@ export default function TaskFormModal({
           )}
         />
       </form>
+      
+      {/* Footer */}
+      <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          form="task-form"
+          disabled={saving}
+          className="px-4 py-2 text-sm font-medium text-white bg-buildease-blue-600 border border-transparent rounded-md hover:bg-buildease-blue-700 disabled:opacity-50"
+        >
+          {saving ? 'Saving...' : (isNew ? 'Create Task' : 'Save Changes')}
+        </button>
+      </div>
     </BaseModal>
   );
 }

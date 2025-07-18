@@ -9,7 +9,7 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/comp
 import { CustomRadioGroup } from '@/components/ui/custom-radio-group';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { Control } from 'react-hook-form';
-import { ProjectFormValues } from '@/pages/CreateProject';
+import { CreateProjectFormValues } from '@/pages/CreateProject';
 
 // Project type options with icons
 const PROJECT_TYPE_OPTIONS = [
@@ -40,7 +40,7 @@ const PROJECT_TYPE_OPTIONS = [
 ];
 
 interface ProjectTypeSelectorProps {
-  control: Control<ProjectFormValues>;
+  control: Control<CreateProjectFormValues>;
   className?: string;
 }
 

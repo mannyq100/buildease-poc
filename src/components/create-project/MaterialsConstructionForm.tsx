@@ -4,7 +4,7 @@
  * Collects materials and construction information
  */
 import { useFormContext } from 'react-hook-form';
-import { ProjectFormValues } from '../../pages/CreateProject';
+import { CreateProjectFormValues } from '../../pages/CreateProject';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
@@ -60,7 +60,7 @@ const FLOOR_MATERIALS = [
 ];
 
 export function MaterialsConstructionForm() {
-  const { control } = useFormContext<ProjectFormValues>();
+  const { control } = useFormContext<CreateProjectFormValues>();
 
   return (
     <div className="space-y-8">

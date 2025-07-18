@@ -5,7 +5,7 @@
  */
 import React, { useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { ProjectFormValues } from '../../pages/CreateProject';
+import { CreateProjectFormValues } from '../../pages/CreateProject';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
@@ -98,7 +98,7 @@ const SIZE_UNITS: { value: AreaUnit; label: string }[] = [
 ];
 
 function LocationPlotFormComponent() {
-  const { control, watch, setValue } = useFormContext<ProjectFormValues>();
+  const { control, watch, setValue } = useFormContext<CreateProjectFormValues>();
   
   // Watch plot size unit to provide appropriate guidance
   const plotSizeUnit = watch('plotSizeUnit');

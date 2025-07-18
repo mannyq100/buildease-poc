@@ -281,7 +281,7 @@ export function TeamView({ plan }: TeamViewProps) {
 
       {/* Render the TeamModal */}
       <TeamModal
-        show={teamModal.isOpen}
+        isOpen={teamModal.isOpen}
         onClose={teamModal.actions.close}
         onSave={handleSaveTeamMember}
         initialData={teamModal.data}

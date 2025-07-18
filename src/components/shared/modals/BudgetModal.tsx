@@ -1,14 +1,13 @@
 // src/components/shared/modals/BudgetModal.tsx
 import React, { useState, useEffect } from 'react';
-import { motion as m } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { BaseModal } from '@/components/ui/BaseModal';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea'; // For notes
-import { BudgetItem } from '@/types/budget'; // Import the new type
-import { AlertCircle, Banknote, TrendingDown, TrendingUp } from 'lucide-react'; // Icons
+import { Textarea } from '@/components/ui/textarea';
+import { BudgetItem } from '@/types/budget';
+import { AlertCircle, TrendingDown, TrendingUp } from 'lucide-react';
 
 // Define potential categories and statuses (can be passed as props later)
 const defaultCategories = ['Labor', 'Materials', 'Subcontractor', 'Permits', 'Equipment Rental', 'Income Payment', 'Other'];
@@ -16,24 +15,19 @@ const defaultStatuses = ['planned', 'incurred', 'paid', 'received'];
 const itemTypes = ['expense', 'income'];
 
 interface BudgetModalProps {
-  show: boolean;
+  isOpen: boolean;
   onClose: () => void;
-  onSave: (item: Partial<BudgetItem>) => void; // Use Partial for flexibility on save
+  onSave: (item: Partial<BudgetItem>) => void;
   initialData: BudgetItem | null;
   isNewItem: boolean;
-  // Optional props for dynamic categories/statuses if needed
-  // categories?: string[]; 
-  // statuses?: string[];
 }
 
 export function BudgetModal({
-  show,
+  isOpen,
   onClose,
   onSave,
   initialData,
-  isNewItem,
-  // categories = defaultCategories,
-  // statuses = defaultStatuses
+  isNewItem
 }: BudgetModalProps) {
   
   const [formData, setFormData] = useState<Partial<BudgetItem>>(initialData || {
@@ -116,30 +110,20 @@ export function BudgetModal({
   const modalDescription = isNewItem ? 'Add a new income or expense item to the budget.' : 'Update the details of this budget item.';
 
   return (
-    <Dialog open={show} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[525px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-lg rounded-lg">
-        <m.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
-          <DialogHeader className="p-5 border-b border-gray-200 dark:border-gray-700">
-            <DialogTitle className="text-lg font-semibold text-[#2B6CB0] dark:text-[#93C5FD] flex items-center gap-2">
-              {isNewItem ? <Banknote className="h-5 w-5" /> : <Banknote className="h-5 w-5" />}
-              {modalTitle}
-            </DialogTitle>
-            <DialogDescription className="text-sm text-gray-500 dark:text-gray-400">
-              {modalDescription}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <form onSubmit={handleSubmit}>
-            <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={modalTitle}
+      description={modalDescription}
+      size="lg"
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-4 max-h-[60vh] overflow-y-auto">
                {error && (
-                <m.div 
-                  initial={{ opacity: 0, y: -10 }} 
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 px-3 py-2 rounded-md text-sm flex items-center gap-2"
-                >
+                <div className="bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 px-3 py-2 rounded-md text-sm flex items-center gap-2">
                   <AlertCircle className="h-4 w-4" />
                   <span>{error}</span>
-                </m.div>
+                </div>
               )}
 
               {/* Type Select */}
@@ -257,15 +241,20 @@ export function BudgetModal({
 
             </div>
 
-            <DialogFooter className="p-5 border-t border-gray-200 dark:border-gray-700 gap-2">
-              <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-              <Button type="submit" disabled={saving} className="min-w-[100px]">
-                {saving ? 'Saving...' : (isNewItem ? 'Add Item' : 'Save Changes')}
-              </Button>
-            </DialogFooter>
-          </form>
-        </m.div>
-      </DialogContent>
-    </Dialog>
+        {/* Footer */}
+        <div className="flex justify-end gap-3 pt-6 border-t border-slate-200 dark:border-slate-700">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button 
+            type="submit" 
+            disabled={saving} 
+            className="min-w-[100px] bg-buildease-blue-600 hover:bg-buildease-blue-700"
+          >
+            {saving ? 'Saving...' : (isNewItem ? 'Add Item' : 'Save Changes')}
+          </Button>
+        </div>
+      </form>
+    </BaseModal>
   );
 }

@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { BaseModal } from "@/components/shared/modals/BaseModal";
+import { BaseModal } from "@/components/ui/BaseModal";
 import {
   Form,
   FormControl,
@@ -131,13 +131,11 @@ export function UpdateStatusModal({
 
   return (
     <BaseModal
-      show={isOpen}
+      isOpen={isOpen}
       onClose={onClose}
       title="Update Project Status"
       description={`Change the status and progress of ${project.name}`}
       size="md"
-      saving={isSaving}
-      footer={footer}
     >
       <Form {...form}>
         <form id="update-status-form" onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
@@ -260,6 +258,11 @@ export function UpdateStatusModal({
 
         </form>
       </Form>
+      
+      {/* Footer */}
+      <div className="flex justify-end gap-2 pt-6 border-t">
+        {footer}
+      </div>
     </BaseModal>
   );
 }

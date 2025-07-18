@@ -5,7 +5,7 @@
  */
 import React, { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { ProjectFormValues } from '../../pages/CreateProject';
+import { CreateProjectFormValues } from '../../pages/CreateProject';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -45,7 +45,7 @@ const PROJECT_TYPES = [
 ] as const;
 
 function ProjectDetailsFormComponent() {
-  const { control, watch } = useFormContext<ProjectFormValues>();
+  const { control, watch } = useFormContext<CreateProjectFormValues>();
   const [isDifferentOwner, setIsDifferentOwner] = useState(false);
   const selectedType = watch('projectType');
 

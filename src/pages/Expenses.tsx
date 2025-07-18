@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ConfirmationModal } from '@/components/shared/modals/ConfirmationModal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/shared';
 import { ExpenseModal, ExpenseFormData } from '@/components/shared/modals';
@@ -429,7 +429,7 @@ function Expenses() {
         {/* Expense Modal */}
         {currentExpense && (
           <ExpenseModal
-            show={showExpenseModal}
+            isOpen={showExpenseModal}
             onClose={() => {
               setShowExpenseModal(false);
               setCurrentExpense(null);
@@ -442,43 +442,29 @@ function Expenses() {
           />
         )}
         
-        {/* Delete Confirmation Dialog */}
-        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Confirm Deletion</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete this expense? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
-              <Button variant="destructive" onClick={confirmDeleteExpense}>Delete</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {/* Delete Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={isDeleteDialogOpen}
+          onClose={() => setIsDeleteDialogOpen(false)}
+          onConfirm={confirmDeleteExpense}
+          title="Confirm Deletion"
+          description="Are you sure you want to delete this expense? This action cannot be undone."
+          confirmText="Delete"
+          cancelText="Cancel"
+          variant="destructive"
+        />
         
-        {/* Batch Action Confirmation Dialog */}
-        <Dialog open={isBatchActionDialogOpen} onOpenChange={setIsBatchActionDialogOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Confirm {batchAction === 'approve' ? 'Approval' : batchAction === 'reject' ? 'Rejection' : 'Deletion'}</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to {batchAction} {selectedExpenses.length} selected expense{selectedExpenses.length !== 1 ? 's' : ''}?
-                {batchAction === 'delete' && ' This action cannot be undone.'}
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsBatchActionDialogOpen(false)}>Cancel</Button>
-              <Button 
-                variant={batchAction === 'delete' ? 'destructive' : 'default'}
-                onClick={confirmBatchAction}
-              >
-                {batchAction === 'approve' ? 'Approve' : batchAction === 'reject' ? 'Reject' : 'Delete'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {/* Batch Action Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={isBatchActionDialogOpen}
+          onClose={() => setIsBatchActionDialogOpen(false)}
+          onConfirm={confirmBatchAction}
+          title={`Confirm ${batchAction === 'approve' ? 'Approval' : batchAction === 'reject' ? 'Rejection' : 'Deletion'}`}
+          description={`Are you sure you want to ${batchAction} ${selectedExpenses.length} selected expense${selectedExpenses.length !== 1 ? 's' : ''}?${batchAction === 'delete' ? ' This action cannot be undone.' : ''}`}
+          confirmText={batchAction === 'approve' ? 'Approve' : batchAction === 'reject' ? 'Reject' : 'Delete'}
+          cancelText="Cancel"
+          variant={batchAction === 'delete' ? 'destructive' : 'info'}
+        />
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { BaseModal } from "@/components/shared/modals/BaseModal";
+import { BaseModal } from "@/components/ui/BaseModal";
 import {
   Form,
   FormControl,
@@ -121,13 +121,11 @@ export function EditProjectModal({
 
   return (
     <BaseModal
-      show={isOpen}
+      isOpen={isOpen}
       onClose={onClose}
       title="Edit Project"
       description="Update project details and settings"
       size="xl"
-      saving={isSaving}
-      footer={footer}
     >
       <Form {...form}>
         <form id="edit-project-form" onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
@@ -327,6 +325,11 @@ export function EditProjectModal({
 
         </form>
       </Form>
+      
+      {/* Footer */}
+      <div className="flex justify-end gap-2 pt-6 border-t">
+        {footer}
+      </div>
     </BaseModal>
   );
 }

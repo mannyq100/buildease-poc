@@ -10,11 +10,11 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/comp
 import { Input } from '@/components/ui/input';
 import { CustomSwitch } from '@/components/ui/custom-switch';
 import { Control } from 'react-hook-form';
-import { ProjectFormValues } from '@/pages/CreateProject';
+import { CreateProjectFormValues } from '@/pages/CreateProject';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 
 interface ProjectOwnerDetailsProps {
-  control: Control<ProjectFormValues>;
+  control: Control<CreateProjectFormValues>;
   isDifferentOwner: boolean;
   setIsDifferentOwner: (value: boolean) => void;
   className?: string;

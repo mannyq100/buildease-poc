@@ -461,7 +461,7 @@ export default function Team() {
 
       {/* Team Member Modal */}
       <TeamModal
-        show={isAddMemberOpen}
+        isOpen={isAddMemberOpen}
         onClose={() => setIsAddMemberOpen(false)}
         onSave={handleSaveTeamMember}
         initialData={currentMember}

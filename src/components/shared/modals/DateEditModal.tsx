@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect } from 'react';
 import { Calendar, Info } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
-import { BaseModal } from './BaseModal';
+import { BaseModal } from '@/components/ui/BaseModal';
 import { FormField, ModalFooter } from '@/components/ui/form-fields';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -14,7 +14,7 @@ export interface DateRange {
 }
 
 interface DateEditModalProps {
-  show: boolean;
+  isOpen: boolean;
   onClose: () => void;
   onSave: (dates: DateRange) => void;
   dateRange?: DateRange;
@@ -24,7 +24,7 @@ interface DateEditModalProps {
 }
 
 export function DateEditModal({
-  show,
+  isOpen,
   onClose,
   onSave,
   dateRange,
@@ -58,10 +58,10 @@ export function DateEditModal({
 
   // Reset form when modal opens/closes
   useEffect(() => {
-    if (show) {
+    if (isOpen) {
       reset(getDefaultValues());
     }
-  }, [show, reset, getDefaultValues]);
+  }, [isOpen, reset, getDefaultValues]);
 
   // Combine the internal saving state with any external loading state
   const saving = isSubmitting || isLoading;
@@ -97,7 +97,7 @@ export function DateEditModal({
 
   return (
     <BaseModal
-      show={show}
+      isOpen={isOpen}
       onClose={onClose}
       title={title}
       description={modalDescription}
