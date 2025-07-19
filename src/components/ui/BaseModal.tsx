@@ -16,10 +16,12 @@ interface BaseModalProps {
   title: string;
   description?: string;
   children: React.ReactNode;
+  footer?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | 'full';
   className?: string;
   showCloseButton?: boolean;
   preventCloseOnClickOutside?: boolean;
+
 }
 
 const sizeClasses = {
@@ -40,6 +42,7 @@ export function BaseModal({
   title,
   description,
   children,
+  footer,
   size = 'lg',
   className,
   showCloseButton = true,
@@ -127,6 +130,13 @@ export function BaseModal({
             {children}
           </div>
         </div>
+        
+        {/* Enhanced Footer */}
+        {footer && (
+          <div className="flex-shrink-0 px-6 sm:px-8 py-4 sm:py-6 border-t border-slate-200/50 dark:border-slate-700/50 bg-gradient-to-r from-slate-50/80 via-white/90 to-slate-50/80 dark:from-slate-800/80 dark:via-slate-900/90 dark:to-slate-800/80 backdrop-blur-sm">
+            {footer}
+          </div>
+        )}
         
         {/* Subtle bottom accent */}
         <div className="h-1 bg-gradient-to-r from-buildease-blue-500/20 via-buildease-orange-500/20 to-buildease-blue-500/20 rounded-b-2xl" />

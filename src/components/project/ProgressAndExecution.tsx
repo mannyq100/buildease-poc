@@ -22,13 +22,15 @@ interface ProgressAndExecutionProps {
   projectId: string;
   modalHandlersRef: React.RefObject<PlanModalManagerHandlers>;
   className?: string;
+  onUpdateProgress?: () => void;
 }
 
 export function ProgressAndExecution({ 
   plan, 
   projectId, 
   modalHandlersRef, 
-  className 
+  className,
+  onUpdateProgress 
 }: ProgressAndExecutionProps) {
   const [activeTab, setActiveTab] = useState('timeline');
 

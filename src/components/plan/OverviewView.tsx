@@ -43,6 +43,7 @@ export const OverviewView = React.memo(function OverviewView({
   onAddPhase,
   onEditProjectDates,
   onEditPhaseDates,
+  onUpdateProgress,
   viewMode: _viewMode, // Prefix with underscore to indicate intentionally unused parameter
   loadingState
 }: OverviewViewProps) {
@@ -146,15 +147,25 @@ export const OverviewView = React.memo(function OverviewView({
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">{plan.name}</h2>
                 <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-sm mt-2 max-w-2xl line-clamp-2 leading-relaxed">{plan.description}</p>
               </div>
-              <Button 
-                onClick={handleEditProjectDates} 
-                variant="outline" 
-                size="sm" 
-                className="h-11 px-4 sm:h-8 sm:px-3"
-              >
-                <Calendar className="h-4 w-4 mr-1" />
-                Edit Dates
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  onClick={handleEditProjectDates} 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-11 px-4 sm:h-8 sm:px-3"
+                >
+                  <Calendar className="h-4 w-4 mr-1" />
+                  Edit Dates
+                </Button>
+                <Button 
+                  onClick={onUpdateProgress} 
+                  size="sm" 
+                  className="h-11 px-4 sm:h-8 sm:px-3 bg-buildease-orange-600 hover:bg-buildease-orange-700 text-white"
+                >
+                  <BarChart className="h-4 w-4 mr-1" />
+                  Update Progress
+                </Button>
+              </div>
             </div>
           </div>
           

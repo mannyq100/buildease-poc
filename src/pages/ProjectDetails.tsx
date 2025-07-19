@@ -6,7 +6,7 @@ import { ProjectStatusHero } from "@/components/project/ProjectStatusHero";
 import { CurrentPhaseCard } from "@/components/project/CurrentPhaseCard";
 import { AIAssistantCard } from "@/components/project/AIAssistantCard";
 import { DetailsAccordion } from "@/components/project/DetailsAccordion";
-import { QuickActionBar } from "@/components/project/QuickActionBar";
+
 import { EditProjectModal } from "@/components/project/EditProjectModal";
 import { UpdateStatusModal } from "@/components/project/UpdateStatusModal";
 import { PlanModalManager, PlanModalManagerHandlers } from "@/components/plan";
@@ -18,7 +18,7 @@ import { ProgressAndExecution } from "@/components/project/ProgressAndExecution"
 import { TeamAndResources } from "@/components/project/TeamAndResources";
 import { SettingsAndConfiguration } from "@/components/project/SettingsAndConfiguration";
 import { toast } from "sonner";
-import { PlusCircle, Users, Settings, Clock, TrendingUp } from "lucide-react";
+import { Users, Settings, Clock } from "lucide-react";
 import type { Project, ProjectStatus } from "@/types/project";
 
 export function ProjectDetailsPage() {
@@ -185,6 +185,7 @@ function ProjectDetails({ projectId }: { projectId: string }) {
           plan={adaptedProject}
           projectId={project.id}
           modalHandlersRef={modalHandlersRef}
+          onUpdateProgress={() => setUpdateStatusModalOpen(true)}
         />
       ),
     },
@@ -217,26 +218,7 @@ function ProjectDetails({ projectId }: { projectId: string }) {
     },
   ];
 
-  const quickActions = [
-    {
-      id: "update-progress",
-      label: "Update Progress",
-      icon: <TrendingUp className="h-4 w-4" />,
-      priority: "high" as const,
-      variant: "default" as const,
-      className: "bg-buildease-orange-600 hover:bg-buildease-orange-700 text-white",
-      onClick: () => setUpdateStatusModalOpen(true)
-    },
-    {
-      id: "add-task-phase",
-      label: "Add Task/Phase",
-      icon: <PlusCircle className="h-4 w-4" />,
-      priority: "high" as const,
-      variant: "outline" as const,
-      className: "border-buildease-blue-300 text-buildease-blue-600 hover:bg-buildease-blue-50",
-      onClick: () => modalHandlersRef.current?.openPhaseModal('', true)
-    },
-  ];
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-buildease-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-buildease-blue-950/30">
@@ -283,16 +265,7 @@ function ProjectDetails({ projectId }: { projectId: string }) {
               </div>
             </section>
             
-            {/* Enhanced Quick Actions Section */}
-            <section className="py-2">
-              <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl p-4 border border-slate-200/60 dark:border-slate-700/60 shadow-lg">
-                <QuickActionBar 
-                  actions={quickActions} 
-                  layout="horizontal"
-                  className="justify-center gap-3"
-                />
-              </div>
-            </section>
+
             
             {/* Enhanced Workflow Sections */}
             <section className="space-y-4">

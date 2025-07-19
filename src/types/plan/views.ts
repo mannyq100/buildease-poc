@@ -65,6 +65,9 @@ export interface PlanViewWithActionsProps extends PlanViewBaseProps, PlanViewAct
 export interface OverviewViewProps extends PlanViewWithActionsProps {
   /** Determines how much detail to show in the overview */
   viewMode?: 'detailed' | 'summary';
+  
+  /** Handler for updating project progress */
+  onUpdateProgress?: () => void;
 }
 
 export interface TimelineViewProps extends PlanViewBaseProps {
