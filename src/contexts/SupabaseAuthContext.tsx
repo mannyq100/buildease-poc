@@ -60,6 +60,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, userData: Partial<UserProfile>) => Promise<{ error: Error | null, user: User | null }>;
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<{ error: Error | null }>;
+  refreshProfile: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   clearAuthError: () => void;
   handleAuthError: (error: Error) => void;
@@ -159,6 +160,70 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     } catch (error) {
       secureError('Error in fetchUserProfile', error);
       setProfile(null);
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  };
+
+  // Refresh profile data - forces a fresh fetch from the database
+  const refreshProfile = async (): Promise<void> => {
+    if (!user?.id) {
+      throw new Error('No authenticated user found');
+    }
+
+    try {
+      setIsLoadingProfile(true);
+      
+      // Clear cached profile to force fresh fetch
+      localStorage.removeItem(`${PROFILE_CACHE_KEY}_${user.id}`);
+      
+      // Call the edge function to get complete user profile
+      const { data: profileData, error: profileError } = await supabase
+        .schema('construction_mgr')
+        .rpc('get_user_profile', { user_uuid: user.id });
+
+      if (profileError) {
+        secureError('Error refreshing user profile', profileError);
+        throw new Error('Failed to refresh profile');
+      }
+
+      if (!profileData) {
+        secureError('No user profile found during refresh');
+        throw new Error('Profile not found');
+      }
+
+      // Transform the edge function response to match our UserProfile interface
+      const userProfile: UserProfile = {
+        id: profileData.id,
+        email: profileData.email,
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        phone: profileData.phone,
+        companyName: profileData.companyName,
+        provider: profileData.provider || 'SUPABASE',
+        tier: profileData.tier || 'BASIC',
+        status: profileData.status || 'ACTIVE',
+        role: profileData.role || 'client',
+        avatarUrl: profileData.avatarUrl,
+        settings: profileData.settings,
+        projectMemberships: profileData.projectMemberships || [],
+        createdAt: profileData.createdAt,
+        updatedAt: profileData.updatedAt,
+      };
+
+      setProfile(userProfile);
+      
+      // Cache the refreshed profile
+      try {
+        const cacheData = JSON.stringify({
+          profile: userProfile,
+          timestamp: Date.now()
+        });
+        const encrypted = encryptData(cacheData);
+        localStorage.setItem(`${PROFILE_CACHE_KEY}_${user.id}`, encrypted);
+      } catch {
+        secureError('Failed to cache refreshed profile data');
+      }
     } finally {
       setIsLoadingProfile(false);
     }
@@ -686,6 +751,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     signUp,
     signOut,
     updateProfile,
+    refreshProfile,
     resetPassword,
     clearAuthError,
     handleAuthError

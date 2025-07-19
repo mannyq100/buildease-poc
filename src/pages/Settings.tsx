@@ -4,7 +4,6 @@
  */
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PageHeader } from '@/components/shared';
 import { 
   Settings as SettingsIcon, 
   User, 
@@ -202,59 +201,83 @@ export default function Settings() {
   ];
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Settings"
-        description="Manage your account settings and preferences"
-        icon={<SettingsIcon className="h-6 w-6" />}
-      />
 
-      <div className="container mx-auto max-w-5xl px-4 sm:px-6">
+      <div className="container mx-auto max-w-5xl px-4 sm:px-6 py-4">
         <Tabs 
           defaultValue={activeTab} 
           value={activeTab} 
           onValueChange={handleTabChange} 
           className="w-full"
         >
-          <TabsList className="mb-6 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-lg w-full sm:w-auto grid grid-cols-2 sm:grid-cols-4 gap-0">
-            {tabConfig.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <TabsTrigger key={tab.value} value={tab.value}>
-                  <Icon className="w-4 h-4 mr-2" />
-                  {tab.label}
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
+          {/* Enhanced Tab Navigation */}
+          <div className="mb-8">
+            <TabsList className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-1.5 rounded-xl shadow-lg border border-slate-200/50 dark:border-slate-700/50 w-full sm:w-auto grid grid-cols-2 sm:grid-cols-4 gap-1 h-auto">
+              {tabConfig.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.value;
+                return (
+                  <TabsTrigger 
+                    key={tab.value} 
+                    value={tab.value}
+                    className={`
+                      relative px-3 py-2.5 rounded-lg transition-all duration-300 font-medium h-auto min-h-[44px]
+                      flex items-center justify-center text-center
+                      ${isActive 
+                        ? 'bg-gradient-to-r from-buildease-blue-500 to-buildease-blue-600 text-white shadow-md shadow-buildease-blue-500/25' 
+                        : 'text-slate-600 dark:text-slate-400 hover:text-buildease-blue-600 dark:hover:text-buildease-blue-400 hover:bg-buildease-blue-50 dark:hover:bg-buildease-blue-900/20'
+                      }
+                    `}
+                  >
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 w-full">
+                      <Icon className="w-4 h-4 flex-shrink-0" />
+                      <span className="text-xs sm:text-sm font-medium leading-tight text-center">{tab.label}</span>
+                    </div>
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+          </div>
 
-          <TabsContent value="account">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <ProfileCard
-                formData={formData}
-                uploadState={uploadState}
-                profile={profile}
-                user={user}
-                isLoadingProfile={isLoadingProfile}
-                onFormDataChange={handleFormDataChange}
-                onUploadStateChange={handleUploadStateChange}
-                onSubmit={handleSubmit}
-                onReset={handleReset}
-              />
-              <AccountOverview profile={profile} className="lg:col-span-1" />
+          {/* Enhanced Tab Content */}
+          <TabsContent value="account" className="space-y-0">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+              <div className="lg:col-span-2">
+                <ProfileCard
+                  formData={formData}
+                  uploadState={uploadState}
+                  profile={profile}
+                  user={user}
+                  isLoadingProfile={isLoadingProfile}
+                  onFormDataChange={handleFormDataChange}
+                  onUploadStateChange={handleUploadStateChange}
+                  onSubmit={handleSubmit}
+                  onReset={handleReset}
+                />
+              </div>
+              <div className="lg:col-span-1">
+                <AccountOverview profile={profile} />
+              </div>
             </div>
           </TabsContent>
-          <TabsContent value="notifications">
-            <NotificationSettings profile={profile} onSave={handleSaveSettings} />
+          
+          <TabsContent value="notifications" className="space-y-0">
+            <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200/50 dark:border-slate-700/50">
+              <NotificationSettings profile={profile} onSave={handleSaveSettings} />
+            </div>
           </TabsContent>
-          <TabsContent value="appearance">
-            <AppearanceSettings profile={profile} onSave={handleSaveSettings} />
+          
+          <TabsContent value="appearance" className="space-y-0">
+            <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200/50 dark:border-slate-700/50">
+              <AppearanceSettings profile={profile} onSave={handleSaveSettings} />
+            </div>
           </TabsContent>
-          <TabsContent value="security">
-            <SecuritySettings />
+          
+          <TabsContent value="security" className="space-y-0">
+            <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200/50 dark:border-slate-700/50">
+              <SecuritySettings />
+            </div>
           </TabsContent>
         </Tabs>
       </div>
-    </div>
   );
 }

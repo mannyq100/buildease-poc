@@ -10,7 +10,6 @@ import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
-import { cn } from '@/utils/core/ui';
 import { useToast } from "@/components/ui/use-toast";
 import { FormStepErrorBoundary } from "@/components/ui/form-step-error-boundary";
 import { 
@@ -345,14 +344,19 @@ function CreateProjectContent() {
   }, [jumpToStep]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
-      <div className="container mx-auto px-6 py-8 md:py-12 max-w-6xl">
-        {/* Enhanced BuildEase Header */}
-        <div className="text-center mb-10 md:mb-16">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-slate-900 dark:text-white font-inter bg-gradient-to-r from-[#2B6CB0] to-[#ED8936] bg-clip-text text-transparent">
-            Create New Project
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-buildease-blue-50/30 to-orange-50/20 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+      <div className="container mx-auto px-4 py-4 md:px-6 md:py-8 max-w-5xl">
+        {/* Enhanced Professional Header */}
+        <div className="text-center mb-12 md:mb-16">
+
+          
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 text-slate-900 dark:text-white font-inter">
+            <span className="bg-gradient-to-r from-buildease-blue-600 to-orange-500 bg-clip-text text-transparent">
+              Create New Project
+            </span>
           </h1>
-          <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto font-opensans leading-relaxed">
+          
+          <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-3xl mx-auto font-opensans leading-relaxed mb-8">
             Let's build something amazing together
           </p>
         </div>
@@ -377,9 +381,27 @@ function CreateProjectContent() {
                   transition={{ duration: 0.3, ease: "easeOut" }}
                   className="space-y-6"
                 >
-                  {/* Enhanced Step Content Card */}
-                  <Card className="bg-white dark:bg-slate-800 border-0 shadow-lg shadow-slate-200/50 dark:shadow-slate-900/50 rounded-2xl backdrop-blur-sm">
+                  {/* Professional Step Content Card */}
+                  <Card className="bg-white/95 dark:bg-slate-800/95 border-0 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 rounded-2xl backdrop-blur-sm ring-1 ring-slate-200/30 dark:ring-slate-700/30">
                     <div className="p-8 md:p-10">
+                      {/* Professional Step Header */}
+                      <div className="mb-8">
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className="w-10 h-10 bg-gradient-to-r from-buildease-blue-500 to-orange-500 rounded-xl flex items-center justify-center shadow-sm">
+                            <span className="text-sm font-bold text-white">{currentStep}</span>
+                          </div>
+                          <div>
+                            <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white font-inter">
+                              {stepTitles[currentStep - 1]}
+                            </h2>
+                            <p className="text-slate-600 dark:text-slate-400 font-opensans">
+                              Step {currentStep} of {totalSteps}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="h-px bg-gradient-to-r from-buildease-blue-200 via-orange-200 to-transparent dark:from-buildease-blue-700 dark:via-orange-700 dark:to-transparent"></div>
+                      </div>
+                      
                       {/* Step Content */}
                       <div className="max-w-2xl">
                         {renderStepContent()}
@@ -388,14 +410,14 @@ function CreateProjectContent() {
                   </Card>
                   
                   
-                  {/* Enhanced BuildEase Navigation */}
-                  <div className="flex items-center justify-between pt-6">
+                  {/* Professional Navigation */}
+                  <div className="flex items-center justify-between pt-8">
                     <Button
                       type="button"
                       variant="outline"
                       onClick={handleBack}
                       disabled={currentStep === 1}
-                      className="min-h-[44px] px-6 py-3 text-sm border-2 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 bg-white dark:bg-slate-800 rounded-xl transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:border-slate-200 dark:disabled:border-slate-700 disabled:bg-slate-50 dark:disabled:bg-slate-900 font-opensans shadow-sm hover:shadow-md disabled:shadow-none"
+                      className="min-h-[48px] px-8 py-3 text-sm border-2 border-slate-300 dark:border-slate-600 hover:border-buildease-blue-400 dark:hover:border-buildease-blue-500 bg-white/80 dark:bg-slate-800/80 rounded-xl transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:border-slate-200 dark:disabled:border-slate-700 disabled:bg-slate-50 dark:disabled:bg-slate-900 font-opensans shadow-md hover:shadow-lg disabled:shadow-none backdrop-blur-sm ring-1 ring-slate-200/50 dark:ring-slate-700/50 hover:ring-buildease-blue-200/50 dark:hover:ring-buildease-blue-700/50"
                     >
                       <ChevronLeft className="mr-2 h-4 w-4" />
                       <span>Back</span>
@@ -404,12 +426,11 @@ function CreateProjectContent() {
                     <Button
                       type="button"
                       onClick={handleNext}
-                      className={cn(
-                        "min-h-[44px] px-8 py-3 text-sm rounded-xl font-medium transition-all duration-200 font-opensans shadow-lg hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed disabled:shadow-md disabled:transform-none",
+                      className={`min-h-[48px] px-10 py-3 text-sm rounded-xl font-semibold transition-all duration-200 font-opensans shadow-lg hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed disabled:shadow-md transform hover:scale-105 active:scale-95 ${
                         currentStep === totalSteps
-                          ? "bg-gradient-to-r from-[#ED8936] to-[#ED8936]/90 hover:from-[#ED8936]/90 hover:to-[#ED8936]/80 text-white disabled:from-slate-400 disabled:to-slate-500"
-                          : "bg-gradient-to-r from-[#2B6CB0] to-[#2B6CB0]/90 hover:from-[#2B6CB0]/90 hover:to-[#2B6CB0]/80 text-white disabled:from-slate-400 disabled:to-slate-500"
-                      )}
+                          ? "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white disabled:from-slate-400 disabled:to-slate-500 shadow-orange-500/25 hover:shadow-orange-500/40"
+                          : "bg-gradient-to-r from-buildease-blue-500 to-buildease-blue-600 hover:from-buildease-blue-600 hover:to-buildease-blue-700 text-white disabled:from-slate-400 disabled:to-slate-500 shadow-buildease-blue-500/25 hover:shadow-buildease-blue-500/40"
+                      }`}
                       disabled={isSubmitting}
                     >
                       {isSubmitting ? (

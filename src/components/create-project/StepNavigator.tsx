@@ -91,7 +91,6 @@ export function StepNavigator({
   className = '' 
 }: StepNavigatorProps) {
   const isMobile = useMediaQuery('(max-width: 768px)');
-  const _isTablet = useMediaQuery('(max-width: 1024px)');
 
   // Calculate progress percentage
   const progress = (currentStep / totalSteps) * 100;
@@ -129,21 +128,21 @@ export function StepNavigator({
             return (
               <div key={step.id} className="flex items-start">
                 <div className="flex flex-col items-center">
-                  {/* Step Circle */}
+                  {/* Professional Step Circle */}
                   <m.button
                     onClick={() => handleStepClick(step.id)}
                     disabled={!isClickable}
-                    className={cn(
-                      "relative flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full transition-all duration-300 mb-3 border-2",
-                      isActive 
-                        ? "bg-[#2B6CB0] text-white shadow-lg border-[#2B6CB0]" 
-                        : isCompleted 
-                          ? "bg-[#ED8936] text-white shadow-md border-[#ED8936]"
-                          : "bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-300 dark:border-slate-600",
-                      isClickable ? "cursor-pointer hover:shadow-lg hover:scale-105" : "cursor-default"
-                    )}
                     whileHover={isClickable ? { scale: 1.05 } : {}}
                     whileTap={isClickable ? { scale: 0.95 } : {}}
+                    className={cn(
+                      "relative flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full transition-all duration-300 mb-4 border-2 shadow-sm",
+                      isActive 
+                        ? "bg-gradient-to-br from-buildease-blue-500 to-buildease-blue-600 text-white border-buildease-blue-400 shadow-buildease-blue-500/25 ring-4 ring-buildease-blue-100 dark:ring-buildease-blue-900/50" 
+                        : isCompleted 
+                          ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white border-orange-400 shadow-orange-500/25 hover:shadow-orange-500/40"
+                          : "bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-300 dark:border-slate-600 hover:border-buildease-blue-300 dark:hover:border-buildease-blue-600 hover:shadow-md",
+                      isClickable ? "cursor-pointer" : "cursor-default"
+                    )}
                     aria-label={`${isClickable ? 'Go to' : ''} step ${step.id}: ${step.title}`}
                   >
                     {/* Simplified active step pulse */}
@@ -172,21 +171,29 @@ export function StepNavigator({
                     </div>
                   </m.button>
                   
-                  {/* Step Info */}
-                  <div className="text-center max-w-20">
-                    <p className={cn(
-                      "text-sm font-semibold font-inter transition-colors duration-300",
-                      isActive 
-                        ? "text-[#2B6CB0] dark:text-[#2B6CB0]" 
-                        : isCompleted 
-                          ? "text-[#ED8936] dark:text-[#ED8936]"
-                          : "text-slate-500 dark:text-slate-400"
-                    )}>
+                  {/* Professional Step Label */}
+                  <div className="text-center max-w-[80px] md:max-w-[120px]">
+                    <m.p 
+                      className={cn(
+                        "text-sm md:text-base font-semibold transition-colors duration-300 font-inter mb-1",
+                        isActive 
+                          ? "text-buildease-blue-600 dark:text-buildease-blue-400" 
+                          : isCompleted 
+                            ? "text-orange-600 dark:text-orange-400"
+                            : "text-slate-500 dark:text-slate-400"
+                      )}>
                       {isMobile ? step.id : step.title}
-                    </p>
+                    </m.p>
                     {!isMobile && (
                       <m.p 
-                        className="text-xs text-slate-500 dark:text-slate-400 leading-tight mt-1 font-opensans"
+                        className={cn(
+                          "text-xs leading-tight font-opensans transition-colors duration-300",
+                          isActive 
+                            ? "text-buildease-blue-500 dark:text-buildease-blue-300" 
+                            : isCompleted 
+                              ? "text-orange-500 dark:text-orange-300"
+                              : "text-slate-400 dark:text-slate-500"
+                        )}
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.1 }}
@@ -214,27 +221,46 @@ export function StepNavigator({
           })}
         </div>
         
-        {/* Simplified Progress Bar Section */}
-        <div className="max-w-2xl mx-auto">
-          {/* Cleaner Progress Info */}
-          <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-400 mb-4">
-            <span className="font-medium font-inter">
-              Step {currentStep} of {totalSteps}
-            </span>
-            <span className="text-xs px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-full font-opensans">
-              {Math.round(progress)}% complete
-            </span>
+        {/* Professional Progress Bar Section */}
+        <div className="max-w-3xl mx-auto">
+          {/* Enhanced Progress Info */}
+          <div className="flex items-center justify-between text-sm mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-buildease-blue-500 to-orange-500 rounded-full flex items-center justify-center shadow-sm">
+                <span className="text-xs font-bold text-white">{currentStep}</span>
+              </div>
+              <span className="font-semibold text-slate-700 dark:text-slate-300 font-inter">
+                Step {currentStep} of {totalSteps}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-buildease-blue-500 rounded-full animate-pulse"></div>
+              <span className="text-xs px-4 py-2 bg-gradient-to-r from-buildease-blue-50 to-orange-50 dark:from-buildease-blue-950/50 dark:to-orange-950/50 text-buildease-blue-700 dark:text-buildease-blue-300 rounded-full font-medium font-opensans border border-buildease-blue-200/50 dark:border-buildease-blue-700/50 shadow-sm">
+                {Math.round(progress)}% complete
+              </span>
+            </div>
           </div>
           
-          {/* Simplified Progress Bar */}
-          <div className="relative h-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+          {/* Professional Progress Bar */}
+          <div className="relative h-3 bg-gradient-to-r from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 rounded-full overflow-hidden shadow-inner">
             <m.div 
-              className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#2B6CB0] to-[#ED8936] rounded-full"
+              className="absolute top-0 left-0 h-full bg-gradient-to-r from-buildease-blue-500 via-buildease-blue-400 to-orange-500 rounded-full shadow-sm"
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
               transition={{ 
                 duration: 0.6, 
                 ease: "easeOut"
+              }}
+            />
+            {/* Subtle shimmer effect */}
+            <m.div 
+              className="absolute top-0 left-0 h-full w-full bg-gradient-to-r from-transparent via-white/10 to-transparent rounded-full"
+              initial={{ x: '-100%' }}
+              animate={{ x: '100%' }}
+              transition={{ 
+                duration: 3, 
+                repeat: Infinity, 
+                ease: "linear"
               }}
             />
           </div>
@@ -253,9 +279,9 @@ export function StepNavigator({
                   className={cn(
                     "w-2 h-2 rounded-full transition-all duration-300",
                     step.id === currentStep
-                      ? "bg-[#2B6CB0] w-6"
+                      ? "bg-buildease-blue-500 w-6"
                       : step.id < currentStep
-                        ? "bg-[#ED8936]"
+                        ? "bg-orange-500"
                         : "bg-slate-300 dark:bg-slate-600"
                   )}
                 />

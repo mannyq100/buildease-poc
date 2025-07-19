@@ -3,13 +3,14 @@
  * Handles profile information editing and avatar upload
  */
 import React, { useRef } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { User, Mail, Phone, Briefcase, Camera } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Progress } from '../ui/progress';
+import { Camera, Mail, User } from 'lucide-react';
 import { createPreviewUrl, revokePreviewUrl } from '@/utils/core/storageUtils';
 import { uploadProfilePicture } from '@/utils/core/storageUtils';
 import { useToast } from '@/hooks/use-toast';
@@ -126,33 +127,44 @@ export function ProfileCard({
   };
 
   return (
-    <Card className="lg:col-span-2 overflow-hidden border-0 shadow-md dark:shadow-slate-900/30">
-      {/* Hero Section */}
-      <div className="h-32 sm:h-40 bg-gradient-to-r from-blue-100 to-sky-200 dark:from-blue-900/30 dark:to-sky-900/30 relative overflow-hidden">
-        <div className="absolute inset-0 bg-white/20 dark:bg-black/10"></div>
-        <div className="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-black/10 to-transparent"></div>
-      </div>
+    <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 shadow-lg overflow-hidden">
+      {/* Enhanced Header */}
+      <CardHeader className="bg-gradient-to-br from-buildease-blue-50 via-blue-50 to-orange-50 dark:from-buildease-blue-900/20 dark:via-blue-900/20 dark:to-orange-900/20 border-b border-buildease-blue-200/50 dark:border-buildease-blue-700/50">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-buildease-blue-500 to-orange-500 rounded-lg flex items-center justify-center shadow-md">
+            <User className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
+              Profile Information
+            </CardTitle>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Manage your personal information and preferences
+            </p>
+          </div>
+        </div>
+      </CardHeader>
 
-      <CardContent className="relative px-4 sm:px-8 py-6">
-        {/* Profile Section */}
-        <div className="flex flex-col sm:flex-row items-center sm:items-end -mt-16 sm:-mt-20 mb-6 sm:mb-8 gap-4 sm:gap-6">
+      <CardContent className="p-6 space-y-8">
+        {/* Profile Avatar Section */}
+        <div className="flex flex-col sm:flex-row items-center gap-6">
           <div className="relative group">
-            <Avatar className="h-24 w-24 sm:h-32 sm:w-32 border-4 border-white dark:border-slate-900 shadow-lg">
+            <Avatar className="h-24 w-24 border-4 border-white dark:border-slate-700 shadow-lg ring-2 ring-buildease-blue-100 dark:ring-buildease-blue-900/50">
               <AvatarImage
                 src={formData.pictureUrl || user?.user_metadata?.avatar_url}
                 alt={`${profile?.firstName || ''} ${profile?.lastName || ''}`.trim()}
               />
-              <AvatarFallback className="text-xl sm:text-3xl bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-200">
-                {profile?.firstName?.[0] || profile?.lastName?.[0]}
+              <AvatarFallback className="text-2xl bg-gradient-to-br from-buildease-blue-100 to-orange-100 text-buildease-blue-700 dark:from-buildease-blue-900/50 dark:to-orange-900/50 dark:text-buildease-blue-300">
+                {profile?.firstName?.[0] || profile?.lastName?.[0] || 'U'}
               </AvatarFallback>
             </Avatar>
             <button
               type="button"
               onClick={triggerFileInput}
-              className="absolute -bottom-1 -right-1 sm:-bottom-2 sm:-right-2 rounded-full bg-blue-500 p-2 sm:p-2.5 text-white shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
+              className="absolute -bottom-1 -right-1 rounded-full bg-gradient-to-r from-buildease-blue-500 to-buildease-blue-600 p-2.5 text-white shadow-lg hover:from-buildease-blue-600 hover:to-buildease-blue-700 focus:outline-none focus:ring-2 focus:ring-buildease-blue-500 focus:ring-offset-2 transition-all duration-300 hover:scale-110"
               aria-label="Upload profile picture"
             >
-              <Camera className="h-4 w-4 sm:h-5 sm:w-5" />
+              <Camera className="h-4 w-4" />
             </button>
             <input
               ref={fileInputRef}
@@ -163,19 +175,21 @@ export function ProfileCard({
             />
           </div>
 
-          <div className="text-center sm:text-left space-y-2 flex-1 min-w-0">
-            <h2 className="text-xl sm:text-3xl font-semibold truncate">
-              {`${profile?.firstName || ''} ${profile?.lastName || ''}`.trim() || 'User Name'}
-            </h2>
-            <div className="flex items-center justify-center sm:justify-start gap-2 text-sm text-slate-500 dark:text-slate-400">
-              <Mail className="h-4 w-4 flex-shrink-0" />
-              <span className="truncate">{profile?.email || user?.email}</span>
+          <div className="text-center sm:text-left space-y-3 flex-1">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+                {`${profile?.firstName || ''} ${profile?.lastName || ''}`.trim() || 'User Name'}
+              </h2>
+              <div className="flex items-center justify-center sm:justify-start gap-2 text-slate-600 dark:text-slate-400 mt-1">
+                <Mail className="h-4 w-4" />
+                <span>{profile?.email || user?.email}</span>
+              </div>
             </div>
-            <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-3">
-              <Badge variant="outline" className="text-sm px-3 py-1 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800">
+            <div className="flex flex-wrap justify-center sm:justify-start gap-2">
+              <Badge className="bg-buildease-blue-100 text-buildease-blue-700 border-buildease-blue-200 dark:bg-buildease-blue-900/30 dark:text-buildease-blue-300 dark:border-buildease-blue-700">
                 Member
               </Badge>
-              <Badge variant="outline" className="text-sm px-3 py-1 bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800">
+              <Badge className="bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700">
                 Active
               </Badge>
             </div>
@@ -184,117 +198,118 @@ export function ProfileCard({
 
         {/* Upload Progress */}
         {uploadState.showProgress && (
-          <div className="w-full max-w-md space-y-2 mb-6 sm:mb-8">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-500 dark:text-gray-400">Uploading image...</span>
-              <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+          <div className="bg-gradient-to-r from-buildease-blue-50 to-orange-50 dark:from-buildease-blue-900/20 dark:to-orange-900/20 rounded-lg p-4 border border-buildease-blue-200/50 dark:border-buildease-blue-700/50">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium text-buildease-blue-700 dark:text-buildease-blue-300">Uploading image...</span>
+              <span className="text-sm font-bold text-buildease-blue-600 dark:text-buildease-blue-400">
                 {uploadState.uploadProgress}%
               </span>
             </div>
             <Progress 
               value={uploadState.uploadProgress} 
-              className="h-3 bg-blue-100 dark:bg-blue-900/30" 
-              indicatorClassName="bg-blue-500 dark:bg-blue-600"
+              className="h-2 bg-buildease-blue-100 dark:bg-buildease-blue-900/30" 
             />
           </div>
         )}
 
-        {/* Form */}
-        <form onSubmit={onSubmit}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-x-8 sm:gap-y-6 py-6 border-t border-slate-200 dark:border-slate-800">
-            <div className="space-y-3">
-              <Label htmlFor="firstName" className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                <User size={16} />
-                <span>First Name</span>
+        {/* Enhanced Form Section */}
+        <form onSubmit={onSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="firstName" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                First Name
               </Label>
-              <input
+              <Input
                 id="firstName"
-                type="text"
-                className="w-full rounded-md border border-blue-200 px-4 py-3 dark:border-blue-800 dark:bg-blue-900/50 focus:border-blue-500 focus:ring-blue-500 dark:focus:border-blue-600 dark:focus:ring-blue-600 text-base"
-                placeholder="Your First Name"
+                name="firstName"
                 value={formData.firstName}
                 onChange={handleInputChange}
+                className="h-11 border-slate-300 dark:border-slate-600 focus:border-buildease-blue-500 focus:ring-buildease-blue-500/20 transition-colors"
+                placeholder="Enter your first name"
               />
             </div>
-            
-            <div className="space-y-3">
-              <Label htmlFor="lastName" className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                <User size={16} />
-                <span>Last Name</span>
+            <div className="space-y-2">
+              <Label htmlFor="lastName" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                Last Name
               </Label>
-              <input
+              <Input
                 id="lastName"
-                type="text"
-                className="w-full rounded-md border border-blue-200 px-4 py-3 dark:border-blue-800 dark:bg-blue-900/50 focus:border-blue-500 focus:ring-blue-500 dark:focus:border-blue-600 dark:focus:ring-blue-600 text-base"
-                placeholder="Your Last Name"
+                name="lastName"
                 value={formData.lastName}
                 onChange={handleInputChange}
-              />
-            </div>
-
-            <div className="space-y-3">
-              <Label htmlFor="email" className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                <Mail size={16} />
-                <span>Email Address</span>
-              </Label>
-              <input
-                id="email"
-                type="email"
-                className="w-full rounded-md border border-slate-200 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/30 focus:border-slate-500 focus:ring-slate-500 text-base text-slate-500 dark:text-slate-400"
-                placeholder="your.email@example.com"
-                value={formData.email} 
-                readOnly
-              />
-            </div>
-
-            <div className="space-y-3">
-              <Label htmlFor="phone" className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                <Phone size={16} />
-                <span>Phone Number</span>
-              </Label>
-              <input
-                id="phone"
-                type="tel"
-                className="w-full rounded-md border border-blue-200 px-4 py-3 dark:border-blue-800 dark:bg-blue-900/50 focus:border-blue-500 focus:ring-blue-500 dark:focus:border-blue-600 dark:focus:ring-blue-600 text-base"
-                placeholder="(123) 456-7890"
-                value={formData.phone}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <div className="space-y-3 sm:col-span-2">
-              <Label htmlFor="companyName" className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                <Briefcase size={16} />
-                <span>Company Name</span>
-              </Label>
-              <input
-                id="companyName"
-                type="text"
-                className="w-full rounded-md border border-blue-200 px-4 py-3 dark:border-blue-800 dark:bg-blue-900/50 focus:border-blue-500 focus:ring-blue-500 dark:focus:border-blue-600 dark:focus:ring-blue-600 text-base"
-                placeholder="Your Company Name"
-                value={formData.companyName}
-                onChange={handleInputChange}
+                className="h-11 border-slate-300 dark:border-slate-600 focus:border-buildease-blue-500 focus:ring-buildease-blue-500/20 transition-colors"
+                placeholder="Enter your last name"
               />
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="pt-6 border-t border-slate-200 dark:border-slate-800 mt-4 flex flex-col sm:flex-row gap-3">
-            <Button 
-              type="submit" 
-              variant="default" 
+          <div className="space-y-2">
+            <Label htmlFor="email" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+              Email Address
+            </Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              className="h-11 border-slate-300 dark:border-slate-600 focus:border-buildease-blue-500 focus:ring-buildease-blue-500/20 transition-colors"
+              placeholder="Enter your email address"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="phone" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+              Phone Number
+            </Label>
+            <Input
+              id="phone"
+              name="phone"
+              type="tel"
+              value={formData.phone}
+              onChange={handleInputChange}
+              className="h-11 border-slate-300 dark:border-slate-600 focus:border-buildease-blue-500 focus:ring-buildease-blue-500/20 transition-colors"
+              placeholder="Enter your phone number"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="company" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+              Company
+            </Label>
+            <Input
+              id="company"
+              name="company"
+              value={formData.companyName}
+              onChange={handleInputChange}
+              className="h-11 border-slate-300 dark:border-slate-600 focus:border-buildease-blue-500 focus:ring-buildease-blue-500/20 transition-colors"
+              placeholder="Enter your company name"
+            />
+          </div>
+
+          {/* Enhanced Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-slate-200 dark:border-slate-700">
+            <Button
+              type="submit"
               disabled={isLoadingProfile || uploadState.isUpdating}
-              className="bg-blue-500 hover:bg-blue-600 text-white dark:bg-blue-600 dark:hover:bg-blue-700 transition-colors px-6 py-3 sm:py-5 text-base h-auto w-full sm:w-auto"
+              className="flex-1 h-11 bg-gradient-to-r from-buildease-blue-500 to-buildease-blue-600 hover:from-buildease-blue-600 hover:to-buildease-blue-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300"
             >
-              {uploadState.isUpdating ? 'Saving...' : 'Save Changes'}
+              {uploadState.isUpdating ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Saving Changes...
+                </>
+              ) : (
+                'Save Changes'
+              )}
             </Button>
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={onReset}
-              className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/50 px-6 py-3 sm:py-5 text-base h-auto w-full sm:w-auto"
+              className="flex-1 h-11 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             >
-              Reset Changes
+              Reset Form
             </Button>
           </div>
         </form>
