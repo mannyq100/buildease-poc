@@ -40,6 +40,7 @@ export interface BasePhase {
   id: string;
   name: string;
   description?: string;
+  category: string; // Flexible category field (was enum, now string)
   order: number;
   status: 'pending' | 'planning' | 'in-progress' | 'completed' | 'delayed' | 'on-hold';
   progress: number;

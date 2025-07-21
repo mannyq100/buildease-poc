@@ -9,24 +9,6 @@ BEGIN
 END
 $$;
 
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'phase_category') THEN
-        CREATE TYPE construction_mgr.phase_category AS ENUM (
-            'PREPARATORY',
-            'EXCAVATION',
-            'FOUNDATION',
-            'STRUCTURE',
-            'FLOOR_CONSTRUCTION',
-            'ROOFING',
-            'SERVICES',
-            'FINISHES',
-            'FIXTURES',
-            'LANDSCAPING',
-            'INSPECTIONS',
-            'HANDOVER',
-            'OTHER'
-        );
-    END IF;
-END
-$$;
+-- Removed phase_category enum to allow flexible phase categories
+-- Users can now create phases with any category name
+-- The application will guide users using constructionPhasesWithTasks constants

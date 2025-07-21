@@ -1,10 +1,12 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Layers, Calendar, ListOrdered, ClipboardList } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { BaseModal } from '@/components/ui/BaseModal';
 import { FormField, SelectField, ModalFooter } from '@/components/ui/form-fields';
+import { PhaseSelector } from '@/components/shared/forms/PhaseSelector';
 import { v4 as uuidv4 } from 'uuid';
 import { ModalPhase } from '@/types/plan/index';
+import { type ProjectType } from '@/utils/phaseUtils';
 
 // Re-export for backward compatibility
 export type Phase = ModalPhase;
@@ -17,6 +19,7 @@ interface PhaseFormModalProps {
   isNew?: boolean;
   statuses?: string[];
   currentOrder?: number;
+  projectType?: ProjectType;
 }
 
 export function PhaseFormModal({
@@ -26,13 +29,15 @@ export function PhaseFormModal({
   phase,
   isNew = true,
   statuses = ['planning', 'in-progress', 'on-hold', 'completed'],
-  currentOrder = 1
+  currentOrder = 1,
+  projectType = 'new_construction'
 }: PhaseFormModalProps) {
   // Default phase values
   const getDefaultValues = useCallback((): ModalPhase => ({
     id: phase?.id || uuidv4(),
     name: phase?.name || '',
     description: phase?.description || '',
+    category: phase?.category || 'PRE_CONSTRUCTION',
     order: phase?.order || currentOrder,
     startDate: phase?.startDate || new Date().toISOString().substring(0, 10),
     endDate: phase?.endDate || new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().substring(0, 10),
@@ -46,15 +51,18 @@ export function PhaseFormModal({
   const {
     control,
     handleSubmit,
+    formState: { errors: _errors, isSubmitting },
+    watch,
+    setValue,
     reset,
-    formState: { errors, isSubmitting },
-    watch
   } = useForm<Phase>({
     defaultValues: getDefaultValues(),
     mode: 'onBlur'
   });
 
   // Watch startDate and endDate for validation
+  const [selectedCategory, setSelectedCategory] = useState<string>(phase?.category || 'PRE_CONSTRUCTION');
+  const [_defaultTasks, setDefaultTasks] = useState<string[]>([]);
   const startDate = watch('startDate');
   const endDate = watch('endDate');
 
@@ -103,9 +111,26 @@ export function PhaseFormModal({
       title={isNew ? 'Add New Phase' : 'Edit Phase'}
       description={modalDescription}
       footer={modalFooter}
-      saving={isSubmitting}
     >
       <form id="phase-form" onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        {/* Phase Category Selection */}
+        <PhaseSelector
+          projectType={projectType}
+          selectedCategory={selectedCategory}
+          onCategorySelect={(category, phaseName) => {
+            setSelectedCategory(category);
+            // Auto-fill phase name if empty
+            if (!watch('name')) {
+              setValue('name', phaseName);
+            }
+            setValue('category', category);
+          }}
+          onTasksPreview={(tasks) => {
+            setDefaultTasks(tasks);
+          }}
+          showTaskPreview={true}
+        />
+
         {/* Basic information */}
         <Controller
           control={control}

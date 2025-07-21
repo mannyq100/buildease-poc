@@ -83,7 +83,7 @@ CREATE TABLE construction_mgr.be_phase (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(100) NOT NULL,
     description TEXT,
-    category construction_mgr.phase_category NOT NULL,
+    category VARCHAR(50) NOT NULL,
     status construction_mgr.project_status NOT NULL DEFAULT 'PLANNING',
     project_id UUID NOT NULL,
     details JSONB NOT NULL DEFAULT '{}',

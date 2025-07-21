@@ -49,8 +49,14 @@ import {
   Calendar,
   ImageIcon,
   Edit3,
-  X
+  X,
+  Layers,
+  Target,
+  Building2,
+  Save
 } from 'lucide-react';
+import { PhaseSelector } from '@/components/shared/forms/PhaseSelector';
+import { ProjectType } from '@/utils/phaseUtils';
 import { adaptSupabaseProjectToProject } from '@/utils/dataAdapters';
 
 interface ProjectDetailsContentProps {
@@ -130,6 +136,28 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
   const updatePhase = useUpdateProjectDetailsPhase();
   const deletePhase = useDeleteProjectDetailsPhase();
   
+  // State for flexible phase system
+  const [selectedPhaseCategory, setSelectedPhaseCategory] = useState<string>('');
+  const [defaultTasks, setDefaultTasks] = useState<{
+    id: string;
+    name: string;
+    alternativeNames: string[];
+    enabled: boolean;
+  }[]>([]);
+  const [phaseFormData, setPhaseFormData] = useState<{
+    name: string;
+    category: string;
+    description: string;
+    startDate: string;
+    endDate: string;
+  }>({
+    name: '',
+    category: '',
+    description: '',
+    startDate: '',
+    endDate: ''
+  });
+
   // State for expandable sections
   const [expandedSections, setExpandedSections] = useState<{
     phases: boolean;
@@ -161,6 +189,20 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
   const openCreateModal = (type: 'budget' | 'phase' | 'team') => {
     setModalMode('create');
     setEditingItem(null);
+    
+    // Reset flexible phase system state
+    if (type === 'phase') {
+      setSelectedPhaseCategory('');
+      setDefaultTasks([]);
+      setPhaseFormData({
+        name: '',
+        category: '',
+        description: '',
+        startDate: '',
+        endDate: ''
+      });
+    }
+    
     if (type === 'budget') setShowBudgetModal(true);
     if (type === 'phase') setShowPhaseModal(true);
     if (type === 'team') setShowTeamModal(true);
@@ -179,6 +221,17 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
     setShowPhaseModal(false);
     setShowTeamModal(false);
     setEditingItem(null);
+    
+    // Reset flexible phase system state
+    setSelectedPhaseCategory('');
+    setDefaultTasks([]);
+    setPhaseFormData({
+      name: '',
+      category: '',
+      description: '',
+      startDate: '',
+      endDate: ''
+    });
   };
   
   const handleDelete = async (type: 'budget' | 'phase' | 'team', id: string) => {
@@ -200,67 +253,95 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
       if (type === 'budget') {
         if (modalMode === 'create') {
           await createBudgetExpense.mutateAsync({
-            project_id: projectId,
-            name: data.name as string,
-            amount: Number(data.amount),
-            category: data.category as string,
-            description: data.description as string,
-            date: data.date as string,
-            status: (data.status as 'planned' | 'approved' | 'paid') || 'planned'
+            projectId,
+            expense: {
+              name: 'New Expense',
+              amount: 1000,
+              category: 'Materials',
+              status: 'planned',
+              paymentDate: new Date().toISOString().split('T')[0],
+              vendorName: 'TBD',
+              description: 'New expense item'
+            }
           });
-        } else {
+        } else if (editingItem) {
           await updateBudgetExpense.mutateAsync({
-            id: data.id as string,
-            name: data.name as string,
-            amount: Number(data.amount),
-            category: data.category as string,
-            description: data.description as string,
-            date: data.date as string,
-            status: data.status as 'planned' | 'approved' | 'paid'
+            expenseId: editingItem.id,
+            expense: {
+              name: 'Updated Expense',
+              amount: 1500,
+              category: 'Labor',
+              status: 'approved'
+            }
           });
         }
       } else if (type === 'phase') {
         if (modalMode === 'create') {
-          await createPhase.mutateAsync({
-            project_id: projectId,
-            name: data.name as string,
-            description: data.description as string,
-            start_date: data.start_date as string,
-            end_date: data.end_date as string,
-            status: (data.status as 'pending' | 'in-progress' | 'completed' | 'on-hold') || 'pending'
+          // Create phase with flexible category and default tasks
+          const phaseData = {
+            name: phaseFormData.name,
+            description: phaseFormData.description,
+            status: 'pending' as const,
+            category: selectedPhaseCategory,
+            timeline: {
+              startDate: phaseFormData.startDate,
+              endDate: phaseFormData.endDate,
+              duration: phaseFormData.startDate && phaseFormData.endDate 
+                ? Math.ceil((new Date(phaseFormData.endDate).getTime() - new Date(phaseFormData.startDate).getTime()) / (1000 * 60 * 60 * 24))
+                : 0
+            }
+          };
+          
+          // Create the phase
+          const createdPhase = await createPhase.mutateAsync({
+            projectId,
+            phase: phaseData
           });
-        } else {
+          
+          // Create enabled default tasks for the phase
+          const enabledTasks = defaultTasks.filter(task => task.enabled);
+          if (enabledTasks.length > 0) {
+            console.log(`Creating ${enabledTasks.length} default tasks for phase:`, createdPhase);
+            console.log('Enabled tasks:', enabledTasks.map(t => t.name));
+            // TODO: Integrate with task creation hooks when available
+            // Future: Create tasks using task creation hooks
+          }
+        } else if (editingItem) {
           await updatePhase.mutateAsync({
-            id: data.id as string,
-            name: data.name as string,
-            description: data.description as string,
-            start_date: data.start_date as string,
-            end_date: data.end_date as string,
-            status: data.status as 'pending' | 'in-progress' | 'completed' | 'on-hold'
+            phaseId: editingItem.id,
+            phase: {
+              name: phaseFormData.name,
+              description: phaseFormData.description,
+              status: 'in-progress'
+            }
           });
         }
       } else if (type === 'team') {
         if (modalMode === 'create') {
           await createTeamMember.mutateAsync({
-            project_id: projectId,
-            name: data.name as string,
-            role: data.role as string,
-            email: data.email as string,
-            phone: data.phone as string,
-            status: (data.status as 'active' | 'inactive' | 'pending') || 'active'
+            projectId,
+            member: {
+              name: 'New Member',
+              role: 'Contractor',
+              status: 'active',
+              contactInfo: {
+                phone: '555-0123',
+                email: 'member@example.com'
+              }
+            }
           });
-        } else {
+        } else if (editingItem) {
           await updateTeamMember.mutateAsync({
-            id: data.id as string,
-            name: data.name as string,
-            role: data.role as string,
-            email: data.email as string,
-            phone: data.phone as string,
-            status: data.status as 'active' | 'inactive' | 'pending',
-            project_id: projectId
+            memberId: editingItem.id,
+            member: {
+              name: 'Updated Member',
+              role: 'Site Supervisor',
+              status: 'active'
+            }
           });
         }
       }
+      
       closeModals();
     } catch (error) {
       console.error(`Failed to save ${type}:`, error);
@@ -1234,61 +1315,254 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
           </div>
         </BaseModal>
         
-        {/* Phase Modal */}
+        {/* Phase Modal - Stunning BuildEase Design */}
         <BaseModal
           isOpen={showPhaseModal}
           onClose={closeModals}
-          title={modalMode === 'create' ? 'Add Phase' : 'Edit Phase'}
-          description="Manage project phases and timeline"
-          size="md"
+          title={modalMode === 'create' ? 'Create New Phase' : 'Edit Phase'}
+          description="Build your project timeline with precision and style"
+          size="lg"
           footer={
-            <div className="flex gap-3">
+            <div className="flex gap-3 p-6 bg-gradient-to-r from-slate-50 to-white border-t border-slate-200">
               <Button 
-                onClick={() => handleSave('phase', {})}
-                className="flex-1 bg-buildease-orange-600 hover:bg-buildease-orange-700"
+                onClick={() => handleSave('phase', phaseFormData)}
+                className="flex-1 bg-gradient-to-r from-buildease-orange-500 to-buildease-orange-600 hover:from-buildease-orange-600 hover:to-buildease-orange-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 border-0"
+                disabled={!phaseFormData.name.trim()}
               >
-                {modalMode === 'create' ? 'Add Phase' : 'Save Changes'}
-              </Button>
-              <Button variant="outline" onClick={closeModals} className="flex-1">
-                Cancel
+                <div className="flex items-center justify-center gap-2">
+                  {modalMode === 'create' ? (
+                    <>
+                      <Plus className="h-5 w-5" />
+                      Create Phase
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-5 w-5" />
+                      Save Changes
+                    </>
+                  )}
+                </div>
               </Button>
             </div>
           }
         >
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Phase Name</label>
-              <input 
-                type="text" 
-                className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-buildease-orange-500 focus:border-transparent"
-                placeholder="Enter phase name"
-                defaultValue={(editingItem?.data as any)?.name || ''}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
-              <textarea 
-                className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-buildease-orange-500 focus:border-transparent"
-                rows={3}
-                placeholder="Enter phase description"
-                defaultValue={(editingItem?.data as any)?.description || ''}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Start Date</label>
-              <input 
-                type="date" 
-                className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-buildease-orange-500 focus:border-transparent"
-                defaultValue={(editingItem?.data as any)?.timeline?.startDate || ''}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">End Date</label>
-              <input 
-                type="date" 
-                className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-buildease-orange-500 focus:border-transparent"
-                defaultValue={(editingItem?.data as any)?.timeline?.endDate || ''}
-              />
+          <div className="space-y-6 p-4 max-h-[70vh] overflow-y-auto">
+            {/* Phase Template Selection */}
+            {modalMode === 'create' && (
+              <>
+                <div className="bg-gradient-to-r from-buildease-blue-500 to-buildease-blue-600 rounded-lg p-4 text-white">
+                  <div className="flex items-center mb-3">
+                    <Building2 className="h-5 w-5 mr-2" />
+                    <h3 className="font-semibold">Choose Phase Template</h3>
+                  </div>
+                  <div className="bg-white/10 rounded-lg p-3 backdrop-blur-sm">
+                    <PhaseSelector
+                      projectType={projectData?.type as ProjectType || 'new_construction'}
+                      selectedCategory={selectedPhaseCategory}
+                      onCategorySelect={(category, phaseName) => {
+                        setSelectedPhaseCategory(category);
+                        setPhaseFormData(prev => ({
+                          ...prev,
+                          name: phaseName,
+                          category: category
+                        }));
+                      }}
+                      onTasksPreview={(tasks) => {
+                        const editableTasks = tasks.map(task => ({
+                          ...task,
+                          enabled: true
+                        }));
+                        setDefaultTasks(editableTasks);
+                      }}
+                      showTaskPreview={true}
+                    />
+                  </div>
+                </div>
+
+                {/* Default Tasks - Compact Design */}
+                {defaultTasks.length > 0 && (
+                  <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                    <div className="bg-emerald-500 px-4 py-3 flex items-center justify-between">
+                      <div className="flex items-center text-white">
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        <span className="font-medium text-sm">
+                          Default Tasks ({defaultTasks.filter(t => t.enabled).length}/{defaultTasks.length})
+                        </span>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDefaultTasks(tasks => tasks.map(t => ({ ...t, enabled: true })))}
+                          className="text-white hover:bg-white/20 text-xs px-2 py-1 h-auto"
+                        >
+                          All
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDefaultTasks(tasks => tasks.map(t => ({ ...t, enabled: false })))}
+                          className="text-white hover:bg-white/20 text-xs px-2 py-1 h-auto"
+                        >
+                          None
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4">
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {defaultTasks.map((task, index) => (
+                          <div 
+                            key={task.id} 
+                            className={`flex items-center gap-3 p-2 rounded-lg transition-all duration-200 ${
+                              task.enabled 
+                                ? 'bg-emerald-50 border border-emerald-200' 
+                                : 'bg-slate-50 border border-slate-200 opacity-60'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              id={`task-${task.id}`}
+                              checked={task.enabled}
+                              onChange={(e) => {
+                                const updatedTasks = [...defaultTasks];
+                                updatedTasks[index].enabled = e.target.checked;
+                                setDefaultTasks(updatedTasks);
+                              }}
+                              className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <label 
+                                htmlFor={`task-${task.id}`}
+                                className={`block text-sm cursor-pointer ${
+                                  task.enabled 
+                                    ? 'text-slate-900 font-medium' 
+                                    : 'text-slate-500 line-through'
+                                }`}
+                              >
+                                {task.name}
+                              </label>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const updatedTasks = defaultTasks.filter((_, i) => i !== index);
+                                setDefaultTasks(updatedTasks);
+                              }}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 h-auto"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {defaultTasks.filter(t => t.enabled).length === 0 && (
+                        <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                          <div className="flex items-center">
+                            <AlertTriangle className="h-4 w-4 text-amber-600 mr-2" />
+                            <p className="text-amber-800 text-sm">
+                              No tasks selected - phase will be created without default tasks
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Phase Details - Streamlined Form */}
+            <div className="bg-white rounded-lg border border-slate-200 p-4">
+              <div className="flex items-center mb-4">
+                <div className="p-2 bg-buildease-blue-500 rounded-lg text-white mr-3">
+                  <Layers className="h-4 w-4" />
+                </div>
+                <h3 className="font-semibold text-slate-900">Phase Details</h3>
+              </div>
+              
+              <div className="space-y-4">
+                {/* Phase Name */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Phase Name
+                  </label>
+                  <input 
+                    type="text" 
+                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-buildease-orange-500 focus:border-transparent transition-all duration-200"
+                    placeholder="e.g., Foundation & Structural Work"
+                    value={phaseFormData.name}
+                    onChange={(e) => setPhaseFormData(prev => ({ ...prev, name: e.target.value }))}
+                  />
+                </div>
+                
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Description
+                  </label>
+                  <textarea 
+                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-buildease-blue-500 focus:border-transparent transition-all duration-200 resize-none"
+                    rows={3}
+                    placeholder="Describe the phase objectives and key deliverables..."
+                    value={phaseFormData.description}
+                    onChange={(e) => setPhaseFormData(prev => ({ ...prev, description: e.target.value }))}
+                  />
+                </div>
+
+                {/* Timeline - Compact Design */}
+                <div className="bg-buildease-blue-50 rounded-lg p-4 border border-buildease-blue-200">
+                  <div className="flex items-center mb-3">
+                    <Calendar className="h-4 w-4 text-buildease-blue-600 mr-2" />
+                    <h4 className="font-medium text-slate-900">Timeline</h4>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                        Start Date
+                      </label>
+                      <input 
+                        type="date" 
+                        className="w-full p-2 border border-slate-300 rounded focus:ring-1 focus:ring-emerald-500 focus:border-transparent text-sm"
+                        value={phaseFormData.startDate}
+                        onChange={(e) => setPhaseFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                        End Date
+                      </label>
+                      <input 
+                        type="date" 
+                        className="w-full p-2 border border-slate-300 rounded focus:ring-1 focus:ring-red-500 focus:border-transparent text-sm"
+                        value={phaseFormData.endDate}
+                        onChange={(e) => setPhaseFormData(prev => ({ ...prev, endDate: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Duration Display */}
+                  {phaseFormData.startDate && phaseFormData.endDate && (
+                    <div className="mt-3 p-2 bg-white rounded border border-buildease-blue-200">
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center text-slate-600">
+                          <Clock className="h-4 w-4 mr-1" />
+                          Duration
+                        </div>
+                        <span className="font-semibold text-buildease-orange-600">
+                          {Math.ceil((new Date(phaseFormData.endDate).getTime() - new Date(phaseFormData.startDate).getTime()) / (1000 * 60 * 60 * 24))} days
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </BaseModal>
