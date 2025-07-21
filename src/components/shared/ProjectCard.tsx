@@ -1,4 +1,4 @@
-import React from 'react';
+// React import removed as it's not needed in React 17+
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Building2, Calendar, Users } from 'lucide-react';
@@ -35,7 +35,7 @@ export interface ProjectCardProps {
   /** Additional styling and behavior */
   className?: string;
   onClick?: () => void;
-  animate?: boolean;
+  animate?: boolean; // Currently unused but kept for future animation features
 }
 
 /**
@@ -62,90 +62,130 @@ export function ProjectCard({
 }: ProjectCardProps) {
   const statusConfig = {
     active: {
-      bg: 'bg-blue-100 dark:bg-blue-900/30',
-      text: 'text-blue-700 dark:text-blue-400',
-      indicator: 'bg-blue-500'
+      bg: 'bg-gradient-to-r from-blue-500 to-blue-600',
+      text: 'text-white',
+      indicator: 'bg-white',
+      shadow: 'shadow-blue-500/25'
     },
     completed: {
-      bg: 'bg-green-100 dark:bg-green-900/30',
-      text: 'text-green-700 dark:text-green-400',
-      indicator: 'bg-green-500'
+      bg: 'bg-gradient-to-r from-green-500 to-green-600',
+      text: 'text-white',
+      indicator: 'bg-white',
+      shadow: 'shadow-green-500/25'
     },
     pending: {
-      bg: 'bg-amber-100 dark:bg-amber-900/30',
-      text: 'text-amber-700 dark:text-amber-400',
-      indicator: 'bg-amber-500'
+      bg: 'bg-gradient-to-r from-orange-500 to-orange-600',
+      text: 'text-white',
+      indicator: 'bg-white',
+      shadow: 'shadow-orange-500/25'
     },
     delayed: {
-      bg: 'bg-red-100 dark:bg-red-900/30',
-      text: 'text-red-700 dark:text-red-400',
-      indicator: 'bg-red-500'
+      bg: 'bg-gradient-to-r from-red-500 to-red-600',
+      text: 'text-white',
+      indicator: 'bg-white',
+      shadow: 'shadow-red-500/25'
     }
   };
 
   return (
     <Card 
       className={cn(
-        'overflow-hidden transition-all duration-300 h-full flex flex-col',
-        'hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800 cursor-pointer',
-        'border-2 border-transparent',
+        'group overflow-hidden transition-all duration-300 h-full flex flex-col',
+        'bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm',
+        'hover:shadow-xl hover:shadow-blue-500/10 hover:border-blue-300/50 dark:hover:border-blue-600/50',
+        'hover:-translate-y-1 hover:scale-[1.02] cursor-pointer',
+        'border border-slate-200/60 dark:border-slate-700/60',
+        'shadow-lg shadow-slate-900/5',
         className
       )}
       onClick={onClick}
     >
-      {/* Project Image */}
-      <div className="relative w-full h-48 overflow-hidden">
+      {/* Enhanced Project Image */}
+      <div className="relative w-full h-48 overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800">
         <ProjectImageDisplay
           src={imageUrl}
           alt={title}
-          className="w-full h-full transition-transform duration-300 hover:scale-105"
+          className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110 group-hover:brightness-110"
           aspectRatio="auto"
         />
         
-        {/* Status Badge Overlay */}
+        {/* Enhanced Status Badge Overlay */}
         <Badge 
           className={cn(
-            'absolute top-3 right-3',
+            'absolute top-4 right-4 px-3 py-1.5 text-xs font-semibold',
+            'shadow-lg backdrop-blur-sm border-0',
+            'transition-all duration-300 group-hover:scale-105',
             statusConfig[status].bg,
-            statusConfig[status].text
+            statusConfig[status].text,
+            statusConfig[status].shadow
           )}
         >
-          <div className={cn('w-2 h-2 rounded-full mr-1.5', statusConfig[status].indicator)} />
+          <div className={cn('w-2 h-2 rounded-full mr-2 animate-pulse', statusConfig[status].indicator)} />
           {status.charAt(0).toUpperCase() + status.slice(1)}
         </Badge>
+        
+        {/* Gradient Overlay for Better Text Contrast */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       </div>
 
-      <div className="p-4 flex flex-col flex-grow">
-        {/* Title */}
-        <h3 className="text-lg font-semibold line-clamp-1 mb-1">{title}</h3>
+      <div className="p-5 flex flex-col flex-grow bg-gradient-to-b from-white/50 to-white/80 dark:from-slate-800/50 dark:to-slate-800/80">
+        {/* Enhanced Title */}
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white line-clamp-1 mb-2 group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors duration-300">{title}</h3>
         
-        {/* Client */}
-        <div className="flex items-center text-sm text-muted-foreground mb-3">
-          <Building2 className="h-4 w-4 mr-2 flex-shrink-0" />
-          <span className="line-clamp-1">{client}</span>
+        {/* Enhanced Client */}
+        <div className="flex items-center text-sm text-slate-600 dark:text-slate-400 mb-4">
+          <Building2 className="h-4 w-4 mr-2 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+          <span className="line-clamp-1 font-medium">{client}</span>
         </div>
         
-        {/* Progress Bar */}
-        <div className="mt-auto space-y-2">
+        {/* Enhanced Progress Section */}
+        <div className="mt-auto space-y-3">
           {/* Timeline */}
           {startDate && endDate && (
-            <div className="flex items-center text-xs text-muted-foreground mb-2">
-              <Calendar className="h-3 w-3 mr-1.5 flex-shrink-0" />
-              <span className="truncate">{startDate} - {endDate}</span>
+            <div className="flex items-center text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-700/50 rounded-lg px-3 py-2">
+              <Calendar className="h-3 w-3 mr-2 flex-shrink-0 text-orange-500" />
+              <span className="truncate font-medium">{startDate} - {endDate}</span>
             </div>
           )}
           
-          <div className="flex justify-between text-xs mb-1">
-            <span className="text-muted-foreground">Progress</span>
-            <span className="font-medium">{progress}%</span>
+          {/* Enhanced Progress Bar */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-xs">
+              <span className="text-slate-500 dark:text-slate-400 font-medium">Progress</span>
+              <span className="font-bold text-slate-900 dark:text-white">{progress}%</span>
+            </div>
+            <div className="relative">
+              <Progress 
+                value={progress} 
+                className="h-2 bg-slate-200 dark:bg-slate-700" 
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-orange-500/20 rounded-full" />
+            </div>
           </div>
-          <Progress value={progress} className="h-1.5" />
           
-          {/* Team Count */}
+          {/* Enhanced Team Count */}
           {team.length > 0 && (
-            <div className="flex items-center justify-end text-xs text-muted-foreground mt-2">
-              <Users className="h-3 w-3 mr-1.5" />
-              <span>{team.length} member{team.length !== 1 ? 's' : ''}</span>
+            <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200/50 dark:border-slate-600/50">
+              <div className="flex items-center text-slate-500 dark:text-slate-400">
+                <Users className="h-3 w-3 mr-1.5 text-blue-600 dark:text-blue-400" />
+                <span className="font-medium">{team.length} member{team.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div className="flex -space-x-1">
+                {team.slice(0, 3).map((member) => (
+                  <div
+                    key={member.id}
+                    className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 border-2 border-white dark:border-slate-800 flex items-center justify-center text-xs font-bold text-white"
+                    title={member.name}
+                  >
+                    {member.name.charAt(0).toUpperCase()}
+                  </div>
+                ))}
+                {team.length > 3 && (
+                  <div className="w-6 h-6 rounded-full bg-slate-400 border-2 border-white dark:border-slate-800 flex items-center justify-center text-xs font-bold text-white">
+                    +{team.length - 3}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

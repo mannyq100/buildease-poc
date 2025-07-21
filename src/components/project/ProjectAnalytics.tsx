@@ -43,7 +43,8 @@ import {
   FileBarChart,
   Download,
   Target,
-  Shield
+  Shield,
+  Users
 } from 'lucide-react';
 
 // Mock analytics data
@@ -56,14 +57,6 @@ const progressData = [
   { week: 'Week 6', planned: 60, actual: 55, efficiency: 92 },
 ];
 
-const budgetTrendData = [
-  { month: 'Jan', budgeted: 25000, spent: 22000, forecast: 24000 },
-  { month: 'Feb', budgeted: 30000, spent: 28500, forecast: 29000 },
-  { month: 'Mar', budgeted: 35000, spent: 31000, forecast: 33000 },
-  { month: 'Apr', budgeted: 40000, spent: 38000, forecast: 39000 },
-  { month: 'May', budgeted: 28000, spent: 26500, forecast: 27500 },
-  { month: 'Jun', budgeted: 32000, spent: 0, forecast: 30000 },
-];
 
 
 const categoryBreakdown = [
@@ -115,7 +108,7 @@ const riskFactors = [
 
 const keyMetrics = {
   overallProgress: 65,
-  budgetUtilization: 72,
+  teamEfficiency: 92,
   scheduleVariance: -3, // negative means ahead of schedule
   qualityScore: 94,
   safetyScore: 98,
@@ -245,21 +238,21 @@ export function ProjectAnalytics({ projectId: _projectId, className }: ProjectAn
           </CardContent>
         </Card>
 
-        <Card className="group border-slate-200/60 dark:border-slate-700/60 shadow-lg bg-gradient-to-br from-white via-slate-50/30 to-buildease-orange-50/10 dark:from-slate-900 dark:via-slate-800/30 dark:to-buildease-orange-950/10 backdrop-blur-sm rounded-2xl overflow-hidden hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
+        <Card className="group border-slate-200/60 dark:border-slate-700/60 shadow-lg bg-gradient-to-br from-white via-slate-50/30 to-amber-50/10 dark:from-slate-900 dark:via-slate-800/30 dark:to-amber-950/10 backdrop-blur-sm rounded-2xl overflow-hidden hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-buildease-orange-500 to-buildease-orange-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                {getMetricIcon('budget')}
+              <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <Clock className="h-5 w-5 text-white" />
               </div>
               <div className="text-right">
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Budget</p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white">{keyMetrics.budgetUtilization}%</p>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Efficiency</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{keyMetrics.teamEfficiency}%</p>
               </div>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center text-xs">
-                {getMetricTrend(3, false)}
-                <span className="ml-1 font-medium text-red-600 dark:text-red-400">+3% this week</span>
+                {getMetricTrend(2, true)}
+                <span className="ml-1 font-medium text-emerald-600 dark:text-emerald-400">+2% this week</span>
               </div>
             </div>
           </CardContent>
@@ -399,17 +392,17 @@ export function ProjectAnalytics({ projectId: _projectId, className }: ProjectAn
           </CardContent>
         </Card>
 
-        {/* Budget Trend */}
-        <Card className="border-slate-200/60 dark:border-slate-700/60 shadow-xl bg-gradient-to-br from-white via-slate-50/30 to-orange-50/10 dark:from-slate-900 dark:via-slate-800/30 dark:to-orange-950/10 backdrop-blur-sm rounded-2xl overflow-hidden">
-          <CardHeader className="pb-4 bg-gradient-to-r from-slate-50/80 to-orange-50/40 dark:from-slate-800/80 dark:to-orange-950/40 border-b border-slate-200/50 dark:border-slate-700/50">
+        {/* Team Performance */}
+        <Card className="border-slate-200/60 dark:border-slate-700/60 shadow-xl bg-gradient-to-br from-white via-slate-50/30 to-purple-50/10 dark:from-slate-900 dark:via-slate-800/30 dark:to-purple-950/10 backdrop-blur-sm rounded-2xl overflow-hidden">
+          <CardHeader className="pb-4 bg-gradient-to-r from-slate-50/80 to-purple-50/40 dark:from-slate-800/80 dark:to-purple-950/40 border-b border-slate-200/50 dark:border-slate-700/50">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
-                <DollarSign className="h-5 w-5 text-white" />
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+                <Users className="h-5 w-5 text-white" />
               </div>
               <div>
-                <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">Budget Trend</CardTitle>
+                <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">Team Performance</CardTitle>
                 <CardDescription className="text-slate-600 dark:text-slate-400">
-                  Monthly budget allocation vs spending analysis
+                  Weekly team productivity and task completion
                 </CardDescription>
               </div>
             </div>
@@ -417,20 +410,23 @@ export function ProjectAnalytics({ projectId: _projectId, className }: ProjectAn
           <CardContent className="p-6">
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={budgetTrendData}>
+                <AreaChart data={progressData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.3} />
                   <XAxis 
-                    dataKey="month" 
+                    dataKey="week" 
                     tick={{ fontSize: 12, fill: '#64748b' }}
                     axisLine={{ stroke: '#e2e8f0' }}
                   />
                   <YAxis 
                     tick={{ fontSize: 12, fill: '#64748b' }}
                     axisLine={{ stroke: '#e2e8f0' }}
-                    tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
                   />
                   <Tooltip 
-                    formatter={(value) => [`$${value.toLocaleString()}`, '']}
+                    formatter={(value, name) => [
+                      name === 'efficiency' ? `${value}%` : value,
+                      name === 'planned' ? 'Planned Tasks' : 
+                      name === 'actual' ? 'Completed Tasks' : 'Efficiency'
+                    ]}
                     contentStyle={{
                       backgroundColor: 'white',
                       border: '1px solid #e2e8f0',
@@ -438,32 +434,21 @@ export function ProjectAnalytics({ projectId: _projectId, className }: ProjectAn
                       boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
                     }}
                   />
-                  <Line 
+                  <Area 
                     type="monotone" 
-                    dataKey="budgeted" 
-                    stroke="#3b82f6" 
+                    dataKey="efficiency" 
+                    stroke="#8b5cf6" 
+                    fill="url(#efficiencyGradient)" 
+                    fillOpacity={0.6}
                     strokeWidth={3}
-                    dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="spent" 
-                    stroke="#10b981" 
-                    strokeWidth={3}
-                    dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, stroke: '#10b981', strokeWidth: 2 }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="forecast" 
-                    stroke="#f59e0b" 
-                    strokeWidth={3}
-                    strokeDasharray="8 4"
-                    dot={{ fill: '#f59e0b', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, stroke: '#f59e0b', strokeWidth: 2 }}
-                  />
-                </LineChart>
+                  <defs>
+                    <linearGradient id="efficiencyGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.1}/>
+                    </linearGradient>
+                  </defs>
+                </AreaChart>
               </ResponsiveContainer>
             </div>
           </CardContent>

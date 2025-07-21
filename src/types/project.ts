@@ -5,6 +5,20 @@ export type ProjectStatus = 'active' | 'planning' | 'completed' | 'upcoming' | '
 export type PriorityLevel = 'High' | 'Medium' | 'Low';
 export type ViewMode = 'grid' | 'list';
 
+export interface ProjectBudget {
+  allocated?: number;
+  spent?: number;
+  currency?: string;
+}
+
+export interface ProjectImage {
+  id: string;
+  url: string;
+  caption?: string;
+  uploadedAt: Date;
+  type: 'profile' | 'inspiration' | 'progress';
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -12,14 +26,17 @@ export interface Project {
   type: string;
   location: string;
   description: string;
-  budget: number;
+  budget: number | ProjectBudget; // Support both old and new formats
   spent: number;
   progress: number;
   status: ProjectStatus;
   startDate: Date;
   endDate: Date;
   imageUrl: string;
-  teamMembers: string[];
+  profileImage?: string;
+  inspirationalImages?: ProjectImage[];
+  progressImages?: ProjectImage[];
+  teamMembers: TeamMember[];
   tags: string[];
   phases: Phase[];
   activities: Activity[];

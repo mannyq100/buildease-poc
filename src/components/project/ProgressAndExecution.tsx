@@ -3,13 +3,9 @@ import { cn } from '@/utils/core/ui';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TimelineView } from '@/components/plan';
-import { ProjectAnalytics } from '@/components/project/ProjectAnalytics';
 import { 
   Clock, 
-  BarChart3, 
-  TrendingUp, 
   Target,
   Zap,
   Activity
@@ -32,7 +28,7 @@ export function ProgressAndExecution({
   className,
   onUpdateProgress 
 }: ProgressAndExecutionProps) {
-  const [activeTab, setActiveTab] = useState('timeline');
+  // Removed activeTab state since we only have timeline now
 
   if (!plan) {
     return (
@@ -59,7 +55,7 @@ export function ProgressAndExecution({
             Progress & Execution
           </h3>
           <p className="text-sm text-buildease-blue-700 dark:text-buildease-blue-300">
-            Track timeline progress and analyze project performance
+            Track timeline progress and manage project execution
           </p>
         </div>
         
@@ -83,88 +79,44 @@ export function ProgressAndExecution({
         </div>
       </div>
 
-      {/* Tabbed Content */}
+      {/* Timeline Content */}
       <Card className="border-buildease-blue-200/30 dark:border-buildease-blue-800/30">
-        <CardContent className="p-0">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="border-b border-buildease-blue-200/30 dark:border-buildease-blue-800/30">
-              <TabsList className="grid w-full grid-cols-2 bg-transparent h-auto p-0 rounded-none">
-                <TabsTrigger 
-                  value="timeline" 
-                  className="data-[state=active]:bg-buildease-blue-50 dark:data-[state=active]:bg-buildease-blue-950/20 data-[state=active]:text-buildease-blue-700 dark:data-[state=active]:text-buildease-blue-300 data-[state=active]:border-b-2 data-[state=active]:border-buildease-blue-500 rounded-none py-4"
-                >
-                  <Clock className="h-4 w-4 mr-2" />
-                  Timeline & Phases
+        <CardContent className="p-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-medium text-slate-900 dark:text-white flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Project Timeline
                   <Badge variant="outline" className="ml-2 bg-buildease-blue-100 text-buildease-blue-700 border-buildease-blue-300">
-                    {phaseCount}
+                    {phaseCount} Phases
                   </Badge>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="analytics" 
-                  className="data-[state=active]:bg-buildease-blue-50 dark:data-[state=active]:bg-buildease-blue-950/20 data-[state=active]:text-buildease-blue-700 dark:data-[state=active]:text-buildease-blue-300 data-[state=active]:border-b-2 data-[state=active]:border-buildease-blue-500 rounded-none py-4"
-                >
-                  <BarChart3 className="h-4 w-4 mr-2" />
-                  Analytics & Reports
-                  <Badge variant="outline" className="ml-2 bg-emerald-100 text-emerald-700 border-emerald-300">
-                    Live
-                  </Badge>
-                </TabsTrigger>
-              </TabsList>
+                </h4>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Manage phases, tasks, and project schedule
+                </p>
+              </div>
+              <Button
+                onClick={() => modalHandlersRef.current?.openPhaseModal('', true)}
+                size="sm"
+                className="bg-buildease-blue-600 hover:bg-buildease-blue-700 text-white"
+              >
+                <Zap className="h-4 w-4 mr-2" />
+                Add Phase
+              </Button>
             </div>
 
-            <TabsContent value="timeline" className="p-6 mt-0">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium text-slate-900 dark:text-white">Project Timeline</h4>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
-                      Manage phases, tasks, and project schedule
-                    </p>
-                  </div>
-                  <Button
-                    onClick={() => modalHandlersRef.current?.openPhaseModal('', true)}
-                    size="sm"
-                    className="bg-buildease-blue-600 hover:bg-buildease-blue-700 text-white"
-                  >
-                    <Zap className="h-4 w-4 mr-2" />
-                    Add Phase
-                  </Button>
-                </div>
-
-                <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
-                  <TimelineView
-                    plan={plan}
-                    onEditPhase={(phaseId) => modalHandlersRef.current?.openPhaseModal(phaseId)}
-                    onAddTask={(phaseId) => modalHandlersRef.current?.openTaskModal(phaseId, '', true)}
-                    onEditTask={(phaseId, taskId) => modalHandlersRef.current?.openTaskModal(phaseId, taskId)}
-                    onEditDates={(type, phaseId) => modalHandlersRef.current?.openDateModal(type, phaseId)}
-                    onReorderPhase={(activeId, overId) => console.log('Reorder:', activeId, overId)}
-                  />
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="analytics" className="p-6 mt-0">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium text-slate-900 dark:text-white">Performance Analytics</h4>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
-                      Insights, metrics, and progress analysis
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300">
-                      <TrendingUp className="h-3 w-3 mr-1" />
-                      On Track
-                    </Badge>
-                  </div>
-                </div>
-
-                <ProjectAnalytics projectId={projectId} />
-              </div>
-            </TabsContent>
-          </Tabs>
+            <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+              <TimelineView
+                plan={plan}
+                onEditPhase={(phaseId) => modalHandlersRef.current?.openPhaseModal(phaseId)}
+                onAddTask={(phaseId) => modalHandlersRef.current?.openTaskModal(phaseId, '', true)}
+                onEditTask={(phaseId, taskId) => modalHandlersRef.current?.openTaskModal(phaseId, taskId)}
+                onEditDates={(type, phaseId) => modalHandlersRef.current?.openDateModal(type, phaseId)}
+                onReorderPhase={(activeId, overId) => console.log('Reorder:', activeId, overId)}
+              />
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

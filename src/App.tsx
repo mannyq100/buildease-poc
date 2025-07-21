@@ -6,7 +6,8 @@ import { ToastContextProvider } from "@/components/ui/toast-context";
 import { HelmetProvider } from "react-helmet-async";
 
 // Libraries
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from '@/lib/queryClient';
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { LazyMotion, domAnimation } from "framer-motion";
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -58,18 +59,8 @@ const PageLoader = () => (
   </div>
 );
 
-// Set up default query client options with better user feedback
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      // Enable React 19 optimizations
-      gcTime: 10 * 60 * 1000, // 10 minutes
-    },
-  },
-});
+// Mobile-optimized query client imported from lib/queryClient.ts
+// Configured for construction site usage with unreliable connections
 
 // Environment-specific configurations
 if (isDevelopment()) {
@@ -157,7 +148,6 @@ function App() {
                         {/* Project management routes */}
                         <Route path="create-project" element={<CreateProject />} />
                         <Route path="projects" element={<Projects />} />
-                        <Route path="project-details" element={<ProjectDetails />} />
                         <Route path="project/:id" element={<ProjectDetails />} />
                         
                         {/* Phase management routes */}

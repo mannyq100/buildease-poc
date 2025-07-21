@@ -3,7 +3,8 @@ import { cn } from "@/utils/core/ui";
 import type { Project } from "@/types/project";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { DollarSign, Users, MapPin, Clock } from "lucide-react";
+import { DollarSign, Users, MapPin, Clock, Building } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export interface ProjectStatusHeroProps {
   project: Project;
@@ -11,6 +12,8 @@ export interface ProjectStatusHeroProps {
   healthStatus?: "healthy" | "warning" | "critical";
   variant?: "default" | "compact";
   className?: string;
+  onClick?: () => void;
+  clickable?: boolean;
 }
 
 /**
@@ -20,7 +23,9 @@ export interface ProjectStatusHeroProps {
 const ProjectStatusHero = React.forwardRef<
   HTMLDivElement,
   ProjectStatusHeroProps
->(({ className, project, progress, healthStatus, variant, ...props }, ref) => {
+>(({ className, project, progress, healthStatus, variant, onClick, clickable = true, ...props }, ref) => {
+  const navigate = useNavigate();
+  const [imageError, setImageError] = React.useState(false);
 
   // Calculate days left
   const daysLeft = React.useMemo(() => {
@@ -32,10 +37,35 @@ const ProjectStatusHero = React.forwardRef<
     return diffDays > 0 ? diffDays : 0;
   }, [project.endDate]);
 
+  // Handle card click for navigation
+  const handleCardClick = () => {
+    if (onClick) {
+      onClick();
+    } else if (clickable) {
+      navigate(`/project/${project.id}`);
+    }
+  };
+
+  // Get budget value - handle both old and new budget structures
+  const getBudgetValue = () => {
+    if (typeof project.budget === 'object' && project.budget?.allocated) {
+      return project.budget.allocated;
+    }
+    if (typeof project.budget === 'number') {
+      return project.budget;
+    }
+    return 0;
+  };
+
   return (
       <Card 
         ref={ref} 
-        className={cn('overflow-hidden border border-slate-200/40 dark:border-slate-700/40 shadow-xl hover:shadow-2xl transition-all duration-700 bg-gradient-to-br from-white via-buildease-blue-50/30 to-buildease-orange-50/20 dark:from-gray-900 dark:via-buildease-blue-950/30 dark:to-buildease-orange-950/20 backdrop-blur-md rounded-2xl relative group', className)}
+        className={cn(
+          'overflow-hidden border border-slate-200/40 dark:border-slate-700/40 shadow-xl hover:shadow-2xl transition-all duration-700 bg-gradient-to-br from-white via-buildease-blue-50/30 to-buildease-orange-50/20 dark:from-gray-900 dark:via-buildease-blue-950/30 dark:to-buildease-orange-950/20 backdrop-blur-md rounded-2xl relative group',
+          clickable && 'cursor-pointer hover:scale-[1.02] active:scale-[0.98]',
+          className
+        )}
+        onClick={clickable ? handleCardClick : undefined}
         {...props}
       >
         
@@ -67,22 +97,27 @@ const ProjectStatusHero = React.forwardRef<
               </p>
             </div>
             
-            {/* Project image */}
-            {project.imageUrl && (
-              <div className="flex-shrink-0">
-                <div className="relative group">
-                  <img 
-                    src={project.imageUrl} 
-                    className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-2xl object-cover shadow-lg group-hover:shadow-xl transition-all duration-300 ring-2 ring-white/50 dark:ring-slate-700/50"
-                    alt={project.name}
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-transparent via-transparent to-white/20 group-hover:to-white/30 transition-all duration-300" />
-                </div>
+            {/* Project image with fallback */}
+            <div className="flex-shrink-0">
+              <div className="relative group">
+                {project.imageUrl && !imageError ? (
+                  <>
+                    <img 
+                      src={project.imageUrl} 
+                      className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-2xl object-cover shadow-lg group-hover:shadow-xl transition-all duration-300 ring-2 ring-white/50 dark:ring-slate-700/50"
+                      alt={project.name}
+                      onError={() => setImageError(true)}
+                    />
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-transparent via-transparent to-white/20 group-hover:to-white/30 transition-all duration-300" />
+                  </>
+                ) : (
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-2xl bg-gradient-to-br from-buildease-blue-100 to-buildease-blue-200 dark:from-buildease-blue-800 dark:to-buildease-blue-900 shadow-lg group-hover:shadow-xl transition-all duration-300 ring-2 ring-white/50 dark:ring-slate-700/50 flex items-center justify-center">
+                    <Building className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 text-buildease-blue-600 dark:text-buildease-blue-400" />
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-transparent via-transparent to-white/20 group-hover:to-white/30 transition-all duration-300" />
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
           
           {/* Enhanced Progress section */}
@@ -135,7 +170,7 @@ const ProjectStatusHero = React.forwardRef<
                 <DollarSign className="h-7 w-7 text-buildease-blue-600 dark:text-buildease-blue-400 transition-all duration-300 group-hover:scale-110 group-hover:text-buildease-blue-700 dark:group-hover:text-buildease-blue-300" />
               </div>
               <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-2 transition-colors duration-200 group-hover:text-buildease-blue-700 dark:group-hover:text-buildease-blue-300">
-                ${Math.round(project.budget / 1000)}K
+                ${Math.round(getBudgetValue() / 1000)}K
               </div>
               <div className="text-sm text-buildease-blue-600 dark:text-buildease-blue-400 font-semibold">Total Budget</div>
             </div>
