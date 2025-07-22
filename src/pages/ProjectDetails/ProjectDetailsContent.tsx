@@ -56,7 +56,9 @@ import {
   Save
 } from 'lucide-react';
 import { PhaseSelector } from '@/components/shared/forms/PhaseSelector';
+import { EnhancedPhaseSelector } from '@/components/shared/forms/EnhancedPhaseSelector';
 import { ProjectType } from '@/utils/phaseUtils';
+import { ProjectContext } from '@/utils/enhancedPhaseUtils';
 import { adaptSupabaseProjectToProject } from '@/utils/dataAdapters';
 
 interface ProjectDetailsContentProps {
@@ -1350,11 +1352,48 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
             {/* Phase Template Selection */}
             {modalMode === 'create' && (
               <>
-                <div className="bg-gradient-to-r from-buildease-blue-500 to-buildease-blue-600 rounded-lg p-4 text-white">
+                {/* Enhanced Phase Selection */}
+                <div className="bg-white rounded-lg border border-slate-200 p-4">
                   <div className="flex items-center mb-3">
                     <Building2 className="h-5 w-5 mr-2" />
                     <h3 className="font-semibold">Choose Phase Template</h3>
                   </div>
+                  
+                  {/* Project Context Display */}
+                  {projectData && (
+                    <div className="mb-4 p-3 bg-buildease-blue-50 rounded-lg border border-buildease-blue-200">
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-4">
+                          <span className="font-medium text-slate-700">
+                            {projectData.type?.replace('_', ' ').replace('-', ' ') || 'Standard Project'}
+                          </span>
+                          {projectData.details?.specs?.building_size && (
+                            <>
+                              <span className="text-slate-500">•</span>
+                              <span className="text-slate-600">
+                                {typeof projectData.details.specs.building_size === 'object' 
+                                  ? `${projectData.details.specs.building_size.value || projectData.details.specs.building_size} ${projectData.details.specs.building_size.unit || 'sq-m'}`
+                                  : `${projectData.details.specs.building_size} sq-m`
+                                }
+                              </span>
+                            </>
+                          )}
+                          {projectData.details?.specs?.floors && (
+                            <>
+                              <span className="text-slate-500">•</span>
+                              <span className="text-slate-600">
+                                {projectData.details.specs.floors} floor{projectData.details.specs.floors > 1 ? 's' : ''}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        <div className="text-xs text-buildease-blue-600 font-medium">
+                          Smart Recommendations
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="bg-white/10 rounded-lg p-3 backdrop-blur-sm">
                     <PhaseSelector
                       projectType={projectData?.type as ProjectType || 'new_construction'}

@@ -30,16 +30,16 @@ export async function createProject(formData: CreateProjectFormValues, userId: s
       
       // Structure details in JSONB format according to schema
       details: {
-        // Location information - simplified structure to match migration
+        // Location information - new structured format
         location: {
-          region: formData.region,
-          district: formData.location, // Using location as district
-          gps_code: null,
-          coordinates: null,
-          // Additional location data
-          country: formData.country,
-          terrain: formData.terrain || null,
-          nearby_landmarks: formData.nearbyLandmarks || null
+          street_address: formData.location || undefined,
+          city: formData.city || undefined,
+          region_or_state: formData.region || undefined,
+          country: formData.country || undefined,
+          gps_coordinates: undefined, // Can be added later via geocoding
+          // Additional location metadata
+          terrain: formData.terrain || undefined,
+          nearby_landmarks: formData.nearbyLandmarks || undefined
         },
         
         // Specifications
@@ -335,7 +335,7 @@ async function initiateAIPlanGeneration(project: Project, _formData: CreateProje
         name: project.name,
         description: project.description || undefined,
         type: project.details?.project_type || '',
-        location: project.details?.location?.district || '',
+        location: project.details?.location?.street_address || project.details?.location?.city || '',
         budget: project.budget?.allocated || 0,
         specs: {
           plotSize: project.details?.specs?.plot_size || null,

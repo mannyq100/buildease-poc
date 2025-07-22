@@ -1,580 +1,487 @@
 export const CONSTRUCTION_PHASES_WITH_TASKS = {
     'PRE_CONSTRUCTION': {
-      alternativeNames: ['Planning Phase', 'Design Phase', 'Preparatory Works'],
       description: 'All activities before physical construction begins',
       tasks: [
         {
           id: 'site_acquisition',
-          name: 'Site Acquisition',
-          alternativeNames: ['Land Purchase', 'Plot Acquisition']
+          name: 'Site Acquisition'
         },
         {
           id: 'architectural_design',
-          name: 'Architectural Design',
-          alternativeNames: ['Design Development', 'Schematic Design']
+          name: 'Architectural Design'
         },
         {
           id: 'structural_design',
-          name: 'Structural Engineering',
-          alternativeNames: ['Structural Calculations', 'Engineering Design']
+          name: 'Structural Engineering'
         },
         {
           id: 'permits',
-          name: 'Permits & Approvals',
-          alternativeNames: ['Building Permits', 'Planning Permission', 'Building Consent']
+          name: 'Permits & Approvals'
         },
         {
           id: 'contractor_selection',
-          name: 'Contractor Selection',
-          alternativeNames: ['Tender Process', 'Bidding', 'Procurement']
+          name: 'Contractor Selection'
         }
       ]
     },
   
     'SITE_PREPARATION': {
-      alternativeNames: ['Site Works', 'Ground Preparation', 'Site Setup'],
       description: 'Preparing the site for construction',
       tasks: [
         {
           id: 'site_clearing',
-          name: 'Site Clearing',
-          alternativeNames: ['Bush Clearing', 'Vegetation Removal', 'Demolition']
+          name: 'Site Clearing'
         },
         {
           id: 'surveying',
-          name: 'Surveying & Setting Out',
-          alternativeNames: ['Site Survey', 'Plot Demarcation', 'Staking']
+          name: 'Surveying & Setting Out'
         },
         {
           id: 'temporary_facilities',
-          name: 'Temporary Facilities',
-          alternativeNames: ['Site Office', 'Storage Setup', 'Utilities Connection']
+          name: 'Temporary Facilities'
         },
         {
           id: 'excavation',
-          name: 'Excavation',
-          alternativeNames: ['Earthworks', 'Digging', 'Trenching']
+          name: 'Excavation'
         },
         {
           id: 'soil_treatment',
-          name: 'Soil Treatment',
-          alternativeNames: ['Termite Treatment', 'Soil Stabilization']
+          name: 'Soil Treatment'
         }
       ]
     },
   
     'FOUNDATION': {
-      alternativeNames: ['Substructure', 'Base Construction', 'Footings'],
       description: 'Building the foundation system',
       tasks: [
         {
           id: 'foundation_excavation',
-          name: 'Foundation Excavation',
-          alternativeNames: ['Footing Excavation', 'Trench Digging']
+          name: 'Foundation Excavation'
         },
         {
           id: 'lean_concrete',
-          name: 'Lean Concrete/Blinding',
-          alternativeNames: ['Mud Mat', 'Leveling Course']
+          name: 'Lean Concrete/Blinding'
         },
         {
           id: 'reinforcement',
-          name: 'Foundation Reinforcement',
-          alternativeNames: ['Rebar Installation', 'Steel Fixing']
+          name: 'Foundation Reinforcement'
         },
         {
           id: 'foundation_concrete',
-          name: 'Foundation Concrete Pour',
-          alternativeNames: ['Footing Concrete', 'Base Concrete']
+          name: 'Foundation Concrete Pour'
         },
         {
           id: 'waterproofing',
-          name: 'Waterproofing/DPC',
-          alternativeNames: ['Damp Proof Course', 'Moisture Barrier', 'Tanking']
+          name: 'Waterproofing/DPC'
         },
         {
           id: 'backfilling',
-          name: 'Backfilling',
-          alternativeNames: ['Earth Filling', 'Soil Replacement']
+          name: 'Backfilling'
         }
       ]
     },
   
     'STRUCTURAL_FRAME': {
-      alternativeNames: ['Superstructure', 'Structural Work', 'Frame Construction'],
       description: 'Main structural elements above foundation',
       tasks: [
         {
           id: 'columns',
-          name: 'Columns/Posts',
-          alternativeNames: ['Pillars', 'Vertical Members', 'Uprights']
+          name: 'Columns/Posts'
         },
         {
           id: 'beams',
-          name: 'Beams & Lintels',
-          alternativeNames: ['Horizontal Members', 'Ring Beams', 'Headers']
+          name: 'Beams & Lintels'
         },
         {
           id: 'floor_slabs',
-          name: 'Floor Slabs',
-          alternativeNames: ['Suspended Floors', 'Concrete Decking', 'Floor System']
+          name: 'Floor Slabs'
         },
         {
           id: 'stairs',
-          name: 'Staircase Construction',
-          alternativeNames: ['Stairs', 'Steps', 'Stairway']
+          name: 'Staircase Construction'
         },
         {
           id: 'lift_shaft',
-          name: 'Lift/Elevator Shaft',
-          alternativeNames: ['Elevator Core', 'Lift Well']
+          name: 'Lift/Elevator Shaft'
         }
       ]
     },
   
     'WALLS_AND_PARTITIONS': {
-      alternativeNames: ['Masonry Work', 'Wall Construction', 'Enclosure'],
       description: 'Building walls and internal partitions',
       tasks: [
         {
           id: 'external_walls',
-          name: 'External Wall Construction',
-          alternativeNames: ['Perimeter Walls', 'Load Bearing Walls', 'Brick/Block Work']
+          name: 'External Wall Construction'
         },
         {
           id: 'internal_walls',
-          name: 'Internal Partitions',
-          alternativeNames: ['Partition Walls', 'Room Divisions', 'Non-Load Bearing Walls']
+          name: 'Internal Partitions'
         },
         {
           id: 'wall_ties',
-          name: 'Wall Ties & Reinforcement',
-          alternativeNames: ['Wall Connectors', 'Structural Ties']
+          name: 'Wall Ties & Reinforcement'
         },
         {
           id: 'openings',
-          name: 'Door & Window Openings',
-          alternativeNames: ['Wall Openings', 'Fenestration Prep']
+          name: 'Door & Window Openings'
         }
       ]
     },
   
     'ROOFING': {
-      alternativeNames: ['Roof Construction', 'Roof Works', 'Top Structure'],
       description: 'Complete roofing system',
       tasks: [
         {
           id: 'roof_structure',
-          name: 'Roof Structure',
-          alternativeNames: ['Roof Framing', 'Trusses', 'Rafters', 'Roof Skeleton']
+          name: 'Roof Structure'
         },
         {
           id: 'roof_deck',
-          name: 'Roof Decking',
-          alternativeNames: ['Roof Sheathing', 'Roof Boarding', 'Substrate']
+          name: 'Roof Decking'
         },
         {
           id: 'roof_insulation',
-          name: 'Roof Insulation',
-          alternativeNames: ['Thermal Barrier', 'Roof Batting']
+          name: 'Roof Insulation'
         },
         {
           id: 'roof_membrane',
-          name: 'Waterproof Membrane',
-          alternativeNames: ['Roof Felt', 'Underlayment', 'Vapor Barrier']
+          name: 'Waterproof Membrane'
         },
         {
           id: 'roof_covering',
-          name: 'Roof Covering',
-          alternativeNames: ['Tiles', 'Shingles', 'Metal Sheets', 'Roof Cladding']
+          name: 'Roof Covering'
         },
         {
           id: 'roof_drainage',
-          name: 'Gutters & Downpipes',
-          alternativeNames: ['Rainwater Goods', 'Roof Drainage', 'Storm Water']
+          name: 'Gutters & Downpipes'
         }
       ]
     },
   
     'BUILDING_ENVELOPE': {
-      alternativeNames: ['External Finishes', 'Weatherproofing', 'Façade'],
       description: 'External building enclosure',
       tasks: [
         {
           id: 'external_render',
-          name: 'External Rendering/Plastering',
-          alternativeNames: ['Stucco', 'External Plaster', 'Roughcast']
+          name: 'External Rendering/Plastering'
         },
         {
           id: 'cladding',
-          name: 'External Cladding',
-          alternativeNames: ['Siding', 'Façade Panels', 'Weather Board']
+          name: 'External Cladding'
         },
         {
           id: 'windows',
-          name: 'Window Installation',
-          alternativeNames: ['Glazing', 'Fenestration', 'Window Fitting']
+          name: 'Window Installation'
         },
         {
           id: 'external_doors',
-          name: 'External Door Installation',
-          alternativeNames: ['Entry Doors', 'Main Doors', 'Access Doors']
+          name: 'External Door Installation'
         },
         {
           id: 'weather_sealing',
-          name: 'Weather Sealing',
-          alternativeNames: ['Caulking', 'Sealing', 'Weatherstripping']
+          name: 'Weather Sealing'
         }
       ]
     },
   
     'MEP_ROUGH_IN': {
-      alternativeNames: ['Services First Fix', 'Rough Services', 'MEP Installation'],
       description: 'Mechanical, Electrical, and Plumbing rough installation',
       tasks: [
         {
           id: 'electrical_conduits',
-          name: 'Electrical Conduits & Wiring',
-          alternativeNames: ['Cable Laying', 'Wire Pulling', 'Electrical Rough']
+          name: 'Electrical Conduits & Wiring'
         },
         {
           id: 'plumbing_pipes',
-          name: 'Plumbing Pipes',
-          alternativeNames: ['Water Lines', 'Drainage Pipes', 'Sanitary Rough']
+          name: 'Plumbing Pipes'
         },
         {
           id: 'hvac_ducts',
-          name: 'HVAC Ductwork',
-          alternativeNames: ['Air Conditioning Ducts', 'Ventilation', 'Mechanical Rough']
+          name: 'HVAC Ductwork'
         },
         {
           id: 'fire_systems',
-          name: 'Fire Protection Systems',
-          alternativeNames: ['Sprinklers', 'Fire Pipes', 'Fire Safety']
+          name: 'Fire Protection Systems'
         },
         {
           id: 'data_cabling',
-          name: 'Data & Communication Cabling',
-          alternativeNames: ['IT Infrastructure', 'Network Cabling', 'Telecom']
+          name: 'Data & Communication Cabling'
         }
       ]
     },
   
     'INTERIOR_CONSTRUCTION': {
-      alternativeNames: ['Interior Works', 'Internal Construction', 'Fit-Out Prep'],
       description: 'Interior construction before finishes',
       tasks: [
         {
           id: 'insulation',
-          name: 'Wall & Ceiling Insulation',
-          alternativeNames: ['Thermal Insulation', 'Acoustic Insulation', 'Batting']
+          name: 'Wall & Ceiling Insulation'
         },
         {
           id: 'drywall',
-          name: 'Drywall/Plasterboard',
-          alternativeNames: ['Gypsum Board', 'Sheetrock', 'Wall Lining']
+          name: 'Drywall/Plasterboard'
         },
         {
           id: 'plastering',
-          name: 'Internal Plastering',
-          alternativeNames: ['Skim Coating', 'Wall Rendering', 'Cement Plaster']
+          name: 'Internal Plastering'
         },
         {
           id: 'screeding',
-          name: 'Floor Screeding',
-          alternativeNames: ['Floor Leveling', 'Cement Screed', 'Floor Topping']
+          name: 'Floor Screeding'
         },
         {
           id: 'ceiling_framing',
-          name: 'Ceiling Framework',
-          alternativeNames: ['False Ceiling Frame', 'Suspended Ceiling Grid']
+          name: 'Ceiling Framework'
         }
       ]
     },
   
     'INTERIOR_FINISHES': {
-      alternativeNames: ['Finishing Works', 'Final Finishes', 'Decoration'],
       description: 'All interior finishing work',
       tasks: [
         {
           id: 'wall_primer',
-          name: 'Primer/Sealer Application',
-          alternativeNames: ['Base Coat', 'Primer Coat', 'Sealer']
+          name: 'Primer/Sealer Application'
         },
         {
           id: 'painting',
-          name: 'Interior Painting',
-          alternativeNames: ['Wall Painting', 'Decoration', 'Color Application']
+          name: 'Interior Painting'
         },
         {
           id: 'wall_tiles',
-          name: 'Wall Tiling',
-          alternativeNames: ['Ceramic Installation', 'Wall Tiles', 'Backsplash']
+          name: 'Wall Tiling'
         },
         {
           id: 'flooring',
-          name: 'Floor Finishes',
-          alternativeNames: ['Floor Tiles', 'Wood Flooring', 'Carpet', 'Vinyl']
+          name: 'Floor Finishes'
         },
         {
           id: 'ceiling_finish',
-          name: 'Ceiling Finishes',
-          alternativeNames: ['Ceiling Tiles', 'Ceiling Paint', 'Decorative Ceiling']
+          name: 'Ceiling Finishes'
         },
         {
           id: 'skirting',
-          name: 'Skirting & Architraves',
-          alternativeNames: ['Baseboards', 'Trim Work', 'Moldings']
+          name: 'Skirting & Architraves'
         }
       ]
     },
   
     'FIXTURES_AND_FITTINGS': {
-      alternativeNames: ['Final Fix', 'Second Fix', 'Fit-Out'],
       description: 'Installing all fixtures and fittings',
       tasks: [
         {
           id: 'internal_doors',
-          name: 'Internal Doors',
-          alternativeNames: ['Room Doors', 'Interior Doors', 'Door Hanging']
+          name: 'Internal Doors'
         },
         {
           id: 'kitchen_cabinets',
-          name: 'Kitchen Installation',
-          alternativeNames: ['Kitchen Units', 'Cabinetry', 'Kitchen Fit-Out']
+          name: 'Kitchen Installation'
         },
         {
           id: 'bathroom_fixtures',
-          name: 'Bathroom Fixtures',
-          alternativeNames: ['Sanitary Ware', 'Plumbing Fixtures', 'White Goods']
+          name: 'Bathroom Fixtures'
         },
         {
           id: 'electrical_fixtures',
-          name: 'Electrical Fixtures',
-          alternativeNames: ['Light Fittings', 'Switches/Sockets', 'Electrical Final']
+          name: 'Electrical Fixtures'
         },
         {
           id: 'built_in_furniture',
-          name: 'Built-in Furniture',
-          alternativeNames: ['Wardrobes', 'Closets', 'Custom Millwork']
+          name: 'Built-in Furniture'
         },
         {
           id: 'appliances',
-          name: 'Appliance Installation',
-          alternativeNames: ['White Goods', 'Kitchen Appliances', 'Equipment']
+          name: 'Appliance Installation'
         }
       ]
     },
   
     'EXTERNAL_WORKS': {
-      alternativeNames: ['Site Development', 'Landscaping', 'Compound Works'],
       description: 'All external development work',
       tasks: [
         {
           id: 'boundary_walls',
-          name: 'Boundary Walls/Fencing',
-          alternativeNames: ['Perimeter Wall', 'Compound Wall', 'Security Fence']
+          name: 'Boundary Walls/Fencing'
         },
         {
           id: 'gates',
-          name: 'Gates Installation',
-          alternativeNames: ['Main Gate', 'Entrance Gates', 'Driveway Gates']
+          name: 'Gates Installation'
         },
         {
           id: 'driveways',
-          name: 'Driveways & Parking',
-          alternativeNames: ['Vehicle Access', 'Car Park', 'Hardstanding']
+          name: 'Driveways & Parking'
         },
         {
           id: 'walkways',
-          name: 'Walkways & Paths',
-          alternativeNames: ['Footpaths', 'Pavements', 'Pedestrian Access']
+          name: 'Walkways & Paths'
         },
         {
           id: 'drainage',
-          name: 'External Drainage',
-          alternativeNames: ['Storm Drains', 'Surface Water', 'Soakaways']
+          name: 'External Drainage'
         },
         {
           id: 'landscaping',
-          name: 'Soft Landscaping',
-          alternativeNames: ['Gardens', 'Planting', 'Lawn Installation']
+          name: 'Soft Landscaping'
         },
         {
           id: 'external_lighting',
-          name: 'External Lighting',
-          alternativeNames: ['Garden Lights', 'Security Lighting', 'Landscape Lighting']
+          name: 'External Lighting'
         }
       ]
     },
   
     'SPECIALIZED_INSTALLATIONS': {
-      alternativeNames: ['Special Systems', 'Additional Features', 'Optional Installations'],
       description: 'Specialized or optional installations',
       tasks: [
         {
           id: 'swimming_pool',
-          name: 'Swimming Pool',
-          alternativeNames: ['Pool Construction', 'Aquatic Features']
+          name: 'Swimming Pool'
         },
         {
           id: 'solar_panels',
-          name: 'Solar System',
-          alternativeNames: ['PV Installation', 'Solar Power', 'Renewable Energy']
+          name: 'Solar System'
         },
         {
           id: 'home_automation',
-          name: 'Smart Home Systems',
-          alternativeNames: ['Building Automation', 'IoT Systems', 'Home Intelligence']
+          name: 'Smart Home Systems'
         },
         {
           id: 'security_systems',
-          name: 'Security Systems',
-          alternativeNames: ['CCTV', 'Alarm Systems', 'Access Control']
+          name: 'Security Systems'
         },
         {
           id: 'elevator',
-          name: 'Elevator/Lift Installation',
-          alternativeNames: ['Lift Installation', 'Vertical Transport']
+          name: 'Elevator/Lift Installation'
         },
         {
           id: 'generator',
-          name: 'Backup Power',
-          alternativeNames: ['Generator Installation', 'UPS Systems', 'Emergency Power']
+          name: 'Backup Power'
         }
       ]
     },
   
     'TESTING_AND_COMMISSIONING': {
-      alternativeNames: ['Quality Control', 'Systems Testing', 'Pre-Handover'],
       description: 'Testing all systems and quality checks',
       tasks: [
         {
           id: 'electrical_testing',
-          name: 'Electrical Testing',
-          alternativeNames: ['Circuit Testing', 'Electrical Certification']
+          name: 'Electrical Testing'
         },
         {
           id: 'plumbing_testing',
-          name: 'Plumbing Testing',
-          alternativeNames: ['Pressure Testing', 'Leak Testing', 'Water Quality']
+          name: 'Plumbing Testing'
         },
         {
           id: 'hvac_commissioning',
-          name: 'HVAC Commissioning',
-          alternativeNames: ['Air Balance', 'System Testing', 'Performance Testing']
+          name: 'HVAC Commissioning'
         },
         {
           id: 'fire_system_testing',
-          name: 'Fire System Testing',
-          alternativeNames: ['Fire Alarm Testing', 'Sprinkler Testing']
+          name: 'Fire System Testing'
         },
         {
           id: 'snagging',
-          name: 'Snagging/Punch List',
-          alternativeNames: ['Defects List', 'Quality Inspection', 'Final Walkthrough']
+          name: 'Snagging/Punch List'
         }
       ]
     },
   
     'PROJECT_COMPLETION': {
-      alternativeNames: ['Handover', 'Project Closeout', 'Final Phase'],
       description: 'Final completion and handover activities',
       tasks: [
         {
           id: 'final_cleaning',
-          name: 'Final Cleaning',
-          alternativeNames: ['Deep Cleaning', 'Construction Cleanup', 'Move-in Ready']
+          name: 'Final Cleaning'
         },
         {
           id: 'final_inspections',
-          name: 'Authority Inspections',
-          alternativeNames: ['Building Control', 'Compliance Inspection', 'COC']
+          name: 'Authority Inspections'
         },
         {
           id: 'documentation',
-          name: 'Documentation Handover',
-          alternativeNames: ['O&M Manuals', 'As-Built Drawings', 'Warranties']
+          name: 'Documentation Handover'
         },
         {
           id: 'training',
-          name: 'User Training',
-          alternativeNames: ['System Training', 'Maintenance Training']
+          name: 'User Training'
         },
         {
           id: 'handover',
-          name: 'Keys Handover',
-          alternativeNames: ['Project Delivery', 'Occupancy', 'Practical Completion']
+          name: 'Keys Handover'
         }
       ]
     },
   
     // Remodeling-Specific Phases
     'DEMOLITION_AND_STRIP_OUT': {
-      alternativeNames: ['Demolition Phase', 'Deconstruction', 'Strip Out'],
       description: 'Removing existing elements (for remodeling projects)',
       isRemodelingPhase: true,
       tasks: [
         {
           id: 'soft_strip',
-          name: 'Soft Strip Out',
-          alternativeNames: ['Non-Structural Removal', 'Interior Strip']
+          name: 'Soft Strip Out'
         },
         {
           id: 'structural_demolition',
-          name: 'Structural Demolition',
-          alternativeNames: ['Wall Removal', 'Structural Alterations']
+          name: 'Structural Demolition'
         },
         {
           id: 'hazmat_removal',
-          name: 'Hazardous Material Removal',
-          alternativeNames: ['Asbestos Removal', 'Lead Paint Removal']
+          name: 'Hazardous Material Removal'
         },
         {
           id: 'salvage',
-          name: 'Salvage Operations',
-          alternativeNames: ['Material Recovery', 'Recycling']
+          name: 'Salvage Operations'
         }
       ]
     },
   
     'STRUCTURAL_MODIFICATIONS': {
-      alternativeNames: ['Structural Alterations', 'Renovation Structure'],
       description: 'Modifying existing structure (for remodeling)',
       isRemodelingPhase: true,
       tasks: [
         {
           id: 'temporary_support',
-          name: 'Temporary Structural Support',
-          alternativeNames: ['Shoring', 'Propping', 'Temporary Works']
+          name: 'Temporary Structural Support'
         },
         {
           id: 'new_openings',
-          name: 'Creating New Openings',
-          alternativeNames: ['Wall Openings', 'Door/Window Additions']
+          name: 'Creating New Openings'
         },
         {
           id: 'structural_reinforcement',
-          name: 'Structural Reinforcement',
-          alternativeNames: ['Strengthening', 'Retrofitting', 'Upgrading']
+          name: 'Structural Reinforcement'
         },
         {
           id: 'extensions',
-          name: 'Building Extensions',
-          alternativeNames: ['Additions', 'Expansions', 'New Wings']
+          name: 'Building Extensions'
         }
       ]
     }
   };
   
+  // Define types for better TypeScript support
+  export type ProjectType = 'residential-single' | 'residential-multi' | 'commercial' | 'renovation';
+  
+  export interface PhaseTemplate {
+    description: string;
+    tasks: {
+      id: string;
+      name: string;
+    }[];
+    isRemodelingPhase?: boolean;
+  }
+  
   // Helper function to get phases for specific project type
-  function getPhasesForProjectType(projectType) {
-    const allPhases = Object.entries(CONSTRUCTION_PHASES_WITH_TASKS);
+  export function getPhasesForProjectType(projectType: ProjectType): [string, PhaseTemplate][] {
+    const allPhases = Object.entries(CONSTRUCTION_PHASES_WITH_TASKS) as [string, PhaseTemplate][];
     
-    if (projectType === 'new_construction') {
-      return allPhases.filter(([key, phase]) => !phase.isRemodelingPhase);
-    } else if (projectType === 'remodeling') {
-      // Include demolition and modification phases for remodeling
+    if (projectType === 'residential-single' || projectType === 'residential-multi' || projectType === 'commercial') {
+      // For new construction projects, exclude remodeling-specific phases
+      return allPhases.filter(([_key, phase]) => !phase.isRemodelingPhase);
+    } else if (projectType === 'renovation') {
+      // For renovation projects, include demolition and modification phases plus core construction phases
       return allPhases.filter(([key, phase]) => {
         const corePhases = ['PRE_CONSTRUCTION', 'MEP_ROUGH_IN', 'INTERIOR_CONSTRUCTION', 
                            'INTERIOR_FINISHES', 'FIXTURES_AND_FITTINGS', 'TESTING_AND_COMMISSIONING', 
@@ -583,5 +490,5 @@ export const CONSTRUCTION_PHASES_WITH_TASKS = {
       });
     }
     
-    return allPhases; // Return all for 'both' or unspecified
+    return allPhases; // Return all phases for unspecified project types
   }

@@ -3,50 +3,43 @@
  * Helper functions for working with flexible phase categories and tasks
  */
 
-import { CONSTRUCTION_PHASES_WITH_TASKS } from '../data/constants/constructionPhasesWithTasks';
-import type { 
-  ProjectType, 
-  PhaseTemplate, 
-  TaskTemplate, 
-  ConstructionPhase 
-} from '../types/constructionPhases';
+import { CONSTRUCTION_PHASES_WITH_TASKS, getPhasesForProjectType } from '../data/constants/constructionPhasesWithTasks';
+import type { ProjectType, PhaseTemplate as ImportedPhaseTemplate } from '../data/constants/constructionPhasesWithTasks';
+
+// Define our own PhaseTemplate interface that matches our cleaned data structure
+export interface PhaseTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  isRemodelingPhase?: boolean;
+  tasks: TaskTemplate[];
+}
+
+export interface TaskTemplate {
+  id: string;
+  name: string;
+}
 
 // Re-export types for convenience
-export type { ProjectType, PhaseTemplate, TaskTemplate };
+export type { ProjectType };
 
 /**
  * Get available phase templates based on project type
  */
 export function getPhaseTemplatesForProjectType(projectType: ProjectType): PhaseTemplate[] {
-  const allPhases = Object.entries(CONSTRUCTION_PHASES_WITH_TASKS);
-  
-  let filteredPhases: [string, any][];
-  
-  if (projectType === 'new_construction') {
-    filteredPhases = allPhases.filter(([key, phase]) => !phase.isRemodelingPhase);
-  } else if (projectType === 'remodeling') {
-    // Include demolition and modification phases for remodeling
-    filteredPhases = allPhases.filter(([key, phase]) => {
-      const corePhases = ['PRE_CONSTRUCTION', 'MEP_ROUGH_IN', 'INTERIOR_CONSTRUCTION', 
-                         'INTERIOR_FINISHES', 'FIXTURES_AND_FITTINGS', 'TESTING_AND_COMMISSIONING', 
-                         'PROJECT_COMPLETION'];
-      return phase.isRemodelingPhase || corePhases.includes(key);
-    });
-  } else {
-    filteredPhases = allPhases; // Return all for 'both' or unspecified
-  }
+  // Use the helper function from constructionPhasesWithTasks.ts
+  const filteredPhases = getPhasesForProjectType(projectType);
   
   return filteredPhases.map(([key, phase]) => ({
     id: key,
-    name: phase.alternativeNames[0] || key.replace(/_/g, ' '),
+    name: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
     description: phase.description,
     category: key,
-    alternativeNames: phase.alternativeNames,
     isRemodelingPhase: phase.isRemodelingPhase,
-    tasks: phase.tasks.map((task: any) => ({
+    tasks: phase.tasks.map(task => ({
       id: task.id,
-      name: task.name,
-      alternativeNames: task.alternativeNames
+      name: task.name
     }))
   }));
 }
@@ -55,20 +48,18 @@ export function getPhaseTemplatesForProjectType(projectType: ProjectType): Phase
  * Get phase template by category
  */
 export function getPhaseTemplateByCategory(category: string): PhaseTemplate | null {
-  const phaseData = CONSTRUCTION_PHASES_WITH_TASKS[category as PhaseCategory];
+  const phaseData = CONSTRUCTION_PHASES_WITH_TASKS[category as keyof typeof CONSTRUCTION_PHASES_WITH_TASKS];
   if (!phaseData) return null;
   
   return {
     id: category,
-    name: phaseData.alternativeNames[0] || category.replace(/_/g, ' '),
+    name: category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
     description: phaseData.description,
     category,
-    alternativeNames: phaseData.alternativeNames,
     isRemodelingPhase: phaseData.isRemodelingPhase,
-    tasks: phaseData.tasks.map((task: any) => ({
+    tasks: phaseData.tasks.map(task => ({
       id: task.id,
-      name: task.name,
-      alternativeNames: task.alternativeNames
+      name: task.name
     }))
   };
 }
@@ -82,23 +73,22 @@ export function getDefaultTasksForPhase(category: string): TaskTemplate[] {
 }
 
 /**
- * Search phase templates by name or alternative names
+ * Search phase templates by name or description
  */
 export function searchPhaseTemplates(query: string, projectType?: ProjectType): PhaseTemplate[] {
   const phases = projectType ? getPhaseTemplatesForProjectType(projectType) : 
-                 getPhaseTemplatesForProjectType('both');
+                 getPhaseTemplatesForProjectType('residential-single'); // Default to residential-single instead of 'both'
   
   const searchTerm = query.toLowerCase();
   
   return phases.filter(phase => 
     phase.name.toLowerCase().includes(searchTerm) ||
-    phase.description.toLowerCase().includes(searchTerm) ||
-    phase.alternativeNames.some(name => name.toLowerCase().includes(searchTerm))
+    phase.description.toLowerCase().includes(searchTerm)
   );
 }
 
 /**
- * Get phase display name (first alternative name or formatted category)
+ * Get phase display name (formatted category)
  */
 export function getPhaseDisplayName(category: string): string {
   const phaseTemplate = getPhaseTemplateByCategory(category);
@@ -124,8 +114,10 @@ export function getAllPhaseCategories(): string[] {
  */
 export function getPhaseCategories() {
   return {
-    newConstruction: getPhaseTemplatesForProjectType('new_construction').map(p => p.category),
-    remodeling: getPhaseTemplatesForProjectType('remodeling').map(p => p.category),
+    residentialSingle: getPhaseTemplatesForProjectType('residential-single').map(p => p.category),
+    residentialMulti: getPhaseTemplatesForProjectType('residential-multi').map(p => p.category),
+    commercial: getPhaseTemplatesForProjectType('commercial').map(p => p.category),
+    renovation: getPhaseTemplatesForProjectType('renovation').map(p => p.category),
     all: getAllPhaseCategories()
   };
 }

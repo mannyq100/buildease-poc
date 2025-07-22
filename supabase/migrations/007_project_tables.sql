@@ -8,12 +8,13 @@ CREATE TABLE construction_mgr.be_project (
     description TEXT,
     status construction_mgr.project_status NOT NULL DEFAULT 'PLANNING',
     details JSONB NOT NULL DEFAULT '{
-      "location": {
-        "region": null,
-        "district": null,
-        "gps_code": null,
-        "coordinates": null
-      },
+    "location": {
+    "street_address": null,
+    "city": null,
+    "region_or_state": null,
+    "country": null,
+    "gps_coordinates": null
+  },
       "specs": {
         "plot_size": null,
         "building_size": null,

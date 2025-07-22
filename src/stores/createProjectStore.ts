@@ -27,6 +27,7 @@ export interface ProjectFormValues {
   
   // Location Essentials - Step 2
   location: string;
+  city?: string;
   country: string;
   region: string;
   plotSize: string;
@@ -158,6 +159,7 @@ const defaultFormValues: ProjectFormValues = {
   phoneNumber: '',
   email: '',
   location: '',
+  city: '',
   country: 'ghana',
   region: 'greater-accra',
   plotSize: '',

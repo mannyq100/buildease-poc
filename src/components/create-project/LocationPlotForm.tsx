@@ -132,17 +132,38 @@ function LocationPlotFormComponent() {
           render={({ field }) => (
             <FormItem className="space-y-3">
               <FormLabel className="text-lg font-semibold text-slate-900 dark:text-white font-inter">
-                Where will your project be built?
+                Street Address
               </FormLabel>
               <FormControl>
                 <div className="relative">
-                  <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#2B6CB0]" />
+                  <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-500" />
                   <Input 
-                    placeholder="Enter the full address or location" 
+                    placeholder="Enter street address (e.g., 123 Main Street, Accra)" 
                     {...field} 
                     className="h-14 pl-12 text-base font-opensans border-2 border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 focus:border-[#2B6CB0] dark:focus:border-[#2B6CB0] focus:ring-4 focus:ring-[#2B6CB0]/20 transition-all duration-300 shadow-sm hover:shadow-md placeholder:text-slate-500"
                   />
                 </div>
+              </FormControl>
+              <FormMessage className="text-red-600 font-opensans text-sm" />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={control}
+          name="city"
+          render={({ field }) => (
+            <FormItem className="space-y-3">
+              <FormLabel className="text-lg font-semibold text-slate-900 dark:text-white font-inter">
+                City/Town
+                <span className="text-base font-normal text-slate-500 ml-2 font-opensans">(optional)</span>
+              </FormLabel>
+              <FormControl>
+                <Input 
+                  placeholder="Enter city or town name" 
+                  {...field} 
+                  className="h-14 text-base font-opensans border-2 border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 focus:border-[#2B6CB0] dark:focus:border-[#2B6CB0] focus:ring-4 focus:ring-[#2B6CB0]/20 transition-all duration-300 shadow-sm hover:shadow-md placeholder:text-slate-500"
+                />
               </FormControl>
               <FormMessage className="text-red-600 font-opensans text-sm" />
             </FormItem>

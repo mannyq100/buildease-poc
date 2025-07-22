@@ -57,7 +57,8 @@ export const projectFormSchema = z.object({
   email: z.string().optional(), // Made optional - only required if different owner
   
   // Location Essentials - Step 2
-  location: z.string().min(1, 'Location is required'),
+  location: z.string().min(1, 'Street address is required'),
+  city: z.string().optional(),
   country: z.string().min(1, 'Country is required'),
   region: z.string().min(1, 'Region is required'),
   plotSize: z.string().min(1, 'Plot size is required'),
@@ -121,7 +122,7 @@ const stepTitles = [
 // Step field validation mapping
 const STEP_FIELDS: Record<number, (keyof CreateProjectFormValues)[]> = {
   1: ['name', 'projectType'], // Essential Details
-  2: ['location', 'country', 'region', 'plotSize', 'plotSizeUnit'], // Location
+  2: ['location', 'country', 'region', 'plotSize', 'plotSizeUnit'], // Location (city is optional)
   3: ['buildingSize', 'buildingSizeUnit', 'storeys', 'bedrooms', 'bathrooms'], // Building Specs
   4: ['budget', 'currency'], // Budget
   5: [], // Materials (optional)

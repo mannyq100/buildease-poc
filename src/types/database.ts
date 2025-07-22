@@ -42,15 +42,15 @@ export interface ProgressStep {
 // Project related interfaces
 export interface ProjectDetails {
   location: {
-    region?: string | null;
-    district?: string | null;
-    gps_code?: string | null;
-    coordinates?: {
+    street_address?: string | null;
+    city?: string | null;
+    region_or_state?: string | null;
+    country?: string | null;
+    gps_coordinates?: {
       lat: number;
       lng: number;
     } | null;
-    // Additional location data
-    country?: string;
+    // Additional location metadata
     terrain?: string | null;
     nearby_landmarks?: string | null;
   };
