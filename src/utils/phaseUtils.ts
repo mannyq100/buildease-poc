@@ -4,7 +4,7 @@
  */
 
 import { CONSTRUCTION_PHASES_WITH_TASKS, getPhasesForProjectType } from '../data/constants/constructionPhasesWithTasks';
-import type { ProjectType, PhaseTemplate as ImportedPhaseTemplate } from '../data/constants/constructionPhasesWithTasks';
+import type { ProjectType } from '../data/constants/constructionPhasesWithTasks';
 
 // Define our own PhaseTemplate interface that matches our cleaned data structure
 export interface PhaseTemplate {

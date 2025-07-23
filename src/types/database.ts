@@ -4,12 +4,12 @@
  */
 
 // Enums from the database schema
-export type ProjectStatus = 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'ON_HOLD' | 'CANCELLED';
-export type UserRole = 'OWNER' | 'CONTRACTOR' | 'ARCHITECT' | 'ENGINEER' | 'SUPPLIER' | 'INSPECTOR';
-export type Currency = 'GHS' | 'USD' | 'EUR' | 'GBP' | 'NGN' | 'ZAR' | 'XOF';
-export type AuthProvider = 'GOOGLE' | 'FACEBOOK' | 'EMAIL';
+export type ProjectStatus = 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'PAUSED' | 'CANCELLED';
+export type UserRole = 'OWNER' | 'CONTRACTOR' | 'SUPPLIER' | 'WORKER' | 'ADMIN' | 'USER';
+export type Currency = 'GHS' | 'USD' | 'EUR';
+export type AuthProvider = 'GOOGLE' | 'FACEBOOK' | 'LINKEDIN' | 'AUTH0' | 'EMAIL';
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
-export type UserTier = 'FREE' | 'BASIC' | 'PREMIUM' | 'ENTERPRISE';
+export type UserTier = 'BASIC' | 'PREMIUM' | 'PROFESSIONAL';
 
 // AI Plan Generation types
 export type AIPlanJobStatus = 'pending' | 'processing' | 'completed' | 'failed';
@@ -160,6 +160,110 @@ export interface PlanProgress {
   error?: string;
 }
 
+
+// Financial Transaction types
+export type TransactionType = 'MATERIAL_PURCHASE' | 'LABOR' | 'EQUIPMENT_RENTAL' | 'PERMIT_FEE' | 'DESIGN_FEE' | 'OTHER';
+export type PaymentStatus = 'PENDING' | 'PAID' | 'COMPLETED' | 'APPROVED' | 'FAILED' | 'REFUNDED' | 'CANCELLED';
+export type PaymentMethod = 'CASH' | 'MOBILE_MONEY' | 'BANK_TRANSFER' | 'CHEQUE';
+
+export interface FinancialTransaction {
+  id: string;
+  title: string;
+  description?: string;
+  amount: number;
+  currency: Currency;
+  transaction_type: TransactionType;
+  category?: string;
+  project_id: string;
+  phase_id?: string;
+  payment_status: PaymentStatus;
+  payment_method?: PaymentMethod;
+  payment_date?: string;
+  base_currency?: Currency;
+  exchange_rate?: number;
+  base_amount?: number;
+  reference_number?: string;
+  approved_by?: string;
+  approved_at?: string;
+  notes?: string;
+  details: Record<string, unknown>;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Material Management types
+export interface Material {
+  id: string;
+  name: string;
+  description?: string;
+  category?: string;
+  unit: string;
+  project_id: string;
+  specs: Record<string, unknown>;
+  currency?: Currency;
+  current_quantity?: number;
+  min_required_quantity?: number;
+  unit_price?: number;
+  supplier_id?: string;
+  supplier_info?: Record<string, unknown>;
+  last_ordered?: string;
+  lead_time_days?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MaterialTransaction {
+  id: string;
+  material_id: string;
+  project_id?: string;
+  quantity: number;
+  transaction_type: 'PURCHASE' | 'USAGE' | 'ADJUSTMENT' | 'RETURN';
+  reference_id?: string;
+  notes?: string;
+  created_by?: string;
+  created_at: string;
+}
+
+// Document types
+export type DocumentType = 'PERMIT' | 'DRAWING' | 'CONTRACT' | 'INVOICE' | 'RECEIPT' | 'REPORT' | 'SPECIFICATION' | 'SCHEDULE' | 'PHOTO' | 'VIDEO' | 'MANUAL' | 'CERTIFICATE' | 'OTHER';
+
+export interface Document {
+  id: string;
+  name: string;
+  description?: string;
+  document_type: DocumentType;
+  project_id: string;
+  phase_id?: string;
+  file_path: string;
+  file_size?: number;
+  mime_type?: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+// Permission system types
+export type PermissionType = 
+  | 'VIEW_BUDGET' | 'EDIT_BUDGET' | 'VIEW_FINANCIALS' | 'EDIT_FINANCIALS'
+  | 'MANAGE_USERS' | 'MANAGE_PHASES' | 'MANAGE_MATERIALS' | 'MANAGE_DOCUMENTS'
+  | 'SUPER_EDIT' | 'VIEW_PROJECT' | 'EDIT_PROJECT' | 'DELETE_PROJECT'
+  | 'VIEW_PHASES' | 'EDIT_PHASES' | 'DELETE_PHASES'
+  | 'VIEW_MATERIALS' | 'EDIT_MATERIALS' | 'DELETE_MATERIALS'
+  | 'VIEW_EXPENSES' | 'EDIT_EXPENSES' | 'DELETE_EXPENSES' | 'APPROVE_EXPENSES'
+  | 'VIEW_DOCUMENTS' | 'UPLOAD_DOCUMENTS' | 'DELETE_DOCUMENTS'
+  | 'VIEW_WORKERS' | 'MANAGE_WORKERS' | 'VIEW_CONTRACTORS' | 'MANAGE_CONTRACTORS'
+  | 'VIEW_SUPPLIERS' | 'MANAGE_SUPPLIERS' | 'GENERATE_REPORTS';
+
+export interface ProjectPermission {
+  id: string;
+  project_id: string;
+  user_id: string;
+  permission: PermissionType;
+  granted_at: string;
+  granted_by: string;
+  active: boolean;
+}
 
 // Enhanced notification interface
 export interface Notification {

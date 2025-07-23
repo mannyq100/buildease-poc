@@ -1,48 +1,46 @@
 /**
  * Project query hooks for BuildEase construction management
- * Handles fetching project data from Supabase with mobile-first optimization
+ * Updated to use database views and minimal transform service
  */
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { queryKeys } from '@/lib/queryClient';
+import { ProjectTransformService } from '@/services/projectTransformService';
+import type { Project } from '@/types/project';
 
 /**
- * Hook to fetch a single project by ID
- * Returns project with all details including JSONB fields
+ * Hook to fetch a single project by ID using project_details view
  */
-export const useProject = (projectId: string) => {
-  return useQuery({
+export const useProject = (projectId: string): { data: Project | undefined; isLoading: boolean; error: any } => {
+  const queryResult = useQuery({
     queryKey: queryKeys.projects.detail(projectId),
-    queryFn: async () => {
+    queryFn: async (): Promise<Project> => {
       const { data, error } = await supabase
-        .from('be_project')
-        .select(`
-          id,
-          name,
-          description,
-          status,
-          details,
-          timeline,
-          budget,
-          owner_id,
-          profile_image,
-          inspiration_images,
-          created_at,
-          updated_at
-        `)
+        .from('project_details')
+        .select('*')
         .eq('id', projectId)
         .single();
       
       if (error) {
-        console.error('Error fetching project:', error);
-        throw error;
+        throw new Error(`Failed to fetch project: ${error.message}`);
       }
       
-      return data;
+      if (!data) {
+        throw new Error('Project not found');
+      }
+      
+      // Transform using enhanced async service with automatic owner enrichment
+      return await ProjectTransformService.transformProjectDetailsAsync(data);
     },
     enabled: !!projectId,
-    staleTime: 2 * 60 * 1000, // 2 minutes - project details change less frequently
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
+
+  return {
+    data: queryResult.data,
+    isLoading: queryResult.isLoading,
+    error: queryResult.error,
+  };
 };
 
 /**

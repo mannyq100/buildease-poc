@@ -3,9 +3,8 @@
  * Implements React 19 Suspense boundaries for optimal mobile performance
  */
 
-import React, { Suspense, useState, useEffect } from 'react';
+import React, { Suspense, useState } from 'react';
 import { useProjects, useProjectMetrics } from '@/hooks/queries';
-import { adaptSupabaseProjectsToUI } from '@/utils/adapters/projectsAdapters';
 import { ProjectsErrorBoundary } from '@/components/error-boundaries/ProjectsErrorBoundary';
 import { 
   ProjectsMetricsSkeleton, 
@@ -254,7 +253,7 @@ function ProjectsListSection({
   onViewSettingsChange: ProjectsContentProps['onViewSettingsChange'];
 }) {
   // Fetch projects with current filters
-  const { data: rawProjects, isLoading, error } = useProjects({
+  const { data: projects, isLoading, error } = useProjects({
     status: filters.status,
     search: filters.search,
     type: filters.type,
@@ -272,12 +271,9 @@ function ProjectsListSection({
     );
   }
   
-  // Transform Supabase data to UI format
-  const projects = rawProjects ? adaptSupabaseProjectsToUI(rawProjects) : [];
-  
   return (
     <ProjectsList 
-      projects={projects}
+      projects={projects || []}
       loading={isLoading}
       error={error ? createSupabaseError(error, 'network') : null}
       viewSettings={viewSettings}

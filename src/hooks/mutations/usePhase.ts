@@ -7,22 +7,41 @@ import { toast } from 'sonner';
 export interface CreatePhaseData {
   name: string;
   description?: string;
-  start_date: string;
-  end_date: string;
+  category: string;
   project_id: string;
-  order_index: number;
-  status?: 'pending' | 'in-progress' | 'completed' | 'on-hold';
+  status?: 'PLANNING' | 'IN_PROGRESS' | 'PAUSED' | 'COMPLETED';
+  timeline?: {
+    planned_start?: string;
+    planned_end?: string;
+    actual_start?: string;
+    actual_end?: string;
+  };
+  budget?: {
+    allocated?: number;
+    spent?: number;
+    currency?: string;
+  };
+  details?: Record<string, any>;
 }
 
 export interface UpdatePhaseData {
   id: string;
   name?: string;
   description?: string;
-  start_date?: string;
-  end_date?: string;
-  status?: 'pending' | 'in-progress' | 'completed' | 'on-hold';
-  progress_percentage?: number;
-  order_index?: number;
+  category?: string;
+  status?: 'PLANNING' | 'IN_PROGRESS' | 'PAUSED' | 'COMPLETED';
+  timeline?: {
+    planned_start?: string;
+    planned_end?: string;
+    actual_start?: string;
+    actual_end?: string;
+  };
+  budget?: {
+    allocated?: number;
+    spent?: number;
+    currency?: string;
+  };
+  details?: Record<string, any>;
 }
 
 /**
@@ -33,9 +52,30 @@ export function useCreatePhase() {
 
   return useMutation({
     mutationFn: async (data: CreatePhaseData) => {
+      // Prepare data for database insertion
+      const insertData = {
+        name: data.name,
+        description: data.description || '',
+        category: data.category,
+        project_id: data.project_id,
+        status: data.status || 'PLANNING',
+        timeline: data.timeline || {
+          planned_start: null,
+          planned_end: null,
+          actual_start: null,
+          actual_end: null
+        },
+        budget: data.budget || {
+          allocated: 0,
+          spent: 0,
+          currency: 'USD'
+        },
+        details: data.details || {}
+      };
+
       const { data: phase, error } = await supabase
         .from('be_phase')
-        .insert([data])
+        .insert([insertData])
         .select()
         .single();
 

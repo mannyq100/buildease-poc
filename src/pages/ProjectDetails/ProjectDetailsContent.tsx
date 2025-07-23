@@ -4,10 +4,11 @@
  * Mobile-first layout with only the most critical information and actions
  */
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useNavigate } from 'react-router-dom';
 import { useProjectDetailsData } from '@/hooks/queries/useProjectDetails';
+import { usePhaseTasks } from '@/hooks/queries/useTask';
 import {
   useCreateBudgetExpense,
   useUpdateBudgetExpense,
@@ -17,17 +18,23 @@ import {
   useDeleteTeamMember,
   useCreateProjectDetailsPhase,
   useUpdateProjectDetailsPhase,
-  useDeleteProjectDetailsPhase,
-  type BudgetExpense,
-  type TeamMember as SupabaseTeamMember,
-  type ProjectDetailsPhase
+  useDeleteProjectDetailsPhase
 } from '@/hooks/mutations';
+
+import { useCreateTask, useUpdateTask, useDeleteTask } from '@/hooks/mutations/useTask';
+import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
+import { toast } from 'sonner';
 
 import { ProjectDetailsSkeleton } from '@/components/ui/skeletons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BaseModal } from '@/components/ui/BaseModal';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { 
   AlertTriangle, 
@@ -51,15 +58,14 @@ import {
   Edit3,
   X,
   Layers,
-  Target,
   Building2,
-  Save
+  Save,
+  Trash2,
+  MoreVertical
 } from 'lucide-react';
 import { PhaseSelector } from '@/components/shared/forms/PhaseSelector';
-import { EnhancedPhaseSelector } from '@/components/shared/forms/EnhancedPhaseSelector';
 import { ProjectType } from '@/utils/phaseUtils';
-import { ProjectContext } from '@/utils/enhancedPhaseUtils';
-import { adaptSupabaseProjectToProject } from '@/utils/dataAdapters';
+import { ProjectTransformService } from '@/services/projectTransformService';
 
 interface ProjectDetailsContentProps {
   projectId: string;
@@ -111,9 +117,438 @@ function ProjectDetailsLoading() {
   );
 }
 
+// Task Form Modal Component
+interface TaskFormModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  phaseId: string;
+  projectId: string;
+  task?: any;
+  onSuccess?: () => void;
+}
+
+function TaskFormModal({ isOpen, onClose, phaseId, projectId, task, onSuccess }: TaskFormModalProps) {
+  const { user } = useSupabaseAuth();
+  const createTask = useCreateTask();
+  const updateTask = useUpdateTask();
+  
+  const [formData, setFormData] = useState({
+    title: task?.title || '',
+    description: task?.description || '',
+    priority: task?.priority || 'medium',
+    status: task?.status || 'pending',
+    due_date: task?.due_date ? new Date(task.due_date).toISOString().split('T')[0] : '',
+    assigned_to: task?.assigned_to || ''
+  });
+
+  // Update form data when task prop changes (for editing) or modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      if (task) {
+        // Editing existing task - populate with task data
+        setFormData({
+          title: task.title || '',
+          description: task.description || '',
+          priority: task.priority || 'medium',
+          status: task.status || 'pending',
+          due_date: task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : '',
+          assigned_to: task.assigned_to || ''
+        });
+      } else {
+        // Creating new task - use defaults
+        setFormData({
+          title: '',
+          description: '',
+          priority: 'medium',
+          status: 'pending',
+          due_date: '',
+          assigned_to: ''
+        });
+      }
+    }
+  }, [task, isOpen]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!user?.id) {
+      toast.error('You must be logged in to manage tasks');
+      return;
+    }
+
+    try {
+      // Process form data to handle UUID fields (convert empty strings to null)
+      const processedData = {
+        ...formData,
+        assigned_to: formData.assigned_to || null,
+        due_date: formData.due_date || null
+      };
+
+      if (task) {
+        // Update existing task
+        await updateTask.mutateAsync({
+          id: task.id,
+          ...processedData
+        });
+        toast.success('Task updated successfully!');
+      } else {
+        // Create new task
+        await createTask.mutateAsync({
+          ...processedData,
+          phase_id: phaseId,
+          project_id: projectId,
+          created_by: user.id
+        });
+        toast.success('Task created successfully!');
+      }
+      
+      onSuccess?.();
+      onClose();
+      setFormData({
+        title: '',
+        description: '',
+        priority: 'medium',
+        status: 'pending',
+        due_date: '',
+        assigned_to: ''
+      });
+    } catch (error) {
+      console.error('Error saving task:', error);
+      toast.error('Failed to save task. Please try again.');
+    }
+  };
+
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  return (
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={task ? 'Edit Task' : 'Add New Task'}
+      description={task ? 'Update task details and save changes' : 'Create a new task for this phase'}
+      size="md"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <Label htmlFor="title">Task Title *</Label>
+          <Input
+            id="title"
+            value={formData.title}
+            onChange={(e) => handleChange('title', e.target.value)}
+            placeholder="Enter task title"
+            required
+            className="mt-1"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="description">Description</Label>
+          <Textarea
+            id="description"
+            value={formData.description}
+            onChange={(e) => handleChange('description', e.target.value)}
+            placeholder="Enter task description"
+            className="mt-1"
+            rows={3}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="priority">Priority</Label>
+            <Select value={formData.priority} onValueChange={(value) => handleChange('priority', value)}>
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Select priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="urgent">Urgent</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="status">Status</Label>
+            <Select value={formData.status} onValueChange={(value) => handleChange('status', value)}>
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="in-progress">In Progress</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="blocked">Blocked</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="due_date">Due Date</Label>
+          <Input
+            id="due_date"
+            type="date"
+            value={formData.due_date}
+            onChange={(e) => handleChange('due_date', e.target.value)}
+            className="mt-1"
+          />
+        </div>
+
+        <div className="flex justify-end gap-3 pt-4">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button 
+            type="submit" 
+            disabled={createTask.isPending || updateTask.isPending}
+            className="bg-buildease-blue-600 hover:bg-buildease-blue-700"
+          >
+            {createTask.isPending || updateTask.isPending ? (
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+            ) : null}
+            {task ? 'Update Task' : 'Create Task'}
+          </Button>
+        </div>
+      </form>
+    </BaseModal>
+  );
+}
+
+// Phase Task Accordion Component
+interface PhaseTaskAccordionProps {
+  phase: any;
+  isExpanded: boolean;
+  onToggle: () => void;
+  onEdit: (phase: any) => void;
+  onDelete: (phaseId: string) => void;
+  onCreateTask: (phaseId: string) => void;
+  onEditTask: (task: any, phaseId: string) => void;
+  onDeleteTask: (taskId: string) => void;
+}
+
+function PhaseTaskAccordion({ phase, isExpanded, onToggle, onEdit, onDelete, onCreateTask, onEditTask, onDeleteTask }: PhaseTaskAccordionProps) {
+  const { data: tasks = [], isLoading: tasksLoading } = usePhaseTasks(phase.id);
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'COMPLETED':
+        return 'bg-green-100 text-green-700';
+      case 'IN_PROGRESS':
+        return 'bg-blue-100 text-blue-700';
+      case 'PLANNING':
+        return 'bg-slate-100 text-slate-700';
+      default:
+        return 'bg-slate-100 text-slate-700';
+    }
+  };
+
+  const getTaskStatusColor = (status: string) => {
+    switch (status) {
+      case 'COMPLETED':
+        return 'text-green-600';
+      case 'IN_PROGRESS':
+        return 'text-blue-600';
+      case 'PENDING':
+        return 'text-orange-600';
+      default:
+        return 'text-slate-600';
+    }
+  };
+
+  const completedTasks = tasks.filter(t => t.status === 'COMPLETED').length;
+  const totalTasks = tasks.length;
+
+  return (
+    <div className="bg-slate-50/50 rounded-xl border border-slate-200/60 overflow-hidden transition-all duration-300 hover:shadow-md group">
+      <div 
+        className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-100/50 transition-colors duration-200 min-h-[44px]"
+        onClick={onToggle}
+      >
+        <div className="flex items-center gap-4 flex-1">
+          <div className={`w-3 h-3 rounded-full ${getStatusColor(phase.status).replace('bg-', 'bg-').replace('text-', '')}`} />
+          <div className="flex-1">
+            <div className="flex items-center justify-between mb-1">
+              <h4 className="font-semibold text-slate-900">{phase.name}</h4>
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(phase.status)}`}>
+                  {phase.status.replace('_', ' ')}
+                </span>
+                {totalTasks > 0 && (
+                  <span className="text-xs text-slate-500 bg-slate-200 px-2 py-1 rounded-full">
+                    {completedTasks}/{totalTasks} tasks
+                  </span>
+                )}
+              </div>
+            </div>
+            <p className="text-sm text-slate-600">{phase.description}</p>
+            {phase.timeline?.planned_start && phase.timeline?.planned_end && (
+              <div className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                {new Date(phase.timeline.planned_start).toLocaleDateString()} - {new Date(phase.timeline.planned_end).toLocaleDateString()}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 ml-4">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(phase);
+            }}
+            className="h-8 w-8 p-0 hover:bg-buildease-orange-100 hover:text-buildease-orange-700 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <Edit3 className="h-3 w-3" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(phase.id);
+            }}
+            className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <X className="h-3 w-3" />
+          </Button>
+          <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="border-t border-slate-200/60 bg-white/50 animate-in slide-in-from-top-2 duration-300">
+          {tasksLoading ? (
+            <div className="p-4">
+              <div className="flex items-center justify-center py-8">
+                <RefreshCw className="h-5 w-5 animate-spin text-buildease-blue-500" />
+                <span className="ml-2 text-sm text-slate-600">Loading tasks...</span>
+              </div>
+            </div>
+          ) : tasks.length > 0 ? (
+            <div className="p-4 space-y-2">
+              {tasks.map((task, index) => (
+                <div
+                  key={task.id}
+                  className={`flex items-center justify-between p-4 bg-white rounded-lg border border-slate-200/40 hover:bg-slate-50/50 transition-all duration-200 group shadow-sm hover:shadow-md min-h-[56px] ${
+                    index === 0 ? 'animate-in fade-in slide-in-from-left-2' : ''
+                  }`}
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className="flex-shrink-0">
+                      <CheckCircle2 
+                        className={`h-5 w-5 ${getTaskStatusColor(task.status)} ${
+                          task.status === 'COMPLETED' ? 'fill-current' : ''
+                        } transition-colors duration-200`} 
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-3 mb-1">
+                        <span className={`text-sm font-medium leading-5 ${
+                          task.status === 'COMPLETED' ? 'line-through text-slate-500' : 'text-slate-900'
+                        }`}>
+                          {task.title}
+                        </span>
+                        <div className="flex-shrink-0">
+                          <Badge 
+                            variant={task.priority === 'HIGH' ? 'destructive' : task.priority === 'MEDIUM' ? 'default' : 'secondary'} 
+                            className="text-xs"
+                          >
+                            {task.priority}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-slate-500">
+                        {task.assignee && (
+                          <span className="bg-buildease-blue-100 text-buildease-blue-700 px-2 py-1 rounded-full font-medium">
+                            {task.assignee.first_name || 'Assigned'}
+                          </span>
+                        )}
+                        {task.due_date && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {new Date(task.due_date).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                      {task.description && (
+                        <p className="text-xs text-slate-600 mt-2 line-clamp-2">{task.description}</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Task Actions */}
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => onEditTask(task, phase.id)}>
+                          <Edit3 className="h-4 w-4 mr-2" />
+                          Edit Task
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={() => onDeleteTask(task.id)}
+                          className="text-red-600 focus:text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Task
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              ))}
+              
+              <div className="flex gap-2 pt-2 border-t border-slate-200/40">
+                <Button 
+                  size="sm" 
+                  className="flex-1 bg-buildease-blue-600 hover:bg-buildease-blue-700"
+                  onClick={() => onCreateTask(phase.id)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Task
+                </Button>
+                <Button size="sm" variant="outline" className="flex-1">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Update Progress
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="p-6 text-center text-slate-500">
+              <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-slate-300" />
+              <p className="text-sm">No tasks defined for this phase</p>
+              <Button 
+                size="sm" 
+                className="mt-2 bg-buildease-blue-600 hover:bg-buildease-blue-700"
+                onClick={() => onCreateTask(phase.id)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add First Task
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Streamlined Project Details Content
 function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
   const navigate = useNavigate();
+  const { user } = useSupabaseAuth();
   
   // Use comprehensive project details data with Supabase integration
   const {
@@ -137,6 +572,7 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
   const createPhase = useCreateProjectDetailsPhase();
   const updatePhase = useUpdateProjectDetailsPhase();
   const deletePhase = useDeleteProjectDetailsPhase();
+  const createTask = useCreateTask();
   
   // State for flexible phase system
   const [selectedPhaseCategory, setSelectedPhaseCategory] = useState<string>('');
@@ -167,11 +603,14 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
     team: boolean;
     documents: boolean;
   }>({
-    phases: false,
-    budget: false,
-    team: false,
-    documents: false
+    budget: true,    // Open budget first (most important)
+    phases: true,    // Open timeline second (project flow)
+    team: false,     // Keep team collapsed initially
+    documents: false // Keep documents collapsed initially
   });
+
+  // State for expanded phases and their tasks
+  const [expandedPhases, setExpandedPhases] = useState<Record<string, boolean>>({});
   
   const [showImageUpload, setShowImageUpload] = useState(false);
   const [imagesCollapsed, setImagesCollapsed] = useState(false);
@@ -181,10 +620,13 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [showPhaseModal, setShowPhaseModal] = useState(false);
   const [showTeamModal, setShowTeamModal] = useState(false);
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [currentPhaseId, setCurrentPhaseId] = useState<string>('');
   const [editingItem, setEditingItem] = useState<{
     type: 'budget' | 'phase' | 'team';
     data: Record<string, unknown>;
   } | null>(null);
+  const [editingTask, setEditingTask] = useState<any>(null);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   
   // CRUD Helper Functions
@@ -222,7 +664,10 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
     setShowBudgetModal(false);
     setShowPhaseModal(false);
     setShowTeamModal(false);
+    setShowTaskModal(false);
     setEditingItem(null);
+    setEditingTask(null);
+    setCurrentPhaseId('');
     
     // Reset flexible phase system state
     setSelectedPhaseCategory('');
@@ -234,6 +679,31 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
       startDate: '',
       endDate: ''
     });
+  };
+  
+  // Task Management Helper Functions
+  const openCreateTaskModal = (phaseId: string) => {
+    setCurrentPhaseId(phaseId);
+    setEditingTask(null);
+    setShowTaskModal(true);
+  };
+  
+  const openEditTaskModal = (task: any, phaseId: string) => {
+    setCurrentPhaseId(phaseId);
+    setEditingTask(task);
+    setShowTaskModal(true);
+  };
+  
+  const deleteTask = useDeleteTask();
+  
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      await deleteTask.mutateAsync(taskId);
+      toast.success('Task deleted successfully!');
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+      toast.error('Failed to delete task. Please try again.');
+    }
   };
   
   const handleDelete = async (type: 'budget' | 'phase' | 'team', id: string) => {
@@ -279,34 +749,80 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
         }
       } else if (type === 'phase') {
         if (modalMode === 'create') {
-          // Create phase with flexible category and default tasks
+          // Check for duplicate phase names
+          const existingPhase = phases?.find(phase => 
+            phase.name.toLowerCase().trim() === phaseFormData.name.toLowerCase().trim()
+          );
+          
+          if (existingPhase) {
+            toast.error(`Phase "${phaseFormData.name}" already exists. Please choose a different name.`);
+            return;
+          }
+          
+          // Create phase with proper database structure
           const phaseData = {
             name: phaseFormData.name,
             description: phaseFormData.description,
-            status: 'pending' as const,
             category: selectedPhaseCategory,
+            project_id: projectId,
+            status: 'PLANNING' as const,
             timeline: {
-              startDate: phaseFormData.startDate,
-              endDate: phaseFormData.endDate,
-              duration: phaseFormData.startDate && phaseFormData.endDate 
-                ? Math.ceil((new Date(phaseFormData.endDate).getTime() - new Date(phaseFormData.startDate).getTime()) / (1000 * 60 * 60 * 24))
-                : 0
-            }
+              planned_start: phaseFormData.startDate || null,
+              planned_end: phaseFormData.endDate || null,
+              actual_start: null,
+              actual_end: null
+            },
+            budget: {
+              allocated: 0,
+              spent: 0,
+              currency: 'USD'
+            },
+            details: {}
           };
           
           // Create the phase
-          const createdPhase = await createPhase.mutateAsync({
-            projectId,
-            phase: phaseData
-          });
+          const createdPhase = await createPhase.mutateAsync(phaseData);
           
           // Create enabled default tasks for the phase
           const enabledTasks = defaultTasks.filter(task => task.enabled);
-          if (enabledTasks.length > 0) {
+          if (enabledTasks.length > 0 && user?.id) {
             console.log(`Creating ${enabledTasks.length} default tasks for phase:`, createdPhase);
-            console.log('Enabled tasks:', enabledTasks.map(t => t.name));
-            // TODO: Integrate with task creation hooks when available
-            // Future: Create tasks using task creation hooks
+            
+            // Create tasks in parallel for better performance
+            const taskCreationPromises = enabledTasks.map(async (task) => {
+              try {
+                const taskData = {
+                  title: task.name || 'Untitled Task',
+                  description: `Default task for ${createdPhase.name} phase`,
+                  phase_id: createdPhase.id,
+                  project_id: projectId,
+                  status: 'pending' as const,
+                  priority: 'medium' as const,
+                  created_by: user?.id || ''
+                };
+                
+                return await createTask.mutateAsync(taskData);
+              } catch (error) {
+                console.error(`Failed to create task: ${task.name}`, error);
+                return null;
+              }
+            });
+            
+            // Wait for all tasks to be created
+            const createdTasks = await Promise.all(taskCreationPromises);
+            const successfulTasks = createdTasks.filter(task => task !== null);
+            
+            console.log(`Successfully created ${successfulTasks.length}/${enabledTasks.length} tasks`);
+            
+            if (successfulTasks.length < enabledTasks.length) {
+              toast.warning(`Phase created successfully, but ${enabledTasks.length - successfulTasks.length} tasks failed to create.`);
+            } else if (successfulTasks.length > 0) {
+              toast.success(`Phase created with ${successfulTasks.length} tasks successfully!`);
+            }
+          } else if (enabledTasks.length > 0 && !user?.id) {
+            toast.warning('Phase created successfully, but tasks could not be created (user not authenticated).');
+          } else {
+            toast.success('Phase created successfully!');
           }
         } else if (editingItem) {
           await updatePhase.mutateAsync({
@@ -357,6 +873,13 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
     }));
   };
 
+  const togglePhase = (phaseId: string) => {
+    setExpandedPhases(prev => ({
+      ...prev,
+      [phaseId]: !prev[phaseId]
+    }));
+  };
+
   // Handle loading states
   if (projectLoading) {
     return <ProjectDetailsLoading />;
@@ -387,8 +910,8 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
     );
   }
 
-  // Adapt Supabase data to Project interface
-  const project = adaptSupabaseProjectToProject(projectData);
+  // Transform Supabase data to Project interface
+  const project = ProjectTransformService.transformProjectDetails(projectData);
   const currentPhase = phases?.find(p => p.status === 'in-progress') || phases?.[0];
   // Mock current tasks since phase.tasks may not exist in current data structure
   const currentTasks: TaskItem[] = [
@@ -580,6 +1103,7 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
                   <span className="text-xs text-slate-500 font-normal">Design references & ideas</span>
                 </h4>
                 <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+                  {/* Display inspiration images from either transformed or raw format */}
                   {project.inspirationalImages?.map((image, index) => (
                     <div key={index} className="relative group">
                       <div className="aspect-square rounded-lg overflow-hidden shadow-md cursor-pointer"
@@ -616,6 +1140,14 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
                       </div>
                     </div>
                   )) || []}
+                  
+                  {/* Show empty state if no images */}
+                  {(!project.inspirationalImages || project.inspirationalImages.length === 0) && (
+                    <div className="col-span-full text-center py-8 text-gray-500">
+                      <ImageIcon className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                      <p>No inspiration images uploaded yet</p>
+                    </div>
+                  )}
                   
                   {/* Add More Inspiration Images */}
                   <button
@@ -885,14 +1417,14 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
           </Card>
         )}
 
-        {/* Expandable Phases & Timeline Details */}
+        {/* Enhanced Timeline & Phases Details with Tasks */}
         {expandedSections.phases && (
           <Card className="border-buildease-orange-200/60 shadow-xl bg-gradient-to-br from-buildease-orange-50/30 to-white backdrop-blur-md rounded-2xl">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
                   <Calendar className="h-5 w-5 text-buildease-orange-600" />
-                  Phases & Timeline
+                  Timeline & Phases
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   <Button 
@@ -916,57 +1448,163 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
             </CardHeader>
             <CardContent className="space-y-4">
               {phases && phases.length > 0 ? (
-                phases.map((phase, index) => (
-                  <div key={phase.id} className="flex items-center gap-4 p-4 bg-slate-50/50 rounded-xl hover:bg-slate-100/50 transition-colors group">
-                    <div className="flex-shrink-0">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
-                        phase.status === 'completed' ? 'bg-green-100 text-green-700' :
-                        phase.status === 'in-progress' ? 'bg-blue-100 text-blue-700' :
-                        'bg-slate-100 text-slate-700'
-                      }`}>
-                        {index + 1}
-                      </div>
+                phases.map((phase) => (
+                  <PhaseTaskAccordion
+                    key={phase.id}
+                    phase={phase}
+                    isExpanded={expandedPhases[phase.id] || false}
+                    onToggle={() => togglePhase(phase.id)}
+                    onEdit={(phase) => openEditModal('phase', phase)}
+                    onDelete={(phaseId) => handleDelete('phase', phaseId)}
+                    onCreateTask={openCreateTaskModal}
+                    onEditTask={openEditTaskModal}
+                    onDeleteTask={handleDeleteTask}
+                  />
+                ))
+              ) : (
+                <div className="text-center py-8 text-slate-500">
+                  <Calendar className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+                  <h3 className="text-lg font-medium text-slate-700 mb-2">No Phases Defined</h3>
+                  <p className="text-sm mb-4">Start building your project timeline by adding phases</p>
+                  <Button 
+                    onClick={() => openCreateModal('phase')}
+                    className="bg-buildease-orange-600 hover:bg-buildease-orange-700 text-white"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create First Phase
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Team Status - Collapsible */}
+        {expandedSections.team ? (
+          <Card className="border-slate-200/40 shadow-xl bg-gradient-to-br from-white via-slate-50/30 to-emerald-50/20 backdrop-blur-md rounded-2xl">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <Users className="h-5 w-5 text-emerald-600" />
+                  Team Management
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    size="sm" 
+                    onClick={() => openCreateModal('team')}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Member
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => toggleSection('team')}
+                    className="text-slate-500 hover:text-slate-700"
+                  >
+                    <ChevronUp className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {activeTeamMembers.length > 0 ? (
+                activeTeamMembers.map((member: TeamMember) => (
+                  <div key={member.id} className="flex items-center gap-4 p-4 bg-slate-50/50 rounded-xl hover:bg-slate-100/50 transition-colors group">
+                    <div className="w-10 h-10 bg-buildease-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm font-semibold text-buildease-blue-700">
+                        {member.name.split(' ').map((n: string) => n[0]).join('')}
+                      </span>
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
-                        <div className="font-semibold text-slate-900">{phase.name}</div>
+                        <div className="font-semibold text-slate-900">{member.name}</div>
                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => openEditModal('phase', phase)}
-                            className="h-6 w-6 p-0 hover:bg-buildease-orange-100 hover:text-buildease-orange-700"
+                            onClick={() => openEditModal('team', member)}
+                            className="h-6 w-6 p-0 hover:bg-emerald-100 hover:text-emerald-700"
                           >
                             <Edit3 className="h-3 w-3" />
                           </Button>
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => handleDelete('phase', phase.id)}
+                            onClick={() => handleDelete('team', member.id)}
                             className="h-6 w-6 p-0 hover:bg-red-100 hover:text-red-700"
                           >
                             <X className="h-3 w-3" />
                           </Button>
                         </div>
                       </div>
-                      <div className="text-sm text-slate-600">{phase.description}</div>
-                      <div className="text-xs text-slate-500 mt-1">
-                        {phase.timeline?.startDate && phase.timeline?.endDate && (
-                          `${new Date(phase.timeline.startDate).toLocaleDateString()} - ${new Date(phase.timeline.endDate).toLocaleDateString()}`
+                      <div className="text-sm text-slate-600">{member.role}</div>
+                      <div className="flex items-center gap-4 mt-1">
+                        <StatusBadge status={member.status as 'in-progress' | 'pending' | 'cancelled'} size="sm" />
+                        {member.phone && (
+                          <div className="text-xs text-slate-500">{member.phone}</div>
                         )}
                       </div>
                     </div>
-                    <StatusBadge status={phase.status} size="sm" />
                   </div>
                 ))
               ) : (
                 <div className="text-center py-6 text-slate-500">
-                  <Calendar className="h-8 w-8 mx-auto mb-2 text-slate-300" />
-                  <p className="text-sm">No phases defined yet</p>
+                  <Users className="h-8 w-8 mx-auto mb-2 text-slate-300" />
+                  <p className="text-sm">No team members added yet</p>
                 </div>
               )}
             </CardContent>
           </Card>
+        ) : (
+          activeTeamMembers.length > 0 && (
+            <Card className="border-slate-200/40 shadow-xl bg-gradient-to-br from-white via-slate-50/30 to-emerald-50/20 backdrop-blur-md rounded-2xl">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <Users className="h-5 w-5 text-emerald-600" />
+                    Team On-Site
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                      {activeTeamMembers.length} Active
+                    </Badge>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => toggleSection('team')}
+                      className="text-slate-500 hover:text-slate-700"
+                    >
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-3">
+                  {activeTeamMembers.slice(0, 6).map((member: TeamMember) => (
+                    <div key={member.id} className="flex items-center gap-2 bg-slate-50/50 rounded-lg p-2 min-w-0 hover:bg-slate-100/50 transition-colors">
+                      <div className="w-8 h-8 bg-buildease-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span className="text-xs font-semibold text-buildease-blue-700">
+                          {member.name.split(' ').map((n: string) => n[0]).join('')}
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium text-slate-900 truncate">{member.name}</div>
+                        <div className="text-xs text-slate-600">{member.role}</div>
+                      </div>
+                    </div>
+                  ))}
+                  {activeTeamMembers.length > 6 && (
+                    <div className="flex items-center justify-center bg-slate-100 rounded-lg p-2 min-w-[60px]">
+                      <span className="text-xs text-slate-600">+{activeTeamMembers.length - 6} more</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )
         )}
 
         {/* Today's Focus */}
@@ -1669,6 +2307,18 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
             </div>
           </div>
         </BaseModal>
+        
+        {/* Task Modal */}
+        <TaskFormModal
+          isOpen={showTaskModal}
+          onClose={closeModals}
+          phaseId={currentPhaseId}
+          projectId={projectId}
+          task={editingTask}
+          onSuccess={() => {
+            // Optional: refresh tasks or show success message
+          }}
+        />
       </div>
     </div>
   );

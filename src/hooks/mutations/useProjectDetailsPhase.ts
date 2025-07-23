@@ -54,7 +54,7 @@ export function useCreateProjectDetailsPhase() {
           category: data.category || 'CONSTRUCTION',
           status: data.status === 'pending' ? 'PLANNING' : 
                   data.status === 'in-progress' ? 'IN_PROGRESS' : 
-                  data.status === 'completed' ? 'COMPLETED' : 'ON_HOLD',
+                  data.status === 'completed' ? 'COMPLETED' : 'PAUSED',
           timeline: {
             planned_start: data.start_date,
             planned_end: data.end_date,
@@ -128,7 +128,7 @@ export function useUpdateProjectDetailsPhase() {
       if (updateData.status) {
         updatePayload.status = updateData.status === 'pending' ? 'PLANNING' : 
                               updateData.status === 'in-progress' ? 'IN_PROGRESS' : 
-                              updateData.status === 'completed' ? 'COMPLETED' : 'ON_HOLD';
+                              updateData.status === 'completed' ? 'COMPLETED' : 'PAUSED';
       }
 
       // Handle timeline updates

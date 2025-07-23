@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { queryKeys } from '@/lib/queryClient';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import { toast } from 'sonner';
-import { adaptUIProjectToSupabase } from '@/utils/adapters/projectsAdapters';
+import { ProjectTransformService } from '@/services/projectTransformService';
 import type { Project } from '@/types/project';
 
 /**
@@ -24,7 +24,7 @@ export function useCreateProject() {
         throw new Error('User must be authenticated to create projects');
       }
 
-      const supabaseData = adaptUIProjectToSupabase(projectData);
+      const supabaseData = ProjectTransformService.transformForMutation(projectData);
       
       const { data, error } = await supabase
         .from('be_project')
@@ -66,7 +66,7 @@ export function useUpdateProject() {
 
   return useMutation({
     mutationFn: async ({ id, ...projectData }: Partial<Project> & { id: string }) => {
-      const supabaseData = adaptUIProjectToSupabase(projectData);
+      const supabaseData = ProjectTransformService.transformForMutation(projectData);
       
       const { data, error } = await supabase
         .from('be_project')

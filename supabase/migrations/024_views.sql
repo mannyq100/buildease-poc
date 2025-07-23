@@ -7,38 +7,109 @@ SELECT
     p.id,
     p.name,
     p.description,
-    p.status,
-    p.timeline->>'planned_start' AS planned_start,
-    p.timeline->>'planned_end' AS planned_end,
-    p.budget->>'allocated' AS budget_allocated,
-    p.budget->>'spent' AS budget_spent,
-    p.budget->>'currency' AS currency,
-    concat(u.first_name, ' ', u.last_name)  AS owner_name,
-    p.created_at,
-    p.updated_at,
-    (
+    p.owner_id,
+    CASE p.status 
+        WHEN 'IN_PROGRESS' THEN 'active'
+        WHEN 'PLANNING' THEN 'planning'
+        WHEN 'COMPLETED' THEN 'completed'
+        WHEN 'ON_HOLD' THEN 'on-hold'
+        ELSE 'planning'
+    END as status,
+    
+    -- Visual assets
+    p.profile_image,
+    p.inspiration_images,
+    
+    -- Project details from JSONB
+    COALESCE(p.details->>'client', 'Unknown Client') as client,
+    CONCAT_WS(', ', 
+        p.details->'location'->>'street_address',
+        p.details->'location'->>'city',
+        p.details->'location'->>'region_or_state'
+    ) as location,
+    COALESCE(p.details->>'project_type', 'Construction') as project_type,
+    
+    -- Timeline (raw strings)
+    p.timeline->>'planned_start' AS start_date,
+    p.timeline->>'planned_end' AS end_date,
+    
+    -- Financial data with proper casting and user-set currency
+    COALESCE((p.budget->>'allocated')::numeric, 0) as budget,
+    COALESCE((p.budget->>'spent')::numeric, 0) as spent,
+    COALESCE(p.budget->>'currency', 'USD') as currency,
+    CASE 
+        WHEN COALESCE((p.budget->>'allocated')::numeric, 0) > 0 
+        THEN ROUND((COALESCE((p.budget->>'spent')::numeric, 0) / (p.budget->>'allocated')::numeric * 100), 1)
+        ELSE 0 
+    END as spent_percentage,
+    COALESCE((p.budget->>'allocated')::numeric, 0) - COALESCE((p.budget->>'spent')::numeric, 0) as remaining,
+    
+    -- Progress calculation (deterministic based on phases)
+    COALESCE((
+        SELECT ROUND(AVG(
+            CASE status 
+                WHEN 'COMPLETED' THEN 100
+                WHEN 'IN_PROGRESS' THEN 60
+                WHEN 'PLANNING' THEN 20
+                ELSE 0
+            END
+        ), 0)
+        FROM construction_mgr.be_phase
+        WHERE project_id = p.id
+    ), 0) as progress,
+    
+    -- Health status based on timeline and budget
+    CASE 
+        WHEN p.status = 'COMPLETED' THEN 'excellent'
+        WHEN COALESCE((p.budget->>'spent')::numeric, 0) > COALESCE((p.budget->>'allocated')::numeric, 0) * 1.2 THEN 'poor'
+        WHEN COALESCE((p.budget->>'spent')::numeric, 0) > COALESCE((p.budget->>'allocated')::numeric, 0) * 1.1 THEN 'fair'
+        ELSE 'good'
+    END as health,
+    
+    -- Owner name - prefer owner_info if available, fallback to user table
+    CASE 
+        WHEN p.details->'owner_info'->>'name' IS NOT NULL AND p.details->'owner_info'->>'name' != '' 
+        THEN p.details->'owner_info'->>'name'
+        ELSE COALESCE(CONCAT(u.first_name, ' ', u.last_name), 'Project Owner')
+    END as owner_name,
+    
+    -- Counts
+    COALESCE((
         SELECT COUNT(*)
         FROM construction_mgr.be_phase
         WHERE project_id = p.id
-    ) AS phase_count,
-    (
+    ), 0) AS phases,
+    
+    COALESCE((
+        SELECT COUNT(*)
+        FROM construction_mgr.be_material
+        WHERE project_id = p.id
+    ), 0) AS materials,
+    
+    COALESCE((
         SELECT COUNT(*)
         FROM construction_mgr.be_document
         WHERE project_id = p.id
-    ) AS document_count,
-    (
-        SELECT COUNT(*)
-        FROM construction_mgr.financial_transaction
-        WHERE project_id = p.id
-    ) AS transaction_count,
-    (
+    ), 0) AS documents,
+    
+    COALESCE((
         SELECT COUNT(*)
         FROM construction_mgr.be_project_member
         WHERE project_id = p.id
-    ) AS member_count
+    ), 0) AS members,
+    
+    COALESCE((
+        SELECT COUNT(*)
+        FROM construction_mgr.financial_transaction
+        WHERE project_id = p.id
+    ), 0) AS transactions,
+    
+    -- Audit fields
+    p.created_at,
+    p.updated_at
 FROM
     construction_mgr.be_project p
-JOIN
+LEFT JOIN
     construction_mgr.be_user u ON p.owner_id = u.id;
 
 -- View to show project participants with details

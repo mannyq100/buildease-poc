@@ -6,14 +6,12 @@
 import React, { useState, useMemo } from 'react';
 import { 
   ProjectContext, 
-  PhaseGroup, 
   EnhancedTask,
   getRecommendedPhaseGroups,
   getRecommendedPhases,
   enhanceTasksForProject,
   getProjectScale,
-  getProjectTimelineEstimate,
-  PHASE_GROUPS
+  getProjectTimelineEstimate
 } from '@/utils/enhancedPhaseUtils';
 import { CONSTRUCTION_PHASES_WITH_TASKS } from '@/data/constants/constructionPhasesWithTasks';
 import { Card } from '@/components/ui/card';

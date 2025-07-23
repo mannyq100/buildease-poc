@@ -16,7 +16,7 @@ export function useProjectDetailsData(projectId: string) {
         .from('be_project')
         .select(`
           *,
-          owner:be_user!fk_owner(
+          owner:be_user!owner_id(
             id,
             first_name,
             last_name,
@@ -215,7 +215,7 @@ export function useProjectTeamSummary(projectId: string) {
         .from('be_project_member')
         .select(`
           role,
-          user:be_user!be_project_member(
+          user:be_user!user_id(
             id,
             first_name,
             last_name

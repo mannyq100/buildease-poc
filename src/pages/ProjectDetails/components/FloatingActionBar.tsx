@@ -5,15 +5,11 @@
 
 import React, { useState } from 'react';
 import { TouchOptimizedButton } from '@/components/ui/TouchOptimizedButton';
-import { Card } from '@/components/ui/card';
 import { 
   Plus, 
   Phone, 
-  MessageSquare, 
-  PlayCircle, 
-  MoreHorizontal,
+  PlayCircle,
   X,
-  Users,
   Camera,
   FileText,
   AlertTriangle

@@ -5,21 +5,22 @@ import { toast } from 'sonner';
 
 // Types for task mutations
 export interface CreateTaskData {
-  name: string;
-  description?: string;
+  title: string;
+  description?: string | null;
   phase_id: string;
   project_id: string;
-  assigned_to?: string;
-  due_date?: string;
+  assigned_to?: string | null;
+  due_date?: string | null;
   priority?: 'low' | 'medium' | 'high' | 'urgent';
   estimated_hours?: number;
   status?: 'pending' | 'in-progress' | 'completed' | 'blocked' | 'cancelled';
   dependencies?: string[];
+  created_by: string;
 }
 
 export interface UpdateTaskData {
   id: string;
-  name?: string;
+  title?: string;
   description?: string;
   assigned_to?: string;
   due_date?: string;
@@ -40,7 +41,7 @@ export function useCreateTask() {
   return useMutation({
     mutationFn: async (data: CreateTaskData) => {
       const { data: task, error } = await supabase
-        .from('construction_mgr.be_task')
+        .from('be_task')
         .insert([data])
         .select()
         .single();
@@ -90,7 +91,7 @@ export function useUpdateTask() {
       const { id, ...updateData } = data;
       
       const { data: task, error } = await supabase
-        .from('construction_mgr.be_task')
+        .from('be_task')
         .update(updateData)
         .eq('id', id)
         .select()
@@ -139,13 +140,13 @@ export function useDeleteTask() {
     mutationFn: async (taskId: string) => {
       // First get the task to know which project/phase to invalidate
       const { data: task } = await supabase
-        .from('construction_mgr.be_task')
+        .from('be_task')
         .select('project_id, phase_id, assigned_to')
         .eq('id', taskId)
         .single();
 
       const { error } = await supabase
-        .from('construction_mgr.be_task')
+        .from('be_task')
         .delete()
         .eq('id', taskId);
 
@@ -211,7 +212,7 @@ export function useUpdateTaskStatus() {
       }
 
       const { data: task, error } = await supabase
-        .from('construction_mgr.be_task')
+        .from('be_task')
         .update(updateData)
         .eq('id', taskId)
         .select()
@@ -280,7 +281,7 @@ export function useAssignTask() {
       userId: string | null;
     }) => {
       const { data: task, error } = await supabase
-        .from('construction_mgr.be_task')
+        .from('be_task')
         .update({ assigned_to: userId })
         .eq('id', taskId)
         .select()

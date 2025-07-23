@@ -272,7 +272,7 @@ export function useProjectTeamMembers(projectId: string) {
           .from('be_project_member')
           .select(`
             *,
-            user:be_user!be_project_member(
+            user:be_user!user_id(
               id,
               first_name,
               last_name,

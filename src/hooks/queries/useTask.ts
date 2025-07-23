@@ -15,7 +15,7 @@ export const useProjectTasks = (projectId: string) => {
     queryKey: queryKeys.tasks.byProject(projectId),
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('construction_mgr.be_task')
+        .from('be_task')
         .select(`
           id,
           project_id,
@@ -35,15 +35,16 @@ export const useProjectTasks = (projectId: string) => {
           comments,
           created_at,
           updated_at,
-          assignee:assigned_to (
+          assignee:be_user!assigned_to (
             id,
-            full_name,
-            email,
-            avatar_url
+            first_name,
+            last_name,
+            email
           ),
-          completedBy:completed_by (
+          completedBy:be_user!completed_by (
             id,
-            full_name,
+            first_name,
+            last_name,
             email
           )
         `)
@@ -71,7 +72,7 @@ export const usePhaseTasks = (phaseId: string) => {
     queryKey: queryKeys.tasks.byPhase(phaseId),
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('construction_mgr.be_task')
+        .from('be_task')
         .select(`
           id,
           project_id,
@@ -91,11 +92,11 @@ export const usePhaseTasks = (phaseId: string) => {
           comments,
           created_at,
           updated_at,
-          assignee:assigned_to (
+          assignee:be_user!assigned_to (
             id,
-            full_name,
-            email,
-            avatar_url
+            first_name,
+            last_name,
+            email
           )
         `)
         .eq('phase_id', phaseId)
@@ -122,7 +123,7 @@ export const useTask = (taskId: string) => {
     queryKey: queryKeys.tasks.detail(taskId),
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('construction_mgr.be_task')
+        .from('be_task')
         .select(`
           id,
           project_id,
@@ -142,18 +143,19 @@ export const useTask = (taskId: string) => {
           comments,
           created_at,
           updated_at,
-          assignee:assigned_to (
+          assignee:be_user!assigned_to (
             id,
-            full_name,
-            email,
-            avatar_url
-          ),
-          completedBy:completed_by (
-            id,
-            full_name,
+            first_name,
+            last_name,
             email
           ),
-          phase:phase_id (
+          completedBy:be_user!completed_by (
+            id,
+            first_name,
+            last_name,
+            email
+          ),
+          phase:be_phase!phase_id (
             id,
             name,
             category
@@ -183,7 +185,7 @@ export const useMyTasks = (userId: string) => {
     queryKey: ['my_tasks', userId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('construction_mgr.be_task')
+        .from('be_task')
         .select(`
           id,
           project_id,
@@ -196,12 +198,12 @@ export const useMyTasks = (userId: string) => {
           due_date,
           created_at,
           updated_at,
-          project:project_id (
+          project:be_project!project_id (
             id,
             name,
             status
           ),
-          phase:phase_id (
+          phase:be_phase!phase_id (
             id,
             name,
             category

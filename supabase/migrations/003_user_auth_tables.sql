@@ -22,7 +22,7 @@ CREATE TABLE construction_mgr.be_user (
         "push": true
       },
       "language": "en",
-      "currency": "GHS"
+      "currency": "USD"
     }',
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

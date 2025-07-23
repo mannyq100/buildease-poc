@@ -20,26 +20,70 @@ export interface ProjectImage {
 }
 
 export interface Project {
+  // Core project information (matches view)
   id: string;
   name: string;
-  client: string;
-  type: string;
-  location: string;
   description: string;
-  budget: number | ProjectBudget; // Support both old and new formats
-  spent: number;
-  progress: number;
+  owner_id: string;
   status: ProjectStatus;
-  startDate: Date;
-  endDate: Date;
-  imageUrl: string;
-  profileImage?: string;
-  inspirationalImages?: ProjectImage[];
-  progressImages?: ProjectImage[];
+  
+  // Visual assets (matches view)
+  profile_image?: string;
+  inspiration_images?: string[];
+  inspirationalImages?: ProjectImage[]; // Transformed in service
+  
+  // Project details (matches view)
+  client: string;
+  location: string;
+  project_type: string;
+  
+  // Timeline (raw strings from database)
+  start_date: string;
+  end_date: string;
+  
+  // Financial (matches view)
+  budget: number;
+  spent: number;
+  currency: string;
+  spent_percentage: number;
+  remaining: number;
+  
+  // Progress and health (matches view)
+  progress: number;
+  health: 'excellent' | 'good' | 'fair' | 'poor';
+  
+  // Owner (matches view)
+  owner_name: string;
+  
+  // Counts (matches view)
+  phases: number;
+  materials: number;
+  documents: number;
+  members: number;
+  transactions: number;
+  
+  // UI-only fields (populated by transform service)
   teamMembers: TeamMember[];
-  tags: string[];
-  phases: Phase[];
   activities: Activity[];
+  tags: string[];
+  
+  // Audit (matches view)
+  created_at: string;
+  updated_at: string;
+  
+  // Extended data (only in project_details view)
+  details?: any;
+  timeline?: any;
+  budget_data?: any;
+  location_data?: any;
+  specs?: any;
+  materials_config?: any;
+  features?: any;
+  constraints?: any;
+  owner_info?: any;
+  recent_phases?: any[];
+  recent_transactions?: any[];
+  
 }
 
 export interface Phase {

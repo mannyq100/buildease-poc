@@ -19,6 +19,11 @@ CREATE TABLE construction_mgr.be_project (
         "plot_size": null,
         "building_size": null,
         "floors": null
+      },
+      "owner_info": {
+        "name": null,
+        "phone": null,
+        "email": null
       }
     }',
     timeline JSONB NOT NULL DEFAULT '{
@@ -30,7 +35,7 @@ CREATE TABLE construction_mgr.be_project (
     budget JSONB NOT NULL DEFAULT '{
       "allocated": 0,
       "spent": 0,
-      "currency": "GHS"
+      "currency": "USD"
     }',
     owner_id UUID NOT NULL,
     profile_image TEXT,
