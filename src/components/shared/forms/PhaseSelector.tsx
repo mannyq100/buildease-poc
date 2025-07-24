@@ -3,7 +3,7 @@
  * Provides a dropdown for selecting phase categories with task preview
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, ChevronDown, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,6 +43,8 @@ export function PhaseSelector({
 }: PhaseSelectorProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const [showScrollHint, setShowScrollHint] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   
   // Get available phases for the project type
   const availablePhases = useMemo(() => 
@@ -61,6 +63,15 @@ export function PhaseSelector({
     availablePhases.find(phase => phase.category === selectedCategory),
     [availablePhases, selectedCategory]
   );
+
+  // Check if scrolling is needed when filtered phases change
+  useEffect(() => {
+    if (scrollContainerRef.current && filteredPhases.length > 0) {
+      const container = scrollContainerRef.current;
+      const hasScroll = container.scrollHeight > container.clientHeight;
+      setShowScrollHint(hasScroll);
+    }
+  }, [filteredPhases]);
   
   const handlePhaseSelect = (phase: PhaseTemplate) => {
     onCategorySelect(phase.category, phase.name);
@@ -72,6 +83,13 @@ export function PhaseSelector({
     
     setIsOpen(false);
     setSearchQuery('');
+  };
+
+  const handleScroll = () => {
+    // Hide scroll hint after user starts scrolling
+    if (showScrollHint) {
+      setShowScrollHint(false);
+    }
   };
   
   return (
@@ -117,7 +135,7 @@ export function PhaseSelector({
           </Button>
         </PopoverTrigger>
         
-        <PopoverContent className="w-full p-0 shadow-xl border-0 bg-white/95 backdrop-blur-sm" align="start">
+        <PopoverContent className="w-full max-w-lg p-0 shadow-xl border-0 bg-white" align="start" sideOffset={4}>
           {/* Enhanced Search Header */}
           <div className="flex items-center border-b border-gray-100 px-4 py-3 bg-gradient-to-r from-blue-50 to-orange-50">
             <Search className="mr-3 h-4 w-4 shrink-0 text-blue-600" />
@@ -130,7 +148,23 @@ export function PhaseSelector({
           </div>
           
           {/* Enhanced Scrollable Options List */}
-          <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+          <div className="relative">
+            {showScrollHint && (
+              <>
+                <div className="absolute top-0 right-2 z-10 bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-b-md shadow-sm border border-blue-200">
+                  Scroll for more
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white/80 to-transparent pointer-events-none z-10" />
+              </>
+            )}
+            <div 
+              ref={scrollContainerRef}
+              className="max-h-64 overflow-y-auto overscroll-contain"
+              style={{ 
+                scrollbarWidth: 'thin',
+                scrollbarColor: '#94A3B8 #F1F5F9'
+              }}
+              onScroll={handleScroll}>
             {filteredPhases.length === 0 ? (
               <div className="p-6 text-center">
                 <div className="text-gray-400 mb-2">
@@ -196,6 +230,7 @@ export function PhaseSelector({
                 ))}
               </div>
             )}
+            </div>
           </div>
           
           {showTaskPreview && selectedPhase && (

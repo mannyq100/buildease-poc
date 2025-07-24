@@ -2,7 +2,7 @@ import * as React from "react";
 import { cn } from "@/utils/core/ui";
 import type { Project } from "@/types/project";
 import { Card, CardContent } from "@/components/ui/card";
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import { StatusBadge } from "@/components/shared";
 import { DollarSign, Users, MapPin, Clock, Building } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 

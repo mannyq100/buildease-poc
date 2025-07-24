@@ -3,7 +3,7 @@ import { cn } from "@/utils/core/ui";
 import type { Phase, Task } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import { StatusBadge } from "@/components/shared";
 import { Calendar, CheckCircle2, Plus, RefreshCw } from "lucide-react";
 
 export interface CurrentPhaseCardProps {

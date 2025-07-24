@@ -1,7 +1,7 @@
 import { TaskStatus } from './common';
 import { Activity } from './activity';
 
-export type ProjectStatus = 'active' | 'planning' | 'completed' | 'upcoming' | 'on-hold';
+export type ProjectStatus = 'active' | 'planning' | 'completed' | 'on-hold';
 export type PriorityLevel = 'High' | 'Medium' | 'Low';
 export type ViewMode = 'grid' | 'list';
 

@@ -1,10 +1,33 @@
-# Debug Common Issues
+# Debug BuildEase Construction Platform Issues
 
-Troubleshoot common issues in the BuildEase construction management platform.
+Troubleshoot common issues in the BuildEase construction management platform with construction-specific debugging approaches.
+
+## Usage
+```bash
+# Example usage for different debugging scenarios:
+# Debug mobile responsiveness issues
+debug-issues --type=mobile --domain=project --component=ProjectTimelineCard
+
+# Debug Supabase connection issues
+debug-issues --type=database --domain=team --error="RLS policy violation"
+
+# Debug form validation issues
+debug-issues --type=form --domain=safety --component=SafetyChecklistForm
+
+# Debug performance issues on construction sites
+debug-issues --type=performance --domain=materials --context=mobile-offline
+```
+
+## Arguments
+- `--type`: Issue type (mobile|database|form|performance|auth|realtime|offline)
+- `--domain`: Construction domain (project|team|budget|safety|materials|timeline|reports)
+- `--component`: Specific component name (optional)
+- `--error`: Error message or description (optional)
+- `--context`: Usage context (mobile-offline|construction-site|homeowner-dashboard)
 
 ## Instructions
 
-You are debugging issues in the BuildEase platform. Use this guide to systematically identify and resolve problems.
+You are debugging issues in the BuildEase construction management platform. Use this guide to systematically identify and resolve construction-specific problems.
 
 ### Common Issue Categories
 

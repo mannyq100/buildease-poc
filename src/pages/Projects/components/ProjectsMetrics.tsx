@@ -109,52 +109,104 @@ function MetricCard({
 }: MetricCardProps) {
   const colorClasses = {
     blue: {
-      bg: 'bg-blue-500',
+      bg: 'bg-gradient-to-br from-blue-500 to-blue-600',
+      bgHover: 'hover:from-blue-600 hover:to-blue-700',
       text: 'text-blue-600',
       light: 'bg-blue-50',
+      shadow: 'shadow-blue-500/20',
+      hoverShadow: 'hover:shadow-blue-500/30',
     },
     green: {
-      bg: 'bg-green-500',
-      text: 'text-green-600',
-      light: 'bg-green-50',
+      bg: 'bg-gradient-to-br from-emerald-500 to-emerald-600',
+      bgHover: 'hover:from-emerald-600 hover:to-emerald-700',
+      text: 'text-emerald-600',
+      light: 'bg-emerald-50',
+      shadow: 'shadow-emerald-500/20',
+      hoverShadow: 'hover:shadow-emerald-500/30',
     },
     purple: {
-      bg: 'bg-purple-500',
+      bg: 'bg-gradient-to-br from-purple-500 to-purple-600',
+      bgHover: 'hover:from-purple-600 hover:to-purple-700',
       text: 'text-purple-600',
       light: 'bg-purple-50',
+      shadow: 'shadow-purple-500/20',
+      hoverShadow: 'hover:shadow-purple-500/30',
     },
     orange: {
-      bg: 'bg-orange-500',
+      bg: 'bg-gradient-to-br from-orange-500 to-orange-600',
+      bgHover: 'hover:from-orange-600 hover:to-orange-700',
       text: 'text-orange-600',
       light: 'bg-orange-50',
+      shadow: 'shadow-orange-500/20',
+      hoverShadow: 'hover:shadow-orange-500/30',
     },
   };
   
   const colors = colorClasses[color];
   
   return (
-    <Card className="hover:shadow-md transition-shadow duration-200">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2 flex-1">
-            <p className="text-sm font-medium text-slate-600">{title}</p>
-            <p className="text-2xl font-bold text-slate-900">{value}</p>
-            <p className="text-sm text-slate-500">{subtitle}</p>
+    <Card className={cn(
+      "group cursor-pointer transition-all duration-300 transform-gpu",
+      "hover:shadow-xl hover:-translate-y-1 hover:scale-[1.02]",
+      "bg-gradient-to-br from-white via-slate-50/50 to-white",
+      "border border-slate-200/60 hover:border-slate-300/60",
+      colors.hoverShadow
+    )}>
+      <CardContent className="p-6 relative overflow-hidden">
+        {/* Background pattern */}
+        <div className="absolute inset-0 bg-gradient-to-br from-transparent via-slate-50/30 to-slate-100/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        
+        <div className="relative flex items-center justify-between">
+          <div className="space-y-3 flex-1">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-semibold text-slate-700 uppercase tracking-wide">{title}</p>
+              <div className="w-1 h-1 bg-slate-400 rounded-full" />
+            </div>
+            
+            <p className={cn(
+              "text-3xl font-bold transition-colors duration-200",
+              "text-slate-900 group-hover:text-slate-800"
+            )}>
+              {value}
+            </p>
+            
+            <p className="text-sm text-slate-600 font-medium leading-tight">
+              {subtitle}
+            </p>
             
             {trend && (
               <Badge 
                 variant="outline" 
-                className={`${colors.light} ${colors.text} border-current text-xs`}
+                className={cn(
+                  "text-xs font-medium transition-all duration-200",
+                  colors.light, 
+                  colors.text, 
+                  "border-current group-hover:scale-105"
+                )}
               >
                 {trend}
               </Badge>
             )}
           </div>
           
-          <div className={`${colors.bg} p-3 rounded-lg`}>
-            <Icon className="h-6 w-6 text-white" />
+          <div className={cn(
+            "relative p-4 rounded-xl shadow-lg transition-all duration-300",
+            "group-hover:scale-110 group-hover:rotate-3 transform-gpu",
+            colors.bg,
+            colors.bgHover,
+            colors.shadow
+          )}>
+            <div className="absolute inset-0 bg-white/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <Icon className="h-7 w-7 text-white relative z-10" />
           </div>
         </div>
+        
+        {/* Animated border glow */}
+        <div className={cn(
+          "absolute inset-0 rounded-lg opacity-0 group-hover:opacity-20 transition-opacity duration-500",
+          "bg-gradient-to-r from-transparent via-current to-transparent",
+          colors.text
+        )} />
       </CardContent>
     </Card>
   );

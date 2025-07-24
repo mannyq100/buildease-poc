@@ -64,41 +64,6 @@ export function ProjectsPage() {
       ></div>
       
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-0">
-        {/* Enhanced Page Header with Modern Styling */}
-        <div className="mb-8">
-          <PageHeader
-            title="Projects"
-            description="Manage and monitor all your construction projects"
-            icon={<Briefcase className="h-8 w-8 text-blue-700" />}
-            actions={
-              <div className="flex gap-3">
-                {/* Desktop Create Button */}
-                <div className="hidden sm:block">
-                  <TouchOptimizedButton
-                    touchSize="md"
-                    onClick={handleCreateProject}
-                    className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-300 border-0 font-medium"
-                  >
-                    <Plus className="mr-2 h-4 w-4" /> 
-                    Create Project
-                  </TouchOptimizedButton>
-                </div>
-                
-                {/* Mobile Create Button */}
-                <div className="sm:hidden">
-                  <TouchOptimizedButton
-                    touchSize="lg"
-                    onClick={handleCreateProject}
-                    className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-300 border-0 rounded-full w-12 h-12 p-0 flex items-center justify-center"
-                  >
-                    <Plus className="h-5 w-5" />
-                  </TouchOptimizedButton>
-                </div>
-              </div>
-            }
-          />
-        </div>
-        
         {/* Connection Status Indicator */}
         {showConnectionIndicator && (
           <Suspense fallback={null}>

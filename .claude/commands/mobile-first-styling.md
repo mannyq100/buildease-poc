@@ -1,17 +1,56 @@
-# Mobile-First Styling Guide
+# BuildEase Construction Site Mobile-First Styling
 
-Guide for implementing mobile-first responsive design in BuildEase using TailwindCSS.
+Comprehensive guide for implementing mobile-first responsive design specifically for BuildEase construction management platform, optimized for on-site usage by construction professionals.
 
-## Instructions
+## Usage
+```bash
+# Example usage for different mobile styling scenarios:
+# Optimize project dashboard for construction sites
+mobile-first-styling --component=ProjectDashboard --context=construction-site --priority=high-contrast
 
-You are styling components for the BuildEase construction management platform with a mobile-first approach. Follow these guidelines:
+# Style forms for work gloves usage
+mobile-first-styling --component=DailyProgressForm --context=work-gloves --priority=large-touch-targets
 
-### Core Mobile-First Principles
+# Optimize team roster for quick access
+mobile-first-styling --component=TeamRosterCard --context=time-pressure --priority=quick-actions
 
-1. **Start with mobile** - Design for smallest screen first
-2. **Progressive enhancement** - Add features for larger screens
-3. **Touch-friendly sizing** - Minimum 44px touch targets
-4. **Responsive breakpoints** - Use Tailwind's responsive prefixes properly
+# Style safety checklist for emergency access
+mobile-first-styling --component=SafetyChecklist --context=emergency --priority=safety-prominence
+```
+
+## Arguments
+- `--component`: Component name to optimize (e.g., ProjectDashboard, TeamRosterCard)
+- `--context`: Usage context (construction-site|work-gloves|time-pressure|emergency|bright-sunlight)
+- `--priority`: Optimization priority (high-contrast|large-touch-targets|quick-actions|safety-prominence)
+- `--offline-support`: Include offline styling indicators (default: true)
+- `--accessibility`: Enhanced accessibility for diverse construction teams (default: true)
+
+## Output Files
+- Updated component with mobile-first construction site optimizations
+- Responsive breakpoint implementations
+- High-contrast color adjustments
+- Touch-friendly interaction improvements
+
+## Construction Site Mobile Reality
+
+You are styling components for construction professionals who use BuildEase on job sites with unique challenges:
+
+### Construction Site Environment
+- **Bright sunlight** - High contrast needed for outdoor visibility (WCAG AAA compliance minimum)
+- **Work gloves** - Larger touch targets required (minimum 48px, recommended 56px)
+- **Dusty conditions** - Simple, clean interfaces that work when screen is partially obscured
+- **Time pressure** - Quick access to critical functions (1-2 tap maximum)
+- **Unreliable connectivity** - Offline-first design with clear connection status indicators
+- **Safety priority** - Emergency actions must be immediately accessible and prominently displayed
+- **Multiple users** - Shared devices between crew members require quick user switching
+
+### Mobile-First Construction Principles
+
+1. **Construction Site First** - Design for outdoor mobile usage in harsh conditions
+2. **Glove-Friendly Touch** - All interactive elements minimum 48px for work gloves
+3. **High Contrast** - Ensure visibility in direct sunlight
+4. **Quick Actions** - Critical construction tasks accessible in 1-2 taps
+5. **Safety Prominence** - Safety features always visible and accessible
 
 ### Tailwind Breakpoints
 ```css

@@ -47,7 +47,7 @@ import { MaterialModal, Material as EnhancedMaterial } from '@/components/shared
 
 // Custom Components
 import { StatCard } from '@/components/shared/StatCard'
-import { StatusBadge } from '@/components/materials/StatusBadge'
+import { StatusBadge } from '@/components/shared'
 
 // Types and Data
 import { CATEGORIES } from '@/data/constants/categories'

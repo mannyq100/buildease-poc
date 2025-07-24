@@ -1,16 +1,54 @@
-# Create Form Component
+# Create BuildEase Construction Form
 
-Create a new form component for the BuildEase platform following established patterns with React Hook Form and Zod validation.
+Create a new form component specifically designed for construction workflows in the BuildEase platform, optimized for on-site mobile usage by construction professionals and accessible to homeowners.
+
+## Usage
+```bash
+# Example usage for different construction forms:
+# Create daily progress reporting form
+create-form DailyProgressForm --domain=project --type=report --mobile-optimized=true
+
+# Create safety inspection form
+create-form SafetyInspectionForm --domain=safety --type=checklist --offline=true
+
+# Create material request form
+create-form MaterialRequestForm --domain=materials --type=request --quick-entry=true
+
+# Create team assignment form
+create-form CrewAssignmentForm --domain=team --type=assignment --validation=strict
+```
+
+## Arguments
+- `<FormName>`: PascalCase form name ending with 'Form' (e.g., DailyProgressForm, SafetyChecklistForm)
+- `--domain`: Construction domain (project|team|budget|safety|materials|timeline|reports|permits)
+- `--type`: Form type (report|checklist|request|assignment|inspection|update)
+- `--mobile-optimized`: Optimize for work gloves and outdoor usage (default: true)
+- `--offline`: Include offline form submission with sync (default: false)
+- `--quick-entry`: Minimize typing, maximize selections (default: true)
+- `--validation`: Validation level (basic|strict|construction-specific)
+
+## Output Files
+- `src/components/construction/forms/<FormName>.tsx` - Main form component
+- `src/types/<domain>.ts` - Form data interfaces (if new)
+- `src/schemas/<domain>Schema.ts` - Zod validation schemas
+- `src/hooks/mutations/use<Domain>.ts` - Form submission hooks
 
 ## Instructions
 
-You are creating a form component for the BuildEase construction management platform. Follow these guidelines:
+You are creating a form component for BuildEase construction management. Every form must be designed for the reality of construction sites: mobile devices, work gloves, time pressure, and industry-specific workflows.
 
-### Form Structure
-Use React Hook Form with Zod validation following the established pattern:
+### Construction Form Architecture
 
+#### Core Principles for Construction Forms
+- **Mobile-First**: Designed for on-site usage with work gloves
+- **Quick Entry**: Minimize typing, maximize selection/toggles
+- **Offline Capable**: Forms should work without internet connection
+- **Industry Context**: Use construction terminology and workflows
+- **Visual Feedback**: Clear status indicators and progress tracking
+
+#### Construction Form Template
 ```typescript
-// src/components/forms/InspectionForm.tsx
+// src/components/construction/forms/DailyProgressForm.tsx
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -19,18 +57,33 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { CreateInspectionData, InspectionStatus } from '@/types/inspection';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Camera, MapPin, Users, AlertTriangle } from 'lucide-react';
+import { CreateProgressReportData } from '@/types/construction';
 
-// Validation schema
-const inspectionFormSchema = z.object({
-  inspection_type: z.string().min(1, 'Inspection type is required'),
-  scheduled_date: z.string().optional(),
-  inspector_id: z.string().optional(),
-  phase_id: z.string().optional(),
-  notes: z.string().optional(),
+// Construction-specific validation schema
+const dailyProgressSchema = z.object({
+  project_id: z.string().min(1, 'Project ID is required'),
+  phase_id: z.string().min(1, 'Current phase is required'),
+  weather_conditions: z.enum(['clear', 'rain', 'snow', 'extreme_heat', 'high_winds']),
+  crew_count: z.number().min(1, 'Crew count must be at least 1').max(50),
+  work_completed: z.array(z.string()).min(1, 'Select at least one completed task'),
+  materials_delivered: z.array(z.object({
+    material_type: z.string(),
+    quantity: z.number(),
+    supplier: z.string().optional()
+  })).optional(),
+  safety_incidents: z.boolean(),
+  incident_details: z.string().optional(),
+  delays_encountered: z.boolean(),
+  delay_reason: z.string().optional(),
+  next_day_plan: z.string().min(10, 'Please provide tomorrow\'s work plan'),
+  supervisor_notes: z.string().optional(),
+  photo_urls: z.array(z.string()).optional()
 });
 
-type InspectionFormData = z.infer<typeof inspectionFormSchema>;
+type DailyProgressData = z.infer<typeof dailyProgressSchema>;
 
 interface InspectionFormProps {
   projectId: string;

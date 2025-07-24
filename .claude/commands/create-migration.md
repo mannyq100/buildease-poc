@@ -1,6 +1,33 @@
-# Create Database Migration
+# Create BuildEase Construction Migration
 
-Create a new Supabase migration for the BuildEase database following established patterns.
+Create a new Supabase migration file for the BuildEase construction management platform following established naming and structure conventions.
+
+## Usage
+```bash
+# Example usage for different construction database changes:
+# Create new table for construction phases
+create-migration add_construction_phases_table --type=table --domain=project
+
+# Add safety inspection fields
+create-migration add_safety_inspection_fields --type=alter --domain=safety
+
+# Create material tracking system
+create-migration create_material_inventory_system --type=system --domain=materials
+
+# Add team role permissions
+create-migration add_team_role_permissions --type=permissions --domain=team
+```
+
+## Arguments
+- `<migration_name>`: Snake_case migration name describing the change (e.g., add_project_phases, create_safety_inspections)
+- `--type`: Migration type (table|alter|index|permissions|system|data)
+- `--domain`: Construction domain (project|team|budget|safety|materials|timeline|reports|permits)
+- `--rollback`: Include rollback SQL (default: true)
+- `--rls`: Include Row Level Security policies (default: true for new tables)
+
+## Output Files
+- `supabase/migrations/<timestamp>_<migration_name>.sql` - Migration SQL file
+- `docs/database/<domain>_schema.md` - Updated schema documentation (if new table)
 
 ## Instructions
 

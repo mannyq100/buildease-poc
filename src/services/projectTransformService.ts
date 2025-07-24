@@ -599,7 +599,7 @@ export class ProjectTransformService {
   }
 
   private static validateStatus(value: any): ProjectStatus {
-    const validStatuses: ProjectStatus[] = ['active', 'planning', 'completed', 'upcoming', 'on-hold'];
+    const validStatuses: ProjectStatus[] = ['active', 'planning', 'completed', 'on-hold'];
     
     if (typeof value !== 'string') {
       console.warn(`Invalid status type: ${typeof value}, using default 'planning'`);
@@ -612,6 +612,28 @@ export class ProjectTransformService {
     }
     
     return value as ProjectStatus;
+  }
+
+  /**
+   * Map UI status values to database status values
+   */
+  static mapUIStatusToDBStatus(uiStatus: ProjectStatus | 'all'): string | undefined {
+    if (uiStatus === 'all') {
+      return undefined; // No filter needed for 'all'
+    }
+    
+    switch (uiStatus) {
+      case 'active':
+        return 'IN_PROGRESS';
+      case 'planning':
+        return 'PLANNING';
+      case 'completed':
+        return 'COMPLETED';
+      case 'on-hold':
+        return 'PAUSED';
+      default:
+        return 'PLANNING';
+    }
   }
 
   private static validateHealth(value: any): 'excellent' | 'good' | 'fair' | 'poor' {

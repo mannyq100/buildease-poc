@@ -1,6 +1,39 @@
-# Create Service Layer
+# Create BuildEase Construction Service
 
-Create a new service for the BuildEase platform following established patterns and API conventions.
+Create a new service layer for the BuildEase construction management platform following established patterns and API conventions.
+
+## Usage
+```bash
+# Example usage for different construction domains:
+# Create project management service
+create-service ProjectService --domain=project --crud=full
+
+# Create inspection service
+create-service InspectionService --domain=safety --crud=full
+
+# Create material tracking service
+create-service MaterialService --domain=materials --crud=basic
+
+# Create team management service
+create-service TeamService --domain=team --crud=full --realtime=true
+```
+
+## Arguments
+- `<ServiceName>`: PascalCase service name ending with 'Service' (e.g., ProjectService, InspectionService)
+- `--domain`: Construction domain (project|team|budget|safety|materials|timeline|reports|permits)
+- `--crud`: CRUD operations level (basic|full|readonly)
+  - `basic`: create, read, update
+  - `full`: create, read, update, delete + domain-specific methods
+  - `readonly`: read operations only
+- `--realtime`: Include Supabase real-time subscriptions (default: false)
+- `--offline`: Include offline support with sync (default: false)
+
+## Output Files
+- `src/services/<domain>Service.ts` - Main service implementation
+- `src/types/<domain>.ts` - TypeScript interfaces (if new)
+- `src/hooks/queries/use<Domain>.ts` - React Query hooks
+- `src/hooks/mutations/use<Domain>.ts` - Mutation hooks
+- `src/data/mock/<domain>.json` - Mock data for development
 
 ## Instructions
 

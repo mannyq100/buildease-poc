@@ -146,9 +146,10 @@ function App() {
                         <Route path="dashboard" element={<Dashboard />} />
                         
                         {/* Project management routes */}
-                        <Route path="create-project" element={<CreateProject />} />
                         <Route path="projects" element={<Projects />} />
                         <Route path="project/:id" element={<ProjectDetails />} />
+                        <Route path="projects/new" element={<CreateProject />} />
+
                         
                         {/* Phase management routes */}
                         <Route path="phase-details" element={<PhaseDetails />} />

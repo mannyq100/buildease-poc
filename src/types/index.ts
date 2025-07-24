@@ -9,6 +9,7 @@ export * from './plan/index';
 
 // Other domain types
 export * from './project';
+export * from './projectDetails';
 export * from './task';
 export * from './material';
 export * from './phase';

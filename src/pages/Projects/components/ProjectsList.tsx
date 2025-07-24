@@ -167,6 +167,7 @@ export const ProjectsList = memo(function ProjectsList({
             title={project.name}
             description={project.description}
             client={project.client}
+            owner={project.owner_name}
             status={mapProjectStatus(project.status)}
             progress={project.progress}
             imageUrl={project.profile_image || ''}

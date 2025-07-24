@@ -6,6 +6,28 @@
  * - Clear organization
  */
 
+// Core UI Components - Status & Progress
+export { StatusBadge, statusBadgeVariants } from './StatusBadge';
+export type { StatusBadgeProps } from './StatusBadge';
+
+export { ProgressBar, BudgetProgress, PhaseProgress, progressVariants, progressIndicatorVariants } from './ProgressBar';
+export type { ProgressBarProps } from './ProgressBar';
+
+// Loading States
+export {
+  Skeleton,
+  LoadingSpinner,
+  ProjectCardSkeleton,
+  DashboardSkeleton,
+  TableSkeleton,
+  PhaseCardSkeleton,
+  TaskListSkeleton,
+  TeamMembersSkeleton,
+  CenteredLoading,
+  LoadingOverlay,
+} from './LoadingStates';
+export type { BaseLoadingProps, SkeletonProps, SpinnerProps } from './LoadingStates';
+
 // Card Components
 export { StatCard } from './StatCard';
 export type { StatCardProps } from './StatCard';
@@ -53,10 +75,9 @@ export type { DocumentItemProps } from '@/types/documents';
 // Content Components
 export { ContentSection } from './ContentSection';
 
-// Legacy exports that need to be maintained for backward compatibility
+// Item Components
 export { ActivityItem } from './ActivityItem';
 export { InsightItem } from './InsightItem';
-export { StatusBadge } from './StatusBadge';
 export { TaskItem } from './TaskItem';
 export { MaterialItem } from './MaterialItem';
 export { PageHeader } from './PageHeader';

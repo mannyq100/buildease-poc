@@ -1,10 +1,39 @@
-# Refactor Code
+# Refactor BuildEase Construction Code
 
-Code refactoring guide for the BuildEase construction management platform.
+Code refactoring guide for the BuildEase construction management platform with construction-specific patterns and optimizations.
+
+## Usage
+```bash
+# Example usage for different refactoring scenarios:
+# Refactor large component into smaller pieces
+refactor-code --type=component --target=ProjectDetailsContent --strategy=split-by-domain
+
+# Extract reusable construction logic
+refactor-code --type=hook --target=useProjectPhases --strategy=extract-logic
+
+# Optimize mobile performance for construction sites
+refactor-code --type=performance --target=MaterialsInventory --strategy=mobile-optimize
+
+# Consolidate duplicate CRUD operations
+refactor-code --type=service --target=TeamService --strategy=consolidate-crud
+```
+
+## Arguments
+- `--type`: Refactoring type (component|hook|service|utility|performance)
+- `--target`: Target file or component name (e.g., ProjectDetailsContent, useProjectPhases)
+- `--strategy`: Refactoring strategy (split-by-domain|extract-logic|mobile-optimize|consolidate-crud|improve-types)
+- `--domain`: Construction domain (project|team|budget|safety|materials|timeline|reports)
+- `--preserve-functionality`: Ensure no breaking changes (default: true)
+
+## Output Files
+- Refactored files in their original locations
+- New extracted components/hooks in appropriate directories
+- Updated import/export statements
+- Migration guide for breaking changes (if any)
 
 ## Instructions
 
-You are refactoring code in the BuildEase platform to improve maintainability, performance, and code quality. Follow these systematic approaches.
+You are refactoring code in the BuildEase construction management platform to improve maintainability, performance, and code quality. Follow these systematic approaches with construction industry focus.
 
 ### Refactoring Principles
 

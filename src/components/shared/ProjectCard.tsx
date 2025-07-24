@@ -18,6 +18,7 @@ export interface ProjectCardProps {
   title: string;
   description?: string;
   client: string;
+  owner?: string; // Project owner name
   status: 'active' | 'completed' | 'pending' | 'delayed';
   progress?: number;
   imageUrl?: string;
@@ -50,6 +51,7 @@ export interface ProjectCardProps {
 export function ProjectCard({
   title,
   client,
+  owner,
   status,
   progress = 0,
   imageUrl,
@@ -133,10 +135,18 @@ export function ProjectCard({
         {/* Enhanced Title */}
         <h3 className="text-lg font-bold text-slate-900 dark:text-white line-clamp-1 mb-2 group-hover:text-buildease-blue-700 dark:group-hover:text-buildease-blue-400 transition-colors duration-300">{title}</h3>
         
-        {/* Enhanced Client */}
-        <div className="flex items-center text-sm text-buildease-blue-700 dark:text-slate-400 mb-4">
-          <Building2 className="h-4 w-4 mr-2 flex-shrink-0 text-buildease-orange-600 dark:text-buildease-orange-400" />
-          <span className="line-clamp-1 font-medium">{client}</span>
+        {/* Enhanced Client and Owner */}
+        <div className="space-y-2 mb-4">
+          <div className="flex items-center text-sm text-buildease-blue-700 dark:text-slate-400">
+            <Building2 className="h-4 w-4 mr-2 flex-shrink-0 text-buildease-orange-600 dark:text-buildease-orange-400" />
+            <span className="line-clamp-1 font-medium">{client}</span>
+          </div>
+          {owner && (
+            <div className="flex items-center text-xs text-slate-600 dark:text-slate-400">
+              <Users className="h-3 w-3 mr-2 flex-shrink-0 text-green-600 dark:text-green-400" />
+              <span className="line-clamp-1 font-medium">Owner: {owner}</span>
+            </div>
+          )}
         </div>
         
         {/* Enhanced Progress Section */}

@@ -1,10 +1,39 @@
-# Optimize Performance
+# Optimize BuildEase Construction Performance
 
-Performance optimization guide for the BuildEase construction management platform.
+Performance optimization guide for the BuildEase construction management platform with construction site-specific optimizations.
+
+## Usage
+```bash
+# Example usage for different performance optimization scenarios:
+# Optimize project dashboard for slow construction site connections
+optimize-performance --component=ProjectDashboard --context=construction-site --priority=initial-load
+
+# Optimize materials inventory for offline usage
+optimize-performance --component=MaterialsInventory --context=offline --priority=data-sync
+
+# Optimize team roster for battery efficiency
+optimize-performance --component=TeamRoster --context=all-day-usage --priority=battery-life
+
+# Optimize safety forms for quick submission
+optimize-performance --component=SafetyChecklistForm --context=time-critical --priority=submission-speed
+```
+
+## Arguments
+- `--component`: Component name to optimize (e.g., ProjectDashboard, MaterialsInventory)
+- `--context`: Usage context (construction-site|offline|all-day-usage|time-critical|poor-connectivity)
+- `--priority`: Optimization priority (initial-load|data-sync|battery-life|submission-speed|memory-usage)
+- `--target-metrics`: Performance targets (e.g., "<3s initial load", "<100ms interactions")
+- `--offline-support`: Include offline performance optimizations (default: true)
+
+## Output Files
+- Optimized component with performance improvements
+- Bundle analysis report
+- Performance metrics documentation
+- Offline caching strategy (if applicable)
 
 ## Instructions
 
-You are optimizing performance for the BuildEase platform. Focus on mobile performance, as many users access the platform from construction sites with potentially slow connections.
+You are optimizing performance for the BuildEase construction management platform. Focus on mobile performance for construction professionals working on-site with challenging connectivity conditions.
 
 ### Performance Priorities
 

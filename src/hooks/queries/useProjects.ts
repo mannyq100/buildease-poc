@@ -53,25 +53,28 @@ export const useProjects = (filters?: ProjectFilters) => {
         `)
         .order('updated_at', { ascending: false });
 
-      // Apply status filter (UI status matches view status)
+      // Apply status filter (map UI status to DB status)
       if (filters?.status && filters.status !== 'all') {
-        query = query.eq('status', filters.status);
+        const dbStatus = ProjectTransformService.mapUIStatusToDBStatus(filters.status);
+        if (dbStatus) {
+          query = query.eq('status', dbStatus);
+        }
       }
 
-      // Apply search filter (search across multiple fields)
+      // Apply search filter (search across available fields)
       if (filters?.search && filters.search.trim()) {
         const searchTerm = filters.search.trim();
-        query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,client.ilike.%${searchTerm}%,location.ilike.%${searchTerm}%,project_type.ilike.%${searchTerm}%`);
+        query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,details->>client.ilike.%${searchTerm}%,details->>location.ilike.%${searchTerm}%,details->>project_type.ilike.%${searchTerm}%`);
       }
 
-      // Apply type filter
+      // Apply type filter (project_type is stored in details JSONB)
       if (filters?.type) {
-        query = query.eq('project_type', filters.type);
+        query = query.eq('details->>project_type', filters.type);
       }
 
-      // Apply client filter
+      // Apply client filter (client is stored in details JSONB)
       if (filters?.client) {
-        query = query.eq('client', filters.client);
+        query = query.eq('details->>client', filters.client);
       }
 
       const { data, error } = await query;
@@ -205,7 +208,6 @@ export const useProjectsByStatus = () => {
         active: statusCounts.active || 0,
         planning: statusCounts.planning || 0,
         completed: statusCounts.completed || 0,
-        upcoming: statusCounts.upcoming || 0,
         'on-hold': statusCounts['on-hold'] || 0,
       };
     },
@@ -253,25 +255,6 @@ export const useProjectSearch = (searchTerm: string, enabled: boolean = true) =>
   });
 };
 
-/**
- * Map UI status values to database status values
- */
-function mapUIStatusToDBStatus(uiStatus: ProjectStatus): string {
-  switch (uiStatus) {
-    case 'active':
-      return 'IN_PROGRESS';
-    case 'planning':
-      return 'PLANNING';
-    case 'completed':
-      return 'COMPLETED';
-    case 'upcoming':
-      return 'PLANNING'; // Map upcoming to planning for now
-    case 'on-hold':
-      return 'PAUSED';
-    default:
-      return 'PLANNING';
-  }
-}
 
 /**
  * Map database status values to UI status values
