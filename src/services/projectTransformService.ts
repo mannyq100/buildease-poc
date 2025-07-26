@@ -62,6 +62,7 @@ export interface ProjectViewData {
   description?: string | null;
   profile_image?: string | null;
   inspiration_images?: string[] | null;
+  progress_images?: string[] | null;
   start_date?: string | null;
   end_date?: string | null;
   
@@ -133,7 +134,9 @@ export class ProjectTransformService {
       // Visual assets
       profile_image: this.validateOptionalString(data.profile_image),
       inspiration_images: this.validateStringArray(data.inspiration_images),
-      inspirationalImages: this.transformInspirationImages(data.inspiration_images),
+      progress_images: this.validateStringArray(data.progress_images),
+      inspirationalImages: this.transformProjectImages(data.inspiration_images, 'inspiration'),
+      progressImages: this.transformProjectImages(data.progress_images, 'progress'),
       
       // Extract from details JSONB
       client: details.client || 'Unknown Client',
@@ -190,7 +193,9 @@ export class ProjectTransformService {
       // Visual assets
       profile_image: this.validateOptionalString(viewData.profile_image),
       inspiration_images: this.validateStringArray(viewData.inspiration_images),
-      inspirationalImages: this.transformInspirationImages(viewData.inspiration_images),
+      progress_images: this.validateStringArray(viewData.progress_images),
+      inspirationalImages: this.transformProjectImages(viewData.inspiration_images, 'inspiration'),
+      progressImages: this.transformProjectImages(viewData.progress_images, 'progress'),
       
       // Project details (already formatted by view)
       client: this.validateString(viewData.client, 'client'),
@@ -275,10 +280,10 @@ export class ProjectTransformService {
   }
 
   /**
-   * Transform inspiration images from string array to ProjectImage array
+   * Transform project images from string array to ProjectImage array
    * Null-safe implementation with proper validation
    */
-  private static transformInspirationImages(images?: string[] | null): ProjectImage[] {
+  private static transformProjectImages(images?: string[] | null, imageType: 'inspiration' | 'progress' = 'inspiration'): ProjectImage[] {
     if (!images || !Array.isArray(images) || images.length === 0) {
       return [];
     }
@@ -300,12 +305,19 @@ export class ProjectTransformService {
         }
       })
       .map((url, index) => ({
-        id: `inspiration-${index}-${Date.now()}`, // More unique IDs
+        id: `${imageType}-${index}-${Date.now()}`, // More unique IDs
         url: url.trim(),
-        caption: `Inspiration ${index + 1}`,
+        caption: imageType === 'progress' ? `Progress ${index + 1}` : `Inspiration ${index + 1}`,
         uploadedAt: new Date(),
-        type: 'inspiration' as const,
+        type: imageType as const,
       }));
+  }
+
+  /**
+   * Legacy method for backward compatibility
+   */
+  private static transformInspirationImages(images?: string[] | null): ProjectImage[] {
+    return this.transformProjectImages(images, 'inspiration');
   }
 
   /**

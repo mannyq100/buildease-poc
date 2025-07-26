@@ -1,7 +1,6 @@
 /**
  * EmptyDocumentState component for displaying when no documents are found
  */
-import React from 'react'
 import { Button } from '@/components/ui/button'
 import { File, Upload, Star } from 'lucide-react'
 

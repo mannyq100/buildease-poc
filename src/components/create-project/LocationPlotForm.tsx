@@ -3,7 +3,7 @@
  * Second step of the project creation wizard
  * Collects location and plot information
  */
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CreateProjectFormValues } from '../../pages/CreateProject';
 import { Input } from '@/components/ui/input';
@@ -12,72 +12,21 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/comp
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MapPin, Ruler } from 'lucide-react';
 import { AreaUnit } from '../../utils/projectFormUtils';
+import { Country, State } from 'country-state-city';
 
-// Countries
-const COUNTRIES = [
-  { value: 'ghana', label: 'Ghana' },
-  { value: 'nigeria', label: 'Nigeria' },
-  { value: 'kenya', label: 'Kenya' },
-  { value: 'south-africa', label: 'South Africa' },
-  { value: 'other', label: 'Other' }
-];
+// Types for country and state data
+interface CountryOption {
+  value: string;
+  label: string;
+  isoCode: string;
+}
 
-// Regions by country
-const REGIONS_BY_COUNTRY = {
-  ghana: [
-    { value: 'greater-accra', label: 'Greater Accra' },
-    { value: 'ashanti', label: 'Ashanti' },
-    { value: 'eastern', label: 'Eastern' },
-    { value: 'western', label: 'Western' },
-    { value: 'central', label: 'Central' },
-    { value: 'volta', label: 'Volta' },
-    { value: 'northern', label: 'Northern' },
-    { value: 'upper-east', label: 'Upper East' },
-    { value: 'upper-west', label: 'Upper West' },
-    { value: 'north-east', label: 'North East' },
-    { value: 'savannah', label: 'Savannah' },
-    { value: 'bono', label: 'Bono' },
-    { value: 'bono-east', label: 'Bono East' },
-    { value: 'ahafo', label: 'Ahafo' },
-    { value: 'western-north', label: 'Western North' },
-    { value: 'oti', label: 'Oti' }
-  ],
-  nigeria: [
-    { value: 'lagos', label: 'Lagos' },
-    { value: 'abuja', label: 'FCT - Abuja' },
-    { value: 'kano', label: 'Kano' },
-    { value: 'oyo', label: 'Oyo' },
-    { value: 'rivers', label: 'Rivers' },
-    { value: 'kaduna', label: 'Kaduna' },
-    { value: 'ogun', label: 'Ogun' },
-    { value: 'anambra', label: 'Anambra' },
-    { value: 'delta', label: 'Delta' },
-    { value: 'edo', label: 'Edo' }
-  ],
-  kenya: [
-    { value: 'nairobi', label: 'Nairobi' },
-    { value: 'mombasa', label: 'Mombasa' },
-    { value: 'kisumu', label: 'Kisumu' },
-    { value: 'nakuru', label: 'Nakuru' },
-    { value: 'eldoret', label: 'Uasin Gishu (Eldoret)' },
-    { value: 'thika', label: 'Kiambu (Thika)' },
-    { value: 'malindi', label: 'Kilifi (Malindi)' },
-    { value: 'garissa', label: 'Garissa' },
-    { value: 'kakamega', label: 'Kakamega' }
-  ],
-  'south-africa': [
-    { value: 'gauteng', label: 'Gauteng' },
-    { value: 'western-cape', label: 'Western Cape' },
-    { value: 'kwazulu-natal', label: 'KwaZulu-Natal' },
-    { value: 'eastern-cape', label: 'Eastern Cape' },
-    { value: 'limpopo', label: 'Limpopo' },
-    { value: 'mpumalanga', label: 'Mpumalanga' },
-    { value: 'north-west', label: 'North West' },
-    { value: 'free-state', label: 'Free State' },
-    { value: 'northern-cape', label: 'Northern Cape' }
-  ],
-  other: []
-};
+interface StateOption {
+  value: string;
+  label: string;
+  isoCode: string;
+  countryCode: string;
+}
 
 // Terrain types
 const TERRAIN_TYPES = [
@@ -100,11 +49,75 @@ const SIZE_UNITS: { value: AreaUnit; label: string }[] = [
 function LocationPlotFormComponent() {
   const { control, watch, setValue } = useFormContext<CreateProjectFormValues>();
   
+  // State for dynamic country and state data
+  const [countries, setCountries] = useState<CountryOption[]>([]);
+  const [states, setStates] = useState<StateOption[]>([]);
+  const [loadingStates, setLoadingStates] = useState(false);
+  
   // Watch plot size unit to provide appropriate guidance
   const plotSizeUnit = watch('plotSizeUnit');
   
   // Watch country to show conditional regions
   const selectedCountry = watch('country');
+  
+  // Load countries on component mount
+  useEffect(() => {
+    try {
+      const allCountries = Country.getAllCountries();
+      const countryOptions: CountryOption[] = allCountries.map(country => ({
+        value: country.name, // Store readable name as value
+        label: country.name,
+        isoCode: country.isoCode // Keep ISO code for state lookups
+      }));
+      
+      // Sort countries alphabetically
+      countryOptions.sort((a, b) => a.label.localeCompare(b.label));
+      setCountries(countryOptions);
+    } catch (error) {
+      console.error('Error loading countries:', error);
+      // Fallback to empty array if there's an error
+      setCountries([]);
+    }
+  }, []);
+  
+  // Load states when country changes
+  useEffect(() => {
+    if (selectedCountry) {
+      setLoadingStates(true);
+      try {
+        // Find the country's ISO code from our countries list
+        const selectedCountryData = countries.find(country => country.value === selectedCountry);
+        const countryIsoCode = selectedCountryData?.isoCode;
+        
+        if (countryIsoCode) {
+          const countryStates = State.getStatesOfCountry(countryIsoCode);
+          const stateOptions: StateOption[] = countryStates.map(state => ({
+            value: state.name, // Store readable name as value
+            label: state.name,
+            isoCode: state.isoCode,
+            countryCode: state.countryCode
+          }));
+          
+          // Sort states alphabetically
+          stateOptions.sort((a, b) => a.label.localeCompare(b.label));
+          setStates(stateOptions);
+        } else {
+          setStates([]);
+        }
+        
+        // Clear the region field when country changes
+        setValue('region', '');
+      } catch (error) {
+        console.error('Error loading states:', error);
+        setStates([]);
+      } finally {
+        setLoadingStates(false);
+      }
+    } else {
+      setStates([]);
+      setValue('region', '');
+    }
+  }, [selectedCountry, setValue, countries]);
   
   // Memoize the size guidance function to prevent recreation
   const getSizeGuidance = useMemo(() => (unit: string) => {
@@ -192,7 +205,7 @@ function LocationPlotFormComponent() {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {COUNTRIES.map((country) => (
+                  {countries.map((country) => (
                     <SelectItem key={country.value} value={country.value}>
                       {country.label}
                     </SelectItem>
@@ -205,28 +218,30 @@ function LocationPlotFormComponent() {
         />
 
         {/* Conditional Region Field */}
-        {selectedCountry && selectedCountry !== 'other' && (
+        {selectedCountry && states.length > 0 && (
           <FormField
             control={control}
             name="region"
             render={({ field }) => (
               <FormItem className="space-y-3">
                 <FormLabel className="text-lg font-semibold text-slate-900 dark:text-white font-inter">
-                  Which region/state?
+                  Region/State
+                  <span className="text-red-500 ml-1">*</span>
                 </FormLabel>
                 <Select 
                   onValueChange={field.onChange} 
-                  value={field.value}
+                  defaultValue={field.value}
+                  disabled={loadingStates}
                 >
                   <FormControl>
                     <SelectTrigger className="h-14 text-base font-opensans border-2 border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 focus:border-[#2B6CB0] dark:focus:border-[#2B6CB0] focus:ring-4 focus:ring-[#2B6CB0]/20 transition-all duration-300 shadow-sm hover:shadow-md">
-                      <SelectValue placeholder="Select your region/state" />
+                      <SelectValue placeholder={loadingStates ? "Loading states..." : "Select region/state"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {REGIONS_BY_COUNTRY[selectedCountry as keyof typeof REGIONS_BY_COUNTRY]?.map((region: { value: string; label: string }) => (
-                      <SelectItem key={region.value} value={region.value}>
-                        {region.label}
+                    {states.map((state) => (
+                      <SelectItem key={state.value} value={state.value}>
+                        {state.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -237,8 +252,8 @@ function LocationPlotFormComponent() {
           />
         )}
 
-        {/* Custom region input for "Other" countries */}
-        {selectedCountry === 'other' && (
+        {/* Custom region input for countries without states */}
+        {selectedCountry && states.length === 0 && !loadingStates && (
           <FormField
             control={control}
             name="region"
@@ -246,14 +261,18 @@ function LocationPlotFormComponent() {
               <FormItem className="space-y-3">
                 <FormLabel className="text-lg font-semibold text-slate-900 dark:text-white font-inter">
                   Region/State
+                  <span className="text-base font-normal text-slate-500 ml-2 font-opensans">(optional)</span>
                 </FormLabel>
                 <FormControl>
                   <Input 
-                    placeholder="Enter your region or state" 
+                    placeholder="Enter your region, state, or city" 
                     {...field} 
                     className="h-14 text-base font-opensans border-2 border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 focus:border-[#2B6CB0] dark:focus:border-[#2B6CB0] focus:ring-4 focus:ring-[#2B6CB0]/20 transition-all duration-300 shadow-sm hover:shadow-md placeholder:text-slate-500"
                   />
                 </FormControl>
+                <p className="text-sm text-slate-600 dark:text-slate-400 font-opensans">
+                  No predefined states available for this country. Please enter your location manually.
+                </p>
                 <FormMessage className="text-red-600 font-opensans text-sm" />
               </FormItem>
             )}

@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { queryKeys } from '@/lib/queryClient';
 import { toast } from 'sonner';
+import { ProjectTransformService } from '@/services/projectTransformService';
 import type { ProjectStatus } from '@/types/project';
 
 // Types for project mutations
@@ -18,16 +19,18 @@ export interface CreateProjectData {
   details?: any;
   profile_image?: string;
   inspiration_images?: string[];
+  progress_images?: string[];
 }
 
 export interface UpdateProjectData {
   id: string;
   name?: string;
   description?: string;
-  client_name?: string;
+  client?: string;
   project_type?: string;
-  location?: string;
+  location?: string; // Street address portion can be updated
   budget?: number;
+  currency?: string;
   start_date?: string;
   end_date?: string;
   status?: ProjectStatus;
@@ -36,6 +39,7 @@ export interface UpdateProjectData {
   details?: any;
   profile_image?: string;
   inspiration_images?: string[];
+  progress_images?: string[];
 }
 
 /**
@@ -46,9 +50,15 @@ export function useCreateProject() {
 
   return useMutation({
     mutationFn: async (data: CreateProjectData) => {
+      // Map UI status to database status if provided
+      const createData = {
+        ...data,
+        ...(data.status && { status: ProjectTransformService.mapUIStatusToDBStatus(data.status) })
+      };
+
       const { data: project, error } = await supabase
         .from('be_project')
-        .insert([data])
+        .insert([createData])
         .select()
         .single();
 
@@ -58,7 +68,10 @@ export function useCreateProject() {
     onSuccess: (newProject) => {
       // Invalidate and refetch user projects list
       queryClient.invalidateQueries({ 
-        queryKey: queryKeys.projects.byUser() 
+        queryKey: queryKeys.projects.all 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.projects.list({}) 
       });
       
       // Add the new project to the cache
@@ -84,7 +97,61 @@ export function useUpdateProject() {
 
   return useMutation({
     mutationFn: async (data: UpdateProjectData) => {
-      const { id, ...updateData } = data;
+      const { 
+        id, 
+        client, 
+        project_type, 
+        location, 
+        budget, 
+        currency, 
+        start_date, 
+        end_date,
+        ...directFields 
+      } = data;
+      
+      // Structure the update data to match the database schema
+      const updateData: any = {
+        ...directFields
+      };
+
+      // Map UI status to database status if status is being updated
+      if (directFields.status) {
+        updateData.status = ProjectTransformService.mapUIStatusToDBStatus(directFields.status);
+      }
+
+      // Update details JSONB field if any related fields are provided
+      if (client !== undefined || project_type !== undefined || location !== undefined) {
+        // Get existing details first to preserve other fields
+        const existingDetails = directFields.details || {};
+        updateData.details = {
+          ...existingDetails,
+          ...(client !== undefined && { client }),
+          ...(project_type !== undefined && { project_type }),
+          ...(location !== undefined && { location }) // Location can now be updated (street address only)
+        };
+      }
+
+      // Update budget JSONB field if budget/currency provided
+      if (budget !== undefined || currency !== undefined) {
+        // Get existing budget first to preserve other fields
+        const existingBudget = directFields.budget || {};
+        updateData.budget = {
+          ...existingBudget,
+          ...(budget !== undefined && { allocated: budget }),
+          ...(currency !== undefined && { currency })
+        };
+      }
+
+      // Update timeline JSONB field if dates provided
+      if (start_date !== undefined || end_date !== undefined) {
+        // Get existing timeline first to preserve other fields
+        const existingTimeline = directFields.timeline || {};
+        updateData.timeline = {
+          ...existingTimeline,
+          ...(start_date !== undefined && { planned_start: start_date }),
+          ...(end_date !== undefined && { planned_end: end_date })
+        };
+      }
       
       const { data: project, error } = await supabase
         .from('be_project')
@@ -105,7 +172,10 @@ export function useUpdateProject() {
       
       // Invalidate user projects list to reflect changes
       queryClient.invalidateQueries({ 
-        queryKey: queryKeys.projects.byUser() 
+        queryKey: queryKeys.projects.all 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.projects.list({}) 
       });
 
       toast.success('Project updated successfully');
@@ -133,7 +203,9 @@ export function useUpdateProjectStatus() {
       status: ProjectStatus;
       progress?: number;
     }) => {
-      const updateData: any = { status };
+      const updateData: any = { 
+        status: ProjectTransformService.mapUIStatusToDBStatus(status) 
+      };
       if (progress !== undefined) {
         updateData.progress_percentage = progress;
       }
@@ -183,7 +255,10 @@ export function useUpdateProjectStatus() {
           queryKey: queryKeys.projects.detail(updatedProject.id) 
         });
         queryClient.invalidateQueries({ 
-          queryKey: queryKeys.projects.byUser() 
+          queryKey: queryKeys.projects.all 
+        });
+        queryClient.invalidateQueries({ 
+          queryKey: queryKeys.projects.list({}) 
         });
       }
     }
@@ -214,7 +289,10 @@ export function useDeleteProject() {
       
       // Invalidate user projects list
       queryClient.invalidateQueries({ 
-        queryKey: queryKeys.projects.byUser() 
+        queryKey: queryKeys.projects.all 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.projects.list({}) 
       });
 
       // Remove all related data from cache

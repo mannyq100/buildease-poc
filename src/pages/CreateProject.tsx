@@ -37,7 +37,7 @@ import {
   Sparkles
 } from 'lucide-react';
 
-// Lazy load wizard steps for better performance
+// Lazy load wizard steps with intelligent prefetching
 const ProjectDetailsForm = lazy(() => import('../components/create-project/ProjectDetailsForm').then(module => ({ default: module.ProjectDetailsForm })));
 const LocationPlotForm = lazy(() => import('../components/create-project/LocationPlotForm').then(module => ({ default: module.LocationPlotForm })));
 const BuildingSpecsForm = lazy(() => import('../components/create-project/BuildingSpecsForm').then(module => ({ default: module.BuildingSpecsForm })));
@@ -45,6 +45,37 @@ const BudgetTimelineForm = lazy(() => import('../components/create-project/Budge
 const MaterialsConstructionForm = lazy(() => import('../components/create-project/MaterialsConstructionForm').then(module => ({ default: module.MaterialsConstructionForm })));
 const FeaturesForm = lazy(() => import('../components/create-project/FeaturesForm').then(module => ({ default: module.FeaturesForm })));
 const ReviewSubmitForm = lazy(() => import('../components/create-project/ReviewSubmitForm').then(module => ({ default: module.ReviewSubmitForm })));
+
+// Step prefetching utilities
+const stepComponents = {
+  1: ProjectDetailsForm,
+  2: LocationPlotForm,
+  3: BuildingSpecsForm,
+  4: BudgetTimelineForm,
+  5: MaterialsConstructionForm,
+  6: FeaturesForm,
+  7: ReviewSubmitForm
+};
+
+// Prefetch next step when user is on current step
+const prefetchNextStep = (currentStep: number) => {
+  const nextStep = currentStep + 1;
+  const nextComponent = stepComponents[nextStep as keyof typeof stepComponents];
+  
+  if (nextComponent && 'preload' in nextComponent) {
+    // Use requestIdleCallback for non-blocking prefetch
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(() => {
+        nextComponent.preload?.();
+      }, { timeout: 2000 });
+    } else {
+      // Fallback for browsers without requestIdleCallback
+      setTimeout(() => {
+        nextComponent.preload?.();
+      }, 100);
+    }
+  }
+};
 
 // Optimized Project form schema - Simplified for better UX
 export const projectFormSchema = z.object({
@@ -345,19 +376,17 @@ function CreateProjectContent() {
   }, [jumpToStep]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-buildease-blue-50/30 to-orange-50/20 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-      <div className="container mx-auto px-4 py-4 md:px-6 md:py-8 max-w-5xl">
-        {/* Enhanced Professional Header */}
-        <div className="text-center mb-12 md:mb-16">
-
-          
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 text-slate-900 dark:text-white font-inter">
-            <span className="bg-gradient-to-r from-buildease-blue-600 to-orange-500 bg-clip-text text-transparent">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-buildease-blue-50/40 dark:from-slate-900 dark:to-slate-800">
+      <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 max-w-4xl">
+        {/* Professional Header */}
+        <div className="text-center mb-8 md:mb-10">
+          <h1 className="text-3xl md:text-4xl font-bold mb-4 text-slate-900 dark:text-white font-inter">
+            <span className="bg-gradient-to-r from-buildease-blue-600 to-buildease-blue-700 bg-clip-text text-transparent">
               Create New Project
             </span>
           </h1>
           
-          <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-3xl mx-auto font-opensans leading-relaxed mb-8">
+          <p className="text-base md:text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto font-opensans leading-relaxed">
             Let's build something amazing together
           </p>
         </div>
@@ -376,49 +405,48 @@ function CreateProjectContent() {
               <LazyMotion features={domAnimation}>
                 <m.div
                   key={currentStep}
-                  initial={{ opacity: 0, y: 16 }}
+                  initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -16 }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
-                  className="space-y-6"
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                  className="space-y-8"
                 >
                   {/* Professional Step Content Card */}
-                  <Card className="bg-white/95 dark:bg-slate-800/95 border-0 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 rounded-2xl backdrop-blur-sm ring-1 ring-slate-200/30 dark:ring-slate-700/30">
-                    <div className="p-8 md:p-10">
+                  <Card className="bg-white/95 dark:bg-slate-800/95 border-0 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 rounded-2xl backdrop-blur-sm ring-1 ring-slate-200/30 dark:ring-slate-700/30 overflow-hidden">
+                    <div className="p-6 md:p-8">
                       {/* Professional Step Header */}
                       <div className="mb-8">
                         <div className="flex items-center gap-4 mb-4">
-                          <div className="w-10 h-10 bg-gradient-to-r from-buildease-blue-500 to-orange-500 rounded-xl flex items-center justify-center shadow-sm">
+                          <div className="w-10 h-10 bg-gradient-to-br from-buildease-blue-500 to-buildease-blue-600 rounded-xl flex items-center justify-center shadow-md shadow-buildease-blue-500/20">
                             <span className="text-sm font-bold text-white">{currentStep}</span>
                           </div>
                           <div>
-                            <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white font-inter">
+                            <h2 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white font-inter mb-1">
                               {stepTitles[currentStep - 1]}
                             </h2>
-                            <p className="text-slate-600 dark:text-slate-400 font-opensans">
+                            <p className="text-slate-600 dark:text-slate-400 font-opensans text-sm">
                               Step {currentStep} of {totalSteps}
                             </p>
                           </div>
                         </div>
-                        <div className="h-px bg-gradient-to-r from-buildease-blue-200 via-orange-200 to-transparent dark:from-buildease-blue-700 dark:via-orange-700 dark:to-transparent"></div>
+                        <div className="h-px bg-gradient-to-r from-buildease-blue-200 to-transparent dark:from-buildease-blue-700 dark:to-transparent mb-6"></div>
                       </div>
                       
                       {/* Step Content */}
-                      <div className="max-w-2xl">
+                      <div className="max-w-2xl mx-auto">
                         {renderStepContent()}
                       </div>
                     </div>
                   </Card>
                   
-                  
                   {/* Professional Navigation */}
-                  <div className="flex items-center justify-between pt-8">
+                  <div className="flex items-center justify-between pt-6">
                     <Button
                       type="button"
                       variant="outline"
                       onClick={handleBack}
                       disabled={currentStep === 1}
-                      className="min-h-[48px] px-8 py-3 text-sm border-2 border-slate-300 dark:border-slate-600 hover:border-buildease-blue-400 dark:hover:border-buildease-blue-500 bg-white/80 dark:bg-slate-800/80 rounded-xl transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:border-slate-200 dark:disabled:border-slate-700 disabled:bg-slate-50 dark:disabled:bg-slate-900 font-opensans shadow-md hover:shadow-lg disabled:shadow-none backdrop-blur-sm ring-1 ring-slate-200/50 dark:ring-slate-700/50 hover:ring-buildease-blue-200/50 dark:hover:ring-buildease-blue-700/50"
+                      className="min-h-[48px] px-6 py-3 text-sm border-2 border-slate-300 dark:border-slate-600 hover:border-buildease-blue-400 dark:hover:border-buildease-blue-500 bg-white dark:bg-slate-800 rounded-xl transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:border-slate-200 dark:disabled:border-slate-700 disabled:bg-slate-50 dark:disabled:bg-slate-900 font-opensans font-medium shadow-md hover:shadow-lg disabled:shadow-sm"
                     >
                       <ChevronLeft className="mr-2 h-4 w-4" />
                       <span>Back</span>
@@ -427,7 +455,7 @@ function CreateProjectContent() {
                     <Button
                       type="button"
                       onClick={handleNext}
-                      className={`min-h-[48px] px-10 py-3 text-sm rounded-xl font-semibold transition-all duration-200 font-opensans shadow-lg hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed disabled:shadow-md transform hover:scale-105 active:scale-95 ${
+                      className={`min-h-[48px] px-8 py-3 text-sm rounded-xl font-semibold transition-all duration-200 font-opensans shadow-lg hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed disabled:shadow-md transform hover:scale-105 active:scale-95 ${
                         currentStep === totalSteps
                           ? "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white disabled:from-slate-400 disabled:to-slate-500 shadow-orange-500/25 hover:shadow-orange-500/40"
                           : "bg-gradient-to-r from-buildease-blue-500 to-buildease-blue-600 hover:from-buildease-blue-600 hover:to-buildease-blue-700 text-white disabled:from-slate-400 disabled:to-slate-500 shadow-buildease-blue-500/25 hover:shadow-buildease-blue-500/40"

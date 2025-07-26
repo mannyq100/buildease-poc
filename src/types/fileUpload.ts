@@ -12,6 +12,7 @@ export interface FileUploadOptions {
   onProgress?: (progress: number) => void;
   cacheControl?: string;
   upsert?: boolean;
+  metadata?: Record<string, string>; // Optional metadata for the file
 }
 
 export interface FileUploadResult {

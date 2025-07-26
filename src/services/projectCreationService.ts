@@ -360,7 +360,11 @@ async function initiateAIPlanGeneration(project: Project, _formData: CreateProje
     console.log('✅ AI plan generation started successfully. Job ID:', jobId);
     
     // Set up completion handling (in production, this would be handled by webhooks)
-    setupAIPlanCompletionHandler(project.owner_id, project.id, project.name, jobId);
+    const abortController = setupAIPlanCompletionHandler(project.owner_id, project.id, project.name, jobId);
+    
+    // Store abort controller for potential cleanup (could be stored in a Map for multiple projects)
+    // In a real application, you might want to store this in a service or context
+    console.log('🎯 AI plan completion handler set up with cleanup controller for job:', jobId);
     
   } catch (error) {
     console.error('❌ Failed to initiate AI plan generation:', error);
@@ -381,13 +385,18 @@ async function initiateAIPlanGeneration(project: Project, _formData: CreateProje
 /**
  * Set up completion handler for AI plan generation
  * In production, this would be replaced by webhook handlers
+ * Uses AbortController for proper cleanup and memory leak prevention
  */
 function setupAIPlanCompletionHandler(
   _userId: string, 
   _projectId: string, 
   projectName: string, 
   jobId: string
-): void {
+): AbortController {
+  // Create AbortController for proper cleanup
+  const abortController = new AbortController();
+  const { signal } = abortController;
+  
   // Listen for the custom completion event from AIPlanService
   const handleCompletion = async (event: Event) => {
     const customEvent = event as CustomEvent;
@@ -399,20 +408,31 @@ function setupAIPlanCompletionHandler(
         
         console.log('✅ AI plan completion notification created');
         
-        // Remove event listener after handling
-        window.removeEventListener('ai-plan-completed', handleCompletion);
+        // Abort controller will automatically clean up the listener
+        abortController.abort();
         
       } catch (error) {
         console.warn('Failed to create completion notification:', error);
+        // Still abort to prevent memory leaks
+        abortController.abort();
       }
     }
   };
   
-  // Add event listener for completion
-  window.addEventListener('ai-plan-completed', handleCompletion);
+  // Add event listener with AbortController signal for automatic cleanup
+  window.addEventListener('ai-plan-completed', handleCompletion, { signal });
   
-  // Clean up after 10 minutes (timeout)
-  setTimeout(() => {
-    window.removeEventListener('ai-plan-completed', handleCompletion);
+  // Set up timeout cleanup (10 minutes)
+  const timeoutId = setTimeout(() => {
+    console.warn(`AI plan generation timeout for job ${jobId}, cleaning up event listener`);
+    abortController.abort();
   }, 10 * 60 * 1000);
+  
+  // Clean up timeout when aborted
+  signal.addEventListener('abort', () => {
+    clearTimeout(timeoutId);
+    console.log(`AI plan completion handler cleaned up for job ${jobId}`);
+  });
+  
+  return abortController;
 }

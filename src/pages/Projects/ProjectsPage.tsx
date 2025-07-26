@@ -6,11 +6,10 @@
 import React, { Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Plus, Briefcase } from 'lucide-react';
-import { PageHeader } from '@/components/shared';
+import { Plus } from 'lucide-react';
 import { ProjectsPageSkeleton } from '@/components/ui/projects-skeletons';
 import { ProjectsContent } from './ProjectsContent';
-import { TouchOptimizedButton, FloatingActionButton } from '@/components/ui/TouchOptimizedButton';
+import { FloatingActionButton } from '@/components/ui/TouchOptimizedButton';
 import { useOnlineStatus, useAdaptiveLoading } from '@/hooks/useOnlineStatus';
 import type { ProjectsFilters, ProjectsViewSettings } from '@/types/enhanced-projects';
 

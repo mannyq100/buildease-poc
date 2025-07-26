@@ -30,7 +30,9 @@ export interface Project {
   // Visual assets (matches view)
   profile_image?: string;
   inspiration_images?: string[];
+  progress_images?: string[];
   inspirationalImages?: ProjectImage[]; // Transformed in service
+  progressImages?: ProjectImage[]; // Transformed in service
   
   // Project details (matches view)
   client: string;

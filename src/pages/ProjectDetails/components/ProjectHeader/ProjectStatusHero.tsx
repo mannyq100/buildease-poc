@@ -36,10 +36,19 @@ export function ProjectStatusHero({
     ? Math.max(0, Math.ceil((new Date(project.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
     : null;
 
-  // Format budget display (convert to K format)
-  const budgetDisplayValue = typeof project.budget === 'object' && project.budget !== null
-    ? Math.round(((project.budget as any)?.allocated || 0) / 1000)
-    : Math.round((project.budget as number || 0) / 1000);
+  // Format budget display (convert to K format) using the transformed project data
+  const budgetDisplayValue = Math.round((project.budget || 0) / 1000);
+  
+  // Format currency display using user's specified currency
+  const formatBudgetWithCurrency = (amount: number) => {
+    const currency = project.currency || 'USD';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount * 1000); // Convert back from K format
+  };
 
   const handleUpdateProject = () => {
     if (onUpdateProject) {
@@ -112,7 +121,7 @@ export function ProjectStatusHero({
               >
                 <DollarSign className="h-5 w-5 text-buildease-blue-600 mx-auto mb-1 group-hover:scale-110 transition-transform" />
                 <div className="text-lg font-bold text-slate-900">
-                  ${budgetDisplayValue}K
+                  {formatBudgetWithCurrency(budgetDisplayValue).replace(/\d+/, `${budgetDisplayValue}K`)}
                 </div>
                 <div className="text-xs text-slate-600 flex items-center justify-center gap-1">
                   Budget <Eye className="h-3 w-3" />

@@ -135,10 +135,16 @@ export const uploadFile = async (
     const fileName = generateFileName(file.name);
     let filePath: string;
     
-    if (bucket === 'project-inspiration' && projectId) {
+    if (bucket === 'documents' && projectId) {
+      // Documents bucket requires: {userId}/{projectId}/{filename}
+      filePath = `${storageUserId}/${projectId}/${fileName}`;
+    } else if (bucket === 'project-inspiration' && projectId) {
       // Project inspiration bucket requires: {userId}/{projectId}/{filename}
       filePath = `${storageUserId}/${projectId}/${fileName}`;
-    } else if (bucket === 'project-inspiration' && !projectId) {
+    } else if (bucket === 'progress-images' && projectId) {
+      // Progress images bucket requires: {userId}/{projectId}/{filename}
+      filePath = `${storageUserId}/${projectId}/${fileName}`;
+    } else if ((bucket === 'project-inspiration' || bucket === 'documents') && !projectId) {
       // For temporary uploads without project ID, generate a valid UUID
       const generateTempUUID = () => {
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -159,13 +165,32 @@ export const uploadFile = async (
       onProgress(0);
     }
 
-    // Upload file to Supabase storage
+    // Upload file to Supabase storage with simplified approach
+    const uploadOptions: {
+      cacheControl?: string;
+      upsert?: boolean;
+      metadata?: Record<string, string>;
+    } = {
+      cacheControl,
+      upsert
+    };
+    
+    // Only add safe metadata to avoid database column conflicts
+    if (options.metadata && Object.keys(options.metadata).length > 0) {
+      // Filter out potentially conflicting metadata keys that might cause database ambiguity
+      const safeMetadata = Object.fromEntries(
+        Object.entries(options.metadata).filter(([key]) => 
+          !['project_id', 'user_id', 'bucket_id', 'owner_id', 'owner'].includes(key.toLowerCase())
+        )
+      );
+      if (Object.keys(safeMetadata).length > 0) {
+        uploadOptions.metadata = safeMetadata;
+      }
+    }
+    
     const { error } = await supabase.storage
       .from(bucket)
-      .upload(filePath, file, {
-        cacheControl,
-        upsert
-      });
+      .upload(filePath, file, uploadOptions);
 
     if (error) {
       console.error('Error uploading file:', error);

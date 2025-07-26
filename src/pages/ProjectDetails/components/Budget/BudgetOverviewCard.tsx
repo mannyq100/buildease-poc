@@ -5,20 +5,14 @@
  * Mobile-first responsive design with proper number formatting
  */
 
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DollarSign, Plus, ChevronUp } from 'lucide-react';
 import { cn } from '@/utils/core/ui';
+import type { Project } from '@/types/project';
 
 interface BudgetOverviewCardProps {
-  project: {
-    budget?: number | {
-      allocated?: number;
-      spent?: number;
-      currency?: string;
-    };
-  };
+  project: Project;
   expandedSections: {
     budget: boolean;
   };
@@ -36,25 +30,26 @@ export function BudgetOverviewCard({
 }: BudgetOverviewCardProps) {
   // Normalize budget data to handle both number and object types
   const getBudgetData = () => {
-    if (typeof project.budget === 'object' && project.budget) {
-      return {
-        allocated: project.budget.allocated || 0,
-        spent: project.budget.spent || 0,
-        currency: project.budget.currency || 'USD'
-      };
-    }
-    if (typeof project.budget === 'number') {
-      return {
-        allocated: project.budget,
-        spent: 0,
-        currency: 'USD'
-      };
-    }
-    return {
-      allocated: 0,
-      spent: 0,
-      currency: 'USD'
+    // Debug logging for budget data processing
+    console.log('💰 [DEBUG] BudgetOverviewCard - Project data received:', {
+      projectId: project.id,
+      projectName: project.name,
+      budget: project.budget,
+      budgetType: typeof project.budget,
+      spent: project.spent,
+      currency: project.currency
+    });
+    
+    // The Project interface has budget as number, spent as number, and currency as string
+    // Use these direct properties from the transformed project data
+    const budgetData = {
+      allocated: project.budget || 0,
+      spent: project.spent || 0,
+      currency: project.currency || 'USD'
     };
+    
+    console.log('💰 [DEBUG] BudgetOverviewCard - Using transformed project data:', budgetData);
+    return budgetData;
   };
 
   const budgetData = getBudgetData();

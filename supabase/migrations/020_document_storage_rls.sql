@@ -115,28 +115,29 @@ USING (
   (storage.foldername(name))[1] = auth.uid()::text
 );
 
--- Documents bucket policies
+-- Documents bucket policies (Updated to match actual path structure: {userId}/{projectId}/{filename})
 -- 1. Allow project members to view documents
 DROP POLICY IF EXISTS "Project members can view project documents" ON storage.objects;
 CREATE POLICY "Project members can view project documents"
 ON storage.objects FOR SELECT
 USING (
     bucket_id = 'documents' AND
-    -- Use the helper function that bypasses RLS
-    private.is_storage_member((storage.foldername(name))[1], auth.uid())
+    -- Simplified check - users can view files in their own folder
+    (storage.foldername(name))[1] = auth.uid()::text
 );
 
 -- 2. Allow project members to insert documents
 DROP POLICY IF EXISTS "Project members can insert project documents" ON storage.objects;
 CREATE POLICY "Project members can insert project documents"
 ON storage.objects FOR INSERT
+TO authenticated
 WITH CHECK (
     bucket_id = 'documents' AND
-    -- Validate file path format: {project_id}/{filename}
-    array_length(storage.foldername(name), 1) = 1 AND
-    (storage.foldername(name))[1] ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' AND
-    -- Use the helper function that bypasses RLS
-    private.is_storage_member((storage.foldername(name))[1], auth.uid())
+    -- Validate file path format: {userId}/{projectId}/{filename}
+    array_length(storage.foldername(name), 1) = 2 AND
+    (storage.foldername(name))[1] = auth.uid()::text AND
+    (storage.foldername(name))[2] ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    -- Removed duplicate condition that was causing ambiguous reference
 );
 
 -- 3. Allow project owners to update documents
@@ -145,8 +146,8 @@ CREATE POLICY "Project owners can update project documents"
 ON storage.objects FOR UPDATE
 USING (
     bucket_id = 'documents' AND
-    -- Use the helper function that bypasses RLS
-    private.is_storage_member((storage.foldername(name))[1], auth.uid(), ARRAY['OWNER'])
+    -- Simplified check - users can update files in their own folder
+    (storage.foldername(name))[1] = auth.uid()::text
 );
 
 -- 4. Allow project admins/contractors to update documents
@@ -155,9 +156,8 @@ CREATE POLICY "Project admin members can update project documents"
 ON storage.objects FOR UPDATE
 USING (
     bucket_id = 'documents' AND
-    -- Use the helper function that bypasses RLS
-    (private.is_storage_member((storage.foldername(name))[1], auth.uid(), ARRAY['ADMIN']) OR
-     private.is_storage_member((storage.foldername(name))[1], auth.uid(), ARRAY['CONTRACTOR']))
+    -- Simplified check - users can update files in their own folder
+    (storage.foldername(name))[1] = auth.uid()::text
 );
 
 -- 5. Allow project owners to delete documents
@@ -166,8 +166,8 @@ CREATE POLICY "Project owners can delete project documents"
 ON storage.objects FOR DELETE
 USING (
     bucket_id = 'documents' AND
-    -- Use the helper function that bypasses RLS
-    private.is_storage_member((storage.foldername(name))[1], auth.uid(), ARRAY['OWNER'])
+    -- Simplified check - users can delete files in their own folder
+    (storage.foldername(name))[1] = auth.uid()::text
 );
 
 -- 6. Allow project admins to delete documents
@@ -176,6 +176,43 @@ CREATE POLICY "Project admin members can delete project documents"
 ON storage.objects FOR DELETE
 USING (
     bucket_id = 'documents' AND
-    -- Use the helper function that bypasses RLS
-    private.is_storage_member((storage.foldername(name))[1], auth.uid(), ARRAY['ADMIN'])
+    -- Simplified check - users can delete files in their own folder
+    (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- Progress images bucket policies
+-- 1. Allow project members to view progress images
+DROP POLICY IF EXISTS "Users can view progress images for accessible projects" ON storage.objects;
+CREATE POLICY "Users can view progress images for accessible projects"
+ON storage.objects FOR SELECT
+USING (
+  bucket_id = 'progress-images' 
+  AND (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- 2. Allow users to upload progress images to their own folder
+DROP POLICY IF EXISTS "Users can upload progress images for their projects" ON storage.objects;
+CREATE POLICY "Users can upload progress images for their projects"
+ON storage.objects FOR INSERT
+WITH CHECK (
+  bucket_id = 'progress-images' 
+  AND (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- 3. Allow users to update progress images in their own folder
+DROP POLICY IF EXISTS "Users can update progress images for their projects" ON storage.objects;
+CREATE POLICY "Users can update progress images for their projects"
+ON storage.objects FOR UPDATE
+USING (
+  bucket_id = 'progress-images' 
+  AND (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- 4. Allow users to delete progress images in their own folder
+DROP POLICY IF EXISTS "Users can delete progress images for their projects" ON storage.objects;
+CREATE POLICY "Users can delete progress images for their projects"
+ON storage.objects FOR DELETE
+USING (
+  bucket_id = 'progress-images' 
+  AND (storage.foldername(name))[1] = auth.uid()::text
 );

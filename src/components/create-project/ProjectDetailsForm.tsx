@@ -1,7 +1,7 @@
 /**
  * ProjectDetailsForm.tsx
  * First step of the project creation wizard
- * Collects basic project information
+ * Collects basic project information with real-time validation
  */
 import React, { useState } from 'react';
 import { useFormContext } from 'react-hook-form';

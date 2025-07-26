@@ -116,9 +116,9 @@ export function StepNavigator({
 
   return (
     <LazyMotion features={domAnimation}>
-      <div className={cn("mb-6 md:mb-10", className)}>
-        {/* Simplified Step Indicators */}
-        <div className="flex items-start justify-center max-w-4xl mx-auto mb-8">
+      <div className={cn("mb-4 md:mb-6", className)}>
+        {/* Step Indicators */}
+        <div className="flex items-start justify-center max-w-3xl mx-auto mb-6">
           {visibleSteps.map((step, index) => {
             const isActive = currentStep === step.id;
             const isCompleted = currentStep > step.id;
@@ -135,13 +135,13 @@ export function StepNavigator({
                     whileHover={isClickable ? { scale: 1.05 } : {}}
                     whileTap={isClickable ? { scale: 0.95 } : {}}
                     className={cn(
-                      "relative flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full transition-all duration-300 mb-4 border-2 shadow-sm",
+                      "relative flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-xl transition-all duration-200 mb-4 border-2 shadow-md",
                       isActive 
-                        ? "bg-gradient-to-br from-buildease-blue-500 to-buildease-blue-600 text-white border-buildease-blue-400 shadow-buildease-blue-500/25 ring-4 ring-buildease-blue-100 dark:ring-buildease-blue-900/50" 
+                        ? "bg-gradient-to-br from-buildease-blue-500 to-buildease-blue-600 text-white border-buildease-blue-400 shadow-buildease-blue-500/25 ring-3 ring-buildease-blue-100 dark:ring-buildease-blue-900/50" 
                         : isCompleted 
-                          ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white border-orange-400 shadow-orange-500/25 hover:shadow-orange-500/40"
-                          : "bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-300 dark:border-slate-600 hover:border-buildease-blue-300 dark:hover:border-buildease-blue-600 hover:shadow-md",
-                      isClickable ? "cursor-pointer" : "cursor-default"
+                          ? "bg-gradient-to-br from-buildease-blue-400 to-buildease-blue-500 text-white border-buildease-blue-300 shadow-buildease-blue-400/25 ring-2 ring-buildease-blue-100 dark:ring-buildease-blue-900/50" 
+                          : "bg-white dark:bg-slate-700 text-slate-400 dark:text-slate-500 border-slate-300 dark:border-slate-600 hover:border-buildease-blue-300 dark:hover:border-buildease-blue-500",
+                      isClickable && "cursor-pointer hover:shadow-lg"
                     )}
                     aria-label={`${isClickable ? 'Go to' : ''} step ${step.id}: ${step.title}`}
                   >
@@ -223,19 +223,24 @@ export function StepNavigator({
         
         {/* Professional Progress Bar Section */}
         <div className="max-w-3xl mx-auto">
-          {/* Enhanced Progress Info */}
+          {/* Progress Info */}
           <div className="flex items-center justify-between text-sm mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-buildease-blue-500 to-orange-500 rounded-full flex items-center justify-center shadow-sm">
+              <div className="w-8 h-8 bg-gradient-to-br from-buildease-blue-500 to-buildease-blue-600 rounded-xl flex items-center justify-center shadow-md shadow-buildease-blue-500/20">
                 <span className="text-xs font-bold text-white">{currentStep}</span>
               </div>
-              <span className="font-semibold text-slate-700 dark:text-slate-300 font-inter">
-                Step {currentStep} of {totalSteps}
-              </span>
+              <div>
+                <span className="font-semibold text-slate-700 dark:text-slate-300 font-inter text-sm">
+                  Step {currentStep} of {totalSteps}
+                </span>
+                <div className="text-xs text-slate-600 dark:text-slate-400 font-opensans">
+                  {steps[currentStep - 1]?.description}
+                </div>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-buildease-blue-500 rounded-full animate-pulse"></div>
-              <span className="text-xs px-4 py-2 bg-gradient-to-r from-buildease-blue-50 to-orange-50 dark:from-buildease-blue-950/50 dark:to-orange-950/50 text-buildease-blue-700 dark:text-buildease-blue-300 rounded-full font-medium font-opensans border border-buildease-blue-200/50 dark:border-buildease-blue-700/50 shadow-sm">
+              <span className="text-xs px-3 py-1.5 bg-gradient-to-r from-buildease-blue-50 to-buildease-blue-100 dark:from-buildease-blue-950/50 dark:to-buildease-blue-900/50 text-buildease-blue-700 dark:text-buildease-blue-300 rounded-xl font-medium font-opensans border border-buildease-blue-200/50 dark:border-buildease-blue-700/50 shadow-sm">
                 {Math.round(progress)}% complete
               </span>
             </div>
@@ -244,7 +249,7 @@ export function StepNavigator({
           {/* Professional Progress Bar */}
           <div className="relative h-3 bg-gradient-to-r from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 rounded-full overflow-hidden shadow-inner">
             <m.div 
-              className="absolute top-0 left-0 h-full bg-gradient-to-r from-buildease-blue-500 via-buildease-blue-400 to-orange-500 rounded-full shadow-sm"
+              className="absolute top-0 left-0 h-full bg-gradient-to-r from-buildease-blue-500 to-buildease-blue-600 rounded-full shadow-sm"
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
               transition={{ 

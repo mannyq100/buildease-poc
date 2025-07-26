@@ -3,7 +3,7 @@
  * Displays project cards with construction worker-friendly interactions
  */
 
-import React, { useState, useOptimistic, useTransition, useMemo, memo } from 'react';
+import { useState, useOptimistic, useTransition, useMemo, memo } from 'react';
 import { AlertCircle, Loader2, Zap } from 'lucide-react';
 import { TouchOptimizedButton } from '@/components/ui/TouchOptimizedButton';
 import { ProjectCard } from '@/components/shared/ProjectCard';

@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { useProjectDetailsData } from '@/hooks/queries/useProjectDetails';
 import { useProjectTasks } from '@/hooks/queries/useTask';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
+import { queryClient, queryKeys } from '@/lib/queryClient';
 
 import { TaskFormModal } from './components/Modals';
 import { BudgetOverviewCard, BudgetExpensesList } from './components/Budget';
@@ -22,12 +23,15 @@ import {
   PhaseForm, 
   TeamMemberForm
 } from './components/LazyComponents';
+import { ProjectUpdateForm } from './components/Forms/ProjectUpdateForm';
 import { TodaysFocusCard } from './components/TodaysFocusCard';
+import { RecentUpdatesCard } from './components/Updates/RecentUpdatesCard';
 import { ProjectErrorFallback, ProjectDetailsLoading, ProjectNotFound } from './components/Utils';
 import { useTaskCRUD, useCRUDOperations, useModalManagement, useProjectDetailsState } from './hooks';
 import { BaseModal } from '@/components/ui/BaseModal';
 import { ProjectTransformService } from '@/services/projectTransformService';
 import { ProjectStatusHero, ProjectQuickActions } from './components/ProjectHeader';
+import { useUpdateProject } from '@/hooks/mutations/useProject';
 import type { TeamMember } from '@/types/projectDetails';
 
 interface ProjectDetailsContentProps {
@@ -41,6 +45,22 @@ interface TaskItem {
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   due_date?: string;
   phase_id?: string;
+}
+
+// Type definitions for form data
+interface ProjectUpdateFormData {
+  name?: string;
+  description?: string;
+  status?: 'active' | 'planning' | 'completed' | 'on-hold';
+  budget?: number;
+  start_date?: string;
+  end_date?: string;
+  location?: string;
+  type?: string;
+  client?: string;
+  project_type?: string;
+  street_address?: string;
+  currency?: string;
 }
 
 // Utility components have been extracted to separate files
@@ -65,6 +85,12 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
   
   // Fetch all project tasks for today's focus calculation
   const { data: allProjectTasks = [], isLoading: tasksLoading } = useProjectTasks(projectId);
+  
+  // Project update mutation
+  const updateProject = useUpdateProject();
+  
+  // Project update modal state
+  const [showUpdateModal, setShowUpdateModal] = React.useState(false);
   
   // Modal management
   const {
@@ -255,17 +281,49 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
   
   // Additional event handlers
   const handleAddTask = React.useCallback(() => {
-    console.log('Add task');
-  }, []);
+    // Open task creation modal for the current phase or first available phase
+    const phaseId = currentPhase?.id || phases?.[0]?.id;
+    if (phaseId) {
+      openCreateTaskModal(phaseId);
+    } else {
+      // If no phases exist, show a message
+      console.warn('Cannot create task: No phases available. Please create a project phase first.');
+    }
+  }, [openCreateTaskModal, currentPhase, phases]);
   
   const handleUpdateTasks = React.useCallback(() => {
-    console.log('Update tasks');
-  }, []);
+    // Refetch project tasks data to update the Today's Focus Card
+    queryClient.invalidateQueries({ 
+      queryKey: queryKeys.tasks.byProject(projectId) 
+    });
+  }, [projectId]);
   
   const handleSaveSettings = React.useCallback(async (settings: unknown) => {
     console.log('Save settings:', settings);
     // TODO: Implement settings save functionality
   }, []);
+
+  // Project update handlers
+  const handleOpenUpdateModal = React.useCallback(() => {
+    setShowUpdateModal(true);
+  }, []);
+
+  const handleCloseUpdateModal = React.useCallback(() => {
+    setShowUpdateModal(false);
+  }, []);
+
+  const handleUpdateProject = React.useCallback(async (formData: ProjectUpdateFormData) => {
+    try {
+      await updateProject.mutateAsync({
+        id: projectId,
+        ...formData
+      });
+      setShowUpdateModal(false);
+    } catch (error) {
+      console.error('Failed to update project:', error);
+      // Error is handled by the mutation hook via toast
+    }
+  }, [projectId, updateProject]);
   
   // Handle loading states
   if (projectLoading || tasksLoading) {
@@ -290,7 +348,7 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
           project={project}
           activeTeamMembers={activeTeamMembers}
           toggleSection={handleToggleSection}
-          onUpdateProject={() => navigate(`/projects/${projectId}/edit`)}
+          onUpdateProject={handleOpenUpdateModal}
         />
 
         {/* Main Content Sections - Ordered by ProjectHeader menu items */}
@@ -337,13 +395,31 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
         />
 
         {/* Additional Sections */}
-        {/* Project Documents Section */}
+        {/* Project Media Section - Unified Images & Documents */}
         <ProjectDocumentsSection
           project={project}
           expandedSections={expandedSections}
           onToggleSection={handleToggleSection}
           imageUploadStates={imageUploadStates}
           onSetImageUploadState={handleSetImageUploadState}
+          onUpdateProject={async (updates) => {
+            try {
+              await updateProject.mutateAsync({
+                id: projectId,
+                ...updates
+              });
+            } catch (error) {
+              console.error('Failed to update project from documents section:', error);
+              // Error is handled by the mutation hook via toast
+            }
+          }}
+        />
+
+        {/* Recent Updates Section */}
+        <RecentUpdatesCard
+          project={project}
+          isExpanded={expandedSections.recentUpdates}
+          onToggleExpanded={() => handleToggleSection('recentUpdates')}
         />
 
         {/* Today's Focus - Extracted Component */}
@@ -377,7 +453,13 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
         >
           <BudgetExpenseForm
             mode={modalMode}
-            initialData={editingItem?.type === 'budget' ? editingItem.data as any : undefined}
+            initialData={editingItem?.type === 'budget' && editingItem.data ? {
+              amount: Number(editingItem.data.amount) || 0,
+              category: String(editingItem.data.category) || '',
+              description: String(editingItem.data.description) || '',
+              date: String(editingItem.data.date) || '',
+              status: (editingItem.data.status as 'planned' | 'approved' | 'paid') || 'planned'
+            } : undefined}
             onSubmit={(data) => handleBudgetSubmit(data, modalMode, editingItem)}
             isLoading={createBudgetExpense.isPending || updateBudgetExpense.isPending}
           />
@@ -400,7 +482,7 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
               startDate: editingItem.data.timeline?.planned_start || '',
               endDate: editingItem.data.timeline?.planned_end || ''
             } : undefined}
-            projectType={projectData?.type}
+            projectType={projectData?.project_type}
             projectId={projectId}
             onSubmit={(data, selectedTaskIds) => handlePhaseSubmit(data, modalMode, editingItem, selectedTaskIds)}
             isLoading={createPhase.isPending || updatePhase.isPending}
@@ -443,6 +525,24 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
             // Optional: refresh tasks or show success message
           }}
         />
+
+        {/* Project Update Modal */}
+        <BaseModal
+          isOpen={showUpdateModal}
+          onClose={handleCloseUpdateModal}
+          title="Update Project"
+          description="Modify project details, timeline, budget, and other key properties"
+          size="lg"
+        >
+          {project && (
+            <ProjectUpdateForm
+              project={project}
+              onSubmit={handleUpdateProject}
+              onCancel={handleCloseUpdateModal}
+              isLoading={updateProject.isPending}
+            />
+          )}
+        </BaseModal>
       </div>
     </div>
   );

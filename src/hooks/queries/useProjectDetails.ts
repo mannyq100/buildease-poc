@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { ProjectTransformService } from '@/services/projectTransformService';
 import { useProjectBudgetExpenses } from '../mutations/useBudget';
 import { useProjectTeamMembers } from '../mutations/useTeamMember';
 import { useProjectDetailsPhases } from '../mutations/useProjectDetailsPhase';
@@ -28,7 +29,29 @@ export function useProjectDetailsData(projectId: string) {
         .single();
 
       if (error) throw error;
-      return data;
+      
+      // Debug logging for budget data
+      console.log('🔍 [DEBUG] Raw project data from DB:', {
+        id: data.id,
+        name: data.name,
+        budget: data.budget,
+        budgetType: typeof data.budget
+      });
+      
+      // Transform the raw project data to ensure proper budget structure
+      const transformedProject = ProjectTransformService.transformProjectSummary(data);
+      
+      // Debug logging for transformed data
+      console.log('🔍 [DEBUG] Transformed project data:', {
+        id: transformedProject.id,
+        name: transformedProject.name,
+        budget: transformedProject.budget,
+        spent: transformedProject.spent,
+        currency: transformedProject.currency,
+        budgetType: typeof transformedProject.budget
+      });
+      
+      return transformedProject;
     },
     enabled: !!projectId
   });

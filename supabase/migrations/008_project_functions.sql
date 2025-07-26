@@ -34,7 +34,7 @@ BEGIN
     SELECT EXISTS (
         SELECT 1
         FROM construction_mgr.be_project
-        WHERE id = project_id AND owner_id = user_id
+        WHERE id = is_project_owner_direct.project_id AND owner_id = is_project_owner_direct.user_id
     ) INTO result;
     
     RETURN COALESCE(result, FALSE);

@@ -53,10 +53,12 @@ export const queryKeys = {
     all: ['be_material'] as const,
     detail: (id: string) => ['be_material', id] as const,
     byProject: (projectId: string) => ['be_material', 'project', projectId] as const,
+    byPhase: (phaseId: string) => ['be_material', 'phase', phaseId] as const,
   },
   documents: {
     all: ['be_document'] as const,
-    detail: (id: string) => ['be_document', id] as const,
+    byId: (id: string) => ['be_document', id] as const,
     byProject: (projectId: string) => ['be_document', 'project', projectId] as const,
+    byPhase: (phaseId: string) => ['be_document', 'phase', phaseId] as const,
   },
 };

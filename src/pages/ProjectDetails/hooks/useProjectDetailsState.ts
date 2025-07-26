@@ -14,6 +14,7 @@ export interface ExpandedSections {
   team: boolean;
   documents: boolean;
   settings: boolean;
+  recentUpdates: boolean;
 }
 
 export interface ViewModes {
@@ -59,7 +60,8 @@ const DEFAULT_EXPANDED_SECTIONS: ExpandedSections = {
   phases: true,    // Open timeline second (project flow)
   team: false,     // Keep team collapsed initially
   documents: false, // Keep documents collapsed initially
-  settings: false  // Keep settings collapsed initially
+  settings: false,  // Keep settings collapsed initially
+  recentUpdates: false // Keep recent updates collapsed initially
 };
 
 const DEFAULT_VIEW_MODES: ViewModes = {

@@ -12,7 +12,7 @@ SELECT
         WHEN 'IN_PROGRESS' THEN 'active'
         WHEN 'PLANNING' THEN 'planning'
         WHEN 'COMPLETED' THEN 'completed'
-        WHEN 'ON_HOLD' THEN 'on-hold'
+        WHEN 'PAUSED' THEN 'on-hold'
         ELSE 'planning'
     END as status,
     
