@@ -18,8 +18,7 @@ import {
   createPreviewUrl,
   cleanupPreviewUrl,
   generateUploadId,
-  getErrorMessage,
-  getRecoveryAction
+  getErrorMessage
 } from '@/utils/uploadUtils';
 
 interface UseSimplifiedUploadOptions {
@@ -58,13 +57,14 @@ export function useSimplifiedUpload({
   // Cleanup blob URLs on unmount
   useEffect(() => {
     return () => {
+      // Cleanup preview URLs on unmount
       state.files.forEach(file => {
         if (file.preview) {
           cleanupPreviewUrl(file.preview);
         }
       });
     };
-  }, []);
+  }, [state.files]);
 
   const addFiles = useCallback((newFiles: File[]) => {
     const validFiles: UploadFile[] = [];
@@ -91,7 +91,7 @@ export function useSimplifiedUpload({
         status: 'pending',
         progress: 0,
         file,
-        preview: createPreviewUrl(file),
+        preview: createPreviewUrl(file) || undefined,
         bucket: config.bucket,
         type
       };
@@ -140,35 +140,39 @@ export function useSimplifiedUpload({
     }));
   }, []);
 
-  const uploadSingleFile = useCallback(async (uploadFile: UploadFile): Promise<UploadResult | null> => {
-    updateFileStatus(uploadFile.id, 'uploading', 0);
+  const uploadSingleFile = useCallback(async (fileToUpload: UploadFile): Promise<UploadResult | null> => {
+    updateFileStatus(fileToUpload.id, 'uploading', 0);
 
     try {
       const result = await uploadFile(
-        uploadFile.file,
-        uploadFile.bucket,
-        projectId
+        fileToUpload.file,
+        {
+          bucket: fileToUpload.bucket,
+          projectId,
+          allowedTypes: config.acceptedTypes,
+          maxSizeMB: Math.round(config.maxSizeBytes / (1024 * 1024))
+        }
       );
 
-      if (result.success && result.data) {
-        updateFileStatus(uploadFile.id, 'completed', 100);
+      if (result.success && result.publicUrl) {
+        updateFileStatus(fileToUpload.id, 'completed', 100);
         return {
-          id: uploadFile.id,
-          url: result.data.url || '',
-          name: uploadFile.fileName,
-          size: uploadFile.fileSize,
-          type: uploadFile.type,
+          id: fileToUpload.id,
+          url: result.publicUrl,
+          name: fileToUpload.fileName,
+          size: fileToUpload.fileSize,
+          type: fileToUpload.type,
           uploadedAt: new Date()
         };
       } else {
-        throw new Error(result.error || 'Upload failed');
+        updateFileStatus(fileToUpload.id, 'failed', 0);
+        return null;
       }
-    } catch (error) {
-      const errorMessage = getErrorMessage(error);
-      updateFileStatus(uploadFile.id, 'failed', 0, errorMessage);
+    } catch {
+      updateFileStatus(fileToUpload.id, 'failed', 0);
       return null;
     }
-  }, [projectId, updateFileStatus]);
+  }, [config.acceptedTypes, config.maxSizeBytes, projectId, updateFileStatus]);
 
   const uploadAll = useCallback(async () => {
     const pendingFiles = state.files.filter(f => f.status === 'pending');
@@ -192,7 +196,8 @@ export function useSimplifiedUpload({
             results.push(result.value);
           } else {
             const file = batch[index];
-            errors.push(`${file.fileName}: ${getErrorMessage(result.reason)}`);
+            const errorMsg = result.status === 'rejected' ? String(result.reason) : 'Upload failed';
+            errors.push(`${file.fileName}: ${errorMsg}`);
           }
         });
 
@@ -203,16 +208,14 @@ export function useSimplifiedUpload({
       }
 
       if (errors.length > 0) {
-        const errorMessage = `${errors.length} of ${pendingFiles.length} files failed to upload`;
+        const errorMessage = errors.join(', ');
         setState(prev => ({ ...prev, error: errorMessage }));
-        
+        onError?.(errorMessage);
         toast({
-          title: "Upload Partially Failed",
-          description: `${results.length} files uploaded successfully, ${errors.length} failed`,
+          title: "Upload Failed",
+          description: errorMessage,
           variant: "destructive"
         });
-
-        onError?.(errorMessage);
       } else {
         toast({
           title: "Upload Successful",

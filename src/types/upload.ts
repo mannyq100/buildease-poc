@@ -5,7 +5,7 @@
 
 export type UploadStatus = 'pending' | 'uploading' | 'completed' | 'failed' | 'cancelled' | 'paused';
 
-export type UploadType = 'images' | 'documents';
+export type UploadType = 'inspiration' | 'progress' | 'profile' | 'documents';
 
 export interface BaseUploadTask {
   id: string;
@@ -51,13 +51,29 @@ export interface UploadError {
 
 // Upload configurations
 export const UPLOAD_CONFIGS: Record<UploadType, UploadConfig> = {
-  images: {
-    bucket: 'progress-images',
+  inspiration: {
+    bucket: 'project-inspiration',
+    acceptedTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/heic'],
+    maxSizeBytes: 10 * 1024 * 1024, // 10MB
+    maxFiles: 20,
+    label: 'Inspiration Images',
+    description: 'Upload design inspiration and reference photos'
+  },
+  progress: {
+    bucket: 'project-progress',
     acceptedTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/heic'],
     maxSizeBytes: 10 * 1024 * 1024, // 10MB
     maxFiles: 20,
     label: 'Progress Images',
     description: 'Upload construction progress photos'
+  },
+  profile: {
+    bucket: 'project-images',
+    acceptedTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/heic'],
+    maxSizeBytes: 5 * 1024 * 1024, // 5MB
+    maxFiles: 1,
+    label: 'Profile Image',
+    description: 'Upload project profile/cover image'
   },
   documents: {
     bucket: 'documents',

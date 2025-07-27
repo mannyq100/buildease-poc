@@ -22,13 +22,13 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSimplifiedUpload } from '@/hooks/useSimplifiedUpload';
-import { UploadType } from '@/types/upload';
+import { UploadType, UploadResult } from '@/types/upload';
 import { getStatusIcon, formatFileSize, hasCamera } from '@/utils/uploadUtils';
 
 interface SimplifiedUploadProps {
   projectId: string;
   type: UploadType;
-  onUploadComplete?: (results: any[]) => void;
+  onUploadComplete?: (results: UploadResult[]) => void;
   onUploadError?: (error: string) => void;
   className?: string;
   compact?: boolean;
@@ -116,7 +116,7 @@ export function SimplifiedUpload({
     input.click();
   }, [disabled, config.acceptedTypes, cameraAvailable, handleFileSelection]);
 
-  const TypeIcon = type === 'images' ? Image : FileText;
+  const TypeIcon = ['inspiration', 'progress', 'profile'].includes(type) ? Image : FileText;
 
   if (compact) {
     return (
@@ -145,7 +145,7 @@ export function SimplifiedUpload({
               Add
             </Button>
             
-            {cameraAvailable && type === 'images' && (
+            {cameraAvailable && ['inspiration', 'progress', 'profile'].includes(type) && (
               <Button
                 variant="outline"
                 size="sm"
@@ -311,7 +311,7 @@ export function SimplifiedUpload({
                 Choose Files
               </Button>
               
-              {cameraAvailable && type === 'images' && (
+              {cameraAvailable && ['inspiration', 'progress', 'profile'].includes(type) && (
                 <Button
                   variant="outline"
                   onClick={() => triggerFileInput(true)}
