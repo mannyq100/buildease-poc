@@ -6,48 +6,43 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Plus, ChevronUp } from 'lucide-react';
-import { TeamMembersListProps, TeamMember } from '@/types/projectDetails';
+import { Users, Plus } from 'lucide-react';
+import { TeamMember } from '@/types/projectDetails';
 import { TeamMemberCard } from './TeamMemberCard';
+
+interface TeamMembersListProps {
+  teamMembers: TeamMember[];
+  onEditMember: (member: TeamMember) => void;
+  onDeleteMember: (id: string) => void;
+  onCreateMember: () => void;
+  className?: string;
+}
 
 export function TeamMembersList({
   teamMembers,
   onEditMember,
   onDeleteMember,
   onCreateMember,
-  isExpanded,
-  onToggleExpanded
+  className
 }: TeamMembersListProps) {
-  // Only render when expanded - completely hidden when collapsed
-  if (!isExpanded) {
-    return null;
-  }
-
-  // Expanded view with full team management
   return (
-    <Card className="border-slate-200/40 shadow-xl bg-gradient-to-br from-white via-slate-50/30 to-emerald-50/20 backdrop-blur-md rounded-2xl">
+    <Card className={`border-slate-200/40 shadow-xl bg-gradient-to-br from-white via-slate-50/30 to-emerald-50/20 backdrop-blur-md rounded-2xl ${className || ''}`}>
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <button 
-            onClick={onToggleExpanded}
-            className="flex items-center gap-2 hover:text-emerald-600 transition-colors"
-          >
+          <div className="flex items-center gap-2">
             <Users className="h-5 w-5 text-emerald-600" />
             <CardTitle className="text-lg font-bold text-slate-900">
               Team Management
             </CardTitle>
-            <ChevronUp className="h-4 w-4 text-slate-500" />
-          </button>
-          <div className="flex items-center gap-2">
-            <Button 
-              size="sm" 
-              onClick={onCreateMember}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Add Member
-            </Button>
           </div>
+          <Button 
+            size="sm" 
+            onClick={onCreateMember}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Add Member
+          </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

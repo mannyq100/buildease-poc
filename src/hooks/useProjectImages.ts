@@ -6,11 +6,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
-import { uploadProjectImage, deleteProjectImage, getFilePathFromUrl } from '@/services/projectImageService';
+import { uploadProjectImage, deleteProjectImage, getFilePathFromUrl, uploadProjectImages, type ImageType as ServiceImageType } from '@/services/projectImageService';
 import { useImageStorageV2 } from './useImageStorageV2';
 import { isEqual } from 'lodash';
-import { uploadFile } from '@/utils/core/storageUtils';
-import { uploadQueue, useUploadQueue } from '@/services/uploadQueueService';
 
 type ImageType = 'inspiration' | 'progress' | 'profile';
 
@@ -48,6 +46,7 @@ export interface UseProjectImagesReturn {
   handleRemoveImage: (imageIdOrUrl: string) => void;
   handleSetProfileImage: (imageIdOrUrl: string) => void;
   uploadAllFiles: () => Promise<string[]>;
+  uploadFilesWithUnifiedService: (files: File[]) => Promise<string[]>;
   reset: () => void;
   hasLocalFiles: boolean;
 }
@@ -373,6 +372,71 @@ export function useProjectImages({
       setUploadProgress(0);
     }
   }, [images, getImageFiles, localProfileImageId, storedImages, profileImage, user, toast, setImages, setProfileImage, clearStoredImages, imageType, projectId]);
+
+  /**
+   * Upload files using the new unified service (alternative to uploadAllFiles)
+   * This method uses the database sync functionality
+   */
+  const uploadFilesWithUnifiedService = useCallback(async (filesToUpload: File[]): Promise<string[]> => {
+    if (!user || !projectId) {
+      const error = new Error('User authentication and project ID required');
+      setUploadError(error.message);
+      toast({
+        title: "Authentication required",
+        description: error.message,
+        variant: "destructive"
+      });
+      throw error;
+    }
+
+    if (filesToUpload.length === 0) {
+      return images; // No files to upload
+    }
+
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      const result = await uploadProjectImages({
+        type: imageType as ServiceImageType,
+        projectId,
+        files: filesToUpload,
+        onProgress: setUploadProgress
+      });
+
+      if (result.success && result.uploadedImages) {
+        const newUrls = result.uploadedImages.map(img => img.url);
+        const allUrls = [...images, ...newUrls];
+        
+        // Update state with new images
+        setImages(allUrls);
+        
+        // Clear local storage after successful upload
+        clearStoredImages();
+        
+        toast({
+          title: "Upload complete",
+          description: `Successfully uploaded ${result.uploadedImages.length} ${imageType} image${result.uploadedImages.length > 1 ? 's' : ''}.`,
+        });
+
+        return allUrls;
+      } else {
+        throw new Error(result.error || 'Upload failed');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Upload failed';
+      setUploadError(errorMessage);
+      toast({
+        title: "Upload failed",
+        description: errorMessage,
+        variant: "destructive"
+      });
+      throw error;
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  }, [user, projectId, imageType, images, setImages, clearStoredImages, toast]);
   
   // Helper function to safely revoke object URLs
   const revokeObjectUrl = useCallback((url: string) => {
@@ -566,6 +630,7 @@ export function useProjectImages({
     handleRemoveImage,
     handleSetProfileImage,
     uploadAllFiles,
+    uploadFilesWithUnifiedService,
     reset,
     hasLocalFiles: localFiles.length > 0
   };

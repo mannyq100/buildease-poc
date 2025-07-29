@@ -42,22 +42,44 @@ export async function createProject(formData: CreateProjectFormValues, userId: s
           nearby_landmarks: formData.nearbyLandmarks || undefined
         },
         
-        // Specifications
+        // Specifications - Safe numeric parsing with NaN checks
         specs: {
-          plot_size: formData.plotSize ? {
-            value: parseFloat(formData.plotSize),
-            unit: formData.plotSizeUnit
-          } : null,
-          building_size: formData.buildingSize ? {
-            value: parseFloat(formData.buildingSize), 
-            unit: formData.buildingSizeUnit
-          } : null,
-          floors: formData.storeys ? parseInt(formData.storeys) : null,
+          plot_size: (() => {
+            if (!formData.plotSize || !formData.plotSize.trim()) return null;
+            const value = parseFloat(formData.plotSize.trim());
+            return !isNaN(value) && value > 0 ? { value, unit: formData.plotSizeUnit } : null;
+          })(),
+          building_size: (() => {
+            if (!formData.buildingSize || !formData.buildingSize.trim()) return null;
+            const value = parseFloat(formData.buildingSize.trim());
+            return !isNaN(value) && value > 0 ? { value, unit: formData.buildingSizeUnit } : null;
+          })(),
+          floors: (() => {
+            if (!formData.storeys || !formData.storeys.trim()) return null;
+            const value = parseInt(formData.storeys.trim());
+            return !isNaN(value) && value > 0 ? value : null;
+          })(),
           rooms: {
-            bedrooms: formData.bedrooms ? parseInt(formData.bedrooms) : null,
-            bathrooms: formData.bathrooms ? parseInt(formData.bathrooms) : null,
-            kitchens: formData.kitchens ? parseInt(formData.kitchens) : 1,
-            living_areas: formData.livingAreas ? parseInt(formData.livingAreas) : 1
+            bedrooms: (() => {
+              if (!formData.bedrooms || !formData.bedrooms.trim()) return null;
+              const value = parseInt(formData.bedrooms.trim());
+              return !isNaN(value) && value > 0 ? value : null;
+            })(),
+            bathrooms: (() => {
+              if (!formData.bathrooms || !formData.bathrooms.trim()) return null;
+              const value = parseInt(formData.bathrooms.trim());
+              return !isNaN(value) && value > 0 ? value : null;
+            })(),
+            kitchens: (() => {
+              if (!formData.kitchens || !formData.kitchens.trim()) return 1;
+              const value = parseInt(formData.kitchens.trim());
+              return !isNaN(value) && value > 0 ? value : 1;
+            })(),
+            living_areas: (() => {
+              if (!formData.livingAreas || !formData.livingAreas.trim()) return 1;
+              const value = parseInt(formData.livingAreas.trim());
+              return !isNaN(value) && value > 0 ? value : 1;
+            })()
           }
         },
         
@@ -102,12 +124,20 @@ export async function createProject(formData: CreateProjectFormValues, userId: s
         planned_end: null, // Will be calculated by AI based on phases
         actual_start: null,
         actual_end: null,
-        timeframe_months: formData.timeframe ? parseInt(formData.timeframe) : null
+        timeframe_months: (() => {
+          if (!formData.timeframe || !formData.timeframe.trim()) return null;
+          const value = parseInt(formData.timeframe.trim());
+          return !isNaN(value) && value > 0 ? value : null;
+        })()
       },
       
       // Budget information
       budget: {
-        allocated: formData.budget ? parseFloat(formData.budget.replace(/,/g, '')) : 0,
+        allocated: (() => {
+          if (!formData.budget || !formData.budget.trim()) return 0;
+          const value = parseFloat(formData.budget.replace(/,/g, '').trim());
+          return !isNaN(value) && value >= 0 ? value : 0;
+        })(),
         spent: 0,
         currency: (formData.currency as Currency) || 'GHS'
       }

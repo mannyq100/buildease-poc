@@ -15,7 +15,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge } from '@/components/shared';
 import { TouchOptimizedButton } from '@/components/ui/TouchOptimizedButton';
-import { DollarSign, Clock, Users, MapPin, Eye, Edit3 } from 'lucide-react';
+import { DollarSign, Clock, Users, MapPin, Edit3 } from 'lucide-react';
 import type { Project, TeamMember } from '@/types/project';
 
 interface ProjectStatusHeroProps {
@@ -36,18 +36,51 @@ export function ProjectStatusHero({
     ? Math.max(0, Math.ceil((new Date(project.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
     : null;
 
-  // Format budget display (convert to K format) using the transformed project data
-  const budgetDisplayValue = Math.round((project.budget || 0) / 1000);
-  
-  // Format currency display using user's specified currency
-  const formatBudgetWithCurrency = (amount: number) => {
+
+
+  // Get timeline display text
+  const getTimelineDisplay = () => {
+    if (daysRemaining === null) return '---';
+    if (daysRemaining === 0) return 'Due Today';
+    if (daysRemaining === 1) return '1 Day';
+    if (daysRemaining <= 7) return `${daysRemaining} Days`;
+    if (daysRemaining <= 30) return `${Math.ceil(daysRemaining / 7)} Weeks`;
+    return `${Math.ceil(daysRemaining / 30)} Months`;
+  };
+
+  // Get timeline label
+  const getTimelineLabel = () => {
+    if (daysRemaining === null) return 'Timeline';
+    if (daysRemaining === 0) return 'Due Today';
+    return 'Remaining';
+  };
+
+  // Format budget display with proper currency formatting
+  const formatBudgetDisplay = () => {
+    const budget = project.budget || 0;
+    if (budget === 0) return 'Not Set';
+    
     const currency = project.currency || 'USD';
+    
+    // For amounts >= 1M, show in millions
+    if (budget >= 1000000) {
+      const millions = budget / 1000000;
+      return `${currency} ${millions.toFixed(millions % 1 === 0 ? 0 : 1)}M`;
+    }
+    
+    // For amounts >= 1K, show in thousands
+    if (budget >= 1000) {
+      const thousands = budget / 1000;
+      return `${currency} ${thousands.toFixed(thousands % 1 === 0 ? 0 : 1)}K`;
+    }
+    
+    // For smaller amounts, show full amount
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency,
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(amount * 1000); // Convert back from K format
+    }).format(budget);
   };
 
   const handleUpdateProject = () => {
@@ -121,10 +154,10 @@ export function ProjectStatusHero({
               >
                 <DollarSign className="h-5 w-5 text-buildease-blue-600 mx-auto mb-1 group-hover:scale-110 transition-transform" />
                 <div className="text-lg font-bold text-slate-900">
-                  {formatBudgetWithCurrency(budgetDisplayValue).replace(/\d+/, `${budgetDisplayValue}K`)}
+                  {formatBudgetDisplay()}
                 </div>
-                <div className="text-xs text-slate-600 flex items-center justify-center gap-1">
-                  Budget <Eye className="h-3 w-3" />
+                <div className="text-xs text-slate-600">
+                  Total Budget
                 </div>
               </button>
               
@@ -135,10 +168,10 @@ export function ProjectStatusHero({
               >
                 <Clock className="h-5 w-5 text-buildease-orange-600 mx-auto mb-1 group-hover:scale-110 transition-transform" />
                 <div className="text-lg font-bold text-slate-900">
-                  {daysRemaining !== null ? daysRemaining : '---'}
+                  {getTimelineDisplay()}
                 </div>
-                <div className="text-xs text-slate-600 flex items-center justify-center gap-1">
-                  Timeline <Eye className="h-3 w-3" />
+                <div className="text-xs text-slate-600">
+                  {getTimelineLabel()}
                 </div>
               </button>
               
@@ -151,8 +184,8 @@ export function ProjectStatusHero({
                 <div className="text-lg font-bold text-slate-900">
                   {activeTeamMembers.length}
                 </div>
-                <div className="text-xs text-slate-600 flex items-center justify-center gap-1">
-                  Team <Eye className="h-3 w-3" />
+                <div className="text-xs text-slate-600">
+                  {activeTeamMembers.length === 1 ? 'Team Member' : 'Team Members'}
                 </div>
               </button>
             </div>

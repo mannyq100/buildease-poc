@@ -3,6 +3,7 @@
  * Supports PDF, Word, Excel and other document types
  */
 import { uploadFile, deleteFile } from '@/utils/core/storageUtils';
+import { supabase } from '@/lib/supabase';
 import type { FileUploadResult, DeleteFileResult } from '@/types/fileUpload';
 
 // Document type enum matching database schema
@@ -113,7 +114,7 @@ export function validateDocumentFile(file: File): { isValid: boolean; error?: st
 }
 
 /**
- * Upload a project document
+ * Upload a project document to storage only
  * @param file The document file to upload
  * @param userId The user ID for storage path
  * @param projectId The project ID
@@ -144,7 +145,7 @@ export async function uploadProjectDocument(
       documentType
     });
 
-    // Upload to storage first with minimal metadata to avoid conflicts
+    // Upload to storage only - database record will be created separately
     const uploadResult = await uploadFile(file, {
       bucket: 'documents',
       userId,
@@ -154,7 +155,6 @@ export async function uploadProjectDocument(
       onProgress,
       cacheControl: '3600',
       upsert: false,
-      // Remove metadata to avoid database conflicts
       metadata: {}
     });
 
@@ -178,6 +178,145 @@ export async function uploadProjectDocument(
       }
     }
     throw error;
+  }
+}
+
+/**
+ * Create a document record in the database
+ * @param options Document creation options
+ * @returns Created document record
+ */
+export async function createDocumentRecord(options: {
+  name: string;
+  description?: string;
+  documentType: DocumentType;
+  projectId: string;
+  phaseId?: string;
+  filePath: string;
+  fileSize: number;
+  mimeType: string;
+  metadata?: Record<string, any>;
+}): Promise<{ success: boolean; document?: any; error?: string }> {
+  try {
+    const { data: document, error } = await supabase
+      .from('be_document')
+      .insert({
+        name: options.name,
+        description: options.description || null,
+        document_type: options.documentType,
+        project_id: options.projectId,
+        phase_id: options.phaseId || null,
+        file_path: options.filePath,
+        file_size: options.fileSize,
+        mime_type: options.mimeType,
+        metadata: options.metadata || {}
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating document record:', error);
+      return {
+        success: false,
+        error: `Failed to create document record: ${error.message}`
+      };
+    }
+
+    return {
+      success: true,
+      document
+    };
+  } catch (error) {
+    console.error('Error in createDocumentRecord:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to create document record'
+    };
+  }
+}
+
+/**
+ * Upload document and create database record in one operation
+ * @param options Upload and document creation options
+ * @returns Combined result
+ */
+export async function uploadAndCreateDocument(options: {
+  file: File;
+  userId: string;
+  projectId: string;
+  name?: string;
+  description?: string;
+  documentType?: DocumentType;
+  phaseId?: string;
+  onProgress?: (progress: number) => void;
+}): Promise<{ success: boolean; document?: any; uploadResult?: FileUploadResult; error?: string }> {
+  const {
+    file,
+    userId,
+    projectId,
+    name,
+    description,
+    documentType = 'OTHER',
+    phaseId,
+    onProgress
+  } = options;
+
+  try {
+    // Step 1: Upload file to storage
+    const uploadResult = await uploadProjectDocument(
+      file,
+      userId,
+      projectId,
+      documentType,
+      onProgress
+    );
+
+    if (!uploadResult.success) {
+      return {
+        success: false,
+        error: uploadResult.error || 'File upload failed'
+      };
+    }
+
+    // Step 2: Create database record
+    const documentName = name || file.name;
+    const documentResult = await createDocumentRecord({
+      name: documentName,
+      description,
+      documentType,
+      projectId,
+      phaseId,
+      filePath: uploadResult.filePath!,
+      fileSize: file.size,
+      mimeType: file.type,
+      metadata: {
+        originalFileName: file.name,
+        uploadedAt: new Date().toISOString()
+      }
+    });
+
+    if (!documentResult.success) {
+      // Upload succeeded but database creation failed
+      console.error('File uploaded but database record creation failed');
+      return {
+        success: false,
+        uploadResult,
+        error: `File uploaded but database sync failed: ${documentResult.error}`
+      };
+    }
+
+    return {
+      success: true,
+      document: documentResult.document,
+      uploadResult
+    };
+
+  } catch (error) {
+    console.error('Error in uploadAndCreateDocument:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Upload process failed'
+    };
   }
 }
 

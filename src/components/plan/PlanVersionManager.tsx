@@ -67,7 +67,7 @@ export function PlanVersionManager({
 }: PlanVersionManagerProps) {
   const { user } = useSupabaseAuth();
   const [plans, setPlans] = useState<AIGeneratedPlan[]>([]);
-  const [activePlan, setActivePlan] = useState<AIGeneratedPlan | undefined>();
+  const [_activePlan, setActivePlan] = useState<AIGeneratedPlan | undefined>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);

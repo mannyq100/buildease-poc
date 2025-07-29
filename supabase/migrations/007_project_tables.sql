@@ -39,7 +39,8 @@ CREATE TABLE construction_mgr.be_project (
     }',
     owner_id UUID NOT NULL,
     profile_image TEXT,
-    inspiration_images TEXT[],
+    inspiration_images TEXT[] DEFAULT ARRAY[]::TEXT[],
+    progress_images TEXT[] DEFAULT ARRAY[]::TEXT[],
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_timeline CHECK (
@@ -63,6 +64,8 @@ CREATE INDEX IF NOT EXISTS idx_project_search ON construction_mgr.be_project
 CREATE INDEX IF NOT EXISTS idx_project_active_owner 
     ON construction_mgr.be_project (owner_id) 
     WHERE status IN ('PLANNING', 'IN_PROGRESS');
+CREATE INDEX IF NOT EXISTS idx_project_progress_images 
+    ON construction_mgr.be_project USING gin (progress_images);
 
 -- Project Members table
 CREATE TABLE construction_mgr.be_project_member (

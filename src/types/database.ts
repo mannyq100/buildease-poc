@@ -292,6 +292,7 @@ export interface Project {
   owner_id: string;
   profile_image?: string | null;
   inspiration_images?: string[];
+  progress_images?: string[];
   created_at: string;
   updated_at: string;
 }

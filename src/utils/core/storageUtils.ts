@@ -48,11 +48,22 @@ export const FILE_TYPE_PRESETS = {
 };
 
 /**
- * Generate a unique filename with timestamp
+ * Generate a unique filename preserving original name with timestamp
+ * Format: {originalName}_{timestamp}.{extension}
  */
 export const generateUniqueFileName = (originalName: string): string => {
-  const fileExt = originalName.split('.').pop();
-  return `${Date.now()}.${fileExt}`;
+  if (!originalName || typeof originalName !== 'string') {
+    return `file_${Date.now()}`;
+  }
+  
+  const fileExt = originalName.split('.').pop() || '';
+  const nameWithoutExt = originalName.replace(/\.[^/.]+$/, '').trim();
+  const timestamp = Date.now();
+  
+  // Sanitize filename - remove special characters but keep spaces and common symbols
+  const sanitizedName = nameWithoutExt.replace(/[<>:"/\\|?*]/g, '').substring(0, 100);
+  
+  return fileExt ? `${sanitizedName}_${timestamp}.${fileExt}` : `${sanitizedName}_${timestamp}`;
 };
 
 /**
@@ -145,16 +156,11 @@ export const uploadFile = async (
       // Progress images bucket requires: {userId}/{projectId}/{filename}
       filePath = `${storageUserId}/${projectId}/${fileName}`;
     } else if ((bucket === 'project-inspiration' || bucket === 'documents') && !projectId) {
-      // For temporary uploads without project ID, generate a valid UUID
-      const generateTempUUID = () => {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-          const r = Math.random() * 16 | 0;
-          const v = c === 'x' ? r : (r & 0x3 | 0x8);
-          return v.toString(16);
-        });
+      // Project-specific buckets require a project ID
+      return {
+        success: false,
+        error: `Project ID is required for ${bucket} uploads. Please ensure the project is created first.`
       };
-      const tempProjectId = generateTempUUID();
-      filePath = `${storageUserId}/${tempProjectId}/${fileName}`;
     } else {
       // Default path structure for other buckets: {userId}/{filename}
       filePath = `${storageUserId}/${fileName}`;
@@ -165,7 +171,7 @@ export const uploadFile = async (
       onProgress(0);
     }
 
-    // Upload file to Supabase storage with simplified approach
+    // Upload file to Supabase storage
     const uploadOptions: {
       cacheControl?: string;
       upsert?: boolean;
@@ -193,19 +199,36 @@ export const uploadFile = async (
       .upload(filePath, file, uploadOptions);
 
     if (error) {
-      console.error('Error uploading file:', error);
+      console.error('Error uploading file:', {
+        error,
+        bucket,
+        filePath,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        userId: storageUserId,
+        projectId,
+        errorMessage: error.message,
+        errorDetails: (error as Error & { details?: string; hint?: string }).details || (error as Error & { details?: string; hint?: string }).hint || 'No additional details'
+      });
       
-      // Provide more specific error messages
+      // Provide more specific error messages based on error analysis
       let errorMessage = 'Failed to upload file. Please try again.';
       
       if (error.message?.includes('Storage bucket not found')) {
         errorMessage = 'Storage bucket not found. Please contact support.';
-      } else if (error.message?.includes('policy')) {
+      } else if (error.message?.includes('policy') || error.message?.includes('RLS') || error.message?.includes('permission')) {
         errorMessage = 'Permission denied. Please check your account permissions.';
-      } else if (error.message?.includes('size')) {
+      } else if (error.message?.includes('size') || error.message?.includes('too large')) {
         errorMessage = 'File size exceeds the allowed limit.';
-      } else if (error.message?.includes('type')) {
+      } else if (error.message?.includes('type') || error.message?.includes('mime')) {
         errorMessage = 'File type not supported.';
+      } else if (error.message?.includes('duplicate') || error.message?.includes('already exists')) {
+        errorMessage = 'File already exists. Please rename or choose a different file.';
+      } else if (error.message?.includes('network') || error.message?.includes('timeout')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if ((error as Error & { statusCode?: string | number; status?: number }).statusCode === '500' || (error as Error & { statusCode?: string | number; status?: number }).status === 500) {
+        errorMessage = 'Server error occurred. This may be a temporary issue - please try again in a moment.';
       } else if (error.message) {
         errorMessage = `Upload failed: ${error.message}`;
       }

@@ -7,31 +7,31 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, Plus, ChevronUp } from 'lucide-react';
+import { DollarSign, Plus } from 'lucide-react';
 import { cn } from '@/utils/core/ui';
-import type { Project } from '@/types/project';
+import { formatCurrency } from '@/utils/core/format';
 
 interface BudgetOverviewCardProps {
-  project: Project;
-  expandedSections: {
-    budget: boolean;
+  project: {
+    id: string;
+    name: string;
+    budget: number;
+    spent: number;
+    currency: string;
   };
-  onToggleSection: (section: 'budget') => void;
-  onOpenCreateModal: (type: 'budget') => void;
+  onAddExpense?: () => void;
   className?: string;
 }
 
-export function BudgetOverviewCard({
-  project,
-  expandedSections,
-  onToggleSection,
-  onOpenCreateModal,
+export function BudgetOverviewCard({ 
+  project, 
+  onAddExpense,
   className
 }: BudgetOverviewCardProps) {
   // Normalize budget data to handle both number and object types
   const getBudgetData = () => {
     // Debug logging for budget data processing
-    console.log('💰 [DEBUG] BudgetOverviewCard - Project data received:', {
+    console.log(' [DEBUG] BudgetOverviewCard - Project data received:', {
       projectId: project.id,
       projectName: project.name,
       budget: project.budget,
@@ -48,7 +48,7 @@ export function BudgetOverviewCard({
       currency: project.currency || 'USD'
     };
     
-    console.log('💰 [DEBUG] BudgetOverviewCard - Using transformed project data:', budgetData);
+    console.log(' [DEBUG] BudgetOverviewCard - Using transformed project data:', budgetData);
     return budgetData;
   };
 
@@ -61,14 +61,16 @@ export function BudgetOverviewCard({
   
   const remainingBudget = budgetData.allocated - budgetData.spent;
 
-  // Format currency with proper localization
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: budgetData.currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
+  // Format currency amounts using the shared utility with smart formatting for large amounts
+  const formatAmount = (amount: number) => {
+    // For large amounts, use compact notation to prevent overflow
+    if (amount >= 1000000) {
+      return `${budgetData.currency === 'USD' ? '$' : budgetData.currency + ' '}${(amount / 1000000).toFixed(1)}M`;
+    } else if (amount >= 10000) {
+      return `${budgetData.currency === 'USD' ? '$' : budgetData.currency + ' '}${Math.round(amount / 1000)}K`;
+    } else {
+      return formatCurrency(amount, budgetData.currency);
+    }
   };
 
   // Determine budget status color based on utilization
@@ -77,10 +79,6 @@ export function BudgetOverviewCard({
     if (budgetUtilization > 75) return 'text-amber-600';
     return 'text-emerald-600';
   };
-
-  if (!expandedSections.budget) {
-    return null;
-  }
 
   return (
     <Card 
@@ -91,45 +89,37 @@ export function BudgetOverviewCard({
     >
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-buildease-blue-600" />
-            Budget & Materials
-          </CardTitle>
           <div className="flex items-center gap-2">
-            <Button 
-              size="sm" 
-              onClick={() => onOpenCreateModal('budget')}
-              className="bg-buildease-blue-600 hover:bg-buildease-blue-700 text-white"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              <span className="hidden sm:inline">Add Expense</span>
-              <span className="sm:hidden">Add</span>
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => onToggleSection('budget')}
-              className="text-slate-500 hover:text-slate-700"
-            >
-              <ChevronUp className="h-4 w-4" />
-            </Button>
+            <DollarSign className="h-5 w-5 text-blue-600" />
+            <CardTitle className="text-lg font-bold text-slate-900">
+              Budget Overview
+            </CardTitle>
           </div>
+          <Button 
+            size="sm" 
+            onClick={onAddExpense}
+            className="bg-buildease-blue-600 hover:bg-buildease-blue-700 text-white"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            <span className="hidden sm:inline">Add Expense</span>
+            <span className="sm:hidden">Add</span>
+          </Button>
         </div>
       </CardHeader>
       
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         {/* Budget Summary Grid - Mobile-first responsive */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="bg-slate-50/50 p-4 rounded-xl">
             <div className="text-sm text-slate-600 mb-1 font-medium">Total Budget</div>
-            <div className="text-xl sm:text-2xl font-bold text-slate-900">
-              {formatCurrency(budgetData.allocated)}
+            <div className="text-xl sm:text-2xl font-bold text-slate-900 truncate">
+              {formatAmount(budgetData.allocated)}
             </div>
           </div>
           <div className="bg-slate-50/50 p-4 rounded-xl">
             <div className="text-sm text-slate-600 mb-1 font-medium">Spent</div>
-            <div className="text-xl sm:text-2xl font-bold text-slate-900">
-              {formatCurrency(budgetData.spent)}
+            <div className="text-xl sm:text-2xl font-bold text-slate-900 truncate">
+              {formatAmount(budgetData.spent)}
             </div>
           </div>
         </div>
@@ -161,10 +151,10 @@ export function BudgetOverviewCard({
             <div>
               <div className="text-sm text-slate-600 font-medium">Remaining Budget</div>
               <div className={cn(
-                "text-lg font-bold",
+                "text-lg font-bold truncate",
                 remainingBudget < 0 ? "text-red-600" : "text-emerald-600"
               )}>
-                {formatCurrency(remainingBudget)}
+                {formatAmount(remainingBudget)}
               </div>
             </div>
             <div className="text-right">
@@ -189,8 +179,8 @@ export function BudgetOverviewCard({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
           <div className="bg-white/60 p-3 rounded-lg border border-slate-200/50">
             <div className="text-slate-600">Avg. Monthly Spend</div>
-            <div className="font-semibold text-slate-900">
-              {formatCurrency(budgetData.spent * 0.3)}
+            <div className="font-semibold text-slate-900 truncate">
+              {formatAmount(budgetData.spent * 0.3)}
             </div>
           </div>
           <div className="bg-white/60 p-3 rounded-lg border border-slate-200/50">
@@ -203,8 +193,8 @@ export function BudgetOverviewCard({
           </div>
           <div className="bg-white/60 p-3 rounded-lg border border-slate-200/50 sm:col-span-2 lg:col-span-1">
             <div className="text-slate-600">Projected Total</div>
-            <div className="font-semibold text-slate-900">
-              {formatCurrency(budgetData.allocated)}
+            <div className="font-semibold text-slate-900 truncate">
+              {formatAmount(budgetData.allocated)}
             </div>
           </div>
         </div>

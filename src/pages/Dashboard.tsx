@@ -284,7 +284,7 @@ export function Dashboard() {
                 <Button 
                   variant="default" 
                 className="bg-white hover:bg-gray-50 text-blue-700 border border-white/20 shadow-sm"
-                  onClick={() => navigate('/create-project')}
+                  onClick={() => navigate('/projects/new')}
                 >
                   <Plus className="mr-2 h-4 w-4" /> New Project
                 </Button>

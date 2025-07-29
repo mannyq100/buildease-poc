@@ -33,7 +33,7 @@ async function updateProjectAction(
   formData: FormData
 ): Promise<FormState> {
   try {
-    const projectData: UpdateProjectData = {
+    const _projectData: UpdateProjectData = {
       id: formData.get('id') as string,
       name: formData.get('name') as string,
       description: formData.get('description') as string,
@@ -62,7 +62,7 @@ async function updateProjectAction(
   }
 }
 
-export function ProjectEditForm({ project, onSave, onCancel }: ProjectEditFormProps) {
+export function ProjectEditForm({ project, onSave: _onSave, onCancel }: ProjectEditFormProps) {
   const [state, formAction, isPending] = useActionState(updateProjectAction, {
     error: null,
     success: false,

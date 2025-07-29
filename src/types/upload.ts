@@ -60,7 +60,7 @@ export const UPLOAD_CONFIGS: Record<UploadType, UploadConfig> = {
     description: 'Upload design inspiration and reference photos'
   },
   progress: {
-    bucket: 'project-progress',
+    bucket: 'progress-images',
     acceptedTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/heic'],
     maxSizeBytes: 10 * 1024 * 1024, // 10MB
     maxFiles: 20,

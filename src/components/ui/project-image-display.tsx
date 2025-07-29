@@ -114,18 +114,20 @@ export function ProjectImageDisplay({
         </div>
       )}
       
-      {/* Actual image */}
-      <img
-        src={src!}
-        alt={alt}
-        loading={priority ? "eager" : "lazy"}
-        onLoad={handleLoad}
-        onError={handleError}
-        className={cn(
-          "w-full h-full object-cover transition-opacity duration-300",
-          loadingState === 'loaded' ? 'opacity-100' : 'opacity-0'
-        )}
-      />
+      {/* Actual image - only render if src is valid */}
+      {src && src.trim() !== '' && (
+        <img
+          src={src}
+          alt={alt}
+          loading={priority ? "eager" : "lazy"}
+          onLoad={handleLoad}
+          onError={handleError}
+          className={cn(
+            "w-full h-full object-cover transition-opacity duration-300",
+            loadingState === 'loaded' ? 'opacity-100' : 'opacity-0'
+          )}
+        />
+      )}
       
       {/* Subtle overlay for better text contrast when used as background */}
       {loadingState === 'loaded' && (

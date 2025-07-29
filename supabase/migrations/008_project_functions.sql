@@ -93,6 +93,8 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Direct admin check (bypasses RLS)
+-- Update the admin check function with proper project-specific logic
+-- (This replaces the placeholder function created in migration 004)
 CREATE OR REPLACE FUNCTION private.is_admin_direct(user_id UUID)
 RETURNS BOOLEAN AS $$
 DECLARE

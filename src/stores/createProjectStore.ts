@@ -14,6 +14,8 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { createProject, validateProjectData } from '@/services/projectCreationService';
 import { uploadFile, getStorageUserId } from '@/utils/core/storageUtils';
+import { supabase } from '@/lib/supabase';
+import { TABLE_NAMES } from '@/types/database';
 
 // Import types from CreateProject
 export interface ProjectFormValues {
@@ -133,7 +135,7 @@ export interface CreateProjectStoreState {
   handleFileSelection: (file: File) => Promise<void>;
   removeImage: (imageId: string) => void;
   setProfileImage: (imageId: string) => void;
-  uploadAllImages: () => Promise<string[]>;
+  uploadAllImagesWithProjectId: (projectId: string) => Promise<string[]>;
   resetImages: () => void;
   
   // Submission actions
@@ -217,12 +219,12 @@ const defaultFormValues: ProjectFormValues = {
   roofType: '',
   wallMaterial: '',
   floorMaterial: '',
-  specialFeatures: [],
-  sustainabilityFeatures: [],
+  specialFeatures: undefined,
+  sustainabilityFeatures: undefined,
   siteConstraints: '',
   localRegulations: '',
   additionalNotes: '',
-  images: [],
+  images: undefined,
   profileImage: '',
 };
 
@@ -639,7 +641,8 @@ export const useCreateProjectStore = create<CreateProjectStoreState>()(
         }), false, 'setProfileImage');
       },
 
-        uploadAllImages: async () => {
+
+        uploadAllImagesWithProjectId: async (projectId: string) => {
           const currentState = get();
           const { imageState } = currentState;
           
@@ -660,7 +663,7 @@ export const useCreateProjectStore = create<CreateProjectStoreState>()(
               uploadProgress: 0,
               uploadError: null
             }
-          }), false, 'uploadAllImages-start');
+          }), false, 'uploadAllImagesWithProjectId-start');
 
           try {
             // Get authenticated user ID
@@ -669,143 +672,67 @@ export const useCreateProjectStore = create<CreateProjectStoreState>()(
               throw new Error('User not authenticated');
             }
 
-            // Create upload queue with retry logic
-            const uploadQueue = imageState.localFiles.map((localFile, index) => ({
-              localFile,
-              index,
-              retries: 0,
-              maxRetries: 3
-            }));
+            const uploadedResults: string[] = [];
+            const totalFiles = imageState.localFiles.length;
 
-            const uploadedResults: { index: number; url: string; localFile: LocalImageFile }[] = [];
-            const failedUploads: { localFile: LocalImageFile; error: string }[] = [];
-            const totalFiles = uploadQueue.length;
+            // Upload each file with the actual project ID
+            for (let i = 0; i < imageState.localFiles.length; i++) {
+              const localFile = imageState.localFiles[i];
+              
+              // Update progress
+              const progress = Math.round((i / totalFiles) * 100);
+              set((state) => ({
+                imageState: {
+                  ...state.imageState,
+                  uploadProgress: progress
+                }
+              }), false, 'uploadAllImagesWithProjectId-progress');
 
-            // Process uploads with concurrency limit (max 3 concurrent)
-            const concurrencyLimit = Math.min(3, totalFiles);
-            const uploadPromises: Promise<void>[] = [];
-
-            // Create a bound helper function for processing uploads
-            const processUploadQueue = async (
-              queue: { localFile: LocalImageFile; index: number; retries: number; maxRetries: number }[],
-              results: { index: number; url: string; localFile: LocalImageFile }[],
-              failures: { localFile: LocalImageFile; error: string }[]
-            ): Promise<void> => {
-              while (queue.length > 0) {
-                const uploadItem = queue.shift();
-                if (!uploadItem) break;
-
-                try {
-                  // Update progress
-                  const completedCount = results.length;
-                  const progress = Math.round((completedCount / totalFiles) * 100);
+              // Upload to Supabase storage with actual project ID
+              const result = await uploadFile(localFile.file, {
+                bucket: 'project-inspiration',
+                userId,
+                projectId, // Use the actual project ID here
+                allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
+                maxSizeMB: 5,
+                onProgress: (fileProgress) => {
+                  const totalProgress = Math.round(
+                    ((i + (fileProgress / 100)) / totalFiles) * 100
+                  );
                   set((state) => ({
                     imageState: {
                       ...state.imageState,
-                      uploadProgress: progress
+                      uploadProgress: totalProgress
                     }
-                  }), false, 'uploadAllImages-progress');
-
-                  // Upload to Supabase storage
-                  const result = await uploadFile(uploadItem.localFile.file, {
-                    bucket: 'project-inspiration',
-                    userId,
-                    allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
-                    maxSizeMB: 5,
-                    onProgress: (fileProgress) => {
-                      const totalProgress = Math.round(
-                        ((completedCount + (fileProgress / 100)) / totalFiles) * 100
-                      );
-                      set((state) => ({
-                        imageState: {
-                          ...state.imageState,
-                          uploadProgress: totalProgress
-                        }
-                      }), false, 'uploadAllImages-file-progress');
-                    }
-                  });
-                  
-                  if (!result.success || !result.publicUrl) {
-                    throw new Error(result.error || `Failed to upload ${uploadItem.localFile.file.name}`);
-                  }
-
-                  // Add to successful results
-                  results.push({
-                    index: uploadItem.index,
-                    url: result.publicUrl,
-                    localFile: uploadItem.localFile
-                  });
-
-                } catch (error) {
-                  const errorMessage = error instanceof Error ? error.message : 'Upload failed';
-                  
-                  // Retry logic
-                  if (uploadItem.retries < uploadItem.maxRetries) {
-                    uploadItem.retries++;
-                    console.warn(`Retrying upload for ${uploadItem.localFile.file.name} (attempt ${uploadItem.retries}/${uploadItem.maxRetries})`);
-                    
-                    // Add back to queue for retry with exponential backoff
-                    setTimeout(() => {
-                      queue.push(uploadItem);
-                    }, Math.pow(2, uploadItem.retries) * 1000); // 2s, 4s, 8s delays
-                  } else {
-                    // Max retries reached, add to failures
-                    failures.push({
-                      localFile: uploadItem.localFile,
-                      error: errorMessage
-                    });
-                  }
+                  }), false, 'uploadAllImagesWithProjectId-file-progress');
                 }
+              });
+              
+              if (!result.success || !result.publicUrl) {
+                throw new Error(result.error || `Failed to upload ${localFile.file.name}`);
               }
-            };
 
-            for (let i = 0; i < concurrencyLimit; i++) {
-              uploadPromises.push(
-                processUploadQueue(uploadQueue, uploadedResults, failedUploads)
-              );
+              uploadedResults.push(result.publicUrl);
             }
-
-            // Wait for all uploads to complete
-            await Promise.all(uploadPromises);
-
-            // Check if any uploads failed after retries
-            if (failedUploads.length > 0) {
-              const errorMessages = failedUploads.map(f => `${f.localFile.file.name}: ${f.error}`);
-              throw new Error(`Failed to upload ${failedUploads.length} image(s): ${errorMessages.join(', ')}`);
-            }
-
-            // Sort results by original index to maintain order
-            uploadedResults.sort((a, b) => a.index - b.index);
-            const uploadedUrls = uploadedResults.map(r => r.url);
-
-            // Find profile image URL using original file order
-            const profileImageUrl = imageState.localProfileImageId 
-              ? uploadedResults.find(r => r.localFile.id === imageState.localProfileImageId)?.url || uploadedUrls[0] || ''
-              : uploadedUrls[0] || '';
 
             // Clean up blob URLs
             imageState.localFiles.forEach(file => {
               URL.revokeObjectURL(file.previewUrl);
             });
 
-            // Update form data with uploaded URLs and clear local files
+            // Clear local files after successful upload
             set((state) => ({
-              formData: {
-                ...state.formData,
-                images: uploadedUrls,
-                profileImage: profileImageUrl
-              },
               imageState: {
                 ...state.imageState,
-                localFiles: [], // Clear local files after successful upload
+                localFiles: [], 
                 localProfileImageId: null,
                 isUploading: false,
                 uploadProgress: 100,
                 uploadError: null
               }
-            }), false, 'uploadAllImages-success');
+            }), false, 'uploadAllImagesWithProjectId-success');
 
-            return uploadedUrls;
+            return uploadedResults;
 
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to upload images';
@@ -817,7 +744,7 @@ export const useCreateProjectStore = create<CreateProjectStoreState>()(
                 uploadProgress: 0,
                 uploadError: errorMessage
               }
-            }), false, 'uploadAllImages-error');
+            }), false, 'uploadAllImagesWithProjectId-error');
             
             throw new Error(errorMessage);
           }
@@ -838,8 +765,6 @@ export const useCreateProjectStore = create<CreateProjectStoreState>()(
 
       // Submission actions
       submitProject: async (userId: string) => {
-        const { uploadAllImages, imageState } = get();
-        
         set((state) => ({
           submissionState: {
             ...state.submissionState,
@@ -850,30 +775,78 @@ export const useCreateProjectStore = create<CreateProjectStoreState>()(
 
         try {
           // Get initial form data for validation
-          let currentFormData = get().formData;
+          const currentFormData = get().formData;
           
-          // Validate project data
+          // Validate project data (excluding images for now)
           const validation = validateProjectData(currentFormData);
           if (!validation.isValid) {
             throw new Error(validation.errors.join(', '));
           }
 
-          // Upload all images first if there are local files
-          if (imageState.localFiles.length > 0) {
-            console.log('🚀 Uploading', imageState.localFiles.length, 'images to Supabase...');
-            const uploadedImageUrls = await uploadAllImages();
-            console.log('✅ Images uploaded successfully:', uploadedImageUrls);
-            
-            // Get updated form data after image upload
-            currentFormData = get().formData;
-            console.log('📊 Form data after image upload:', { 
-              images: currentFormData.images, 
-              profileImage: currentFormData.profileImage 
-            });
-          }
+          // Create the project first WITHOUT images
+          const projectDataWithoutImages = {
+            ...currentFormData,
+            images: undefined,
+            profileImage: undefined
+          };
           
-          // Create the project with updated form data (including uploaded image URLs)
-          const result = await createProject(currentFormData, userId);
+          console.log('🚀 Creating project without images first...');
+          const result = await createProject(projectDataWithoutImages, userId);
+          
+          if (!result.success || !result.project) {
+            throw new Error(result.error || 'Failed to create project');
+          }
+
+          const projectId = result.project.id;
+          console.log('✅ Project created successfully with ID:', projectId);
+
+          // Now upload images with the actual project ID
+          const { imageState } = get();
+          if (imageState.localFiles.length > 0) {
+            console.log('🖼️ Uploading', imageState.localFiles.length, 'images to project', projectId);
+            
+            try {
+              const uploadedImageUrls = await get().uploadAllImagesWithProjectId(projectId);
+              console.log('✅ Images uploaded successfully:', uploadedImageUrls);
+              
+              // Update the project with the uploaded image URLs
+              const { error: updateError } = await supabase
+                .from(TABLE_NAMES.PROJECTS)
+                .update({
+                  inspiration_images: uploadedImageUrls,
+                  profile_image: uploadedImageUrls[0] || null
+                })
+                .eq('id', projectId);
+
+              if (updateError) {
+                console.error('❌ Failed to update project with image URLs:', {
+                  error: updateError,
+                  message: updateError.message,
+                  code: updateError.code,
+                  details: updateError.details,
+                  hint: updateError.hint,
+                  projectId,
+                  imageUrls: uploadedImageUrls
+                });
+                // Don't fail the entire submission for image update failures
+              } else {
+                console.log('✅ Project updated with image URLs:', {
+                  projectId,
+                  imageCount: uploadedImageUrls.length,
+                  profileImage: uploadedImageUrls[0] || null,
+                  allImages: uploadedImageUrls
+                });
+              }
+            } catch (imageError) {
+              console.error('❌ Image upload failed, but project was created:', {
+                error: imageError,
+                message: imageError instanceof Error ? imageError.message : 'Unknown error',
+                projectId,
+                localFilesCount: imageState.localFiles.length
+              });
+              // Don't fail the entire submission for image upload failures
+            }
+          }
           
           if (!result.success) {
             throw new Error(result.error || 'Failed to create project');
@@ -1039,7 +1012,6 @@ export const useCreateProjectImages = () => {
   const handleFileSelection = useCreateProjectStore(state => state.handleFileSelection);
   const removeImage = useCreateProjectStore(state => state.removeImage);
   const setProfileImage = useCreateProjectStore(state => state.setProfileImage);
-  const uploadAllImages = useCreateProjectStore(state => state.uploadAllImages);
   const resetImages = useCreateProjectStore(state => state.resetImages);
   
   return {
@@ -1047,7 +1019,6 @@ export const useCreateProjectImages = () => {
     handleFileSelection,
     removeImage,
     setProfileImage,
-    uploadAllImages,
     resetImages
   };
 };

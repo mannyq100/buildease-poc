@@ -12,36 +12,45 @@ CREATE POLICY "Users can update their own profile"
     FOR UPDATE
     USING (id = auth.uid());
 
-CREATE POLICY "Admins can view all users"
-    ON construction_mgr.be_user
-    FOR SELECT
-    USING (private.is_admin_direct(auth.uid()));
+-- Note: Admin policies will be enhanced in migration 008 when project functions are available
+-- For now, only allow users to manage their own profiles
+-- CREATE POLICY "Admins can view all users"
+--     ON construction_mgr.be_user
+--     FOR SELECT
+--     USING (private.is_admin_direct(auth.uid()));
 
-CREATE POLICY "Admins can update all users"
-    ON construction_mgr.be_user
-    FOR UPDATE
-    USING (private.is_admin_direct(auth.uid()));
+-- CREATE POLICY "Admins can update all users"
+--     ON construction_mgr.be_user
+--     FOR UPDATE
+--     USING (private.is_admin_direct(auth.uid()));
 
 -- AUDIT LOG TABLE POLICIES
-CREATE POLICY "Users can view audit logs for their own projects"
+-- Note: Project-specific audit log policies will be enhanced in migration 008
+-- For now, users can only view their own audit logs
+CREATE POLICY "Users can view their own audit logs"
     ON construction_mgr.be_audit_log
     FOR SELECT
-    USING (
-        -- Check if the audit log relates to a project the user owns/participates in
-        CASE 
-            WHEN entity_type = 'project' THEN 
-                private.has_project_access_direct(entity_id::uuid, auth.uid())
-            WHEN details ? 'project_id' THEN 
-                private.has_project_access_direct((details->>'project_id')::uuid, auth.uid())
-            ELSE 
-                user_id = auth.uid()  -- Default to user's own actions
-        END
-    );
+    USING (user_id = auth.uid());
 
-CREATE POLICY "Admins can view all audit logs"
-    ON construction_mgr.be_audit_log
-    FOR SELECT
-    USING (private.is_admin_direct(auth.uid()));
+-- CREATE POLICY "Users can view audit logs for their own projects"
+--     ON construction_mgr.be_audit_log
+--     FOR SELECT
+--     USING (
+--         -- Check if the audit log relates to a project the user owns/participates in
+--         CASE 
+--             WHEN entity_type = 'project' THEN 
+--                 private.has_project_access_direct(entity_id::uuid, auth.uid())
+--             WHEN details ? 'project_id' THEN 
+--                 private.has_project_access_direct((details->>'project_id')::uuid, auth.uid())
+--             ELSE 
+--                 user_id = auth.uid()  -- Default to user's own actions
+--         END
+--     );
+
+-- CREATE POLICY "Admins can view all audit logs"
+--     ON construction_mgr.be_audit_log
+--     FOR SELECT
+--     USING (private.is_admin_direct(auth.uid()));
 
 CREATE POLICY "Authenticated users can create audit log entries"
     ON construction_mgr.be_audit_log

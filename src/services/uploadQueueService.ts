@@ -1,5 +1,4 @@
 import React from 'react';
-import type { FileUploadResult } from '@/utils/core/storageUtils';
 
 /**
  * Upload Queue Service

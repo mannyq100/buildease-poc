@@ -86,15 +86,15 @@ export function FeaturesForm() {
                   >
                     <FormControl>
                       <Checkbox
-                        checked={field.value?.includes(feature.id)}
+                        checked={field.value?.includes(feature.id) ?? false}
                         onCheckedChange={(checked) => {
                           const currentValues = field.value || [];
                           if (checked) {
-                            field.onChange([...currentValues, feature.id]);
+                            const newValues = [...currentValues, feature.id];
+                            field.onChange(newValues);
                           } else {
-                            field.onChange(
-                              currentValues.filter((value) => value !== feature.id)
-                            );
+                            const newValues = currentValues.filter((value) => value !== feature.id);
+                            field.onChange(newValues);
                           }
                         }}
                         className="data-[state=checked]:bg-[#2B6CB0] data-[state=checked]:border-[#2B6CB0] border-2 border-slate-400 dark:border-slate-500 mt-0.5"
@@ -139,15 +139,15 @@ export function FeaturesForm() {
                   >
                     <FormControl>
                       <Checkbox
-                        checked={field.value?.includes(feature.id)}
+                        checked={field.value?.includes(feature.id) ?? false}
                         onCheckedChange={(checked) => {
                           const currentValues = field.value || [];
                           if (checked) {
-                            field.onChange([...currentValues, feature.id]);
+                            const newValues = [...currentValues, feature.id];
+                            field.onChange(newValues);
                           } else {
-                            field.onChange(
-                              currentValues.filter((value) => value !== feature.id)
-                            );
+                            const newValues = currentValues.filter((value) => value !== feature.id);
+                            field.onChange(newValues);
                           }
                         }}
                         className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600 border-2 border-slate-400 dark:border-slate-500 mt-0.5"

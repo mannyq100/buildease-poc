@@ -13,23 +13,22 @@ import {
   Calendar,
   Plus,
   ChevronDown,
+  ChevronUp,
   Edit3,
   Trash2
 } from 'lucide-react';
+import React from 'react';
 import { ProjectPhase } from '@/types/projectDetails';
 
 interface PhaseTimelineCardProps {
   phases: ProjectPhase[];
-  expandedPhases: Record<string, boolean>;
-  onTogglePhase: (phaseId: string) => void;
+  onAddPhase?: () => void;
   onEditPhase: (phase: ProjectPhase) => void;
-  onDeletePhase: (phaseId: string) => void;
+  onDeletePhase?: (phaseId: string) => void;
   onCreateTask: (phaseId: string) => void;
-  onEditTask: (task: any, phaseId: string) => void;
-  onDeleteTask: (taskId: string) => void;
-  onOpenCreateModal: (type: 'phase') => void;
-  isExpanded: boolean;
-  onToggleSection: () => void;
+  onEditTask?: (task: any, phaseId: string) => void;
+  onDeleteTask?: (taskId: string) => void;
+  className?: string;
 }
 
 // Helper function for phase status colors
@@ -52,78 +51,98 @@ function getPhaseStatusColor(status: string): string {
 
 export function PhaseTimelineCard({
   phases,
-  expandedPhases,
-  onTogglePhase,
+  onAddPhase,
   onEditPhase,
   onDeletePhase,
   onCreateTask,
   onEditTask,
   onDeleteTask,
-  onOpenCreateModal,
-  isExpanded,
-  onToggleSection
+  className
 }: PhaseTimelineCardProps) {
+  const [expandedPhases, setExpandedPhases] = React.useState<Record<string, boolean>>({});
+  const [showAllPhases, setShowAllPhases] = React.useState(false);
+  
+  // Show only first 3 phases initially, unless "show more" is clicked
+  const INITIAL_PHASE_LIMIT = 3;
+  const displayedPhases = showAllPhases ? phases : phases.slice(0, INITIAL_PHASE_LIMIT);
+  const hasMorePhases = phases.length > INITIAL_PHASE_LIMIT;
   return (
-    <Card className="border-buildease-orange-200/60 shadow-xl bg-gradient-to-br from-buildease-orange-50/30 to-white backdrop-blur-md rounded-2xl">
+    <Card className={`border-buildease-orange-200/60 shadow-xl bg-gradient-to-br from-buildease-orange-50/30 to-white backdrop-blur-md rounded-2xl ${className || ''}`}>
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <button 
-            onClick={onToggleSection}
-            className="flex items-center gap-2 hover:text-buildease-orange-600 transition-colors"
-          >
+          <div className="flex items-center gap-2">
             <Calendar className="h-5 w-5 text-buildease-orange-600" />
             <CardTitle className="text-lg font-bold text-slate-900">
               Timeline & Phases
             </CardTitle>
-            <ChevronDown className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${
-              isExpanded ? 'rotate-180' : ''
-            }`} />
-          </button>
-          <div className="flex items-center gap-2">
-            <Button 
-              size="sm" 
-              onClick={() => onOpenCreateModal('phase')}
-              className="bg-buildease-orange-600 hover:bg-buildease-orange-700 text-white"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Add Phase
-            </Button>
           </div>
+          <Button 
+            size="sm" 
+            onClick={onAddPhase}
+            className="bg-buildease-orange-600 hover:bg-buildease-orange-700 text-white"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Add Phase
+          </Button>
         </div>
       </CardHeader>
       
-      {isExpanded && (
-        <CardContent className="space-y-4">
-          {phases && phases.length > 0 ? (
-            phases.map((phase) => (
+      <CardContent className="space-y-4">
+        {phases && phases.length > 0 ? (
+          <>
+            {displayedPhases.map((phase) => (
               <PhaseCard
                 key={phase.id}
                 phase={phase}
                 isExpanded={expandedPhases[phase.id] || false}
-                onToggle={() => onTogglePhase(phase.id)}
+                onToggle={() => setExpandedPhases(prev => ({ ...prev, [phase.id]: !prev[phase.id] }))}
                 onEdit={() => onEditPhase(phase)}
-                onDelete={() => onDeletePhase(phase.id)}
+                onDelete={() => onDeletePhase?.(phase.id)}
                 onCreateTask={onCreateTask}
                 onEditTask={onEditTask}
                 onDeleteTask={onDeleteTask}
               />
-            ))
-          ) : (
-            <div className="text-center py-8 text-slate-500">
-              <Calendar className="h-12 w-12 mx-auto mb-4 text-slate-300" />
-              <h3 className="text-lg font-medium text-slate-700 mb-2">No Phases Defined</h3>
+            ))}
+            
+            {/* Show More/Show Less Button */}
+            {hasMorePhases && (
+              <div className="flex justify-center pt-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAllPhases(!showAllPhases)}
+                  className="text-buildease-orange-600 hover:text-buildease-orange-700 hover:bg-buildease-orange-50"
+                >
+                  {showAllPhases ? (
+                    <>
+                      <ChevronUp className="h-4 w-4 mr-1" />
+                      Show Less
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-4 w-4 mr-1" />
+                      Show More ({phases.length - INITIAL_PHASE_LIMIT} more phases)
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-center py-8 text-slate-500">
+            <Calendar className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+            <p className="text-lg font-medium mb-2">No Phases Defined</p>
             <p className="text-sm mb-4">Start building your project timeline by adding phases</p>
             <Button 
-              onClick={() => onOpenCreateModal('phase')}
+              onClick={onAddPhase}
               className="bg-buildease-orange-600 hover:bg-buildease-orange-700 text-white"
             >
               <Plus className="h-4 w-4 mr-2" />
               Create First Phase
             </Button>
           </div>
-          )}
-        </CardContent>
-      )}
+        )}
+      </CardContent>
     </Card>
   );
 }

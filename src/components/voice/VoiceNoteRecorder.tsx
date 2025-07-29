@@ -3,13 +3,57 @@
  * Designed for workers wearing gloves or in situations where typing is impractical
  */
 
-import React, { useState, useRef, useCallback } from 'react';
-import { Mic, MicOff, Square, Play, Pause } from 'lucide-react';
+import { useState, useRef, useCallback } from 'react';
+import { Mic, Play, Square } from 'lucide-react';
 import { TouchOptimizedButton } from '@/components/ui/TouchOptimizedButton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/utils/core/ui';
 import type { VoiceNoteData } from '@/types/enhanced-project';
+
+interface SpeechRecognitionEvent {
+  results: SpeechRecognitionResultList;
+  resultIndex: number;
+}
+
+interface SpeechRecognitionErrorEvent {
+  error: string;
+  message: string;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  maxAlternatives: number;
+  serviceURI: string;
+  grammars: SpeechGrammarList;
+  start(): void;
+  stop(): void;
+  abort(): void;
+  onaudiostart: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onaudioend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any) | null;
+  onnomatch: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
+  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
+  onsoundstart: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onsoundend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onspeechstart: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onspeechend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onstart: ((this: SpeechRecognition, ev: Event) => any) | null;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: {
+      new (): SpeechRecognition;
+    };
+    webkitSpeechRecognition: {
+      new (): SpeechRecognition;
+    };
+  }
+}
 
 interface VoiceNoteRecorderProps {
   onTranscript: (data: VoiceNoteData) => void;
@@ -46,4 +90,282 @@ export function VoiceNoteRecorder({
   const startRecording = useCallback(async () => {
     try {
       setState('recording');
-      setTranscript('');\n      setDuration(0);\n      \n      // Start audio recording\n      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });\n      const mediaRecorder = new MediaRecorder(stream);\n      const audioChunks: Blob[] = [];\n      \n      mediaRecorder.ondataavailable = (event) => {\n        audioChunks.push(event.data);\n      };\n      \n      mediaRecorder.onstop = () => {\n        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });\n        const url = URL.createObjectURL(audioBlob);\n        setAudioUrl(url);\n        \n        // Clean up stream\n        stream.getTracks().forEach(track => track.stop());\n      };\n      \n      mediaRecorder.start();\n      mediaRecorderRef.current = mediaRecorder;\n      \n      // Start speech recognition if available\n      if (hasSpeechRecognition) {\n        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;\n        const recognition = new SpeechRecognition();\n        \n        recognition.continuous = true;\n        recognition.interimResults = true;\n        recognition.lang = 'en-US';\n        \n        recognition.onresult = (event) => {\n          let finalTranscript = '';\n          let interimTranscript = '';\n          let totalConfidence = 0;\n          let results = 0;\n          \n          for (let i = event.resultIndex; i < event.results.length; i++) {\n            const transcript = event.results[i][0].transcript;\n            const confidence = event.results[i][0].confidence;\n            \n            if (event.results[i].isFinal) {\n              finalTranscript += transcript;\n              totalConfidence += confidence;\n              results++;\n            } else {\n              interimTranscript += transcript;\n            }\n          }\n          \n          setTranscript(finalTranscript + interimTranscript);\n          if (results > 0) {\n            setConfidence(totalConfidence / results);\n          }\n        };\n        \n        recognition.onerror = (event) => {\n          console.error('Speech recognition error:', event.error);\n        };\n        \n        recognition.start();\n        recognitionRef.current = recognition;\n      }\n      \n      // Duration timer\n      durationIntervalRef.current = setInterval(() => {\n        setDuration(prev => {\n          const newDuration = prev + 1;\n          if (newDuration >= maxDuration) {\n            stopRecording();\n          }\n          return newDuration;\n        });\n      }, 1000);\n      \n      // Haptic feedback\n      if ('vibrate' in navigator) {\n        navigator.vibrate(50);\n      }\n      \n    } catch (error) {\n      console.error('Failed to start recording:', error);\n      setState('idle');\n    }\n  }, [maxDuration]);\n  \n  const stopRecording = useCallback(() => {\n    setState('processing');\n    \n    // Stop speech recognition\n    if (recognitionRef.current) {\n      recognitionRef.current.stop();\n      recognitionRef.current = null;\n    }\n    \n    // Stop media recorder\n    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {\n      mediaRecorderRef.current.stop();\n    }\n    \n    // Clear duration timer\n    if (durationIntervalRef.current) {\n      clearInterval(durationIntervalRef.current);\n      durationIntervalRef.current = null;\n    }\n    \n    // Process results\n    setTimeout(() => {\n      if (transcript.trim() && autoSubmit) {\n        handleSubmit();\n      } else {\n        setState('idle');\n      }\n    }, 1000);\n    \n    // Haptic feedback\n    if ('vibrate' in navigator) {\n      navigator.vibrate([50, 50, 50]);\n    }\n  }, [transcript, autoSubmit]);\n  \n  const handleSubmit = useCallback(() => {\n    if (transcript.trim()) {\n      const voiceData: VoiceNoteData = {\n        transcript: transcript.trim(),\n        confidence,\n        timestamp: new Date(),\n      };\n      \n      onTranscript(voiceData);\n      setTranscript('');\n      setConfidence(0);\n      setDuration(0);\n      setState('idle');\n    }\n  }, [transcript, confidence, onTranscript]);\n  \n  const playAudio = useCallback(() => {\n    if (audioUrl && audioRef.current) {\n      setState('playback');\n      audioRef.current.play();\n    }\n  }, [audioUrl]);\n  \n  const formatDuration = (seconds: number): string => {\n    const mins = Math.floor(seconds / 60);\n    const secs = seconds % 60;\n    return `${mins}:${secs.toString().padStart(2, '0')}`;\n  };\n  \n  return (\n    <Card className={cn(\"w-full\", className)}>\n      <CardContent className=\"p-6\">\n        <div className=\"flex items-center gap-4\">\n          {/* Record Button */}\n          <TouchOptimizedButton\n            touchSize=\"lg\"\n            hapticFeedback\n            onClick={state === 'recording' ? stopRecording : startRecording}\n            disabled={state === 'processing'}\n            className={cn(\n              \"rounded-full transition-all duration-200\",\n              state === 'recording' \n                ? \"bg-red-500 hover:bg-red-600 text-white animate-pulse\" \n                : \"bg-buildease-blue-500 hover:bg-buildease-blue-600 text-white\"\n            )}\n          >\n            {state === 'recording' ? (\n              <Square className=\"h-6 w-6\" />\n            ) : state === 'processing' ? (\n              <div className=\"h-6 w-6 border-2 border-white border-t-transparent rounded-full animate-spin\" />\n            ) : (\n              <Mic className=\"h-6 w-6\" />\n            )}\n          </TouchOptimizedButton>\n          \n          {/* Content Area */}\n          <div className=\"flex-1 min-h-[60px]\">\n            {state === 'idle' && !transcript && (\n              <div className=\"flex items-center h-full\">\n                <p className=\"text-slate-600\">{placeholder}</p>\n              </div>\n            )}\n            \n            {state === 'recording' && (\n              <div className=\"space-y-2\">\n                <div className=\"flex items-center gap-2\">\n                  <div className=\"flex items-center gap-1\">\n                    <div className=\"w-2 h-2 bg-red-500 rounded-full animate-pulse\" />\n                    <span className=\"text-sm font-medium text-red-600\">Recording</span>\n                  </div>\n                  <Badge variant=\"outline\" className=\"text-xs\">\n                    {formatDuration(duration)} / {formatDuration(maxDuration)}\n                  </Badge>\n                </div>\n                {transcript && (\n                  <p className=\"text-sm text-slate-700 leading-relaxed\">\n                    {transcript}\n                  </p>\n                )}\n              </div>\n            )}\n            \n            {state === 'processing' && (\n              <div className=\"flex items-center gap-2 h-full\">\n                <div className=\"w-4 h-4 border-2 border-buildease-blue-500 border-t-transparent rounded-full animate-spin\" />\n                <span className=\"text-sm text-slate-600\">Processing...</span>\n              </div>\n            )}\n            \n            {(state === 'idle' || state === 'playback') && transcript && (\n              <div className=\"space-y-3\">\n                <p className=\"text-sm text-slate-700 leading-relaxed\">\n                  {transcript}\n                </p>\n                \n                <div className=\"flex items-center gap-2\">\n                  {confidence > 0 && (\n                    <Badge \n                      variant=\"outline\" \n                      className={cn(\n                        \"text-xs\",\n                        confidence > 0.8 ? \"border-green-500 text-green-700\" :\n                        confidence > 0.6 ? \"border-yellow-500 text-yellow-700\" :\n                        \"border-red-500 text-red-700\"\n                      )}\n                    >\n                      {Math.round(confidence * 100)}% confident\n                    </Badge>\n                  )}\n                  \n                  {audioUrl && (\n                    <TouchOptimizedButton\n                      touchSize=\"sm\"\n                      variant=\"outline\"\n                      onClick={playAudio}\n                      className=\"h-8\"\n                    >\n                      <Play className=\"h-3 w-3 mr-1\" />\n                      Play\n                    </TouchOptimizedButton>\n                  )}\n                  \n                  <TouchOptimizedButton\n                    touchSize=\"sm\"\n                    onClick={handleSubmit}\n                    disabled={!transcript.trim()}\n                    className=\"h-8\"\n                  >\n                    Submit\n                  </TouchOptimizedButton>\n                </div>\n              </div>\n            )}\n          </div>\n        </div>\n        \n        {/* Audio element for playback */}\n        {audioUrl && (\n          <audio\n            ref={audioRef}\n            src={audioUrl}\n            onEnded={() => setState('idle')}\n            className=\"hidden\"\n          />\n        )}\n        \n        {/* Capability warning */}\n        {!hasSpeechRecognition && (\n          <div className=\"mt-3 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700\">\n            Voice-to-text not supported in this browser. Audio will still be recorded.\n          </div>\n        )}\n      </CardContent>\n    </Card>\n  );\n}"
+      setTranscript('');
+      setDuration(0);
+      
+      // Start audio recording
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      const audioChunks: Blob[] = [];
+      
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunks.push(event.data);
+      };
+      
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+        const url = URL.createObjectURL(audioBlob);
+        setAudioUrl(url);
+        
+        // Clean up stream
+        stream.getTracks().forEach(track => track.stop());
+      };
+      
+      mediaRecorder.start();
+      mediaRecorderRef.current = mediaRecorder;
+      
+      // Start speech recognition if available
+      if (hasSpeechRecognition) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+        
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
+          let finalTranscript = '';
+          let interimTranscript = '';
+          let totalConfidence = 0;
+          let results = 0;
+          
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            const confidence = event.results[i][0].confidence;
+            
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript;
+              totalConfidence += confidence;
+              results++;
+            } else {
+              interimTranscript += transcript;
+            }
+          }
+          
+          setTranscript(finalTranscript + interimTranscript);
+          if (results > 0) {
+            setConfidence(totalConfidence / results);
+          }
+        };
+        
+        recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+          console.error('Speech recognition error:', event.error);
+        };
+        
+        recognition.start();
+        recognitionRef.current = recognition;
+      }
+      
+      // Duration timer
+      durationIntervalRef.current = setInterval(() => {
+        setDuration(prev => {
+          const newDuration = prev + 1;
+          if (newDuration >= maxDuration) {
+            stopRecording();
+          }
+          return newDuration;
+        });
+      }, 1000);
+      
+      // Haptic feedback
+      if ('vibrate' in navigator) {
+        navigator.vibrate(50);
+      }
+      
+    } catch (error) {
+      console.error('Failed to start recording:', error);
+      setState('idle');
+    }
+  }, [maxDuration]);
+  
+  const stopRecording = useCallback(() => {
+    setState('processing');
+    
+    // Stop speech recognition
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+    
+    // Stop media recorder
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+    
+    // Clear duration timer
+    if (durationIntervalRef.current) {
+      clearInterval(durationIntervalRef.current);
+      durationIntervalRef.current = null;
+    }
+    
+    // Process results
+    setTimeout(() => {
+      if (transcript.trim() && autoSubmit) {
+        handleSubmit();
+      } else {
+        setState('idle');
+      }
+    }, 1000);
+    
+    // Haptic feedback
+    if ('vibrate' in navigator) {
+      navigator.vibrate([50, 50, 50]);
+    }
+  }, [transcript, autoSubmit]);
+  
+  const handleSubmit = useCallback(() => {
+    if (transcript.trim()) {
+      const voiceData: VoiceNoteData = {
+        transcript: transcript.trim(),
+        confidence,
+        timestamp: new Date(),
+      };
+      
+      onTranscript(voiceData);
+      setTranscript('');
+      setConfidence(0);
+      setDuration(0);
+      setState('idle');
+    }
+  }, [transcript, confidence, onTranscript]);
+  
+  const playAudio = useCallback(() => {
+    if (audioUrl && audioRef.current) {
+      setState('playback');
+      audioRef.current.play();
+    }
+  }, [audioUrl]);
+  
+  const formatDuration = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+  
+  return (
+    <Card className={cn("w-full", className)}>
+      <CardContent className="p-6">
+        <div className="flex items-center gap-4">
+          {/* Record Button */}
+          <TouchOptimizedButton
+            touchSize="lg"
+            hapticFeedback
+            onClick={state === 'recording' ? stopRecording : startRecording}
+            disabled={state === 'processing'}
+            className={cn(
+              "rounded-full transition-all duration-200",
+              state === 'recording' 
+                ? "bg-red-500 hover:bg-red-600 text-white animate-pulse" 
+                : "bg-buildease-blue-500 hover:bg-buildease-blue-600 text-white"
+            )}
+          >
+            {state === 'recording' ? (
+              <Square className="h-6 w-6" />
+            ) : state === 'processing' ? (
+              <div className="h-6 w-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Mic className="h-6 w-6" />
+            )}
+          </TouchOptimizedButton>
+          
+          {/* Content Area */}
+          <div className="flex-1 min-h-[60px]">
+            {state === 'idle' && !transcript && (
+              <div className="flex items-center h-full">
+                <p className="text-slate-600">{placeholder}</p>
+              </div>
+            )}
+            
+            {state === 'recording' && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                    <span className="text-sm font-medium text-red-600">Recording</span>
+                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    {formatDuration(duration)} / {formatDuration(maxDuration)}
+                  </Badge>
+                </div>
+                {transcript && (
+                  <p className="text-sm text-slate-700 leading-relaxed">
+                    {transcript}
+                  </p>
+                )}
+              </div>
+            )}
+            
+            {state === 'processing' && (
+              <div className="flex items-center gap-2 h-full">
+                <div className="w-4 h-4 border-2 border-buildease-blue-500 border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm text-slate-600">Processing...</span>
+              </div>
+            )}
+            
+            {(state === 'idle' || state === 'playback') && transcript && (
+              <div className="space-y-3">
+                <p className="text-sm text-slate-700 leading-relaxed">
+                  {transcript}
+                </p>
+                
+                <div className="flex items-center gap-2">
+                  {confidence > 0 && (
+                    <Badge 
+                      variant="outline" 
+                      className={cn(
+                        "text-xs",
+                        confidence > 0.8 ? "border-green-500 text-green-700" :
+                        confidence > 0.6 ? "border-yellow-500 text-yellow-700" :
+                        "border-red-500 text-red-700"
+                      )}
+                    >
+                      {Math.round(confidence * 100)}% confident
+                    </Badge>
+                  )}
+                  
+                  {audioUrl && (
+                    <TouchOptimizedButton
+                      touchSize="sm"
+                      variant="outline"
+                      onClick={playAudio}
+                      className="h-8"
+                    >
+                      <Play className="h-3 w-3 mr-1" />
+                      Play
+                    </TouchOptimizedButton>
+                  )}
+                  
+                  <TouchOptimizedButton
+                    touchSize="sm"
+                    onClick={handleSubmit}
+                    disabled={!transcript.trim()}
+                    className="h-8"
+                  >
+                    Submit
+                  </TouchOptimizedButton>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Audio element for playback */}
+        {audioUrl && (
+          <audio
+            ref={audioRef}
+            src={audioUrl}
+            onEnded={() => setState('idle')}
+            className="hidden"
+          />
+        )}
+        
+        {/* Capability warning */}
+        {!hasSpeechRecognition && (
+          <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+            Voice-to-text not supported in this browser. Audio will still be recorded.
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

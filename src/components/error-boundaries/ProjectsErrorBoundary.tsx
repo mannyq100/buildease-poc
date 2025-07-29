@@ -42,7 +42,7 @@ export function ProjectsErrorBoundary({
     navigate('/dashboard', { replace: true });
   };
   
-  const handleRefreshPage = () => {
+  const _handleRefreshPage = () => {
     window.location.reload();
   };
   

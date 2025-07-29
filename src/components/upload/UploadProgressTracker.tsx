@@ -3,7 +3,7 @@
  * Provides detailed upload progress tracking, cancellation, and real-time status updates
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +18,7 @@ import {
   Play,
   RotateCcw
 } from 'lucide-react';
-import { useUploadQueue, type QueueStatus } from '@/services/uploadQueueService';
+import { useUploadQueue } from '@/services/uploadQueueService';
 import { cn } from '@/lib/utils';
 
 export interface UploadTask {

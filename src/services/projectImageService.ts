@@ -1,24 +1,268 @@
 /**
- * Service for handling all project image uploads (inspiration, progress, profile)
+ * Unified Project Image Service
+ * Handles inspiration and progress images with consistent storage + database sync
  */
 import { uploadFile, deleteFile, FILE_TYPE_PRESETS } from '@/utils/core/storageUtils';
+import { supabase } from '@/lib/supabase';
 import type { FileUploadResult, DeleteFileResult } from '@/types/fileUpload';
+import type { UploadResult } from '@/types/upload';
 
-type ImageType = 'inspiration' | 'progress' | 'profile';
+export type ImageType = 'inspiration' | 'progress' | 'profile';
 
-// Get bucket configuration for different image types
-const getBucketConfig = (imageType: ImageType) => {
-  switch(imageType) {
-    case 'inspiration':
-      return { bucket: 'project-inspiration', folder: 'inspiration' };
-    case 'progress':
-      return { bucket: 'progress-images', folder: 'progress' };
-    case 'profile':
-      return { bucket: 'project-inspiration', folder: 'profile' };
-    default:
-      return { bucket: 'project-inspiration', folder: 'misc' };
+export interface ImageUploadOptions {
+  type: ImageType;
+  projectId: string;
+  files: File[];
+  onProgress?: (progress: number) => void;
+}
+
+export interface ImageUploadResult {
+  success: boolean;
+  uploadedImages?: UploadResult[];
+  error?: string;
+}
+
+// Image type configurations with database sync info
+const IMAGE_CONFIG = {
+  inspiration: {
+    bucket: 'project-inspiration',
+    maxFiles: 20,
+    dbColumn: 'inspiration_images'
+  },
+  progress: {
+    bucket: 'progress-images', 
+    maxFiles: 20,
+    dbColumn: 'progress_images'
+  },
+  profile: {
+    bucket: 'profiles',
+    maxFiles: 1,
+    dbColumn: 'profile_image'
   }
-};
+} as const;
+
+// Allowed image MIME types
+const ALLOWED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/png', 
+  'image/webp',
+  'image/heic',
+  'image/gif'
+];
+
+// Maximum file size: 10MB
+const MAX_FILE_SIZE_MB = 10;
+
+/**
+ * Validate image file type and size
+ */
+export function validateImageFile(file: File): { isValid: boolean; error?: string } {
+  if (!file || typeof file !== 'object') {
+    return {
+      isValid: false,
+      error: 'Invalid file object provided'
+    };
+  }
+
+  // Check file size
+  const fileSizeMB = file.size / (1024 * 1024);
+  if (fileSizeMB > MAX_FILE_SIZE_MB) {
+    return {
+      isValid: false,
+      error: `File size (${fileSizeMB.toFixed(1)}MB) exceeds maximum allowed size of ${MAX_FILE_SIZE_MB}MB`
+    };
+  }
+
+  // Check file type
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    return {
+      isValid: false,
+      error: `File type "${file.type}" is not supported. Allowed types: JPG, PNG, WebP, HEIC, GIF`
+    };
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * Update project image array in database
+ */
+async function updateProjectImageArray(
+  projectId: string,
+  imageUrls: string[],
+  type: ImageType
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const config = IMAGE_CONFIG[type];
+    
+    // Handle profile image differently (single image, not array)
+    if (type === 'profile') {
+      const { error: updateError } = await supabase
+        .from('be_project')
+        .update({ 
+          profile_image: imageUrls[0],
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', projectId);
+
+      if (updateError) {
+        throw new Error(`Failed to update profile image: ${updateError.message}`);
+      }
+      
+      return { success: true };
+    }
+    
+    // Handle inspiration and progress images (arrays)
+    const { data: project, error: fetchError } = await supabase
+      .from('be_project')
+      .select(`${config.dbColumn}`)
+      .eq('id', projectId)
+      .single();
+
+    if (fetchError) {
+      throw new Error(`Failed to fetch project: ${fetchError.message}`);
+    }
+
+    // Merge new URLs with existing ones
+    const currentImages = (project[config.dbColumn] as string[]) || [];
+    const updatedImages = [...currentImages, ...imageUrls];
+
+    // Update database
+    const { error: updateError } = await supabase
+      .from('be_project')
+      .update({ 
+        [config.dbColumn]: updatedImages,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', projectId);
+
+    if (updateError) {
+      throw new Error(`Failed to update project: ${updateError.message}`);
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating project image array:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Database update failed'
+    };
+  }
+}
+
+/**
+ * Upload multiple project images and sync to database
+ */
+export async function uploadProjectImages(options: ImageUploadOptions): Promise<ImageUploadResult> {
+  const { type, projectId, files, onProgress } = options;
+
+  if (!files || files.length === 0) {
+    return {
+      success: false,
+      error: 'No files provided for upload'
+    };
+  }
+
+  const config = IMAGE_CONFIG[type];
+  
+  if (files.length > config.maxFiles) {
+    return {
+      success: false,
+      error: `Maximum ${config.maxFiles} files allowed for ${type} images`
+    };
+  }
+
+  try {
+    const results: FileUploadResult[] = [];
+
+    // Upload each file to storage
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      
+      // Validate each file
+      const validation = validateImageFile(file);
+      if (!validation.isValid) {
+        results.push({
+          success: false,
+          error: validation.error
+        });
+        continue;
+      }
+
+      try {
+        // Upload to storage
+        const uploadResult = await uploadFile(file, {
+          bucket: config.bucket,
+          projectId,
+          allowedTypes: ALLOWED_IMAGE_TYPES,
+          maxSizeMB: MAX_FILE_SIZE_MB,
+          onProgress: (fileProgress) => {
+            if (onProgress) {
+              const totalProgress = ((i + fileProgress / 100) / files.length) * 100;
+              onProgress(Math.round(totalProgress));
+            }
+          }
+        });
+
+        results.push(uploadResult);
+      } catch (error) {
+        console.error(`Error uploading ${file.name}:`, error);
+        results.push({
+          success: false,
+          error: error instanceof Error ? error.message : 'Upload failed'
+        });
+      }
+    }
+    
+    // Filter successful uploads
+    const successfulUploads = results.filter(result => result.success && result.publicUrl);
+    const failedUploads = results.filter(result => !result.success);
+
+    if (successfulUploads.length === 0) {
+      return {
+        success: false,
+        error: 'All uploads failed'
+      };
+    }
+
+    // Step 2: Sync successful uploads to database
+    const imageUrls = successfulUploads.map(result => result.publicUrl!);
+    const dbResult = await updateProjectImageArray(projectId, imageUrls, type);
+
+    if (!dbResult.success) {
+      console.error('Database sync failed, but files were uploaded to storage');
+      return {
+        success: false,
+        error: `Files uploaded but database sync failed: ${dbResult.error}`
+      };
+    }
+
+    // Create response with upload results
+    const uploadedImages: UploadResult[] = successfulUploads.map((result, index) => ({
+      id: `${type}-${Date.now()}-${index}`,
+      url: result.publicUrl!,
+      name: files[index].name,
+      size: files[index].size,
+      type: type as any, // Cast to match UploadResult type
+      uploadedAt: new Date()
+    }));
+
+    return {
+      success: true,
+      uploadedImages,
+      ...(failedUploads.length > 0 && {
+        error: `${failedUploads.length} files failed to upload`
+      })
+    };
+
+  } catch (error) {
+    console.error('Error in uploadProjectImages:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Upload process failed'
+    };
+  }
+}
 
 /**
  * Upload a project image (inspiration, progress, or profile)
@@ -63,14 +307,130 @@ export async function uploadProjectImage(
 }
 
 /**
- * Delete a project image
+ * Remove image from project array in database
+ */
+export async function removeProjectImage(
+  projectId: string,
+  imageUrl: string,
+  type: ImageType
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const config = IMAGE_CONFIG[type];
+    
+    // Handle profile image differently (single image, not array)
+    if (type === 'profile') {
+      const { error: updateError } = await supabase
+        .from('be_project')
+        .update({ 
+          profile_image: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', projectId);
+
+      if (updateError) {
+        throw new Error(`Failed to remove profile image: ${updateError.message}`);
+      }
+      
+      return { success: true };
+    }
+    
+    // Handle inspiration and progress images (arrays)
+    const { data: project, error: fetchError } = await supabase
+      .from('be_project')
+      .select(`${config.dbColumn}`)
+      .eq('id', projectId)
+      .single();
+
+    if (fetchError) {
+      throw new Error(`Failed to fetch project: ${fetchError.message}`);
+    }
+
+    // Remove URL from array
+    const currentImages = (project[config.dbColumn] as string[]) || [];
+    const updatedImages = currentImages.filter(url => url !== imageUrl);
+
+    // Update database
+    const { error: updateError } = await supabase
+      .from('be_project')
+      .update({ 
+        [config.dbColumn]: updatedImages,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', projectId);
+
+    if (updateError) {
+      throw new Error(`Failed to update project: ${updateError.message}`);
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error removing project image:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to remove image'
+    };
+  }
+}
+
+/**
+ * Delete a project image from storage
  * @param filePath The file path to delete
  * @param imageType The type of image being deleted
  * @returns Delete result
  */
 export async function deleteProjectImage(filePath: string, imageType: ImageType): Promise<DeleteFileResult> {
-  const config = getBucketConfig(imageType);
+  const config = IMAGE_CONFIG[imageType];
   return deleteFile(config.bucket, filePath);
+}
+
+/**
+ * Get project images from database
+ */
+export async function getProjectImages(
+  projectId: string,
+  type: ImageType
+): Promise<{ images: string[]; error?: string }> {
+  try {
+    const config = IMAGE_CONFIG[type];
+    
+    // Handle profile image differently (single image, not array)
+    if (type === 'profile') {
+      const { data: project, error } = await supabase
+        .from('be_project')
+        .select('profile_image')
+        .eq('id', projectId)
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to fetch profile image: ${error.message}`);
+      }
+
+      return {
+        images: project.profile_image ? [project.profile_image] : []
+      };
+    }
+    
+    // Handle inspiration and progress images (arrays)
+    const { data: project, error } = await supabase
+      .from('be_project')
+      .select(`${config.dbColumn}`)
+      .eq('id', projectId)
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to fetch project images: ${error.message}`);
+    }
+
+    return {
+      images: (project[config.dbColumn] as string[]) || []
+    };
+  } catch (error) {
+    console.error('Error fetching project images:', error);
+    return {
+      images: [],
+      error: error instanceof Error ? error.message : 'Failed to fetch images'
+    };
+  }
 }
 
 /**
@@ -82,7 +442,7 @@ export async function deleteProjectImage(filePath: string, imageType: ImageType)
  */
 export function getFilePathFromUrl(url: string, imageType: ImageType): string {
   try {
-    const config = getBucketConfig(imageType);
+    const config = IMAGE_CONFIG[imageType];
     // Extract the path from the URL
     // Example URL: https://xxxx.supabase.co/storage/v1/object/public/bucket-name/user-id/filename.jpg
     const urlParts = url.split(`/${config.bucket}/`);

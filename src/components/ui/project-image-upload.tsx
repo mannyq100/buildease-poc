@@ -76,9 +76,21 @@ export function ProjectImageUpload({
 }: ProjectImageUploadProps) {
   // Get configuration for this image type
   const config = getImageTypeConfig(imageType);
-  // Use the provided hook instance or create a new one
+  
+  // Always call the hook, but conditionally use its values
+  const internalHook = useProjectImages({
+    imageType,
+    projectId,
+    initialImages: value,
+    initialProfileImage: profileImage,
+    maxImages,
+    onChange,
+    onProfileImageChange: onSelectProfileImage
+  });
+  
+  // Use the provided hook instance or the internal one
   const {
-    images,
+    images: _images,
     localFiles,
     profileImage: activeProfileImage,
     isUploading,
@@ -90,15 +102,7 @@ export function ProjectImageUpload({
     handleSelectProfileImage,
     handleSelectLocalProfileImage,
     hasLocalFiles
-  } = hookInstance || useProjectImages({
-    imageType,
-    projectId,
-    initialImages: value,
-    initialProfileImage: profileImage,
-    maxImages,
-    onChange,
-    onProfileImageChange: onSelectProfileImage
-  });
+  } = hookInstance || internalHook;
   
   // Handle file input change
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

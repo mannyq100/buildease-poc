@@ -1,4 +1,68 @@
 /**
- * Workflow Sections with lazy loading\n * Progress & Execution, Team & Resources, Settings & Configuration\n */
+ * Workflow Sections Component
+ * Displays Progress & Execution, Team & Resources, and Settings sections
+ */
 
-import React, { useState } from 'react';\nimport { ProgressAndExecution } from '@/components/project/ProgressAndExecution';\nimport { TeamAndResources } from '@/components/project/TeamAndResources';\nimport { SettingsAndConfiguration } from '@/components/project/SettingsAndConfiguration';\nimport { UpdateStatusModal } from '@/components/project/UpdateStatusModal';\nimport { useProjectPhases } from '@/hooks/queries';\nimport { useUpdateProjectStatus } from '@/hooks/mutations';\nimport { Users, Settings, Clock } from 'lucide-react';\nimport { toast } from 'sonner';\nimport type { Project, ProjectStatus } from '@/types/project';\nimport { createSupabaseError, logError } from '@/lib/error-utils';\n\ninterface WorkflowSectionsProps {\n  project: Project;\n  projectId: string;\n}\n\nexport function WorkflowSections({ project, projectId }: WorkflowSectionsProps) {\n  const [updateStatusModalOpen, setUpdateStatusModalOpen] = useState(false);\n  \n  const { data: phases } = useProjectPhases(projectId);\n  const updateProjectStatusMutation = useUpdateProjectStatus();\n  \n  const handleUpdateProgress = () => {\n    setUpdateStatusModalOpen(true);\n  };\n  \n  const handleUpdateStatus = (status: ProjectStatus) => {\n    updateProjectStatusMutation.mutate({\n      projectId: project.id,\n      status\n    }, {\n      onSuccess: () => {\n        setUpdateStatusModalOpen(false);\n        toast.success('Project status updated successfully');\n      },\n      onError: (error) => {\n        const enhancedError = createSupabaseError(error, 'validation');\n        logError(enhancedError, 'UpdateProjectStatus');\n        toast.error(enhancedError.userMessage);\n      }\n    });\n  };\n  \n  const handleTeamManagement = () => {\n    toast.info('Team management will be available soon');\n  };\n  \n  const handleProjectSettings = () => {\n    toast.info('Project settings will be available soon');\n  };\n  \n  return (\n    <div className=\"space-y-8\">\n      {/* Progress and Execution */}\n      <section>\n        <div className=\"flex items-center gap-3 mb-6\">\n          <div className=\"flex items-center justify-center w-8 h-8 bg-gradient-to-br from-buildease-blue-500 to-buildease-blue-600 rounded-lg\">\n            <Clock className=\"w-4 h-4 text-white\" />\n          </div>\n          <div>\n            <h2 className=\"text-xl font-semibold text-slate-900\">Progress & Execution</h2>\n            <div className=\"w-16 h-1 bg-gradient-to-r from-buildease-blue-500 to-orange-500 rounded-full mt-1\"></div>\n          </div>\n        </div>\n        <ProgressAndExecution \n          projectId={projectId}\n          onUpdateProgress={handleUpdateProgress}\n        />\n      </section>\n\n      {/* Team and Resources */}\n      <section>\n        <div className=\"flex items-center gap-3 mb-6\">\n          <div className=\"flex items-center justify-center w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg\">\n            <Users className=\"w-4 h-4 text-white\" />\n          </div>\n          <div>\n            <h2 className=\"text-xl font-semibold text-slate-900\">Team & Resources</h2>\n            <div className=\"w-16 h-1 bg-gradient-to-r from-orange-500 to-buildease-blue-500 rounded-full mt-1\"></div>\n          </div>\n        </div>\n        <TeamAndResources \n          projectId={projectId}\n          onTeamManagement={handleTeamManagement}\n        />\n      </section>\n\n      {/* Settings and Configuration */}\n      <section>\n        <div className=\"flex items-center gap-3 mb-6\">\n          <div className=\"flex items-center justify-center w-8 h-8 bg-gradient-to-br from-slate-500 to-slate-600 rounded-lg\">\n            <Settings className=\"w-4 h-4 text-white\" />\n          </div>\n          <div>\n            <h2 className=\"text-xl font-semibold text-slate-900\">Settings & Configuration</h2>\n            <div className=\"w-16 h-1 bg-gradient-to-r from-slate-500 to-buildease-blue-500 rounded-full mt-1\"></div>\n          </div>\n        </div>\n        <SettingsAndConfiguration \n          projectId={projectId}\n          onProjectSettings={handleProjectSettings}\n        />\n      </section>\n      \n      {/* Update Status Modal */}\n      <UpdateStatusModal\n        isOpen={updateStatusModalOpen}\n        onOpenChange={setUpdateStatusModalOpen}\n        project={project}\n        onUpdateStatus={handleUpdateStatus}\n      />\n    </div>\n  );\n}"
+import React from 'react';
+import { Users, Settings, Clock } from 'lucide-react';
+import type { Project } from '@/types/project';
+
+interface WorkflowSectionsProps {
+  project: Project;
+  projectId: string;
+}
+
+export function WorkflowSections({ project: _project, projectId: _projectId }: WorkflowSectionsProps) {
+  
+  return (
+    <div className="space-y-8">
+      {/* Progress and Execution */}
+      <section>
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
+            <Clock className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-slate-900">Progress & Execution</h2>
+            <div className="w-16 h-1 bg-gradient-to-r from-blue-500 to-orange-500 rounded-full mt-1"></div>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg border border-slate-200 p-6">
+          <p className="text-slate-600">Progress tracking coming soon...</p>
+        </div>
+      </section>
+
+      {/* Team and Resources */}
+      <section>
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg">
+            <Users className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-slate-900">Team & Resources</h2>
+            <div className="w-16 h-1 bg-gradient-to-r from-orange-500 to-blue-500 rounded-full mt-1"></div>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg border border-slate-200 p-6">
+          <p className="text-slate-600">Team management coming soon...</p>
+        </div>
+      </section>
+
+      {/* Settings and Configuration */}
+      <section>
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-slate-500 to-slate-600 rounded-lg">
+            <Settings className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-slate-900">Settings & Configuration</h2>
+            <div className="w-16 h-1 bg-gradient-to-r from-slate-500 to-blue-500 rounded-full mt-1"></div>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg border border-slate-200 p-6">
+          <p className="text-slate-600">Project settings coming soon...</p>
+        </div>
+      </section>
+    </div>
+  );
+}

@@ -3,4 +3,80 @@
  * Shows project details accordion with smart data fetching
  */
 
-import React, { useState } from 'react';\nimport { DetailsAccordion } from '@/components/project/DetailsAccordion';\nimport { EditProjectModal } from '@/components/project/EditProjectModal';\nimport { TeamManagementModal } from '@/components/team/TeamManagementModal';\nimport { ProjectSettingsModal } from '@/components/project/ProjectSettingsModal';\nimport { useUpdateProject } from '@/hooks/mutations';\nimport { toast } from 'sonner';\nimport type { Project } from '@/types/project';\nimport type { TeamManagementFormData, ProjectSettingsData } from '@/types/enhanced-project';\nimport { createSupabaseError, logError } from '@/lib/error-utils';\n\ninterface DetailsSectionProps {\n  project: Project;\n  projectId: string;\n}\n\nexport function DetailsSection({ project, projectId }: DetailsSectionProps) {\n  const [editProjectModalOpen, setEditProjectModalOpen] = useState(false);\n  const [teamManagementModalOpen, setTeamManagementModalOpen] = useState(false);\n  const [projectSettingsModalOpen, setProjectSettingsModalOpen] = useState(false);\n  \n  const updateProjectMutation = useUpdateProject();\n  \n  const handleEditProject = () => {\n    setEditProjectModalOpen(true);\n  };\n  \n  const handleTeamManagement = () => {\n    setTeamManagementModalOpen(true);\n  };\n  \n  const handleProjectSettings = () => {\n    setProjectSettingsModalOpen(true);\n  };\n  \n  return (\n    <>\n      <DetailsAccordion \n        projectId={projectId}\n        onEditProject={handleEditProject}\n        onTeamManagement={handleTeamManagement}\n        onProjectSettings={handleProjectSettings}\n      />\n      \n      {/* Modals */}\n      <EditProjectModal\n        isOpen={editProjectModalOpen}\n        onOpenChange={setEditProjectModalOpen}\n        project={project}\n        onSave={(updatedProject) => {\n          updateProjectMutation.mutate({\n            id: project.id,\n            name: updatedProject.name,\n            description: updatedProject.description,\n            client_name: updatedProject.client,\n            project_type: updatedProject.type,\n            location: updatedProject.location,\n            budget: updatedProject.budget,\n            profile_image: updatedProject.profileImage,\n            inspiration_images: updatedProject.inspirationImages\n          }, {\n            onSuccess: () => {\n              setEditProjectModalOpen(false);\n              toast.success('Project updated successfully');\n            },\n            onError: (error) => {\n              const enhancedError = createSupabaseError(error, 'validation');\n              logError(enhancedError, 'EditProject');\n              toast.error(enhancedError.userMessage);\n            }\n          });\n        }}\n      />\n\n      <TeamManagementModal\n        isOpen={teamManagementModalOpen}\n        onOpenChange={setTeamManagementModalOpen}\n        project={project}\n        onSave={(_teamData: TeamManagementFormData) => {\n          // TODO: Implement team member mutations when team management is ready\n          logError(\n            createSupabaseError(\n              new Error('Team management not implemented'),\n              'validation'\n            ),\n            'TeamManagementModal'\n          );\n          toast.info('Team management will be available soon');\n          setTeamManagementModalOpen(false);\n        }}\n      />\n\n      <ProjectSettingsModal\n        isOpen={projectSettingsModalOpen}\n        onOpenChange={setProjectSettingsModalOpen}\n        project={project}\n        onSave={(settings: ProjectSettingsData) => {\n          updateProjectMutation.mutate({\n            id: project.id,\n            details: { ...project.details, ...settings }\n          }, {\n            onSuccess: () => {\n              setProjectSettingsModalOpen(false);\n              toast.success('Settings updated successfully');\n            },\n            onError: (error) => {\n              const enhancedError = createSupabaseError(error, 'validation');\n              logError(enhancedError, 'ProjectSettings');\n              toast.error(enhancedError.userMessage);\n            }\n          });\n        }}\n      />\n    </>\n  );\n}"
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Settings, Users, Edit } from 'lucide-react';
+import { toast } from 'sonner';
+import type { Project } from '@/types/project';
+
+interface DetailsSectionProps {
+  project: Project;
+  projectId: string;
+}
+
+export function DetailsSection({ project, projectId: _projectId }: DetailsSectionProps) {
+  const handleEditProject = () => {
+    toast.info('Edit project functionality coming soon');
+  };
+  
+  const handleTeamManagement = () => {
+    toast.info('Team management functionality coming soon');
+  };
+  
+  const handleProjectSettings = () => {
+    toast.info('Project settings functionality coming soon');
+  };
+  
+  return (
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Project Details</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h3 className="font-semibold text-slate-900">Project Name</h3>
+              <p className="text-slate-600">{project.name}</p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-slate-900">Status</h3>
+              <p className="text-slate-600">{project.status}</p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-slate-900">Type</h3>
+              <p className="text-slate-600">{project.project_type || 'Not specified'}</p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-slate-900">Location</h3>
+              <p className="text-slate-600">{project.location}</p>
+            </div>
+          </div>
+          
+          {project.description && (
+            <div>
+              <h3 className="font-semibold text-slate-900">Description</h3>
+              <p className="text-slate-600">{project.description}</p>
+            </div>
+          )}
+          
+          <div className="flex gap-2 pt-4">
+            <Button onClick={handleEditProject} variant="outline" size="sm">
+              <Edit className="w-4 h-4 mr-2" />
+              Edit Project
+            </Button>
+            <Button onClick={handleTeamManagement} variant="outline" size="sm">
+              <Users className="w-4 h-4 mr-2" />
+              Manage Team
+            </Button>
+            <Button onClick={handleProjectSettings} variant="outline" size="sm">
+              <Settings className="w-4 h-4 mr-2" />
+              Settings
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

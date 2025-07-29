@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import { useSimplifiedUpload } from '@/hooks/useSimplifiedUpload';
 import { UploadType, UploadResult } from '@/types/upload';
 import { getStatusIcon, formatFileSize, hasCamera } from '@/utils/uploadUtils';
+import { DocumentUploadForm } from './DocumentUploadForm';
 
 interface SimplifiedUploadProps {
   projectId: string;
@@ -33,6 +34,9 @@ interface SimplifiedUploadProps {
   className?: string;
   compact?: boolean;
   disabled?: boolean;
+  // Document-specific props
+  enableMetadata?: boolean;
+  phaseId?: string;
 }
 
 export function SimplifiedUpload({
@@ -42,7 +46,9 @@ export function SimplifiedUpload({
   onUploadError,
   className,
   compact = false,
-  disabled = false
+  disabled = false,
+  enableMetadata = false,
+  phaseId
 }: SimplifiedUploadProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [cameraAvailable, setCameraAvailable] = useState(false);
@@ -117,6 +123,32 @@ export function SimplifiedUpload({
   }, [disabled, config.acceptedTypes, cameraAvailable, handleFileSelection]);
 
   const TypeIcon = ['inspiration', 'progress', 'profile'].includes(type) ? Image : FileText;
+
+  // For documents with metadata enabled, render the DocumentUploadForm instead
+  if (type === 'documents' && enableMetadata) {
+    return (
+      <DocumentUploadForm
+        projectId={projectId}
+        phaseId={phaseId}
+        onUploadComplete={(document: { id: string; name: string; file_path: string; file_size?: number; created_at: string }) => {
+          // Convert document to UploadResult format
+          const result: UploadResult = {
+            id: document.id,
+            url: document.file_path, // Note: this might need to be converted to public URL
+            name: document.name,
+            size: document.file_size || 0,
+            type: 'documents',
+            uploadedAt: new Date(document.created_at)
+          };
+          if (onUploadComplete) {
+            onUploadComplete([result]);
+          }
+        }}
+        onUploadError={onUploadError}
+        className={className}
+      />
+    );
+  }
 
   if (compact) {
     return (
@@ -298,6 +330,14 @@ export function SimplifiedUpload({
               <p className="text-xs text-gray-500">
                 Max {config.maxFiles} files, {Math.round(config.maxSizeBytes / 1024 / 1024)}MB each
               </p>
+              {files.length === 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
+                  <p className="text-xs text-blue-700 font-medium flex items-center gap-1">
+                    <Upload className="h-3 w-3" />
+                    Step 1: Choose files below, then click Upload
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Upload Buttons */}
@@ -412,7 +452,7 @@ export function SimplifiedUpload({
       )}
 
       {/* Actions */}
-      {files.length > 0 && (
+      {files.length > 0 ? (
         <div className="flex flex-col sm:flex-row gap-3">
           {canUpload && (
             <Button
@@ -458,6 +498,13 @@ export function SimplifiedUpload({
               Clear All
             </Button>
           )}
+        </div>
+      ) : (
+        <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg p-4 text-center">
+          <div className="flex items-center justify-center gap-2 text-gray-500">
+            <Upload className="h-4 w-4" />
+            <span className="text-sm font-medium">Upload button will appear here after selecting files</span>
+          </div>
         </div>
       )}
 

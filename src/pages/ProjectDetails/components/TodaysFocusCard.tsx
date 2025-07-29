@@ -11,7 +11,9 @@ import { StatusBadge } from '@/components/shared';
 import { 
   Plus,
   RefreshCw,
-  CheckCircle2
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 interface TaskItem {
@@ -30,10 +32,15 @@ interface Phase {
 }
 
 interface TodaysFocusCardProps {
+  tasks?: TaskItem[];
   currentPhase?: Phase;
   currentTasks?: TaskItem[];
+  onCreateTask?: (phaseId: string) => void;
+  onEditTask?: (task: any, phaseId: string) => void;
   onAddTask?: () => void;
   onUpdateTasks?: () => void;
+  isExpanded?: boolean;
+  onToggleExpanded?: () => void;
 }
 
 // Helper functions for task display
@@ -68,36 +75,77 @@ const getPriorityColor = (priority: TaskItem['priority']) => {
 };
 
 export function TodaysFocusCard({ 
+  tasks = [],
   currentPhase, 
   currentTasks = [],
+  onCreateTask,
+  onEditTask,
   onAddTask,
-  onUpdateTasks
+  onUpdateTasks,
+  isExpanded = true,
+  onToggleExpanded
 }: TodaysFocusCardProps) {
-  if (!currentPhase) {
-    return null;
+  // Use tasks prop if provided, otherwise fall back to currentTasks
+  const displayTasks = tasks.length > 0 ? tasks : currentTasks;
+  const completedTasks = displayTasks.filter(task => task.status === 'COMPLETED');
+  
+  // Show a collapsed preview if not expanded
+  if (!isExpanded) {
+    return (
+      <Card className="border-slate-200/40 shadow-xl bg-gradient-to-br from-white via-slate-50/30 to-buildease-blue-50/20 backdrop-blur-md rounded-2xl">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <button 
+              onClick={onToggleExpanded}
+              className="flex items-center gap-2 hover:text-emerald-600 transition-colors flex-1 text-left"
+            >
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+              <CardTitle className="text-lg font-bold text-slate-900">
+                Today's Focus
+              </CardTitle>
+              <ChevronDown className="h-4 w-4 text-slate-500 ml-auto" />
+            </button>
+          </div>
+          <div className="flex items-center justify-between mt-2">
+            <p className="text-sm text-slate-600">
+              {displayTasks.length} tasks • {completedTasks.length} completed
+            </p>
+            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs">
+              {Math.round((completedTasks.length / Math.max(displayTasks.length, 1)) * 100)}% Done
+            </Badge>
+          </div>
+        </CardHeader>
+      </Card>
+    );
   }
-
-  const completedTasks = currentTasks.filter(task => task.status === 'COMPLETED');
 
   return (
     <Card className="border-slate-200/40 shadow-xl bg-gradient-to-br from-white via-slate-50/30 to-buildease-blue-50/20 backdrop-blur-md rounded-2xl">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-              Today's Focus
-            </CardTitle>
-            <p className="text-sm text-slate-600 mt-1">{currentPhase.name}</p>
-          </div>
+          <button 
+            onClick={onToggleExpanded}
+            className="flex items-center gap-2 hover:text-emerald-600 transition-colors flex-1 text-left"
+          >
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+            <div>
+              <CardTitle className="text-xl font-bold text-slate-900">
+                Today's Focus
+              </CardTitle>
+              {currentPhase && (
+                <p className="text-sm text-slate-600 mt-1">{currentPhase.name}</p>
+              )}
+            </div>
+            <ChevronUp className="h-4 w-4 text-slate-500 ml-auto" />
+          </button>
           <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
-            {completedTasks.length}/{currentTasks.length} Done
+            {completedTasks.length}/{displayTasks.length} Done
           </Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {currentTasks.length > 0 ? (
-          currentTasks.map((task: TaskItem) => (
+        {displayTasks.length > 0 ? (
+          displayTasks.map((task: TaskItem) => (
             <div key={task.id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200/40 hover:bg-slate-50/50 transition-all duration-200">
               <button className="flex-shrink-0">
                 <CheckCircle2 className={`h-5 w-5 transition-colors ${
@@ -134,7 +182,7 @@ export function TodaysFocusCard({
           <Button 
             size="sm" 
             className="flex-1 bg-buildease-blue-600 hover:bg-buildease-blue-700"
-            onClick={onAddTask}
+            onClick={onAddTask || (() => onCreateTask?.(currentPhase?.id || ''))}
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Task

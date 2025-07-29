@@ -138,7 +138,7 @@ export function PlanStatusDashboard({
 
   const statusSummary = getStatusSummary();
   const showProgress = project.plan_generation_status === 'processing' || project.plan_generation_status === 'requested';
-  const showVersions = project.plan_generation_status === 'completed';
+  const _showVersions = project.plan_generation_status === 'completed';
 
   return (
     <div className={cn('w-full space-y-6', className)}>

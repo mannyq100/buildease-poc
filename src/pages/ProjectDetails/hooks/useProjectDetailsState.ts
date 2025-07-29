@@ -15,6 +15,7 @@ export interface ExpandedSections {
   documents: boolean;
   settings: boolean;
   recentUpdates: boolean;
+  todaysFocus: boolean;
 }
 
 export interface ViewModes {
@@ -61,7 +62,8 @@ const DEFAULT_EXPANDED_SECTIONS: ExpandedSections = {
   team: false,     // Keep team collapsed initially
   documents: false, // Keep documents collapsed initially
   settings: false,  // Keep settings collapsed initially
-  recentUpdates: false // Keep recent updates collapsed initially
+  recentUpdates: false, // Keep recent updates collapsed initially
+  todaysFocus: true // Open today's focus by default (important for daily workflow)
 };
 
 const DEFAULT_VIEW_MODES: ViewModes = {

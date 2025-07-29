@@ -121,8 +121,8 @@ export const projectFormSchema = z.object({
   floorMaterial: z.string().optional(), // Made optional - AI recommendation
   
   // Preferences & Features - Step 6 (all optional for customization)
-  specialFeatures: z.array(z.string()).optional(),
-  sustainabilityFeatures: z.array(z.string()).optional(),
+  specialFeatures: z.array(z.string()).default([]).transform(arr => arr && arr.length > 0 ? arr : undefined),
+  sustainabilityFeatures: z.array(z.string()).default([]).transform(arr => arr && arr.length > 0 ? arr : undefined),
   
   // Additional Context - Step 7 (optional details)
   siteConstraints: z.string().optional(),
@@ -130,7 +130,7 @@ export const projectFormSchema = z.object({
   additionalNotes: z.string().optional(),
   
   // Inspiration Images
-  images: z.array(z.string()).optional(),
+  images: z.array(z.string()).default([]).transform(arr => arr && arr.length > 0 ? arr : undefined),
   profileImage: z.string().optional(), // Selected profile/display image
 });
 

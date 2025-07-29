@@ -69,8 +69,8 @@ async function testAIPlanService() {
     console.log('✅ Project status updated and retrieved:', projectStatus);
 
     // Verify types
-    const validJobStatuses: AIPlanJobStatus[] = ['pending', 'processing', 'completed', 'failed'];
-    const validPlanStatuses: PlanGenerationStatus[] = ['not_started', 'requested', 'processing', 'completed', 'failed'];
+    const _validJobStatuses: AIPlanJobStatus[] = ['pending', 'processing', 'completed', 'failed'];
+    const _validPlanStatuses: PlanGenerationStatus[] = ['not_started', 'requested', 'processing', 'completed', 'failed'];
     
     console.log('✅ Type validation passed');
     console.log('🎉 All AI Plan Service tests passed!');

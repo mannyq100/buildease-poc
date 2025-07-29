@@ -397,4 +397,15 @@ AS $$
     SELECT construction_mgr.get_user_profile(auth.uid())::jsonb;
 $$;
 
+-- Admin check function (needed by RLS policies in migration 005)
+-- Note: This function will be enhanced in migration 008 with project-specific logic
+CREATE OR REPLACE FUNCTION private.is_admin_direct(user_id UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+    -- For now, return false as a placeholder
+    -- This will be properly implemented in migration 008 when project tables exist
+    RETURN FALSE;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 
