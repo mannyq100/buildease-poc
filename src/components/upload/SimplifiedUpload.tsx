@@ -35,7 +35,6 @@ interface SimplifiedUploadProps {
   compact?: boolean;
   disabled?: boolean;
   // Document-specific props
-  enableMetadata?: boolean;
   phaseId?: string;
 }
 
@@ -47,7 +46,6 @@ export function SimplifiedUpload({
   className,
   compact = false,
   disabled = false,
-  enableMetadata = false,
   phaseId
 }: SimplifiedUploadProps) {
   const [isDragOver, setIsDragOver] = useState(false);
@@ -124,8 +122,8 @@ export function SimplifiedUpload({
 
   const TypeIcon = ['inspiration', 'progress', 'profile'].includes(type) ? Image : FileText;
 
-  // For documents with metadata enabled, render the DocumentUploadForm instead
-  if (type === 'documents' && enableMetadata) {
+  // For documents, always render the DocumentUploadForm for consistency
+  if (type === 'documents') {
     return (
       <DocumentUploadForm
         projectId={projectId}

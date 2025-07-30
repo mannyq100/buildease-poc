@@ -18,8 +18,6 @@ import { RecentUpdatesCard } from '../Updates/RecentUpdatesCard';
 import { ProjectStatusHero, ProjectQuickActions } from '../ProjectHeader';
 import { ModalManager } from '../Modals/ModalManager';
 import { useProjectDetailsState } from '../../hooks/useProjectDetailsState';
-import { Breadcrumb } from '@/components/navigation/Breadcrumb';
-import { Building2, FolderOpen } from 'lucide-react';
 import type { TaskItem, ProjectUpdateFormData } from '../../types';
 
 interface ProjectLayoutProps {
@@ -130,32 +128,10 @@ export function ProjectLayout({
     todaysFocus: true
   };
 
-  // Create breadcrumb items for navigation
-  const breadcrumbItems = [
-    {
-      name: 'Projects',
-      path: '/projects',
-      icon: <Building2 className="h-4 w-4" />
-    },
-    {
-      name: project?.name || `Project #${projectId}`,
-      icon: <FolderOpen className="h-4 w-4" />,
-      active: true
-    }
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
       <div className="container mx-auto px-4 py-6 space-y-6">
-        {/* Breadcrumb Navigation */}
-        <div className="mb-4">
-          <Breadcrumb 
-            items={breadcrumbItems}
-            homeLabel="Dashboard"
-            className="text-sm"
-            animated={true}
-          />
-        </div>
         {/* Project Header */}
         <div className="space-y-4">
           <ProjectStatusHero 

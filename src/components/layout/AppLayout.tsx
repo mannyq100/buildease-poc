@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { Outlet, useParams, useLocation } from 'react-router-dom';
 import { motion as m } from 'framer-motion';
 
 import MainNavigation from './MainNavigation';
@@ -20,10 +20,20 @@ import {
   useNotificationStore
 } from '@/stores/notificationStore';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
+import { useProject } from '@/hooks/queries/useProject';
+import { Building2, FolderOpen, Home } from 'lucide-react';
+
+interface BreadcrumbItem {
+  name: string;
+  path?: string;
+  icon?: React.ReactNode;
+  active?: boolean;
+}
 
 interface AppLayoutProps {
   showBreadcrumbs?: boolean;
   className?: string;
+  customBreadcrumbs?: BreadcrumbItem[];
 }
 
 /**
@@ -31,21 +41,65 @@ interface AppLayoutProps {
  * Includes responsive header, navigation, breadcrumbs and content area
  * Implements mobile-first responsive design principles
  */
-export function AppLayout({ showBreadcrumbs = true, className }: AppLayoutProps) {
+export function AppLayout({ showBreadcrumbs = true, className, customBreadcrumbs }: AppLayoutProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [isSmallTablet, setIsSmallTablet] = useState(false);
-  const [_mobileMenuOpen, _setMobileMenuOpen] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   
   // Auth context
   const { user, isAuthenticated } = useSupabaseAuth();
   
+  // Route detection for dynamic breadcrumbs
+  const location = useLocation();
+  const params = useParams<{ id?: string }>();
+  
+  // Detect if we're on a project details page
+  const isProjectDetailsPage = location.pathname.startsWith('/project/') && params.id;
+  
+  // Fetch project data for breadcrumbs when on project details page  
+  const { data: projectForBreadcrumb, isLoading: projectLoading } = useProject(
+    (isProjectDetailsPage && params.id) ? params.id : ''
+  );
+  
+  
+  // Create dynamic breadcrumbs for project pages
+  const dynamicBreadcrumbs = useMemo(() => {
+    if (!isProjectDetailsPage) return null;
+    
+    return [
+      {
+        name: 'Home',
+        path: '/dashboard',
+        icon: <Home className="h-4 w-4" />,
+        active: false
+      },
+      {
+        name: 'Projects',
+        path: '/projects',
+        icon: <Building2 className="h-4 w-4" />,
+        active: false
+      },
+      {
+        name: projectLoading 
+          ? 'Loading...' 
+          : (projectForBreadcrumb?.name?.trim() || 'Project Details'),
+        icon: <FolderOpen className="h-4 w-4" />,
+        active: true
+      }
+    ];
+  }, [isProjectDetailsPage, projectLoading, projectForBreadcrumb?.name]);
+  
+  // Use custom breadcrumbs, then dynamic, then auto-generate
+  const breadcrumbsToUse = customBreadcrumbs || dynamicBreadcrumbs;
+  
   // Notification hooks
-  const { unreadCount } = useNotifications();
-  const fetchNotifications = useNotificationStore(state => state.fetchNotifications);
-  const setUserId = useNotificationStore(state => state.setUserId);
-  const connectRealTime = useNotificationStore(state => state.connectRealTime);
-  const disconnectRealTime = useNotificationStore(state => state.disconnectRealTime);
+  const { unreadCount } = useNotifications();  
+  const { 
+    fetchNotifications, 
+    setUserId, 
+    connectRealTime, 
+    disconnectRealTime 
+  } = useNotificationStore();
   
   // Detect mobile/tablet screen sizes - mobile-first approach
   useEffect(() => {
@@ -102,17 +156,17 @@ export function AppLayout({ showBreadcrumbs = true, className }: AppLayoutProps)
   }, [isAuthenticated, user?.id, setUserId, fetchNotifications, connectRealTime, disconnectRealTime]);
 
   // Content left margin based on sidebar state and screen size
-  const getContentMargin = () => {
+  const contentMargin = useMemo(() => {
     if (isMobile) return 0; // No margin on mobile (sidebar is overlay)
     return sidebarCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH;
-  };
+  }, [isMobile, sidebarCollapsed]);
 
   // Determine padding based on screen size - mobile-first approach
-  const getContentPadding = () => {
+  const contentPadding = useMemo(() => {
     if (isMobile) return 'px-3 py-2'; // Less padding on mobile
     if (isSmallTablet) return 'px-4 py-3'; // Medium padding on small tablets
     return 'px-6 py-4'; // More padding on larger screens
-  };
+  }, [isMobile, isSmallTablet]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex">
@@ -131,7 +185,7 @@ export function AppLayout({ showBreadcrumbs = true, className }: AppLayoutProps)
           'flex-1 flex flex-col transition-all duration-300 pb-3 sm:pb-4 md:pb-6',
           className
         )}
-        style={{ marginLeft: `${getContentMargin()}px` }}
+        style={{ marginLeft: `${contentMargin}px` }}
       >
         {/* Top Bar with Breadcrumbs and Actions */}
         <div className="sticky top-0 z-10 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 shadow-sm mb-2 sm:mb-4 md:mb-6">
@@ -229,7 +283,8 @@ export function AppLayout({ showBreadcrumbs = true, className }: AppLayoutProps)
             {showBreadcrumbs && !showMobileSearch && (
               <div className={cn("flex-1", !isMobile && "min-w-0")}>
                 <Breadcrumb 
-                  autoGenerate 
+                  items={breadcrumbsToUse}
+                  autoGenerate={!breadcrumbsToUse} 
                   className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate"
                 />
               </div>
@@ -303,7 +358,7 @@ export function AppLayout({ showBreadcrumbs = true, className }: AppLayoutProps)
         </div>
 
         {/* Main Content Area with padding */}
-        <div className={cn('flex-1', getContentPadding())}>      
+        <div className={cn('flex-1', contentPadding)}>      
           <Outlet />
         </div>
 

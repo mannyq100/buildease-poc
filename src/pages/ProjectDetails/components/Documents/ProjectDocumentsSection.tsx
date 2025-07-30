@@ -4,11 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useProjectDocuments } from '@/hooks/queries/useDocuments';
+import { useProjectDocuments, useDeleteDocument } from '@/hooks/queries/useDocuments';
 import { useProjectProgressImages } from '@/hooks/useProjectStorageImages';
-import { Plus, X, ImageIcon, FileText, Search, Filter, Download, MoreVertical, User, Star } from 'lucide-react';
+import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
+import { Plus, X, ImageIcon, FileText, Search, Filter, Download, MoreVertical, User, Star, Trash2, Edit } from 'lucide-react';
 
 import { UploadResult } from '@/types/upload';
 import { Project } from '@/types/project';
@@ -34,9 +36,6 @@ interface ProjectDocumentsSectionProps {
   showProgressUpload?: boolean;
   showDocumentUpload?: boolean;
   onSetImageUploadState?: (state: Record<string, unknown>) => void;
-  // Modal state from parent (optional)
-  actualShowImageUpload?: boolean;
-  actualShowDocumentUpload?: boolean;
   previewImage?: string | null;
   setPreviewImage?: (image: string | null) => void;
   // Legacy prop support
@@ -54,8 +53,6 @@ export function ProjectDocumentsSection({
   showProgressUpload = false,
   showDocumentUpload = false,
   onSetImageUploadState,
-  _actualShowImageUpload = false,
-  _actualShowDocumentUpload = false,
   previewImage: externalPreviewImage,
   setPreviewImage: externalSetPreviewImage,
   uploadModalState
@@ -84,6 +81,48 @@ export function ProjectDocumentsSection({
   const activeShowDocumentUpload = showDocumentUpload || localShowDocumentUpload;
 
   const { toast } = useToast();
+  const { user } = useSupabaseAuth();
+  const deleteDocumentMutation = useDeleteDocument();
+
+  // Fetch documents and progress images first
+  const { data: documents = [] } = useProjectDocuments(project.id);
+  const {
+    images: progressImages,
+    refetch: refetchProgressImages
+  } = useProjectProgressImages(project.id);
+
+  // Permission checking functions (now that documents is available)
+  const canDeleteItem = useCallback((item: MediaItem) => {
+    if (!user) return false;
+    
+    // Project owner can delete everything
+    if (project.owner_id === user.id) return true;
+    
+    // For documents, check if current user is the uploader
+    if (item.type === 'document') {
+      const document = documents.find(doc => doc.id === item.id);
+      return document?.created_by === user.id;
+    }
+    
+    // For images, project members can delete (basic permission for now)
+    // In a more sophisticated system, you might check actual project membership
+    return true; // Allow deletion for now, can be restricted based on business rules
+  }, [user, project.owner_id, documents]);
+
+  const canEditItem = useCallback((item: MediaItem) => {
+    if (!user) return false;
+    
+    // Project owner can edit everything
+    if (project.owner_id === user.id) return true;
+    
+    // For documents, check if current user is the uploader
+    if (item.type === 'document') {
+      const document = documents.find(doc => doc.id === item.id);
+      return document?.created_by === user.id;
+    }
+    
+    return false; // Only documents are editable for now
+  }, [user, project.owner_id, documents]);
 
   // Utility function to format file size
   const formatFileSize = (bytes: number): string => {
@@ -93,6 +132,59 @@ export function ProjectDocumentsSection({
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
+
+  // Delete document function
+  const handleDeleteDocument = useCallback(async (documentId: string, documentName: string) => {
+    try {
+      await deleteDocumentMutation.mutateAsync(documentId);
+      toast({
+        title: "Document Deleted",
+        description: `${documentName} has been deleted successfully.`
+      });
+    } catch (error) {
+      toast({
+        title: "Delete Failed",
+        description: "Unable to delete the document. Please try again.",
+        variant: "destructive"
+      });
+    }
+  }, [deleteDocumentMutation, toast]);
+
+  // Delete image function
+  const handleDeleteImage = useCallback(async (item: MediaItem) => {
+    try {
+      if (item.category === 'profile') {
+        // Remove profile image
+        onUpdateProject?.({ profile_image: null });
+        toast({
+          title: "Profile Image Removed",
+          description: "Project profile image has been removed."
+        });
+      } else if (item.category === 'inspiration') {
+        // Remove from inspiration images array
+        const updatedImages = (project.inspiration_images || []).filter(url => url !== item.url);
+        onUpdateProject?.({ inspiration_images: updatedImages });
+        toast({
+          title: "Inspiration Image Deleted",
+          description: "Image has been removed from inspiration gallery."
+        });
+      } else if (item.category === 'progress') {
+        // Remove from progress images array
+        const updatedImages = (project.progress_images || []).filter(url => url !== item.url);
+        onUpdateProject?.({ progress_images: updatedImages });
+        toast({
+          title: "Progress Image Deleted",
+          description: "Image has been removed from progress gallery."
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Delete Failed",
+        description: "Unable to delete the image. Please try again.",
+        variant: "destructive"
+      });
+    }
+  }, [project.inspiration_images, project.progress_images, onUpdateProject, toast]);
 
   // Download function for documents
   const handleDownloadDocument = useCallback(async (item: MediaItem) => {
@@ -130,12 +222,13 @@ export function ProjectDocumentsSection({
   // Handle media item click
   const handleMediaItemClick = useCallback((item: MediaItem, e: React.MouseEvent) => {
     if (item.type === 'document') {
+      // For documents, don't auto-download on click - let users use dropdown menu
       e.preventDefault();
-      handleDownloadDocument(item);
+      return;
     } else {
       setPreviewImage(item.url);
     }
-  }, [handleDownloadDocument, setPreviewImage]);
+  }, [setPreviewImage]);
 
   // Handle setting an image as profile image
   const handleSetProfileImage = useCallback((imageUrl: string) => {
@@ -146,14 +239,6 @@ export function ProjectDocumentsSection({
     });
   }, [onUpdateProject, toast]);
 
-  // Fetch documents and progress images
-  const { data: documents = [] } = useProjectDocuments(project.id);
-  const {
-    images: progressImages,
-    isLoading: _progressImagesLoading,
-    error: _progressImagesError,
-    refetch: refetchProgressImages
-  } = useProjectProgressImages(project.id);
 
   // Auto-save handlers for image uploads
   const handleInspirationUploadComplete = useCallback((results: UploadResult[]) => {
@@ -423,15 +508,21 @@ export function ProjectDocumentsSection({
             {filteredMediaItems.map((item) => (
               <div
                 key={item.id}
-                className="group relative aspect-square bg-muted rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+                className={`group relative aspect-square bg-muted rounded-lg overflow-hidden transition-all ${
+                  item.type === 'document' 
+                    ? 'hover:ring-2 hover:ring-gray-300' 
+                    : 'cursor-pointer hover:ring-2 hover:ring-primary'
+                }`}
                 onClick={(e) => handleMediaItemClick(item, e)}
-                title={item.type === 'document' ? `Click to download ${item.name}` : `Click to preview ${item.name}`}
+                title={item.type === 'document' ? `${item.name} - Use menu to download` : `Click to preview ${item.name}`}
               >
                 {item.type === 'document' ? (
                   <div className="flex flex-col items-center justify-center h-full p-4">
                     <div className="relative">
                       <FileText className="h-8 w-8 text-muted-foreground mb-2" />
-                      <Download className="h-3 w-3 absolute -bottom-1 -right-1 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <MoreVertical className="h-3 w-3 text-gray-600 bg-white rounded-full p-0.5" />
+                      </div>
                     </div>
                     <span className="text-xs text-center font-medium truncate w-full">
                       {item.name}
@@ -441,6 +532,11 @@ export function ProjectDocumentsSection({
                         {formatFileSize(item.size)}
                       </span>
                     )}
+                    <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full shadow-sm">
+                        Use menu ⋮
+                      </span>
+                    </div>
                   </div>
                 ) : (
                   <img
@@ -489,18 +585,125 @@ export function ProjectDocumentsSection({
                           <User className="h-4 w-4 mr-2" />
                           Set as Profile Image
                         </DropdownMenuItem>
+                        
+                        {canDeleteItem(item) && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <DropdownMenuItem 
+                                  onSelect={(e) => e.preventDefault()}
+                                  className="cursor-pointer text-destructive focus:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete Image
+                                </DropdownMenuItem>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Image</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete "{item.name}"? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDeleteImage(item)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
                 )}
                 
-                {/* Document Download Badge */}
+                {/* Document Actions */}
                 {item.type === 'document' && (
                   <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Badge variant="outline" className="text-xs bg-white/90">
-                      <Download className="h-3 w-3 mr-1" />
-                      Download
-                    </Badge>
+                    {(canDeleteItem(item) || canEditItem(item)) ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="secondary" size="sm" className="h-8 w-8 p-0 bg-black/50 hover:bg-black/70 text-white border-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownloadDocument(item);
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </DropdownMenuItem>
+                          
+                          {canEditItem(item) && (
+                            <DropdownMenuItem 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // TODO: Implement edit functionality
+                                toast({
+                                  title: "Edit Document",
+                                  description: "Document editing will be available soon."
+                                });
+                              }}
+                              className="cursor-pointer"
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit Details
+                            </DropdownMenuItem>
+                          )}
+                          
+                          {canDeleteItem(item) && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem 
+                                    onSelect={(e) => e.preventDefault()}
+                                    className="cursor-pointer text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete Document
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Document</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete "{item.name}"? This will permanently remove the document and cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDeleteDocument(item.id, item.name)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : (
+                      <Badge variant="outline" className="text-xs bg-white/90">
+                        <Download className="h-3 w-3 mr-1" />
+                        Download
+                      </Badge>
+                    )}
                   </div>
                 )}
               </div>

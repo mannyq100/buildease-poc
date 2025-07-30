@@ -104,7 +104,6 @@ export function MediaUploadSection({
                 type="documents"
                 projectId={projectId}
                 onUploadComplete={onDocumentUploadComplete}
-                enableMetadata={true}
                 className="w-full"
               />
             </div>

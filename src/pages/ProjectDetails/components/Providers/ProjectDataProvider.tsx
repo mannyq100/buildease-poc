@@ -8,7 +8,6 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProjectDetailsData } from '@/hooks/queries/useProjectDetails';
 import { useProjectTasks } from '@/hooks/queries/useTask';
-import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import { useUpdateProject } from '@/hooks/mutations/useProject';
 import { useTaskCRUD, useCRUDOperations, useModalManagement } from '../../hooks';
 import { ProjectTransformService } from '@/services/projectTransformService';
@@ -64,13 +63,12 @@ interface ProjectDataContextValue {
 
 export function ProjectDataProvider({ projectId, children }: ProjectDataProviderProps) {
   const navigate = useNavigate();
-  const { user: _user } = useSupabaseAuth();
   
   // Use comprehensive project details data with Supabase integration
   const {
     project: projectData,
     budgetExpenses,
-    teamMembers: _teamMembers,
+    teamMembers,
     phases,
     isLoading: projectLoading,
     error: projectError
@@ -163,7 +161,7 @@ export function ProjectDataProvider({ projectId, children }: ProjectDataProvider
     projectData,
     project,
     budgetExpenses,
-    teamMembers: _teamMembers,
+    teamMembers,
     phases,
     allProjectTasks,
     todaysFocus,

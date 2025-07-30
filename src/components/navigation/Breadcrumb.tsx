@@ -38,14 +38,13 @@ export const Breadcrumb: React.FC<BreadcrumbsProps> = ({
   const location = useLocation();
   
   // Auto-generate breadcrumbs based on current path if no items provided
-  const breadcrumbItems = items || (() => {
+  const breadcrumbItems = (items && items.length > 0) ? items : (() => {
     if (!autoGenerate) return [];
     
     // Default mapping of path segments to readable names
     const defaultPathMapping = {
       'dashboard': 'Dashboard',
       'projects': 'Projects',
-      'project': 'Project',
       'schedule': 'Schedule',
       'materials': 'Materials',
       'expenses': 'Expenses',
@@ -61,7 +60,7 @@ export const Breadcrumb: React.FC<BreadcrumbsProps> = ({
     
     // Always start with home
     const generatedItems: BreadcrumbPath[] = [
-      { name: homeLabel, path: '/', icon: homeIcon }
+      { name: homeLabel, path: '/dashboard', icon: homeIcon }
     ];
     
     // Build up the breadcrumb items
@@ -70,25 +69,45 @@ export const Breadcrumb: React.FC<BreadcrumbsProps> = ({
     pathSegments.forEach((segment, index) => {
       currentPath += `/${segment}`;
       
-      // Check if segment is an ID (numeric)
-      const isId = /^\d+$/.test(segment);
+      // Check if segment is an ID (numeric or UUID)
+      const isNumericId = /^\d+$/.test(segment);
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(segment);
+      const isId = isNumericId || isUUID;
       
-      // For numeric IDs, use the previous segment as context
+      // Skip dashboard if it's the first segment since we already have home
+      if (segment === 'dashboard' && index === 0) {
+        return;
+      }
+      
+      // For IDs, use the previous segment as context
       let name;
+      let navigablePath = currentPath;
+      
       if (isId && index > 0) {
         const contextSegment = pathSegments[index - 1];
         // Remove trailing 's' if plural
         const singularContext = contextSegment.endsWith('s') 
           ? contextSegment.slice(0, -1) 
           : contextSegment;
-        name = `${defaultPathMapping[singularContext] || singularContext} #${segment}`;
+        
+        // For projects, use a generic name (dynamic breadcrumbs handle specific names)
+        if (contextSegment === 'projects' || contextSegment === 'project') {
+          name = 'Project Details';
+        } else {
+          name = defaultPathMapping[singularContext] || singularContext.charAt(0).toUpperCase() + singularContext.slice(1);
+        }
       } else {
         name = defaultPathMapping[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
+        
+        // For projects list, make sure it navigates to projects page
+        if (segment === 'projects') {
+          navigablePath = '/projects';
+        }
       }
       
       generatedItems.push({
         name,
-        path: index < pathSegments.length - 1 ? currentPath : undefined,
+        path: navigablePath, // Always provide path for navigation
         active: index === pathSegments.length - 1
       });
     });
@@ -121,7 +140,7 @@ export const Breadcrumb: React.FC<BreadcrumbsProps> = ({
             >
               {index > 0 && separator}
               
-              {item.path && !isLast ? (
+              {item.path && !item.active ? (
                 <Link 
                   to={item.path}
                   className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 flex items-center font-medium"
@@ -131,7 +150,7 @@ export const Breadcrumb: React.FC<BreadcrumbsProps> = ({
               ) : (
                 <span className={cn(
                   "flex items-center",
-                  isLast 
+                  item.active || isLast
                     ? "text-gray-900 font-semibold dark:text-white" 
                     : "text-gray-600 dark:text-gray-400"
                 )}>

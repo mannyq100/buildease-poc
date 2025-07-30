@@ -48,22 +48,25 @@ export const FILE_TYPE_PRESETS = {
 };
 
 /**
- * Generate a unique filename preserving original name with timestamp
- * Format: {originalName}_{timestamp}.{extension}
+ * Generate a unique filename preserving original name with timestamp and random suffix
+ * Format: {originalName}_{timestamp}_{randomSuffix}.{extension}
  */
 export const generateUniqueFileName = (originalName: string): string => {
   if (!originalName || typeof originalName !== 'string') {
-    return `file_${Date.now()}`;
+    const timestamp = Date.now();
+    const randomSuffix = Math.random().toString(36).substring(2, 8);
+    return `file_${timestamp}_${randomSuffix}`;
   }
   
   const fileExt = originalName.split('.').pop() || '';
   const nameWithoutExt = originalName.replace(/\.[^/.]+$/, '').trim();
   const timestamp = Date.now();
+  const randomSuffix = Math.random().toString(36).substring(2, 8); // 6 character random string
   
   // Sanitize filename - remove special characters but keep spaces and common symbols
   const sanitizedName = nameWithoutExt.replace(/[<>:"/\\|?*]/g, '').substring(0, 100);
   
-  return fileExt ? `${sanitizedName}_${timestamp}.${fileExt}` : `${sanitizedName}_${timestamp}`;
+  return fileExt ? `${sanitizedName}_${timestamp}_${randomSuffix}.${fileExt}` : `${sanitizedName}_${timestamp}_${randomSuffix}`;
 };
 
 /**

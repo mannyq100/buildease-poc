@@ -182,7 +182,58 @@ export async function uploadProjectDocument(
 }
 
 /**
- * Create a document record in the database
+ * Check if a file path already exists in the database
+ */
+async function checkFilePathExists(filePath: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('be_document')
+      .select('id')
+      .eq('file_path', filePath)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      console.error('Error checking file path existence:', error);
+    }
+    
+    return !!data;
+  } catch (error) {
+    console.error('Error in checkFilePathExists:', error);
+    return false;
+  }
+}
+
+/**
+ * Generate a guaranteed unique file path by checking database conflicts
+ */
+async function generateUniqueFilePathForDocument(userId: string, projectId: string, originalName: string): Promise<string> {
+  const { generateUniqueFileName } = await import('@/utils/core/storageUtils');
+  
+  let attempts = 0;
+  const maxAttempts = 5;
+  
+  while (attempts < maxAttempts) {
+    const fileName = generateUniqueFileName(originalName);
+    const filePath = `${userId}/${projectId}/${fileName}`;
+    
+    const exists = await checkFilePathExists(filePath);
+    if (!exists) {
+      return filePath;
+    }
+    
+    attempts++;
+    // Add small delay to prevent rapid collision attempts
+    await new Promise(resolve => setTimeout(resolve, 100 * attempts));
+  }
+  
+  // Fallback with additional entropy if all attempts failed
+  const { generateUniqueFileName: generateFallback } = await import('@/utils/core/storageUtils');
+  const fallbackFileName = generateFallback(`${originalName}_${crypto.randomUUID().split('-')[0]}`);
+  return `${userId}/${projectId}/${fallbackFileName}`;
+}
+
+/**
+ * Create a document record in the database with conflict resolution
  * @param options Document creation options
  * @returns Created document record
  */
@@ -196,8 +247,24 @@ export async function createDocumentRecord(options: {
   fileSize: number;
   mimeType: string;
   metadata?: Record<string, any>;
+  userId?: string; // Add userId for conflict resolution
+  originalFileName?: string; // Add original filename for fallback
 }): Promise<{ success: boolean; document?: any; error?: string }> {
   try {
+    let finalFilePath = options.filePath;
+    
+    // Check for file path conflicts and resolve them
+    const pathExists = await checkFilePathExists(finalFilePath);
+    if (pathExists && options.userId && options.originalFileName) {
+      console.log('File path conflict detected, generating new unique path...');
+      finalFilePath = await generateUniqueFilePathForDocument(
+        options.userId, 
+        options.projectId, 
+        options.originalFileName
+      );
+      console.log('New unique path generated:', finalFilePath);
+    }
+
     const { data: document, error } = await supabase
       .from('be_document')
       .insert({
@@ -206,7 +273,7 @@ export async function createDocumentRecord(options: {
         document_type: options.documentType,
         project_id: options.projectId,
         phase_id: options.phaseId || null,
-        file_path: options.filePath,
+        file_path: finalFilePath,
         file_size: options.fileSize,
         mime_type: options.mimeType,
         metadata: options.metadata || {}
@@ -216,6 +283,42 @@ export async function createDocumentRecord(options: {
 
     if (error) {
       console.error('Error creating document record:', error);
+      
+      // If still getting duplicate key error, try one more time with UUID
+      if (error.code === '23505' && error.message.includes('be_document_file_path_key')) {
+        console.log('Retrying with UUID-based filename...');
+        const uuidFileName = `${options.name}_${crypto.randomUUID()}.${options.originalFileName?.split('.').pop() || 'pdf'}`;
+        const retryPath = `${options.userId}/${options.projectId}/${uuidFileName}`;
+        
+        const { data: retryDocument, error: retryError } = await supabase
+          .from('be_document')
+          .insert({
+            name: options.name,
+            description: options.description || null,
+            document_type: options.documentType,
+            project_id: options.projectId,
+            phase_id: options.phaseId || null,
+            file_path: retryPath,
+            file_size: options.fileSize,
+            mime_type: options.mimeType,
+            metadata: options.metadata || {}
+          })
+          .select()
+          .single();
+          
+        if (retryError) {
+          return {
+            success: false,
+            error: `Failed to create document record after retry: ${retryError.message}`
+          };
+        }
+        
+        return {
+          success: true,
+          document: retryDocument
+        };
+      }
+      
       return {
         success: false,
         error: `Failed to create document record: ${error.message}`
@@ -278,7 +381,7 @@ export async function uploadAndCreateDocument(options: {
       };
     }
 
-    // Step 2: Create database record
+    // Step 2: Create database record with conflict resolution
     const documentName = name || file.name;
     const documentResult = await createDocumentRecord({
       name: documentName,
@@ -289,6 +392,8 @@ export async function uploadAndCreateDocument(options: {
       filePath: uploadResult.filePath!,
       fileSize: file.size,
       mimeType: file.type,
+      userId, // Pass userId for conflict resolution
+      originalFileName: file.name, // Pass original filename for fallback
       metadata: {
         originalFileName: file.name,
         uploadedAt: new Date().toISOString()
