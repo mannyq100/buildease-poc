@@ -21,9 +21,10 @@ import {
   Calendar
 } from 'lucide-react';
 import { PhaseTaskAccordionProps } from '@/types/projectDetails';
+import { formatTaskCount, getTaskStatusColor, getTaskStatusIconColor } from '@/utils/core/taskColors';
 
-// Memoized helper functions for status colors - construction industry focused
-const getStatusColor = (status: string): string => {
+// Phase status colors - keep these separate as they're different from task status colors
+const getPhaseStatusColor = (status: string): string => {
   switch (status.toLowerCase()) {
     case 'completed': return 'bg-green-600 text-white border-green-700';
     case 'in-progress': return 'bg-buildease-blue-600 text-white border-buildease-blue-700';
@@ -33,14 +34,7 @@ const getStatusColor = (status: string): string => {
   }
 };
 
-const getTaskStatusColor = (status: string): string => {
-  switch (status.toLowerCase()) {
-    case 'completed': return 'bg-green-100 text-green-800 border-green-200';
-    case 'in-progress': return 'bg-buildease-blue-100 text-buildease-blue-800 border-buildease-blue-200';
-    case 'pending': return 'bg-amber-100 text-amber-800 border-amber-200';
-    default: return 'bg-slate-100 text-slate-800 border-slate-200';
-  }
-};
+// Use centralized task color utility - removed duplicate
 
 function PhaseTaskAccordionComponent({ 
   phase, 
@@ -77,7 +71,7 @@ function PhaseTaskAccordionComponent({
                 <CardTitle className="text-lg font-semibold text-slate-900 truncate">
                   {phase.name}
                 </CardTitle>
-                <Badge className={`px-3 py-1 text-sm font-semibold rounded-lg border-2 ${getStatusColor(phase.status)}`}>
+                <Badge className={`px-3 py-1 text-sm font-semibold rounded-lg border-2 ${getPhaseStatusColor(phase.status)}`}>
                   {phase.status}
                 </Badge>
               </div>
@@ -89,7 +83,7 @@ function PhaseTaskAccordionComponent({
                 </div>
                 <div className="flex items-center gap-1">
                   <CheckCircle2 className="h-4 w-4" />
-                  <span>{phase.completedTasks || 0} / {phase.totalTasks || 0} tasks</span>
+                  <span>{formatTaskCount(phase.completedTasks || 0, phase.totalTasks || 0)}</span>
                 </div>
               </div>
             </div>

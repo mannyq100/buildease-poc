@@ -50,45 +50,8 @@ export const getDaysRemaining = (dueDate: string): number => {
   return diffDays;
 };
 
-/**
- * Returns a status badge color based on task status
- * @param status Task status
- * @returns Tailwind CSS color class
- */
-export const getStatusColor = (status: string): string => {
-  switch (status.toLowerCase()) {
-    case 'completed':
-      return 'bg-green-100 text-green-800';
-    case 'in progress':
-      return 'bg-blue-100 text-blue-800';
-    case 'not started':
-      return 'bg-gray-100 text-gray-800';
-    case 'delayed':
-      return 'bg-amber-100 text-amber-800';
-    case 'blocked':
-      return 'bg-red-100 text-red-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
-};
-
-/**
- * Returns a priority badge color based on task priority
- * @param priority Task priority
- * @returns Tailwind CSS color class
- */
-export const getPriorityColor = (priority: string): string => {
-  switch (priority.toLowerCase()) {
-    case 'high':
-      return 'bg-red-100 text-red-800';
-    case 'medium':
-      return 'bg-amber-100 text-amber-800';
-    case 'low':
-      return 'bg-blue-100 text-blue-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
-};
+// Import centralized color utilities - no need for duplicates here
+export { getTaskStatusColor as getStatusColor, getTaskPriorityColor as getPriorityColor } from '@/utils/core/taskColors';
 
 /**
  * Filters tasks based on search query
@@ -275,30 +238,5 @@ export const getDependentTasks = (taskId: number, tasks: Task[]): Task[] => {
   return tasks.filter(task => task.dependencies?.includes(taskId));
 };
 
-export function getTaskStatusColor(status: Task['status']): string {
-  switch (status) {
-    case 'Completed':
-      return 'green';
-    case 'In Progress':
-      return 'blue';
-    case 'Delayed':
-      return 'amber';
-    case 'Blocked':
-      return 'red';
-    case 'Not Started':
-    default:
-      return 'gray';
-  }
-}
-
-export function getTaskPriorityColor(priority: Task['priority']): string {
-  switch (priority) {
-    case 'High':
-      return 'red';
-    case 'Medium':
-      return 'amber';
-    case 'Low':
-    default:
-      return 'blue';
-  }
-} 
+// Legacy functions - use centralized utilities instead
+export { getTaskStatusIconColor as getTaskStatusColor, getTaskPriorityColor as getTaskPriorityColor } from '@/utils/core/taskColors'; 

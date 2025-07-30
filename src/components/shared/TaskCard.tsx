@@ -18,6 +18,7 @@ import {
 import { Task, TeamMember } from '@/types/schedule';
 import { cn } from '@/utils/core/ui';
 import { format, parseISO, differenceInDays } from 'date-fns';
+import { getTaskStatusColor, getTaskStatusIconColor, getTaskPriorityColor } from '@/utils/core/taskColors';
 
 // Interface for assignees if passed directly (not via Task object)
 export interface Assignee {
@@ -142,74 +143,7 @@ export function TaskCard({
     usingTaskObject
   ]);
 
-  // Helper functions for styling
-  const getStatusColor = (status?: string) => {
-    if (!status) return 'bg-gray-400';
-    
-    switch(status.toLowerCase()) {
-      case 'completed':
-        return 'bg-green-500';
-      case 'in progress':
-        return 'bg-blue-500';
-      case 'not started':
-        return 'bg-gray-500';
-      case 'delayed':
-        return 'bg-amber-500';
-      case 'blocked':
-        return 'bg-red-500';
-      default:
-        return 'bg-gray-400';
-    }
-  };
-  
-  const getStatusBadgeClass = (status?: string) => {
-    if (!status) return 'bg-gray-100 text-gray-800';
-    
-    switch(status.toLowerCase()) {
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'in progress':
-        return 'bg-blue-100 text-blue-800';
-      case 'not started':
-        return 'bg-gray-100 text-gray-800';
-      case 'delayed':
-        return 'bg-amber-100 text-amber-800';
-      case 'blocked':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getPriorityColor = (priority?: string) => {
-    if (!priority) return 'text-gray-500';
-    
-    switch(priority.toLowerCase()) {
-      case 'high':
-        return 'text-red-600 dark:text-red-400';
-      case 'medium':
-        return 'text-amber-600 dark:text-amber-400';
-      case 'low':
-        return 'text-green-600 dark:text-green-400';
-      default:
-        return 'text-gray-500 dark:text-gray-400';
-    }
-  };
-  
-  const getPriorityBadgeClass = (priority?: string) => {
-    if (!priority) return 'text-gray-800 border-gray-300';
-    
-    switch(priority.toLowerCase()) {
-      case 'high':
-        return 'text-red-800 border-red-300';
-      case 'medium':
-        return 'text-amber-800 border-amber-300';
-      case 'low':
-        return 'text-green-800 border-green-300';
-      default:
-        return 'text-gray-800 border-gray-300';
-    }
-  };
+  // Use centralized color utilities - removed duplicate functions
 
   // Format due date as a more readable string
   const formatDate = (dateString?: string) => {
@@ -273,11 +207,10 @@ export function TaskCard({
     }
   };
 
-  // Get status and priority colors
-  const statusColor = getStatusColor(taskValues.status);
-  const statusBadgeClass = getStatusBadgeClass(taskValues.status);
-  const priorityColor = getPriorityColor(taskValues.priority);
-  const priorityBadgeClass = getPriorityBadgeClass(taskValues.priority);
+  // Get status and priority colors using centralized utilities
+  const statusIconColor = getTaskStatusIconColor(taskValues.status || '');
+  const statusBadgeClass = getTaskStatusColor(taskValues.status || '');
+  const priorityBadgeClass = getTaskPriorityColor(taskValues.priority || '');
   
   // Format date and calculate days remaining
   const formattedDueDate = formatDate(taskValues.dueDate);
@@ -309,7 +242,7 @@ export function TaskCard({
             statusBadgeClass
           )}>
             <div className="flex items-center gap-1">
-              <div className={cn('w-2 h-2 rounded-full', statusColor)} />
+              <div className={cn('w-2 h-2 rounded-full', statusIconColor)} />
               {taskValues.status}
             </div>
           </Badge>

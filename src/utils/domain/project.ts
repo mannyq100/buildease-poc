@@ -132,23 +132,12 @@ export function getTabsOrder(): string[] {
   return ["intro", "basic", "building", "materials", "features", "final"];
 }
 
-/**
- * Get the color classes for a priority level
- * @param priority The priority level (High, Medium, Low)
- * @returns CSS classes for text and background color
- */
-export function getPriorityColor(priority: string): string {
-  switch (priority) {
-    case 'High': return 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30';
-    case 'Medium': return 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/30';
-    case 'Low': return 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30';
-    default: return 'text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-800/50';
-  }
-}
+// Use centralized utilities for task colors
+export { getTaskPriorityColor as getPriorityColor } from '@/utils/core/taskColors';
 
 /**
- * Get the color classes for a project status
- * @param status The status (Completed, In Progress, Not Started, Delayed)
+ * Get the color classes for a project status (project-specific, not task status)
+ * @param status The project status 
  * @returns CSS classes for text and background color
  */
 export function getStatusColor(status: ProjectStatus | string): string {

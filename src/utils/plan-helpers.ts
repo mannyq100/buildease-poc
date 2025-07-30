@@ -1,6 +1,9 @@
 /**
  * Utility functions for plan-related components
  * Consolidated to reduce code duplication across plan components
+ * 
+ * Note: For basic task status/priority colors, use @/utils/core/taskColors
+ * These functions are specific to plan components with enhanced BuildEase styling
  */
 
 // Enhanced BuildEase status color mappings for construction industry

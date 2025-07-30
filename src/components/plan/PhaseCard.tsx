@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Trash, Plus, Edit, Calendar, Clock, ChevronDown, ChevronRight, CheckCircle, Package } from 'lucide-react';
 import { AnimatePresence, motion as m } from 'framer-motion';
 import { getStatusColor, formatDate, getStatusText } from '@/utils/plan-helpers';
+import { formatTaskCount } from '@/utils/core/taskColors';
 import { LoadingState } from '@/hooks/usePlanLoading';
 import { LoadingButton, ActionLoadingOverlay } from './LoadingIndicators';
 import { LazyTaskList } from './LazyTaskList';
@@ -164,7 +165,7 @@ export const PhaseCard = React.memo(function PhaseCard({
                 <div className="flex items-center gap-2">
                   <div className="flex items-center bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 rounded-lg">
                     <CheckCircle className="h-3 w-3 mr-1 text-emerald-600 dark:text-emerald-400" />
-                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{phase.tasks.filter(t => t.status === 'completed').length}/{phase.tasks.length} tasks</span>
+                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{formatTaskCount(phase.tasks.filter(t => t.status === 'completed').length, phase.tasks.length)}</span>
                   </div>
                   <div className="flex items-center bg-slate-100 dark:bg-slate-700 px-3 py-1.5 rounded-lg">
                     <Package className="h-3 w-3 mr-1 text-slate-600 dark:text-slate-400" />

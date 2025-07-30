@@ -17,6 +17,7 @@ import {
   MoreVertical
 } from 'lucide-react';
 import { ProjectPhase, EnhancedTask } from '@/types/projectDetails';
+import { getTaskStatusColor, getTaskStatusIconColor, getTaskPriorityBadgeVariant, getTaskPriorityColor } from '@/utils/core/taskColors';
 
 interface PhaseTasksSectionProps {
   phase: ProjectPhase;
@@ -27,37 +28,7 @@ interface PhaseTasksSectionProps {
   onDeleteTask: (taskId: string) => void;
 }
 
-// Helper function for task status colors
-function getTaskStatusColor(status: string): string {
-  switch (status) {
-    case 'COMPLETED':
-      return 'text-green-600';
-    case 'IN_PROGRESS':
-      return 'text-buildease-blue-600';
-    case 'PENDING':
-      return 'text-orange-600';
-    case 'BLOCKED':
-      return 'text-red-600';
-    case 'CANCELLED':
-      return 'text-slate-500';
-    default:
-      return 'text-slate-600';
-  }
-}
-
-// Helper function for priority badge styling
-function getPriorityBadgeVariant(priority: string): 'destructive' | 'default' | 'secondary' {
-  switch (priority) {
-    case 'HIGH':
-    case 'URGENT':
-      return 'destructive';
-    case 'MEDIUM':
-      return 'default';
-    case 'LOW':
-    default:
-      return 'secondary';
-  }
-}
+// Use centralized color utilities - removed duplicate functions
 
 export function PhaseTasksSection({
   phase,
@@ -144,22 +115,22 @@ function TaskCard({ task, index, onEdit, onDelete }: TaskCardProps) {
       <div className="flex items-center gap-4 flex-1 min-w-0">
         <div className="flex-shrink-0">
           <CheckCircle2 
-            className={`h-5 w-5 ${getTaskStatusColor(task.status)} ${
-              task.status === 'COMPLETED' ? 'fill-current' : ''
+            className={`h-5 w-5 ${getTaskStatusIconColor(task.status)} ${
+              task.status?.toUpperCase() === 'COMPLETED' ? 'fill-current' : ''
             } transition-colors duration-200`} 
           />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3 mb-1">
             <span className={`text-sm font-medium leading-5 ${
-              task.status === 'COMPLETED' ? 'line-through text-slate-500' : 'text-slate-900'
+              task.status?.toUpperCase() === 'COMPLETED' ? 'line-through text-slate-500' : 'text-slate-900'
             }`}>
               {task.title}
             </span>
             <div className="flex-shrink-0">
               <Badge 
-                variant={getPriorityBadgeVariant(task.priority)} 
-                className="text-xs"
+                variant={getTaskPriorityBadgeVariant(task.priority)} 
+                className={`text-xs ${getTaskPriorityColor(task.priority)}`}
               >
                 {task.priority}
               </Badge>
@@ -180,7 +151,7 @@ function TaskCard({ task, index, onEdit, onDelete }: TaskCardProps) {
             {task.status && (
               <Badge 
                 variant="outline" 
-                className="text-xs bg-slate-50"
+                className={`text-xs ${getTaskStatusColor(task.status)}`}
               >
                 {task.status.replace('_', ' ').toLowerCase()}
               </Badge>

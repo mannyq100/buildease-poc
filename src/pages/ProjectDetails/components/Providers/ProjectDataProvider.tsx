@@ -102,40 +102,43 @@ export function ProjectDataProvider({ projectId, children }: ProjectDataProvider
     return ProjectTransformService.transformProjectSummary(projectData);
   }, [projectData]);
 
-  // Calculate urgency score based on multiple factors
+  // Calculate urgency score based on multiple factors - prioritize by priority level first
   const getUrgencyScore = React.useCallback((task: TaskItem): number => {
     let score = 0;
     
-    // Priority scoring
-    const priorityScores = { 'URGENT': 40, 'HIGH': 30, 'MEDIUM': 20, 'LOW': 10 };
-    score += priorityScores[task.priority] || 0;
+    // Priority scoring (main factor) - higher weights for priority-based selection
+    const priorityScores = { 'URGENT': 100, 'HIGH': 75, 'MEDIUM': 50, 'LOW': 25 };
+    score += priorityScores[task.priority?.toUpperCase()] || 25;
     
-    // Due date scoring (if task has due date)
+    // Status scoring - blocked and in-progress tasks need attention
+    if (task.status?.toUpperCase() === 'BLOCKED') score += 30; // Blocked tasks are urgent
+    else if (task.status?.toUpperCase() === 'IN_PROGRESS') score += 20; // Continue working on these
+    
+    // Due date scoring (secondary factor) - bonus points for time-sensitive tasks
     if (task.due_date) {
       const dueDate = new Date(task.due_date);
       const today = new Date();
       const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       
-      if (daysUntilDue < 0) score += 50; // Overdue
-      else if (daysUntilDue === 0) score += 40; // Due today
-      else if (daysUntilDue === 1) score += 30; // Due tomorrow
-      else if (daysUntilDue <= 3) score += 20; // Due within 3 days
-      else if (daysUntilDue <= 7) score += 10; // Due within a week
+      if (daysUntilDue < 0) score += 25; // Overdue - needs immediate attention
+      else if (daysUntilDue === 0) score += 20; // Due today
+      else if (daysUntilDue === 1) score += 15; // Due tomorrow
+      else if (daysUntilDue <= 3) score += 10; // Due within 3 days
+      else if (daysUntilDue <= 7) score += 5; // Due within a week
     }
-    
-    // Status scoring (blocked tasks are more urgent)
-    if (task.status === 'BLOCKED') score += 25;
-    else if (task.status === 'IN_PROGRESS') score += 15;
     
     return score;
   }, []);
 
-  // Calculate today's focus tasks
+  // Calculate today's focus tasks - show priority tasks from all phases
   const todaysFocus = React.useMemo(() => {
     return allProjectTasks
-      .filter(task => task.status !== 'COMPLETED' && task.status !== 'CANCELLED')
+      .filter(task => {
+        const status = task.status?.toUpperCase();
+        return status !== 'COMPLETED' && status !== 'CANCELLED';
+      })
       .sort((a, b) => getUrgencyScore(b) - getUrgencyScore(a))
-      .slice(0, 3);
+      .slice(0, 5); // Show top 5 priority tasks from all phases
   }, [allProjectTasks, getUrgencyScore]);
 
   // Handle project update

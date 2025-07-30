@@ -77,6 +77,8 @@ export function getPriorityClasses(priority: string): string {
   }
 }
 
+// Note: These functions return HEX colors for charts - different from Tailwind classes
+// Keep these separate from the centralized utility as they serve different purposes
 /**
  * Returns a color for task status (for charts and visualizations)
  * @param status Task status

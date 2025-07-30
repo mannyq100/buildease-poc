@@ -19,6 +19,7 @@ import {
   useCreateTask
 } from '@/hooks/mutations';
 import { BudgetFormData, PhaseFormData, TeamMemberFormData } from '@/types/projectDetails';
+import { CONSTRUCTION_PHASES_WITH_TASKS } from '@/data/constants/constructionPhasesWithTasks';
 
 interface UseCRUDOperationsProps {
   projectId: string;
@@ -137,11 +138,17 @@ export function useCRUDOperations({ projectId, phases, onCloseModals }: UseCRUDO
         
         // Create selected default tasks for the phase
         if (selectedTaskIds && selectedTaskIds.length > 0 && user?.id) {
+          // Find the phase template to get task details
+          const phaseTemplate = CONSTRUCTION_PHASES_WITH_TASKS[data.category as keyof typeof CONSTRUCTION_PHASES_WITH_TASKS];
+          
           const taskCreationPromises = selectedTaskIds.map(async (taskId) => {
             try {
+              // Find the task template to get meaningful name and description
+              const taskTemplate = phaseTemplate?.tasks.find(task => task.id === taskId);
+              
               const taskData = {
-                title: `Task ${taskId}`,
-                description: `Default task for ${createdPhase.name} phase`,
+                title: taskTemplate?.name || `Task ${taskId}`,
+                description: taskTemplate?.description || `Default task for ${createdPhase.name} phase`,
                 phase_id: createdPhase.id,
                 project_id: projectId,
                 status: 'pending' as const,

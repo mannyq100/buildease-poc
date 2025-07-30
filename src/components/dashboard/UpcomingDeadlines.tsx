@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/utils/core/ui'
+import { getTaskPriorityColor, getTaskStatusColor } from '@/utils/core/taskColors'
 
 interface DeadlineItem {
   id: string | number
@@ -37,31 +38,7 @@ export function UpcomingDeadlines({ deadlines, className = '' }: UpcomingDeadlin
   // Take only the next 5 deadlines
   const upcomingDeadlines = sortedDeadlines.slice(0, 5)
   
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300 border-red-200 dark:border-red-800/30'
-      case 'medium':
-        return 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-800/30'
-      case 'low':
-        return 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300 border-green-200 dark:border-green-800/30'
-      default:
-        return 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800/30'
-    }
-  }
-  
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300 border-green-200 dark:border-green-800/30'
-      case 'in-progress':
-        return 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800/30'
-      case 'pending':
-        return 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-800/30'
-      default:
-        return 'bg-gray-50 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300 border-gray-200 dark:border-gray-800/30'
-    }
-  }
+  // Use centralized color utilities - removed duplicate functions
   
   return (
     <div className={className}>
@@ -111,7 +88,7 @@ export function UpcomingDeadlines({ deadlines, className = '' }: UpcomingDeadlin
                           variant="outline" 
                           className={cn(
                             "text-xs",
-                            getPriorityColor(item.priority)
+                            getTaskPriorityColor(item.priority)
                           )}
                         >
                           {item.priority} priority
@@ -120,7 +97,7 @@ export function UpcomingDeadlines({ deadlines, className = '' }: UpcomingDeadlin
                           variant="outline" 
                           className={cn(
                             "text-xs",
-                            getStatusColor(item.status)
+                            getTaskStatusColor(item.status)
                           )}
                         >
                           {item.status}

@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Clock, Edit, Plus, CalendarDays, CheckCircle, Circle, AlertCircle, Pause, GripVertical } from 'lucide-react';
 import { getStatusText } from '@/utils/plan-helpers';
 import { Phase } from '@/data/mock/generatedPlan/planData';
+import { formatTaskCount } from '@/utils/core/taskColors';
 
 interface SortableTimelinePhaseProps {
   phase: Phase;
@@ -154,7 +155,7 @@ export const SortableTimelinePhase = React.memo(function SortableTimelinePhase({
             )}
             <div className="flex items-center bg-emerald-50 dark:bg-emerald-900/20 px-3 py-2 rounded-lg">
               <CheckCircle className="h-4 w-4 mr-2 text-emerald-600 dark:text-emerald-400" />
-              <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">{phase.tasks.filter(t => t.status === 'completed').length}/{phase.tasks.length} tasks</span>
+              <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">{formatTaskCount(phase.tasks.filter(t => t.status === 'completed').length, phase.tasks.length)}</span>
             </div>
           </div>
 

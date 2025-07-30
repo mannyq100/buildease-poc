@@ -15,6 +15,7 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
+import { formatTaskCount, getTaskPriorityColor, getTaskStatusIconColor } from '@/utils/core/taskColors';
 
 interface TaskItem {
   id: string;
@@ -33,6 +34,7 @@ interface Phase {
 
 interface TodaysFocusCardProps {
   tasks?: TaskItem[];
+  phases?: any[]; // Add phases to map phase_id to phase names
   currentPhase?: Phase;
   currentTasks?: TaskItem[];
   onCreateTask?: (phaseId: string) => void;
@@ -59,23 +61,11 @@ const getStatusVariant = (status: TaskItem['status']) => {
   }
 };
 
-const getPriorityColor = (priority: TaskItem['priority']) => {
-  switch (priority) {
-    case 'URGENT':
-      return 'text-red-600 bg-red-50 border-red-200';
-    case 'HIGH':
-      return 'text-orange-600 bg-orange-50 border-orange-200';
-    case 'MEDIUM':
-      return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-    case 'LOW':
-      return 'text-green-600 bg-green-50 border-green-200';
-    default:
-      return 'text-slate-600 bg-slate-50 border-slate-200';
-  }
-};
+// Use centralized color utility - removed duplicate function
 
 export function TodaysFocusCard({ 
   tasks = [],
+  phases = [],
   currentPhase, 
   currentTasks = [],
   onCreateTask,
@@ -85,9 +75,24 @@ export function TodaysFocusCard({
   isExpanded = true,
   onToggleExpanded
 }: TodaysFocusCardProps) {
+  // Helper function to get phase name by phase_id
+  const getPhaseName = (phaseId: string): string => {
+    const phase = phases.find(p => p.id === phaseId);
+    return phase ? phase.name : 'Unknown Phase';
+  };
   // Use tasks prop if provided, otherwise fall back to currentTasks
-  const displayTasks = tasks.length > 0 ? tasks : currentTasks;
-  const completedTasks = displayTasks.filter(task => task.status === 'COMPLETED');
+  const allTasks = tasks && tasks.length > 0 ? tasks : currentTasks;
+  
+  // Filter out completed and cancelled tasks - Today's Focus should only show active tasks
+  // Handle both uppercase and lowercase status values for robustness
+  const displayTasks = allTasks.filter(task => {
+    const status = task.status?.toUpperCase();
+    return status !== 'COMPLETED' && status !== 'CANCELLED';
+  });
+  
+  const completedTasks = allTasks.filter(task => 
+    task.status?.toUpperCase() === 'COMPLETED'
+  );
   
   // Show a collapsed preview if not expanded
   if (!isExpanded) {
@@ -108,10 +113,10 @@ export function TodaysFocusCard({
           </div>
           <div className="flex items-center justify-between mt-2">
             <p className="text-sm text-slate-600">
-              {displayTasks.length} tasks • {completedTasks.length} completed
+              {formatTaskCount(completedTasks.length, allTasks.length)}
             </p>
             <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs">
-              {Math.round((completedTasks.length / Math.max(displayTasks.length, 1)) * 100)}% Done
+              {Math.round((completedTasks.length / Math.max(allTasks.length, 1)) * 100)}% Done
             </Badge>
           </div>
         </CardHeader>
@@ -132,14 +137,12 @@ export function TodaysFocusCard({
               <CardTitle className="text-xl font-bold text-slate-900">
                 Today's Focus
               </CardTitle>
-              {currentPhase && (
-                <p className="text-sm text-slate-600 mt-1">{currentPhase.name}</p>
-              )}
+              <p className="text-sm text-slate-600 mt-1">Priority tasks from all phases</p>
             </div>
             <ChevronUp className="h-4 w-4 text-slate-500 ml-auto" />
           </button>
           <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
-            {completedTasks.length}/{displayTasks.length} Done
+            {formatTaskCount(completedTasks.length, allTasks.length)}
           </Badge>
         </div>
       </CardHeader>
@@ -149,23 +152,33 @@ export function TodaysFocusCard({
             <div key={task.id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200/40 hover:bg-slate-50/50 transition-all duration-200">
               <button className="flex-shrink-0">
                 <CheckCircle2 className={`h-5 w-5 transition-colors ${
-                  task.status === 'COMPLETED' ? 'text-emerald-600' : 'text-slate-400 hover:text-buildease-blue-500'
+                  task.status?.toUpperCase() === 'COMPLETED' ? getTaskStatusIconColor('COMPLETED') : 'text-slate-400 hover:text-buildease-blue-500'
                 }`} />
               </button>
               <div className="flex-1 min-w-0">
                 <span className={`block text-sm font-medium truncate ${
-                  task.status === 'COMPLETED' ? 'line-through text-slate-500' : 'text-slate-900'
+                  task.status?.toUpperCase() === 'COMPLETED' ? 'line-through text-slate-500' : 'text-slate-900'
                 }`}>
                   {task.title}
                 </span>
-                {task.priority && task.priority !== 'LOW' && (
-                  <Badge 
-                    variant="outline" 
-                    className={`text-xs mt-1 ${getPriorityColor(task.priority)}`}
-                  >
-                    {task.priority}
-                  </Badge>
-                )}
+                <div className="flex items-center gap-2 mt-1">
+                  {task.phase_id && (
+                    <Badge 
+                      variant="outline" 
+                      className="text-xs bg-buildease-blue-50 text-buildease-blue-700 border-buildease-blue-200"
+                    >
+                      {getPhaseName(task.phase_id)}
+                    </Badge>
+                  )}
+                  {task.priority && task.priority !== 'LOW' && (
+                    <Badge 
+                      variant="outline" 
+                      className={`text-xs ${getTaskPriorityColor(task.priority)}`}
+                    >
+                      {task.priority}
+                    </Badge>
+                  )}
+                </div>
               </div>
               <StatusBadge status={task.status.toLowerCase()} size="sm" variant="outline" />
             </div>
@@ -173,8 +186,8 @@ export function TodaysFocusCard({
         ) : (
           <div className="text-center py-6 text-slate-500">
             <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-slate-300" />
-            <p className="text-sm font-medium mb-1">No tasks requiring attention</p>
-            <p className="text-xs text-slate-400">Create tasks in project phases to see them here</p>
+            <p className="text-sm font-medium mb-1">No priority tasks found</p>
+            <p className="text-xs text-slate-400">High-priority tasks from all phases will appear here</p>
           </div>
         )}
         

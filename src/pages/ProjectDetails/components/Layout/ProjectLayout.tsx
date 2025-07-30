@@ -166,6 +166,7 @@ export function ProjectLayout({
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <TodaysFocusCard 
                 tasks={todaysFocus}
+                phases={phases}
                 onCreateTask={taskOperations.openCreateTaskModal}
                 onEditTask={taskOperations.openEditTaskModal}
                 isExpanded={safeExpandedSections.todaysFocus}

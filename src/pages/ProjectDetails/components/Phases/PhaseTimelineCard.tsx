@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import React from 'react';
 import { ProjectPhase } from '@/types/projectDetails';
+import { formatTaskCount } from '@/utils/core/taskColors';
 
 interface PhaseTimelineCardProps {
   phases: ProjectPhase[];
@@ -171,7 +172,7 @@ function PhaseCard({
 }: PhaseCardProps) {
   const { data: tasks = [], isLoading: tasksLoading } = usePhaseTasks(phase.id);
   
-  const completedTasks = tasks.filter(t => t.status === 'COMPLETED').length;
+  const completedTasks = tasks.filter(t => t.status?.toUpperCase() === 'COMPLETED').length;
   const totalTasks = tasks.length;
   const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
@@ -198,7 +199,7 @@ function PhaseCard({
                 </Badge>
                 {totalTasks > 0 && (
                   <span className="text-xs text-slate-500 bg-slate-200 px-2 py-1 rounded-full">
-                    {completedTasks}/{totalTasks} tasks
+                    {formatTaskCount(completedTasks, totalTasks)}
                   </span>
                 )}
               </div>

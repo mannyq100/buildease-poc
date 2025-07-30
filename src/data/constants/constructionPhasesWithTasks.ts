@@ -4,23 +4,28 @@ export const CONSTRUCTION_PHASES_WITH_TASKS = {
       tasks: [
         {
           id: 'site_acquisition',
-          name: 'Site Acquisition'
+          name: 'Site Acquisition',
+          description: 'Secure and purchase the construction site, conduct due diligence, and complete legal documentation'
         },
         {
           id: 'architectural_design',
-          name: 'Architectural Design'
+          name: 'Architectural Design',
+          description: 'Develop comprehensive architectural plans, elevations, and technical drawings for the project'
         },
         {
           id: 'structural_design',
-          name: 'Structural Engineering'
+          name: 'Structural Engineering',
+          description: 'Design structural elements including foundations, beams, columns, and load-bearing systems'
         },
         {
           id: 'permits',
-          name: 'Permits & Approvals'
+          name: 'Permits & Approvals',
+          description: 'Obtain building permits, zoning approvals, and other regulatory clearances required for construction'
         },
         {
           id: 'contractor_selection',
-          name: 'Contractor Selection'
+          name: 'Contractor Selection',
+          description: 'Evaluate and select qualified contractors through bidding process and contract negotiation'
         }
       ]
     },
@@ -30,23 +35,28 @@ export const CONSTRUCTION_PHASES_WITH_TASKS = {
       tasks: [
         {
           id: 'site_clearing',
-          name: 'Site Clearing'
+          name: 'Site Clearing',
+          description: 'Remove vegetation, debris, and existing structures to prepare the site for construction'
         },
         {
           id: 'surveying',
-          name: 'Surveying & Setting Out'
+          name: 'Surveying & Setting Out',
+          description: 'Conduct topographical surveys and mark precise building locations and boundaries'
         },
         {
           id: 'temporary_facilities',
-          name: 'Temporary Facilities'
+          name: 'Temporary Facilities',
+          description: 'Set up site offices, storage areas, utilities, and safety infrastructure for construction operations'
         },
         {
           id: 'excavation',
-          name: 'Excavation'
+          name: 'Excavation',
+          description: 'Excavate foundation areas, trenches, and underground utility routes according to specifications'
         },
         {
           id: 'soil_treatment',
-          name: 'Soil Treatment'
+          name: 'Soil Treatment',
+          description: 'Improve soil conditions through compaction, stabilization, or treatment as required by soil analysis'
         }
       ]
     },
@@ -56,27 +66,33 @@ export const CONSTRUCTION_PHASES_WITH_TASKS = {
       tasks: [
         {
           id: 'foundation_excavation',
-          name: 'Foundation Excavation'
+          name: 'Foundation Excavation',
+          description: 'Excavate foundation trenches and pads to specified depths and dimensions'
         },
         {
           id: 'lean_concrete',
-          name: 'Lean Concrete/Blinding'
+          name: 'Lean Concrete/Blinding',
+          description: 'Pour lean concrete base to provide level working surface for foundation reinforcement'
         },
         {
           id: 'reinforcement',
-          name: 'Foundation Reinforcement'
+          name: 'Foundation Reinforcement',
+          description: 'Install steel reinforcement bars and mesh according to structural engineering specifications'
         },
         {
           id: 'foundation_concrete',
-          name: 'Foundation Concrete Pour'
+          name: 'Foundation Concrete Pour',
+          description: 'Pour and cure structural concrete for footings, foundation walls, and grade beams'
         },
         {
           id: 'waterproofing',
-          name: 'Waterproofing/DPC'
+          name: 'Waterproofing/DPC',
+          description: 'Apply waterproofing membranes and install damp-proof course to prevent moisture ingress'
         },
         {
           id: 'backfilling',
-          name: 'Backfilling'
+          name: 'Backfilling',
+          description: 'Backfill foundation areas with approved material and compact to required density'
         }
       ]
     },
@@ -86,23 +102,28 @@ export const CONSTRUCTION_PHASES_WITH_TASKS = {
       tasks: [
         {
           id: 'columns',
-          name: 'Columns/Posts'
+          name: 'Columns/Posts',
+          description: 'Construct vertical structural support columns and posts according to structural drawings'
         },
         {
           id: 'beams',
-          name: 'Beams & Lintels'
+          name: 'Beams & Lintels',
+          description: 'Install horizontal structural beams and lintels to support loads and span openings'
         },
         {
           id: 'floor_slabs',
-          name: 'Floor Slabs'
+          name: 'Floor Slabs',
+          description: 'Pour reinforced concrete floor slabs including reinforcement placement and finishing'
         },
         {
           id: 'stairs',
-          name: 'Staircase Construction'
+          name: 'Staircase Construction',
+          description: 'Build staircases including structural support, treads, risers, and safety railings'
         },
         {
           id: 'lift_shaft',
-          name: 'Lift/Elevator Shaft'
+          name: 'Lift/Elevator Shaft',
+          description: 'Construct elevator shaft with proper dimensions, reinforcement, and mechanical provisions'
         }
       ]
     },
@@ -272,19 +293,23 @@ export const CONSTRUCTION_PHASES_WITH_TASKS = {
       tasks: [
         {
           id: 'internal_doors',
-          name: 'Internal Doors'
+          name: 'Internal Doors',
+          description: 'Install internal doors including frames, hardware, and finishing touches'
         },
         {
           id: 'kitchen_cabinets',
-          name: 'Kitchen Installation'
+          name: 'Kitchen Installation',
+          description: 'Install kitchen cabinets, countertops, appliances, and plumbing fixtures'
         },
         {
           id: 'bathroom_fixtures',
-          name: 'Bathroom Fixtures'
+          name: 'Bathroom Fixtures',
+          description: 'Install bathroom fixtures including toilets, sinks, showers, and accessories'
         },
         {
           id: 'electrical_fixtures',
-          name: 'Electrical Fixtures'
+          name: 'Electrical Fixtures',
+          description: 'Install light fixtures, switches, outlets, and electrical panels throughout the building'
         },
         {
           id: 'built_in_furniture',
@@ -392,7 +417,8 @@ export const CONSTRUCTION_PHASES_WITH_TASKS = {
       tasks: [
         {
           id: 'final_cleaning',
-          name: 'Final Cleaning'
+          name: 'Final Cleaning',
+          description: 'Comprehensive cleaning of all areas to prepare for final inspection and handover'
         },
         {
           id: 'final_inspections',
@@ -408,7 +434,8 @@ export const CONSTRUCTION_PHASES_WITH_TASKS = {
         },
         {
           id: 'handover',
-          name: 'Keys Handover'
+          name: 'Keys Handover',
+          description: 'Final project handover including keys, warranties, and operational documentation'
         }
       ]
     },
@@ -469,6 +496,7 @@ export const CONSTRUCTION_PHASES_WITH_TASKS = {
     tasks: {
       id: string;
       name: string;
+      description?: string;
     }[];
     isRemodelingPhase?: boolean;
   }
