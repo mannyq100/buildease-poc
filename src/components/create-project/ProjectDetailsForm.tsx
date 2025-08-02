@@ -5,7 +5,7 @@
  */
 import React, { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { CreateProjectFormValues } from '../../pages/CreateProject';
+import { CreateProjectFormValues } from '../../pages/CreateProject/schema';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,31 +16,31 @@ import { Building, Home, Store, Hammer, User } from 'lucide-react';
 import { ProjectInspirationImages } from './ProjectInspirationImages';
 
 
-// Project type options with better icons (memoized to prevent re-creation)
+// Project type options with icon components (not elements to prevent re-render issues)
 const PROJECT_TYPES = [
   {
     value: 'residential-single',
     label: 'Single Family Home',
     description: 'Individual house for one family',
-    icon: <Home className="h-5 w-5" />
+    IconComponent: Home
   },
   {
     value: 'residential-multi',
     label: 'Multi-Family Building',
     description: 'Apartment or duplex building',
-    icon: <Building className="h-5 w-5" />
+    IconComponent: Building
   },
   {
     value: 'commercial',
     label: 'Commercial Building',
     description: 'Office, retail, or business space',
-    icon: <Store className="h-5 w-5" />
+    IconComponent: Store
   },
   {
     value: 'renovation',
     label: 'Renovation Project',
     description: 'Remodeling existing structure',
-    icon: <Hammer className="h-5 w-5" />
+    IconComponent: Hammer
   }
 ] as const;
 
@@ -143,7 +143,7 @@ function ProjectDetailsFormComponent() {
                           ? 'bg-[#2B6CB0] text-white'
                           : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
                       }`}>
-                        {React.cloneElement(type.icon, { className: "h-6 w-6" })}
+                        <type.IconComponent className="h-6 w-6" />
                       </div>
 
                       {/* Content */}
@@ -285,3 +285,6 @@ function ProjectDetailsFormComponent() {
 
 // Memoized export to prevent unnecessary re-renders
 export const ProjectDetailsForm = React.memo(ProjectDetailsFormComponent);
+
+// Default export for lazy loading
+export default ProjectDetailsForm;

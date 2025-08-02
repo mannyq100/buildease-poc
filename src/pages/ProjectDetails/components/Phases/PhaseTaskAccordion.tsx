@@ -21,7 +21,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { PhaseTaskAccordionProps } from '@/types/projectDetails';
-import { formatTaskCount, getTaskStatusColor, getTaskStatusIconColor } from '@/utils/core/taskColors';
+import { formatTaskCount, getTaskStatusColor } from '@/utils/core/taskColors';
 
 // Phase status colors - keep these separate as they're different from task status colors
 const getPhaseStatusColor = (status: string): string => {

@@ -4,13 +4,17 @@
  * Features a stunning image gallery, professional layout, and comprehensive project summary
  * Utilizes Zustand store for state management
  */
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
-import { CreateProjectFormValues } from '../../pages/CreateProject';
-import { useCreateProjectImages } from '@/stores/createProjectStore';
+import { CreateProjectFormValues } from '../../pages/CreateProject/schema';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
 import { cn } from '@/utils/core/ui';
 import { 
@@ -26,7 +30,10 @@ import {
   Lightbulb,
   FileText,
   Info,
-  Star
+  Star,
+  ChevronDown,
+  ChevronUp,
+  Settings
 } from 'lucide-react';
 
 // Helper function to format currency
@@ -47,6 +54,66 @@ const formatCurrency = (value: string, currencyCode: string) => {
 const capitalize = (text: string) => {
   return text.charAt(0).toUpperCase() + text.slice(1).replace(/-/g, ' ');
 };
+
+// Optional form field options
+const STRUCTURE_TYPES = [
+  { value: 'ai-recommend', label: 'Let AI recommend' },
+  { value: 'concrete-frame', label: 'Concrete Frame' },
+  { value: 'steel-frame', label: 'Steel Frame' },
+  { value: 'masonry', label: 'Masonry' },
+  { value: 'wood-frame', label: 'Wood Frame' },
+  { value: 'hybrid', label: 'Hybrid Construction' }
+];
+
+const FOUNDATION_TYPES = [
+  { value: 'ai-recommend', label: 'Let AI recommend' },
+  { value: 'strip-foundation', label: 'Strip Foundation' },
+  { value: 'pad-foundation', label: 'Pad Foundation' },
+  { value: 'raft-foundation', label: 'Raft Foundation' },
+  { value: 'pile-foundation', label: 'Pile Foundation' }
+];
+
+const ROOF_TYPES = [
+  { value: 'ai-recommend', label: 'Let AI recommend' },
+  { value: 'gable', label: 'Gable Roof' },
+  { value: 'hip', label: 'Hip Roof' },
+  { value: 'flat', label: 'Flat Roof' },
+  { value: 'shed', label: 'Shed Roof' },
+  { value: 'mansard', label: 'Mansard Roof' }
+];
+
+const WALL_MATERIALS = [
+  { value: 'ai-recommend', label: 'Let AI recommend' },
+  { value: 'concrete-blocks', label: 'Concrete Blocks' },
+  { value: 'clay-bricks', label: 'Clay Bricks' },
+  { value: 'sandcrete-blocks', label: 'Sandcrete Blocks' },
+  { value: 'stone', label: 'Natural Stone' },
+  { value: 'compressed-earth', label: 'Compressed Earth Blocks' }
+];
+
+const FLOOR_MATERIALS = [
+  { value: 'ai-recommend', label: 'Let AI recommend' },
+  { value: 'ceramic-tiles', label: 'Ceramic Tiles' },
+  { value: 'porcelain-tiles', label: 'Porcelain Tiles' },
+  { value: 'concrete-screed', label: 'Concrete Screed' },
+  { value: 'terrazzo', label: 'Terrazzo' },
+  { value: 'natural-stone', label: 'Natural Stone' },
+  { value: 'hardwood', label: 'Hardwood' }
+];
+
+const SPECIAL_FEATURES = [
+  'swimming-pool', 'garage', 'basement', 'attic', 'balcony', 'patio', 
+  'garden', 'security-system', 'cctv', 'generator-room', 'water-tank',
+  'solar-panels', 'backup-power', 'home-office', 'gym', 'library',
+  'entertainment-room', 'guest-house', 'servants-quarters', 'laundry-room'
+];
+
+const SUSTAINABILITY_FEATURES = [
+  'solar-panels', 'rainwater-harvesting', 'energy-efficient-lighting',
+  'double-glazed-windows', 'insulation', 'natural-ventilation',
+  'green-roof', 'recycled-materials', 'low-flow-fixtures',
+  'smart-home-systems', 'waste-management', 'native-landscaping'
+];
 
 // Section component for organized display
 interface ReviewSectionProps {
@@ -96,20 +163,25 @@ function InfoItem({ label, value, className = '' }: InfoItemProps) {
   );
 }
 
-export function ReviewSubmitForm() {
-  const { getValues } = useFormContext<CreateProjectFormValues>();
-  const { localFiles, localProfileImageId } = useCreateProjectImages();
+function ReviewSubmitForm() {
+  const { control, watch } = useFormContext<CreateProjectFormValues>();
+  const [showOptionalFields, setShowOptionalFields] = useState(false);
   
-  // Get current form values from react-hook-form
-  const formValues = getValues();
+  // Watch form values to get reactive updates without causing infinite loops
+  const formValues = watch();
   
-  // Format the expected start date
-  const formattedStartDate = formValues.expectedStartDate ? 
-    format(new Date(formValues.expectedStartDate), 'dd MMM yyyy') : 
-    'To be determined';
+  // Memoize computed values to prevent unnecessary recalculations
+  const formattedStartDate = useMemo(() => {
+    return formValues.expectedStartDate ? 
+      format(new Date(formValues.expectedStartDate), 'dd MMM yyyy') : 
+      'To be determined';
+  }, [formValues.expectedStartDate]);
 
-  // Get profile image
-  const profileImage = localFiles.find(file => file.id === localProfileImageId);
+  // For now, we'll skip the image gallery to avoid store issues
+  // This can be re-enabled once the store architecture is stabilized
+  const localFiles: { id: string; previewUrl: string; file: File }[] = [];
+  const localProfileImageId: string | null = null;
+  const profileImage = null;
 
   return (
     <LazyMotion features={domAnimation}>
@@ -432,6 +504,414 @@ export function ReviewSubmitForm() {
           </m.div>
         )}
 
+        {/* Optional Details Section - Expandable Form */}
+        <m.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.8 }}
+        >
+          <Card className="border border-slate-200 dark:border-slate-700 bg-[#ED8936]/5 dark:bg-[#ED8936]/10">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-[#ED8936]/20 dark:bg-[#ED8936]/30 rounded-lg flex items-center justify-center border border-[#ED8936]/30">
+                    <Settings className="h-4 w-4 text-[#ED8936]" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white font-inter">
+                    Optional Specifications
+                  </h3>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowOptionalFields(!showOptionalFields)}
+                  className="flex items-center gap-2 border border-[#ED8936]/30 text-[#ED8936] hover:bg-[#ED8936]/10"
+                >
+                  {showOptionalFields ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  {showOptionalFields ? 'Hide Details' : 'Add Preferences'}
+                </Button>
+              </div>
+              
+              <div className="text-sm text-slate-600 dark:text-slate-400 font-opensans mb-4">
+                Our AI will make smart recommendations, but you can specify preferences below if you have specific requirements.
+              </div>
+              
+              {showOptionalFields && (
+                <m.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-6 pt-4 border-t border-slate-200 dark:border-slate-600"
+                >
+                  {/* Materials & Construction */}
+                  <div className="space-y-4">
+                    <h4 className="text-base font-semibold text-slate-900 dark:text-white font-inter flex items-center gap-2">
+                      <Layers className="h-4 w-4" />
+                      Materials & Construction
+                    </h4>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <FormField
+                        control={control}
+                        name="structureType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-medium text-slate-700 dark:text-slate-300">Structure Type</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="h-10 text-sm">
+                                  <SelectValue placeholder="Select" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {STRUCTURE_TYPES.map((type) => (
+                                  <SelectItem key={type.value} value={type.value}>
+                                    {type.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={control}
+                        name="foundationType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-medium text-slate-700 dark:text-slate-300">Foundation Type</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="h-10 text-sm">
+                                  <SelectValue placeholder="Select" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {FOUNDATION_TYPES.map((type) => (
+                                  <SelectItem key={type.value} value={type.value}>
+                                    {type.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={control}
+                        name="roofType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-medium text-slate-700 dark:text-slate-300">Roof Type</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="h-10 text-sm">
+                                  <SelectValue placeholder="Select" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {ROOF_TYPES.map((type) => (
+                                  <SelectItem key={type.value} value={type.value}>
+                                    {type.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={control}
+                        name="wallMaterial"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-medium text-slate-700 dark:text-slate-300">Wall Material</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="h-10 text-sm">
+                                  <SelectValue placeholder="Select" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {WALL_MATERIALS.map((material) => (
+                                  <SelectItem key={material.value} value={material.value}>
+                                    {material.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={control}
+                        name="floorMaterial"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-medium text-slate-700 dark:text-slate-300">Floor Material</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="h-10 text-sm">
+                                  <SelectValue placeholder="Select" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {FLOOR_MATERIALS.map((material) => (
+                                  <SelectItem key={material.value} value={material.value}>
+                                    {material.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Special Features */}
+                  <div className="space-y-4">
+                    <h4 className="text-base font-semibold text-slate-900 dark:text-white font-inter flex items-center gap-2">
+                      <Sparkles className="h-4 w-4" />
+                      Special Features
+                    </h4>
+                    
+                    <FormField
+                      control={control}
+                      name="specialFeatures"
+                      render={() => (
+                        <FormItem>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                            {SPECIAL_FEATURES.map((feature) => (
+                              <FormField
+                                key={feature}
+                                control={control}
+                                name="specialFeatures"
+                                render={({ field }) => {
+                                  return (
+                                    <FormItem
+                                      key={feature}
+                                      className="flex flex-row items-start space-x-3 space-y-0"
+                                    >
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value?.includes(feature)}
+                                          onCheckedChange={(checked) => {
+                                            return checked
+                                              ? field.onChange([...field.value, feature])
+                                              : field.onChange(
+                                                  field.value?.filter(
+                                                    (value) => value !== feature
+                                                  )
+                                                )
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <FormLabel className="text-sm font-normal">
+                                        {capitalize(feature)}
+                                      </FormLabel>
+                                    </FormItem>
+                                  )
+                                }}
+                              />
+                            ))}
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Sustainability Features */}
+                  <div className="space-y-4">
+                    <h4 className="text-base font-semibold text-slate-900 dark:text-white font-inter flex items-center gap-2">
+                      🌱 Sustainability Features
+                    </h4>
+                    
+                    <FormField
+                      control={control}
+                      name="sustainabilityFeatures"
+                      render={() => (
+                        <FormItem>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                            {SUSTAINABILITY_FEATURES.map((feature) => (
+                              <FormField
+                                key={feature}
+                                control={control}
+                                name="sustainabilityFeatures"
+                                render={({ field }) => {
+                                  return (
+                                    <FormItem
+                                      key={feature}
+                                      className="flex flex-row items-start space-x-3 space-y-0"
+                                    >
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value?.includes(feature)}
+                                          onCheckedChange={(checked) => {
+                                            return checked
+                                              ? field.onChange([...field.value, feature])
+                                              : field.onChange(
+                                                  field.value?.filter(
+                                                    (value) => value !== feature
+                                                  )
+                                                )
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <FormLabel className="text-sm font-normal">
+                                        {capitalize(feature)}
+                                      </FormLabel>
+                                    </FormItem>
+                                  )
+                                }}
+                              />
+                            ))}
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Additional Notes */}
+                  <div className="space-y-4">
+                    <h4 className="text-base font-semibold text-slate-900 dark:text-white font-inter flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Additional Information
+                    </h4>
+                    
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <FormField
+                        control={control}
+                        name="siteConstraints"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-medium text-slate-700 dark:text-slate-300">Site Constraints</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Any site limitations, access issues, etc."
+                                className="resize-none"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={control}
+                        name="localRegulations"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-medium text-slate-700 dark:text-slate-300">Local Regulations</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Any local building codes or regulations to consider"
+                                className="resize-none"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={control}
+                      name="additionalNotes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-slate-700 dark:text-slate-300">Additional Notes</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Any other requirements, preferences, or important information"
+                              className="resize-none"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </m.div>
+              )}
+
+              {/* Show current selections if fields are filled */}
+              {!showOptionalFields && (formValues.structureType || formValues.specialFeatures?.length || formValues.sustainabilityFeatures?.length || formValues.siteConstraints || formValues.additionalNotes) && (
+                <div className="mt-4 space-y-3">
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Current Selections:</p>
+                  
+                  {/* Material Preferences */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {formValues.structureType && (
+                      <InfoItem label="Structure Type" value={capitalize(formValues.structureType)} />
+                    )}
+                    {formValues.foundationType && (
+                      <InfoItem label="Foundation Type" value={capitalize(formValues.foundationType)} />
+                    )}
+                    {formValues.roofType && (
+                      <InfoItem label="Roof Type" value={capitalize(formValues.roofType)} />
+                    )}
+                    {formValues.wallMaterial && (
+                      <InfoItem label="Wall Material" value={capitalize(formValues.wallMaterial)} />
+                    )}
+                    {formValues.floorMaterial && (
+                      <InfoItem label="Floor Material" value={capitalize(formValues.floorMaterial)} />
+                    )}
+                  </div>
+                  
+                  {/* Special Features */}
+                  {(formValues.specialFeatures && formValues.specialFeatures.length > 0) && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-slate-600 dark:text-slate-400 font-opensans">
+                        Special Features
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {formValues.specialFeatures.map((feature, index) => (
+                          <Badge key={index} variant="secondary" className="bg-[#2B6CB0]/10 text-[#2B6CB0] border-[#2B6CB0]/20">
+                            {capitalize(feature)}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Sustainability Features */}
+                  {(formValues.sustainabilityFeatures && formValues.sustainabilityFeatures.length > 0) && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-slate-600 dark:text-slate-400 font-opensans">
+                        Sustainability Features
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {formValues.sustainabilityFeatures.map((feature, index) => (
+                          <Badge key={index} variant="secondary" className="bg-green-100 text-green-800 border-green-200">
+                            {capitalize(feature)}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </Card>
+        </m.div>
+
         {/* Submission Information */}
         <m.div
           initial={{ opacity: 0, y: 20 }}
@@ -468,3 +948,7 @@ export function ReviewSubmitForm() {
     </LazyMotion>
   );
 }
+
+// Export for both named and default
+export { ReviewSubmitForm };
+export default ReviewSubmitForm;

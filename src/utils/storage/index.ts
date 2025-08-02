@@ -37,6 +37,6 @@ export {
 } from './constants';
 
 // Enhanced hooks
-export { useImageStorageV2 } from '../../hooks/useImageStorageV2';
 
-// Legacy hook removed - use useImageStorageV2 instead
+
+// Legacy hooks removed - use SimplifiedUpload and useSimplifiedUpload instead

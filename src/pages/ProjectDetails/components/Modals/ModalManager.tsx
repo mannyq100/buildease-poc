@@ -14,26 +14,35 @@ import {
   TeamMemberForm
 } from '../LazyComponents';
 import type { ModalState, ProjectUpdateFormData } from '../../types';
+import type { Project } from '@/types/database';
+
+// Helper interfaces for better type safety
+interface EditingItem {
+  type: 'budget' | 'phase' | 'team';
+  data: Record<string, unknown>;
+}
+
+interface TaskModal {
+  isOpen: boolean;
+  phaseId?: string;
+  task?: Record<string, unknown> | null;
+}
 
 interface ModalManagerProps {
   modals: ModalState;
   projectId: string;
-  projectData?: any;
-  project?: any;
+  projectData?: Record<string, unknown>;
+  project?: Project;
   onCloseModals: () => void;
   onCloseUpdateModal: () => void;
-  onBudgetSubmit: (data: any, mode: string, editingItem: any) => void;
-  onPhaseSubmit: (data: any, mode: string, editingItem: any, selectedTaskIds?: string[]) => void;
-  onTeamMemberSubmit: (data: any, mode: string, editingItem: any) => void;
+  onBudgetSubmit: (data: Record<string, unknown>, mode: string, editingItem: EditingItem | null) => void;
+  onPhaseSubmit: (data: Record<string, unknown>, mode: string, editingItem: EditingItem | null, selectedTaskIds?: string[]) => void;
+  onTeamMemberSubmit: (data: Record<string, unknown>, mode: string, editingItem: EditingItem | null) => void;
   onUpdateProject: (data: ProjectUpdateFormData) => void;
-  taskModal: {
-    isOpen: boolean;
-    phaseId?: string;
-    task?: any;
-  };
+  taskModal: TaskModal;
   onCloseTaskModal: () => void;
-  onCreateTask: (data: any) => void;
-  onUpdateTask: (data: any) => void;
+  onCreateTask: (data: Record<string, unknown>) => void;
+  onUpdateTask: (data: Record<string, unknown>) => void;
   isCreatingTask: boolean;
   isUpdatingTask: boolean;
   isLoadingBudget: boolean;

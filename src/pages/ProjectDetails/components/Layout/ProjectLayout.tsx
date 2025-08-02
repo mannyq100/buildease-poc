@@ -19,14 +19,29 @@ import { ProjectStatusHero, ProjectQuickActions } from '../ProjectHeader';
 import { ModalManager } from '../Modals/ModalManager';
 import { useProjectDetailsState } from '../../hooks/useProjectDetailsState';
 import type { TaskItem, ProjectUpdateFormData } from '../../types';
+import type { Project, BudgetExpense, TeamMember, ProjectPhase } from '@/types/database';
+import type { UseMutationResult } from '@tanstack/react-query';
+
+// Helper interfaces for type safety
+interface EditingItem {
+  type: 'budget' | 'phase' | 'team';
+  data: Record<string, unknown>;
+}
+
+interface TaskModal {
+  isOpen: boolean;
+  mode: 'create' | 'edit';
+  task?: Record<string, unknown>;
+  phaseId?: string;
+}
 
 interface ProjectLayoutProps {
   // Data
-  project: any;
-  projectData: any;
-  budgetExpenses: any[];
-  teamMembers: any[];
-  phases: any[];
+  project: Project;
+  projectData: Record<string, unknown>;
+  budgetExpenses: BudgetExpense[];
+  teamMembers: TeamMember[];
+  phases: ProjectPhase[];
   todaysFocus: TaskItem[];
   
   // State
@@ -52,9 +67,9 @@ interface ProjectLayoutProps {
   
   // CRUD operations (nested object)
   crudOperations: {
-    handleBudgetSubmit: (data: any, modalMode: 'create' | 'edit', editingItem?: any) => Promise<void>;
-    handlePhaseSubmit: (data: any, modalMode: 'create' | 'edit', editingItem?: any, selectedTaskIds?: string[]) => Promise<void>;
-    handleTeamMemberSubmit: (data: any, modalMode: 'create' | 'edit', editingItem?: any) => Promise<void>;
+    handleBudgetSubmit: (data: Record<string, unknown>, modalMode: 'create' | 'edit', editingItem?: EditingItem) => Promise<void>;
+    handlePhaseSubmit: (data: Record<string, unknown>, modalMode: 'create' | 'edit', editingItem?: EditingItem, selectedTaskIds?: string[]) => Promise<void>;
+    handleTeamMemberSubmit: (data: Record<string, unknown>, modalMode: 'create' | 'edit', editingItem?: EditingItem) => Promise<void>;
     handleDelete: (type: 'budget' | 'phase' | 'team', id: string) => Promise<void>;
     createBudgetExpense: { isPending: boolean };
     updateBudgetExpense: { isPending: boolean };
@@ -66,17 +81,12 @@ interface ProjectLayoutProps {
   
   // Task operations (nested object)
   taskOperations: {
-    taskModal: {
-      isOpen: boolean;
-      mode: 'create' | 'edit';
-      task?: any;
-      phaseId?: string;
-    };
+    taskModal: TaskModal;
     openCreateTaskModal: (phaseId: string) => void;
-    openEditTaskModal: (task: any, phaseId: string) => void;
+    openEditTaskModal: (task: Record<string, unknown>, phaseId: string) => void;
     closeTaskModal: () => void;
-    handleCreateTask: (taskData: any, phaseId: string, projectId: string) => Promise<void>;
-    handleUpdateTask: (taskId: string, taskData: any) => Promise<void>;
+    handleCreateTask: (taskData: Record<string, unknown>, phaseId: string, projectId: string) => Promise<void>;
+    handleUpdateTask: (taskId: string, taskData: Record<string, unknown>) => Promise<void>;
     handleDeleteTask: (taskId: string) => Promise<void>;
     isCreating: boolean;
     isUpdating: boolean;
@@ -84,7 +94,7 @@ interface ProjectLayoutProps {
   };
   
   // Project update
-  updateProject: any;
+  updateProject: UseMutationResult<unknown, Error, Record<string, unknown>, unknown>;
   handleUpdateProject: (data: ProjectUpdateFormData) => void;
   handleCloseUpdateModal: () => void;
   projectId: string;
@@ -244,14 +254,18 @@ export function ProjectLayout({
             <ProjectDocumentsSection 
               project={project}
               uploadModalState={uploadModalState}
-              onUpdateProject={(updates) => {
+              onUpdateProject={async (updates) => {
                 // Update project using mutation
-                updateProject.mutateAsync({
-                  id: project.id,
-                  ...updates
-                }).catch(error => {
-                  console.error('Failed to update project images:', error);
-                });
+                try {
+                  await updateProject.mutateAsync({
+                    id: project.id,
+                    ...updates
+                  });
+                  console.log('✅ Project updated successfully:', updates);
+                } catch (error) {
+                  console.error('❌ Failed to update project:', error);
+                  throw error; // Re-throw so calling code can handle the error
+                }
               }}
               onSetImageUploadState={(key: string, value: unknown) => {
                 // Handle image upload state changes

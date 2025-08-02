@@ -1,824 +1,423 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+/**
+ * ProjectDocumentsSection - Refactored media management component
+ * Implements clean separation of concerns and performance optimizations
+ */
+
+import React, { useCallback, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useProjectDocuments, useDeleteDocument } from '@/hooks/queries/useDocuments';
+import { useProjectDocuments } from '@/hooks/queries/useDocuments';
 import { useProjectProgressImages } from '@/hooks/useProjectStorageImages';
+import { supabase } from '@/lib/supabase';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
-import { Plus, X, ImageIcon, FileText, Search, Filter, Download, MoreVertical, User, Star, Trash2, Edit } from 'lucide-react';
 
-import { UploadResult } from '@/types/upload';
 import { Project } from '@/types/project';
-import { SimplifiedUpload } from '@/components/upload/SimplifiedUpload';
-import { getDocumentTypeDisplayName } from '@/services/documentService';
+import { MediaFilters, MediaItem } from './types';
+import { UploadResult } from '@/types/upload';
+import { isDocumentType } from './utils/mediaUtils';
 
-interface MediaItem {
-  id: string;
-  name: string;
-  url: string;
-  type: 'image' | 'document' | 'progress-image';
-  category: string;
-  size?: number;
-  createdAt?: string;
-  uploadedAt?: Date;
-}
+// Optimized hooks
+import { useAllMediaItems } from './hooks/useMediaData';
+import { useDownloadManager } from './hooks/useMemoryManagement';
+import { useUnifiedMediaState } from './hooks/useUnifiedMediaState';
+import { useOptimizedFiltering } from './hooks/useOptimizedFiltering';
+
+// Business logic services
+import { useMediaPermissions } from './services/permissionService';
+
+
+// Extracted components
+import { MediaHeader } from './components/MediaHeader';
+import { MediaGrid } from './components/MediaGrid';
+import { UploadOptions } from './components/UploadOptions';
+import { MediaModals } from './components/MediaModals';
 
 interface ProjectDocumentsSectionProps {
   project: Project;
-  onUpdateProject?: (updates: Partial<Project>) => void;
-  // Upload modal state management
-  showInspirationUpload?: boolean;
-  showProgressUpload?: boolean;
-  showDocumentUpload?: boolean;
-  onSetImageUploadState?: (state: Record<string, unknown>) => void;
-  previewImage?: string | null;
-  setPreviewImage?: (image: string | null) => void;
-  // Legacy prop support
-  uploadModalState?: {
-    showImageUpload?: boolean;
-    showDocumentUpload?: boolean;
-    previewImage?: { url: string; caption: string; index: number } | null;
-  };
+  onUpdateProject: (updates: Partial<Project>) => void;
+  uploadModalState?: Record<string, unknown>; // Legacy prop from ProjectLayout
+  onSetImageUploadState?: (key: string, value: unknown) => void; // Legacy prop from ProjectLayout
+  className?: string;
 }
 
 export function ProjectDocumentsSection({
   project,
   onUpdateProject,
-  showInspirationUpload = false,
-  showProgressUpload = false,
-  showDocumentUpload = false,
-  onSetImageUploadState,
-  previewImage: externalPreviewImage,
-  setPreviewImage: externalSetPreviewImage,
-  uploadModalState
+  uploadModalState: _uploadModalState, // Legacy prop - not used in refactored version
+  onSetImageUploadState: _onSetImageUploadState, // Legacy prop - not used in refactored version
+  className
 }: ProjectDocumentsSectionProps) {
-  // Local state
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'image' | 'document'>('all');
-  const [filterCategory, setFilterCategory] = useState<string>('all');
-
-  // Local upload modal state
-  const [localShowInspirationUpload, setLocalShowInspirationUpload] = useState(false);
-  const [localShowProgressUpload, setLocalShowProgressUpload] = useState(false);
-  const [localShowDocumentUpload, setLocalShowDocumentUpload] = useState(false);
-  const [showUploadOptions, setShowUploadOptions] = useState(false);
-  
-  // Internal preview state when not provided by parent
-  const [internalPreviewImage, setInternalPreviewImage] = useState<string | null>(null);
-  
-  // Use external preview state if provided, otherwise use internal
-  const previewImage = externalPreviewImage ?? internalPreviewImage;
-  const setPreviewImage = externalSetPreviewImage ?? setInternalPreviewImage;
-  
-  // Use external modal state if provided, otherwise use local state
-  const activeShowInspirationUpload = showInspirationUpload || localShowInspirationUpload;
-  const activeShowProgressUpload = showProgressUpload || localShowProgressUpload;
-  const activeShowDocumentUpload = showDocumentUpload || localShowDocumentUpload;
-
   const { toast } = useToast();
   const { user } = useSupabaseAuth();
-  const deleteDocumentMutation = useDeleteDocument();
+  
+  // Unified state management
+  const { state, actions } = useUnifiedMediaState(false);
+  
+  // Local state to track deleted items for immediate UI updates
+  const [deletedItems, setDeletedItems] = useState<Set<string>>(new Set());
 
-  // Fetch documents and progress images first
-  const { data: documents = [] } = useProjectDocuments(project.id);
-  const {
-    images: progressImages,
-    refetch: refetchProgressImages
-  } = useProjectProgressImages(project.id);
+  // Data fetching
+  const { data: documents = [], refetch: refetchDocuments } = useProjectDocuments(project.id);
+  const { images: progressImages = [], refetch: refetchProgressImages } = useProjectProgressImages(project.id);
 
-  // Permission checking functions (now that documents is available)
-  const canDeleteItem = useCallback((item: MediaItem) => {
-    if (!user) return false;
-    
-    // Project owner can delete everything
-    if (project.owner_id === user.id) return true;
-    
-    // For documents, check if current user is the uploader
-    if (item.type === 'document') {
-      const document = documents.find(doc => doc.id === item.id);
-      return document?.created_by === user.id;
-    }
-    
-    // For images, project members can delete (basic permission for now)
-    // In a more sophisticated system, you might check actual project membership
-    return true; // Allow deletion for now, can be restricted based on business rules
-  }, [user, project.owner_id, documents]);
+  // Optimized data processing with unified state
+  const allMediaItems = useAllMediaItems({ project, documents, progressImages });
+  // Filter out deleted items for immediate UI feedback
+  const itemsWithoutDeleted = allMediaItems.filter(item => !deletedItems.has(item.id));
+  const filteredItems = useOptimizedFiltering(itemsWithoutDeleted, state.search, state.filters);
+  
+  // Memory management
+  const { downloadFile } = useDownloadManager();
 
-  const canEditItem = useCallback((item: MediaItem) => {
-    if (!user) return false;
-    
-    // Project owner can edit everything
-    if (project.owner_id === user.id) return true;
-    
-    // For documents, check if current user is the uploader
-    if (item.type === 'document') {
-      const document = documents.find(doc => doc.id === item.id);
-      return document?.created_by === user.id;
-    }
-    
-    return false; // Only documents are editable for now
-  }, [user, project.owner_id, documents]);
+  // Business logic services
+  const { canDelete, canEdit } = useMediaPermissions(user, project);
 
-  // Utility function to format file size
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  // Action handlers using unified state management
+  const handleFilterChange = (newFilters: Partial<MediaFilters>) => {
+    actions.updateFilters(newFilters);
   };
 
-  // Delete document function
-  const handleDeleteDocument = useCallback(async (documentId: string, documentName: string) => {
-    try {
-      await deleteDocumentMutation.mutateAsync(documentId);
-      toast({
-        title: "Document Deleted",
-        description: `${documentName} has been deleted successfully.`
-      });
-    } catch (error) {
-      toast({
-        title: "Delete Failed",
-        description: "Unable to delete the document. Please try again.",
-        variant: "destructive"
-      });
+  const handleItemClick = useCallback((item: MediaItem, e: React.MouseEvent) => {
+    e.preventDefault();
+    if (item.type === 'image' || item.type === 'progress-image') {
+      actions.openPreviewModal(item.url);
     }
-  }, [deleteDocumentMutation, toast]);
+  }, [actions]);
 
-  // Delete image function
-  const handleDeleteImage = useCallback(async (item: MediaItem) => {
+  const handleDelete = useCallback(async (item: MediaItem) => {
+    console.log('🗑️ Deleting item:', item);
+    
     try {
-      if (item.category === 'profile') {
-        // Remove profile image
-        onUpdateProject?.({ profile_image: null });
-        toast({
-          title: "Profile Image Removed",
-          description: "Project profile image has been removed."
+      if (item.category === 'progress') {
+        // Delete progress image from Supabase storage
+        console.log('💾 Deleting progress image from storage...');
+        
+        const fileName = item.name;
+        const { error: deleteError } = await supabase.storage
+          .from('progress-images')
+          .remove([`${project.id}/${fileName}`]);
+        
+        if (deleteError) {
+          throw new Error(`Failed to delete progress image: ${deleteError.message}`);
+        }
+        
+        // Also update database to remove from progress_images array
+        const updatedProgressImages = (project.progress_images || [])
+          .filter(url => !url.includes(fileName));
+        
+        await onUpdateProject({
+          id: project.id,
+          progress_images: updatedProgressImages
         });
+        
+        // Refetch progress images to update UI immediately
+        await refetchProgressImages();
+        
+        toast({
+          title: "Image Deleted",
+          description: "Progress image deleted successfully.",
+        });
+        
       } else if (item.category === 'inspiration') {
-        // Remove from inspiration images array
-        const updatedImages = (project.inspiration_images || []).filter(url => url !== item.url);
-        onUpdateProject?.({ inspiration_images: updatedImages });
-        toast({
-          title: "Inspiration Image Deleted",
-          description: "Image has been removed from inspiration gallery."
+        // Delete inspiration image from project array and storage
+        console.log('💾 Deleting inspiration image from project and storage...');
+        
+        // Delete from storage first
+        const fileName = item.name;
+        const { error: storageError } = await supabase.storage
+          .from('project-inspiration')
+          .remove([`${project.id}/${fileName}`]);
+        
+        if (storageError) {
+          console.warn('⚠️ Storage deletion failed:', storageError.message);
+          // Continue with database deletion even if storage fails
+        }
+        
+        // Update project database
+        const updatedInspirationImages = (project.inspiration_images || [])
+          .filter(url => url !== item.url);
+        
+        await onUpdateProject({
+          id: project.id,
+          inspiration_images: updatedInspirationImages
         });
-      } else if (item.category === 'progress') {
-        // Remove from progress images array
-        const updatedImages = (project.progress_images || []).filter(url => url !== item.url);
-        onUpdateProject?.({ progress_images: updatedImages });
+        
+        // Immediately remove from UI by adding to deleted items set
+        setDeletedItems(prev => new Set(prev).add(item.id));
+        
         toast({
-          title: "Progress Image Deleted",
-          description: "Image has been removed from progress gallery."
+          title: "Image Deleted",
+          description: "Inspiration image deleted successfully.",
+        });
+        
+      } else if (item.category === 'profile') {
+        // Delete profile image from project and storage
+        console.log('💾 Deleting profile image from project and storage...');
+        
+        // Delete from storage first
+        const fileName = item.name;
+        const { error: storageError } = await supabase.storage
+          .from('profiles')
+          .remove([`${project.id}/${fileName}`]);
+        
+        if (storageError) {
+          console.warn('⚠️ Storage deletion failed:', storageError.message);
+          // Continue with database deletion even if storage fails
+        }
+        
+        // Update project database
+        await onUpdateProject({
+          id: project.id,
+          profile_image: undefined
+        });
+        
+        // Immediately remove from UI by adding to deleted items set
+        setDeletedItems(prev => new Set(prev).add(item.id));
+        
+        toast({
+          title: "Image Deleted",
+          description: "Profile image deleted successfully.",
+        });
+        
+      } else if (isDocumentType(item.category as string)) {
+        // Validate that this is a document category
+        
+        // Delete document from both storage and database
+        console.log('💾 Deleting document from storage and database...');
+        
+        // First, delete from Supabase storage
+        const fileName = item.name;
+        const { error: storageError } = await supabase.storage
+          .from('project-documents')
+          .remove([`${project.id}/${fileName}`]);
+        
+        if (storageError) {
+          console.warn('⚠️ Storage deletion failed:', storageError.message);
+          // Continue with database deletion even if storage fails
+        }
+        
+        // Then, delete from database using document ID
+        if (item.id) {
+          const { error: dbError } = await supabase
+            .from('be_document')
+            .delete()
+            .eq('id', item.id);
+          
+          if (dbError) {
+            throw new Error(`Failed to delete document from database: ${dbError.message}`);
+          }
+        }
+        
+        // Refetch documents to update UI immediately
+        await refetchDocuments();
+        
+        toast({
+          title: "Document Deleted",
+          description: "Document deleted successfully from storage and database.",
+        });
+        
+      } else {
+        // Handle unknown item types
+        console.log('💾 Unknown item type for deletion:', item.category);
+        toast({
+          title: "Delete Error",
+          description: "Cannot delete this type of item.",
+          variant: "destructive",
         });
       }
+      
+      console.log('✅ Delete operation completed successfully');
+      
     } catch (error) {
+      console.error('❌ Failed to delete item:', error);
       toast({
         title: "Delete Failed",
-        description: "Unable to delete the image. Please try again.",
-        variant: "destructive"
+        description: error instanceof Error ? error.message : "Failed to delete item. Please try again.",
+        variant: "destructive",
       });
     }
-  }, [project.inspiration_images, project.progress_images, onUpdateProject, toast]);
+  }, [toast, project.id, project.inspiration_images, project.progress_images, refetchProgressImages, refetchDocuments, onUpdateProject, setDeletedItems]);
 
-  // Download function for documents
-  const handleDownloadDocument = useCallback(async (item: MediaItem) => {
+  const handleSetAsProfile = useCallback((imageUrl: string) => {
+    // TODO: Implement set as profile functionality
+    console.log('Set as profile:', imageUrl);
+    toast({
+      title: "Feature Coming Soon",
+      description: "Set as profile functionality will be available soon.",
+    });
+  }, [toast]);
+
+  const handleDownload = useCallback(async (item: MediaItem) => {
     try {
-      const response = await fetch(item.url);
-      const blob = await response.blob();
-      
-      // Create download link
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = item.name;
-      
-      // Trigger download
-      document.body.appendChild(link);
-      link.click();
-      
-      // Cleanup
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(downloadUrl);
-      
+      await downloadFile(item.url, item.name);
       toast({
         title: "Download Started",
-        description: `Downloading ${item.name}...`
+        description: `Downloading ${item.name}...`,
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Download Failed",
-        description: "Unable to download the document. Please try again.",
-        variant: "destructive"
+        description: "Failed to download the file. Please try again.",
+        variant: "destructive",
       });
     }
-  }, [toast]);
+  }, [downloadFile, toast]);
 
-  // Handle media item click
-  const handleMediaItemClick = useCallback((item: MediaItem, e: React.MouseEvent) => {
-    if (item.type === 'document') {
-      // For documents, don't auto-download on click - let users use dropdown menu
-      e.preventDefault();
-      return;
-    } else {
-      setPreviewImage(item.url);
+  // Upload handlers using unified state management
+  const handleInspirationUpload = useCallback(async (results: UploadResult[]) => {
+    console.log('🔄 Inspiration upload results:', results);
+    console.log('📊 Current project inspiration_images:', project.inspiration_images);
+    
+    try {
+      // Update project state with new inspiration images
+      const newInspirationImages = results.map(result => result.url);
+      const updatedInspirationImages = [...(project.inspiration_images || []), ...newInspirationImages];
+      
+      console.log('💾 Updating project with inspiration_images:', updatedInspirationImages);
+      
+      // Call the database update
+      await onUpdateProject({
+        id: project.id,
+        inspiration_images: updatedInspirationImages
+      });
+      
+      console.log('✅ Database update completed successfully');
+      
+      actions.closeUploadModal();
+      toast({
+        title: "Upload Complete",
+        description: `${results.length} inspiration image(s) uploaded and saved to database.`,
+      });
+    } catch (error) {
+      console.error('❌ Failed to update database:', error);
+      toast({
+        title: "Upload Error",
+        description: "Images uploaded but failed to save to database. Please try again.",
+        variant: "destructive",
+      });
     }
-  }, [setPreviewImage]);
+  }, [actions, toast, onUpdateProject, project.inspiration_images, project.id]);
 
-  // Handle setting an image as profile image
-  const handleSetProfileImage = useCallback((imageUrl: string) => {
-    onUpdateProject?.({ profile_image: imageUrl });
+  const handleProgressUpload = useCallback(async (results: UploadResult[]) => {
+    console.log('🔄 Progress upload results:', results);
+    console.log('📊 Current project progress_images:', project.progress_images);
+    
+    try {
+      // Progress images need to be stored in BOTH Supabase storage AND database
+      // This ensures consistency with inspiration images and proper data persistence
+      
+      console.log('💾 Updating project with new progress images...');
+      
+      // Update project state with new progress images (database persistence)
+      const newProgressImages = results.map(result => result.url);
+      const updatedProgressImages = [...(project.progress_images || []), ...newProgressImages];
+      
+      await onUpdateProject({
+        id: project.id,
+        progress_images: updatedProgressImages
+      });
+      
+      console.log('✅ Database update completed successfully');
+      
+      // Also trigger storage refetch for consistency
+      await refetchProgressImages();
+      
+      console.log('✅ Storage refetch completed successfully');
+      
+      actions.closeUploadModal();
+      toast({
+        title: "Upload Complete",
+        description: `${results.length} progress image(s) uploaded and saved to database.`,
+      });
+    } catch (error) {
+      console.error('❌ Failed to update progress images:', error);
+      toast({
+        title: "Upload Error",
+        description: "Images uploaded but failed to save to database. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [actions, toast, refetchProgressImages, onUpdateProject, project.progress_images, project.id]);
+
+  const handleDocumentUpload = useCallback((results: UploadResult[]) => {
+    console.log('Document upload results:', results);
+    
+    // Documents are stored in the database via useProjectDocuments hook
+    // The upload process should have already created database entries
+    // No need to update project state as documents are fetched separately
+    
+    actions.closeUploadModal();
     toast({
-      title: "Profile Image Updated",
-      description: "The project profile image has been updated successfully."
+      title: "Upload Complete",
+      description: `${results.length} document(s) uploaded successfully.`,
     });
-  }, [onUpdateProject, toast]);
+    
+    // The useProjectDocuments hook will automatically refetch and update the UI
+  }, [actions, toast]);
 
+  // Service-based permissions (centralized business logic)
+  const permissions = {
+    canDelete,
+    canEdit,
+    canSetAsProfile: (item: MediaItem) => ['image', 'progress-image'].includes(item.type)
+  };
 
-  // Auto-save handlers for image uploads
-  const handleInspirationUploadComplete = useCallback((results: UploadResult[]) => {
-    const urls = results.map(r => r.url);
-    // Auto-save inspiration images to project table in database
-    onUpdateProject?.({ inspiration_images: [...(project.inspiration_images || []), ...urls] });
-    toast({ 
-      title: "Inspiration Images Uploaded", 
-      description: `${results.length} inspiration image(s) uploaded successfully.` 
-    });
-  }, [onUpdateProject, project.inspiration_images, toast]);
-
-  const handleProgressUploadComplete = useCallback((results: UploadResult[]) => {
-    const urls = results.map(r => r.url);
-    // Update progress images in project table database
-    onUpdateProject?.({ progress_images: [...(project.progress_images || []), ...urls] });
-    // Also refresh the storage query to display new images immediately
-    refetchProgressImages();
-    toast({ 
-      title: "Progress Images Uploaded", 
-      description: `${results.length} progress image(s) uploaded successfully.` 
-    });
-  }, [onUpdateProject, project.progress_images, refetchProgressImages, toast]);
-
-  const handleDocumentUploadComplete = useCallback((results: UploadResult[]) => {
-    toast({
-      title: "Documents Uploaded",
-      description: `${results.length} document(s) uploaded successfully.`
-    });
-  }, [toast]);
-
-  // Combine all media items for unified display
-  const allMediaItems = useMemo((): MediaItem[] => {
-    const items: MediaItem[] = [];
-
-    // Add profile image
-    if (project.profile_image) {
-      items.push({
-        id: `profile-${project.profile_image}`,
-        name: 'Profile Image',
-        url: project.profile_image,
-        type: 'image',
-        category: 'profile',
-        createdAt: project.created_at || new Date().toISOString()
-      });
-    }
-
-    // Add inspiration images
-    project.inspiration_images?.forEach((url, index) => {
-      items.push({
-        id: `inspiration-${index}`,
-        name: `Inspiration ${index + 1}`,
-        url,
-        type: 'image',
-        category: 'inspiration',
-        createdAt: project.created_at || new Date().toISOString()
-      });
-    });
-
-    // Add progress images from database
-    (project.progress_images || []).forEach((url, index) => {
-      items.push({
-        id: `progress-db-${index}`,
-        name: `Progress ${index + 1}`,
-        url,
-        type: 'image',
-        category: 'progress',
-        createdAt: project.created_at || new Date().toISOString()
-      });
-    });
-
-    // Add additional progress images from storage (if any not in database)
-    progressImages.forEach((storageImage) => {
-      // Check if this image is already included from database
-      const alreadyIncluded = (project.progress_images || []).some(dbUrl => dbUrl === storageImage.url);
-      if (!alreadyIncluded) {
-        items.push({
-          id: storageImage.id,
-          url: storageImage.url,
-          type: 'progress-image',
-          name: storageImage.name,
-          uploadedAt: new Date(storageImage.createdAt),
-          category: 'progress'
-        });
-      }
-    });
-
-    // Add documents
-    documents.forEach((doc) => {
-      items.push({
-        id: doc.id,
-        name: doc.name,
-        url: doc.file_path,
-        type: 'document',
-        category: doc.document_type ? getDocumentTypeDisplayName(doc.document_type as any) : 'Other',
-        size: doc.file_size || undefined,
-        createdAt: doc.created_at
-      });
-    });
-
-    return items;
-  }, [project, documents, progressImages]);
-
-  // Filter media items based on search and filters
-  const filteredMediaItems = useMemo(() => {
-    return allMediaItems.filter(item => {
-      // Search filter
-      if (searchTerm && !item.name.toLowerCase().includes(searchTerm.toLowerCase())) {
-        return false;
-      }
-
-      // Type filter
-      if (filterType !== 'all') {
-        if (filterType === 'image' && !['image', 'progress-image'].includes(item.type)) {
-          return false;
-        }
-        if (filterType === 'document' && item.type !== 'document') {
-          return false;
-        }
-      }
-
-      // Category filter (case-insensitive)
-      if (filterCategory !== 'all' && item.category.toLowerCase() !== filterCategory.toLowerCase()) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [allMediaItems, searchTerm, filterType, filterCategory]);
-
-  // Show upload options by default when there's no media
-  useEffect(() => {
-    const hasAnyMedia = allMediaItems.length > 0;
-    if (!hasAnyMedia && !showUploadOptions) {
-      setShowUploadOptions(true);
-    }
-  }, [allMediaItems.length, showUploadOptions]);
+  if (!user) {
+    return (
+      <Card className={className}>
+        <CardContent className="p-6 text-center">
+          <p className="text-slate-600">Please log in to view project media.</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <Card className="w-full">
-      <CardContent className="p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold">Project Media</h3>
-            <p className="text-sm text-muted-foreground">
-              {filteredMediaItems.length} item{filteredMediaItems.length !== 1 ? 's' : ''}
-            </p>
-          </div>
-          
-          {allMediaItems.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowUploadOptions(!showUploadOptions)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Media
-            </Button>
-          )}
+    <Card className={className}>
+      <CardContent className="p-6">
+        <div className="space-y-6">
+          {/* Media Header with Search and Filters */}
+          <MediaHeader
+            search={state.search}
+            filters={state.filters}
+            onSearchChange={actions.setSearch}
+            onFilterChange={handleFilterChange}
+            onAddMedia={actions.toggleUploadOptions}
+            itemCount={allMediaItems.length}
+            filteredCount={filteredItems.length}
+          />
+
+          {/* Upload Options */}
+          <UploadOptions
+            showOptions={state.ui.showUploadOptions}
+            onToggleOptions={actions.toggleUploadOptions}
+            onOpenInspiration={() => actions.openUploadModal('inspiration')}
+            onOpenProgress={() => actions.openUploadModal('progress')}
+            onOpenDocuments={() => actions.openUploadModal('documents')}
+          />
+
+          {/* Media Grid */}
+          <MediaGrid
+            items={filteredItems}
+            onItemClick={handleItemClick}
+            onDelete={handleDelete}
+            onSetAsProfile={handleSetAsProfile}
+            onDownload={handleDownload}
+            permissions={permissions}
+          />
         </div>
 
-        {/* Search and Filter */}
-        {allMediaItems.length > 0 && (
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search media..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            <div className="flex gap-2">
-              <Select value={filterType} onValueChange={(value: 'all' | 'image' | 'document') => setFilterType(value)}>
-                <SelectTrigger className="w-32">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="image">Images</SelectItem>
-                  <SelectItem value="document">Documents</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Select value={filterCategory} onValueChange={setFilterCategory}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {/* Image Categories */}
-                  <SelectItem value="Inspiration">Inspiration</SelectItem>
-                  <SelectItem value="Progress">Progress</SelectItem>
-                  <SelectItem value="Before">Before</SelectItem>
-                  <SelectItem value="After">After</SelectItem>
-                  {/* Document Categories */}
-                  <SelectItem value="Permit">Permit</SelectItem>
-                  <SelectItem value="Drawing">Drawing</SelectItem>
-                  <SelectItem value="Contract">Contract</SelectItem>
-                  <SelectItem value="Invoice">Invoice</SelectItem>
-                  <SelectItem value="Receipt">Receipt</SelectItem>
-                  <SelectItem value="Report">Report</SelectItem>
-                  <SelectItem value="Specification">Specification</SelectItem>
-                  <SelectItem value="Schedule">Schedule</SelectItem>
-                  <SelectItem value="Photo">Photo</SelectItem>
-                  <SelectItem value="Video">Video</SelectItem>
-                  <SelectItem value="Manual">Manual</SelectItem>
-                  <SelectItem value="Certificate">Certificate</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        )}
-
-        {/* Upload Options */}
-        {(showUploadOptions || allMediaItems.length === 0) && (
-          <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
-            <h4 className="font-medium">Add Media</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Button
-                variant="outline"
-                className="h-auto p-4 flex flex-col items-center gap-2"
-                onClick={() => {
-                  setLocalShowInspirationUpload(true);
-                  onSetImageUploadState?.({ showInspirationUpload: true });
-                }}
-              >
-                <ImageIcon className="h-6 w-6" />
-                <span className="text-sm">Inspiration Images</span>
-              </Button>
-              
-              <Button
-                variant="outline"
-                className="h-auto p-4 flex flex-col items-center gap-2"
-                onClick={() => {
-                  setLocalShowProgressUpload(true);
-                  onSetImageUploadState?.({ showProgressUpload: true });
-                }}
-              >
-                <ImageIcon className="h-6 w-6" />
-                <span className="text-sm">Progress Images</span>
-              </Button>
-              
-              <Button
-                variant="outline"
-                className="h-auto p-4 flex flex-col items-center gap-2"
-                onClick={() => {
-                  setLocalShowDocumentUpload(true);
-                  onSetImageUploadState?.({ showDocumentUpload: true });
-                }}
-              >
-                <FileText className="h-6 w-6" />
-                <span className="text-sm">Upload Documents</span>
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Media Grid */}
-        {filteredMediaItems.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filteredMediaItems.map((item) => (
-              <div
-                key={item.id}
-                className={`group relative aspect-square bg-muted rounded-lg overflow-hidden transition-all ${
-                  item.type === 'document' 
-                    ? 'hover:ring-2 hover:ring-gray-300' 
-                    : 'cursor-pointer hover:ring-2 hover:ring-primary'
-                }`}
-                onClick={(e) => handleMediaItemClick(item, e)}
-                title={item.type === 'document' ? `${item.name} - Use menu to download` : `Click to preview ${item.name}`}
-              >
-                {item.type === 'document' ? (
-                  <div className="flex flex-col items-center justify-center h-full p-4">
-                    <div className="relative">
-                      <FileText className="h-8 w-8 text-muted-foreground mb-2" />
-                      <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <MoreVertical className="h-3 w-3 text-gray-600 bg-white rounded-full p-0.5" />
-                      </div>
-                    </div>
-                    <span className="text-xs text-center font-medium truncate w-full">
-                      {item.name}
-                    </span>
-                    {item.size && (
-                      <span className="text-xs text-muted-foreground mt-1">
-                        {formatFileSize(item.size)}
-                      </span>
-                    )}
-                    <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full shadow-sm">
-                        Use menu ⋮
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <img
-                    src={item.url}
-                    alt={item.name}
-                    className="w-full h-full object-cover"
-                  />
-                )}
-                
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                
-                <Badge
-                  variant="secondary"
-                  className="absolute top-2 left-2 text-xs"
-                >
-                  {item.category}
-                </Badge>
-
-                {/* Profile Image Indicator */}
-                {project.profile_image === item.url && (
-                  <div className="absolute top-2 right-2">
-                    <Badge variant="default" className="text-xs bg-blue-600">
-                      <Star className="h-3 w-3 mr-1" />
-                      Profile
-                    </Badge>
-                  </div>
-                )}
-
-                {/* Image Actions */}
-                {item.type !== 'document' && (
-                  <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="secondary" size="sm" className="h-8 w-8 p-0 bg-black/50 hover:bg-black/70 text-white border-0">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSetProfileImage(item.url);
-                          }}
-                          className="cursor-pointer"
-                        >
-                          <User className="h-4 w-4 mr-2" />
-                          Set as Profile Image
-                        </DropdownMenuItem>
-                        
-                        {canDeleteItem(item) && (
-                          <>
-                            <DropdownMenuSeparator />
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <DropdownMenuItem 
-                                  onSelect={(e) => e.preventDefault()}
-                                  className="cursor-pointer text-destructive focus:text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete Image
-                                </DropdownMenuItem>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Image</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to delete "{item.name}"? This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => handleDeleteImage(item)}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  >
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                )}
-                
-                {/* Document Actions */}
-                {item.type === 'document' && (
-                  <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {(canDeleteItem(item) || canEditItem(item)) ? (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="secondary" size="sm" className="h-8 w-8 p-0 bg-black/50 hover:bg-black/70 text-white border-0">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDownloadDocument(item);
-                            }}
-                            className="cursor-pointer"
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download
-                          </DropdownMenuItem>
-                          
-                          {canEditItem(item) && (
-                            <DropdownMenuItem 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // TODO: Implement edit functionality
-                                toast({
-                                  title: "Edit Document",
-                                  description: "Document editing will be available soon."
-                                });
-                              }}
-                              className="cursor-pointer"
-                            >
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit Details
-                            </DropdownMenuItem>
-                          )}
-                          
-                          {canDeleteItem(item) && (
-                            <>
-                              <DropdownMenuSeparator />
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem 
-                                    onSelect={(e) => e.preventDefault()}
-                                    className="cursor-pointer text-destructive focus:text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete Document
-                                  </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Delete Document</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Are you sure you want to delete "{item.name}"? This will permanently remove the document and cannot be undone.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleDeleteDocument(item.id, item.name)}
-                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    >
-                                      Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    ) : (
-                      <Badge variant="outline" className="text-xs bg-white/90">
-                        <Download className="h-3 w-3 mr-1" />
-                        Download
-                      </Badge>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <ImageIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h4 className="text-lg font-medium mb-2">No media yet</h4>
-            <p className="text-muted-foreground mb-4">
-              Start by uploading some images or documents for your project.
-            </p>
-          </div>
-        )}
-
-        {/* Upload Modals */}
-        {activeShowInspirationUpload && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Upload Inspiration Images</h3>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    setLocalShowInspirationUpload(false);
-                    onSetImageUploadState?.({ showInspirationUpload: false });
-                  }}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <SimplifiedUpload
-                type="inspiration"
-                projectId={project.id}
-                onUploadComplete={handleInspirationUploadComplete}
-              />
-            </div>
-          </div>
-        )}
-
-        {activeShowProgressUpload && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Upload Progress Images</h3>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    setLocalShowProgressUpload(false);
-                    onSetImageUploadState?.({ showProgressUpload: false });
-                  }}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <SimplifiedUpload
-                type="progress"
-                projectId={project.id}
-                onUploadComplete={handleProgressUploadComplete}
-              />
-            </div>
-          </div>
-        )}
-
-        {activeShowDocumentUpload && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Upload Documents</h3>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    setLocalShowDocumentUpload(false);
-                    onSetImageUploadState?.({ showDocumentUpload: false });
-                  }}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <SimplifiedUpload
-                type="documents"
-                projectId={project.id}
-                onUploadComplete={handleDocumentUploadComplete}
-                enableMetadata={true}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Image Preview Modal */}
-        {previewImage && (
-          <div
-            className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
-            onClick={() => setPreviewImage(null)}
-          >
-            <div className="relative max-w-4xl max-h-[90vh] p-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2 text-white hover:bg-white/20"
-                onClick={() => setPreviewImage(null)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-              <img
-                src={previewImage}
-                alt="Preview"
-                className="max-w-full max-h-full object-contain"
-              />
-            </div>
-          </div>
-        )}
+        {/* Modals */}
+        <MediaModals
+          uploadModal={state.modals.upload}
+          previewModal={state.modals.preview}
+          projectId={project.id}
+          onCloseUpload={actions.closeUploadModal}
+          onClosePreview={actions.closePreviewModal}
+          onInspirationUpload={handleInspirationUpload}
+          onProgressUpload={handleProgressUpload}
+          onDocumentUpload={handleDocumentUpload}
+        />
       </CardContent>
     </Card>
   );

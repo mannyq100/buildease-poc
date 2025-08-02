@@ -5,6 +5,13 @@
 
 import { CONSTRUCTION_PHASES_WITH_TASKS } from '@/data/constants/constructionPhasesWithTasks';
 
+// Basic task interface
+interface BaseTask {
+  id: string;
+  name: string;
+  description: string;
+}
+
 // Enhanced types for context-aware phase management
 export interface ProjectContext {
   projectType: 'residential-single' | 'residential-multi' | 'commercial' | 'renovation';
@@ -265,7 +272,7 @@ export const enhanceTasksForProject = (phaseId: string, project: ProjectContext)
     ? project.buildingSize * 0.092903 
     : project.buildingSize;
   
-  return phase.tasks.map((task: any) => {
+  return phase.tasks.map((task: BaseTask) => {
     const enhancement = TASK_ENHANCEMENTS[task.id] || {};
     
     // Default values

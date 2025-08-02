@@ -3,7 +3,7 @@
  * Implements React 19 Suspense boundaries for optimal mobile performance
  */
 
-import React, { Suspense } from 'react';
+import React, { Suspense, useMemo, useCallback } from 'react';
 import { Plus } from 'lucide-react';
 import { useProjects, useProjectMetrics } from '@/hooks/queries';
 import { ProjectsErrorBoundary } from '@/components/error-boundaries/ProjectsErrorBoundary';
@@ -16,7 +16,7 @@ import { TouchOptimizedButton } from '@/components/ui/TouchOptimizedButton';
 import { createSupabaseError } from '@/lib/error-utils';
 import type { ProjectsContentProps } from '@/types/enhanced-projects';
 
-// Lazy load components for better performance
+// Lazy load components with intelligent preloading
 const ProjectsMetrics = React.lazy(() => 
   import('./components/ProjectsMetrics').then(m => ({ default: m.ProjectsMetrics }))
 );
@@ -29,16 +29,33 @@ const ProjectsList = React.lazy(() =>
   import('./components/ProjectsList').then(m => ({ default: m.ProjectsList }))
 );
 
-export function ProjectsContent({ 
+// Preload components on idle for better performance
+if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+  window.requestIdleCallback(() => {
+    // Preload components during browser idle time
+    import('./components/ProjectsMetrics');
+    import('./components/ProjectsFilters');
+    import('./components/ProjectsList');
+  });
+} else {
+  // Fallback for browsers without requestIdleCallback
+  setTimeout(() => {
+    import('./components/ProjectsMetrics');
+    import('./components/ProjectsFilters');
+    import('./components/ProjectsList');
+  }, 100);
+}
+
+export const ProjectsContent = React.memo<ProjectsContentProps>(function ProjectsContent({ 
   filters, 
   onFiltersChange, 
   viewSettings, 
   onViewSettingsChange 
-}: ProjectsContentProps) {
+}) {
   
-  const handleCreateProject = () => {
+  const handleCreateProject = useCallback(() => {
     window.location.href = '/projects/new';
-  };
+  }, []);
 
   return (
     <div className="relative min-h-screen">
@@ -139,13 +156,13 @@ export function ProjectsContent({
       </div>
     </div>
   );
-}
+});
 
 
 /**
  * Projects Metrics Section with error boundary
  */
-function ProjectsMetricsSection() {
+const ProjectsMetricsSection = React.memo(function ProjectsMetricsSection() {
   const { data: metrics, isLoading, error } = useProjectMetrics();
   
   if (error) {
@@ -172,17 +189,17 @@ function ProjectsMetricsSection() {
       error={error ? createSupabaseError(error, 'network') : null}
     />
   );
-}
+});
 
 /**
  * Projects Filters Section with error boundary
  */
-function ProjectsFiltersSection({ 
-  filters, 
-  onFiltersChange 
-}: { 
+const ProjectsFiltersSection = React.memo<{
   filters: ProjectsContentProps['filters'];
   onFiltersChange: ProjectsContentProps['onFiltersChange'];
+}>(function ProjectsFiltersSection({ 
+  filters, 
+  onFiltersChange 
 }) {
   // For now, we'll implement basic filters. Status counts can be added later
   return (
@@ -192,27 +209,63 @@ function ProjectsFiltersSection({
       loading={false}
     />
   );
-}
+});
 
 /**
  * Projects List Section with error boundary and data fetching
  */
-function ProjectsListSection({ 
-  filters, 
-  viewSettings,
-  onViewSettingsChange
-}: { 
+const ProjectsListSection = React.memo<{
   filters: ProjectsContentProps['filters'];
   viewSettings: ProjectsContentProps['viewSettings'];
   onViewSettingsChange: ProjectsContentProps['onViewSettingsChange'];
+}>(function ProjectsListSection({ 
+  filters, 
+  viewSettings,
+  onViewSettingsChange: _onViewSettingsChange
 }) {
-  // Fetch projects with current filters
-  const { data: projects, isLoading, error } = useProjects({
+  // Memoize filter object to prevent unnecessary refetches
+  const memoizedFilters = useMemo(() => ({
     status: filters.status,
     search: filters.search,
     type: filters.type,
     client: filters.client,
-  });
+  }), [filters.status, filters.search, filters.type, filters.client]);
+
+  // Fetch projects with memoized filters
+  const { data: projects, isLoading, error } = useProjects(memoizedFilters);
+
+  // Memoize action handlers to prevent unnecessary re-renders
+  const handleView = useCallback((projectId: string) => {
+    window.location.href = `/project/${projectId}`;
+  }, []);
+
+  const handleEdit = useCallback((projectId: string) => {
+    window.location.href = `/project/${projectId}/edit`;
+  }, []);
+
+  const handleDelete = useCallback((projectId: string) => {
+    console.log('Delete project:', projectId);
+    // TODO: Implement with mutation hook
+  }, []);
+
+  const handleDuplicate = useCallback((projectId: string, newName: string) => {
+    console.log('Duplicate project:', projectId, newName);
+    // TODO: Implement with mutation hook
+  }, []);
+
+  const handleStatusUpdate = useCallback((projectId: string, status: string) => {
+    console.log('Update status:', projectId, status);
+    // TODO: Implement with mutation hook
+  }, []);
+
+  // Memoize actions object to prevent ProjectsList re-renders
+  const actions = useMemo(() => ({
+    onView: handleView,
+    onEdit: handleEdit,
+    onDelete: handleDelete,
+    onDuplicate: handleDuplicate,
+    onStatusUpdate: handleStatusUpdate,
+  }), [handleView, handleEdit, handleDelete, handleDuplicate, handleStatusUpdate]);
   
   // Handle errors with enhanced error boundary
   if (error) {
@@ -231,26 +284,7 @@ function ProjectsListSection({
       loading={isLoading}
       error={error ? createSupabaseError(error, 'network') : null}
       viewSettings={viewSettings}
-      actions={{
-        onView: (projectId) => {
-          window.location.href = `/project/${projectId}`;
-        },
-        onEdit: (projectId) => {
-          window.location.href = `/project/${projectId}/edit`;
-        },
-        onDelete: (projectId) => {
-          console.log('Delete project:', projectId);
-          // TODO: Implement with mutation hook
-        },
-        onDuplicate: (projectId, newName) => {
-          console.log('Duplicate project:', projectId, newName);
-          // TODO: Implement with mutation hook
-        },
-        onStatusUpdate: (projectId, status) => {
-          console.log('Update status:', projectId, status);
-          // TODO: Implement with mutation hook
-        },
-      }}
+      actions={actions}
     />
   );
-}
+});

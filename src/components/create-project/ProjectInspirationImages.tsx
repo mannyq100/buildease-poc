@@ -3,66 +3,106 @@
  * 
  * Handles the project inspiration images section
  * Allows users to upload, preview, and manage project images
- * Refactored to use Zustand store for state management
+ * Simplified implementation to avoid infinite loops
  */
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { X, Upload, Camera, AlertCircle } from 'lucide-react';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
-import { ErrorBoundary } from '@/components/ui/error-boundary';
-import { Control } from 'react-hook-form';
-import { CreateProjectFormValues } from '@/pages/CreateProject';
-import { useCreateProjectImages } from '@/stores/createProjectStore';
 import { Progress } from '@/components/ui/progress';
+import { Control } from 'react-hook-form';
+import { CreateProjectFormValues } from '@/pages/CreateProject/schema';
 import { cn } from '@/utils/core/ui';
+import { useToast } from '@/components/ui/use-toast';
 
 interface ProjectInspirationImagesProps {
   control: Control<CreateProjectFormValues>;
   className?: string;
 }
 
+interface LocalImageFile {
+  id: string;
+  file: File;
+  previewUrl: string;
+}
+
 /**
  * ProjectInspirationImages component
  * Allows users to upload and manage project inspiration images
- * Now uses Zustand store for state management
+ * Simplified implementation using local state
  */
 function ProjectInspirationImagesComponent({ control, className = '' }: ProjectInspirationImagesProps) {
-  // Use Zustand store for image management
-  const {
-    localFiles,
-    localProfileImageId,
-    isUploading: isLoading,
-    uploadError: error,
-    handleFileSelection,
-    removeImage,
-    setProfileImage
-  } = useCreateProjectImages();
+  const { toast } = useToast();
+  const [localFiles, setLocalFiles] = useState<LocalImageFile[]>([]);
+  const [profileImageId, setProfileImageId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
-
-
-  // The localFiles from context already have previewUrl, so we can use them directly
+  // Create preview images array from local files
   const previewImages = localFiles;
-  
-  // Debug logging removed for production optimization
-  
-  // Form field connection is now handled by the context
-  // No need for manual synchronization
   
   // Handle file input change
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      // Reset the input value so the same file can be selected again if needed
       const file = e.target.files[0];
       e.target.value = '';
       
-      // The context handles the image addition and shows toast messages
+      // Clear previous errors
+      setError(null);
+      setIsLoading(true);
+      
       try {
-        await handleFileSelection(file);
-      } catch {
-        // Error handling is managed by the context with toast notifications
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          setError('Please select an image file.');
+          toast({
+            title: "Invalid file type",
+            description: "Please select an image file.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        // Validate file size (5MB limit)
+        if (file.size > 5 * 1024 * 1024) {
+          setError('Please select an image smaller than 5MB.');
+          toast({
+            title: "File too large",
+            description: "Please select an image smaller than 5MB.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        // Simulate processing time
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Create preview URL
+        const previewUrl = URL.createObjectURL(file);
+        const newImage: LocalImageFile = {
+          id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          file,
+          previewUrl
+        };
+        
+        setLocalFiles(prev => [...prev, newImage]);
+        
+        toast({
+          title: "Image added",
+          description: "Image has been added to your project.",
+        });
+      } catch (_err) {
+        setError('Failed to process image. Please try again.');
+        toast({
+          title: "Error",
+          description: "Failed to process image. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
       }
     }
-  }, [handleFileSelection]);
+  }, [toast]);
   
   // Handle drag and drop
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -75,10 +115,48 @@ function ProjectInspirationImagesComponent({ control, className = '' }: ProjectI
     e.stopPropagation();
     
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      // The context handles the image addition and error handling
-      handleFileSelection(e.dataTransfer.files[0]);
+      const file = e.dataTransfer.files[0];
+      
+      // Create a synthetic event to reuse the file change handler
+      const syntheticEvent = {
+        target: { files: [file], value: '' },
+        preventDefault: () => {},
+        stopPropagation: () => {}
+      } as React.ChangeEvent<HTMLInputElement>;
+      
+      handleFileChange(syntheticEvent);
     }
-  }, [handleFileSelection]);
+  }, [handleFileChange]);
+  
+  // Remove image
+  const removeImage = useCallback((id: string) => {
+    setLocalFiles(prev => {
+      const imageToRemove = prev.find(img => img.id === id);
+      if (imageToRemove) {
+        URL.revokeObjectURL(imageToRemove.previewUrl);
+      }
+      return prev.filter(img => img.id !== id);
+    });
+    
+    // Clear profile image if it was the removed image
+    if (profileImageId === id) {
+      setProfileImageId(null);
+    }
+    
+    toast({
+      title: "Image removed",
+      description: "Image has been removed from your project.",
+    });
+  }, [profileImageId, toast]);
+  
+  // Set profile image
+  const setProfileImage = useCallback((id: string) => {
+    setProfileImageId(id);
+    toast({
+      title: "Profile image set",
+      description: "This image will be used as your project's main image.",
+    });
+  }, [toast]);
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -94,9 +172,6 @@ function ProjectInspirationImagesComponent({ control, className = '' }: ProjectI
                 Upload Images (Optional)
               </FormLabel>
               <FormControl>
-                <ErrorBoundary fallback={<div className="p-4 border border-red-300 bg-red-50 text-red-800 rounded-md">
-                  There was an error loading the image uploader. Please try refreshing the page.
-                </div>}>
                   <div className="space-y-4">
                     {/* Enhanced Image Upload Area with Drag & Drop */}
                     <div 
@@ -172,7 +247,7 @@ function ProjectInspirationImagesComponent({ control, className = '' }: ProjectI
                             key={preview.id} 
                             className={cn(
                               "relative aspect-square rounded-lg overflow-hidden border-2 transition-all duration-300",
-                              localProfileImageId === preview.id 
+                              profileImageId === preview.id 
                                 ? "border-[#ED8936] ring-2 ring-[#ED8936]/20" 
                                 : "border-slate-200 dark:border-slate-600 hover:border-[#2B6CB0]"
                             )}
@@ -188,7 +263,7 @@ function ProjectInspirationImagesComponent({ control, className = '' }: ProjectI
                             />
                             
                             {/* Profile Image Indicator */}
-                            {localProfileImageId === preview.id && (
+                            {profileImageId === preview.id && (
                               <div className="absolute top-2 left-2">
                                 <div className="bg-[#ED8936] p-1.5 rounded-full shadow-lg">
                                   <Camera className="h-3 w-3 text-white" />
@@ -199,7 +274,7 @@ function ProjectInspirationImagesComponent({ control, className = '' }: ProjectI
                             {/* Hover Controls */}
                             <div className="absolute inset-0 bg-black/0 hover:bg-black/50 transition-all duration-300 flex items-center justify-center opacity-0 hover:opacity-100">
                               <div className="flex gap-2">
-                                {localProfileImageId !== preview.id && (
+                                {profileImageId !== preview.id && (
                                   <Button
                                     type="button"
                                     variant="outline"
@@ -226,7 +301,6 @@ function ProjectInspirationImagesComponent({ control, className = '' }: ProjectI
                       </div>
                     )}
                   </div>
-                </ErrorBoundary>
               </FormControl>
               <FormMessage />
             </FormItem>

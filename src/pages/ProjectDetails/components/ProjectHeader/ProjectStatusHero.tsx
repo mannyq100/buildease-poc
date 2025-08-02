@@ -12,6 +12,7 @@
  * - Strong TypeScript typing
  */
 
+import React, { useMemo, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge } from '@/components/shared';
 import { TouchOptimizedButton } from '@/components/ui/TouchOptimizedButton';
@@ -25,38 +26,71 @@ interface ProjectStatusHeroProps {
   onUpdateProject?: () => void;
 }
 
-export function ProjectStatusHero({ 
+// Cache number formatters to avoid recreation on every render
+const currencyFormatters = new Map<string, Intl.NumberFormat>();
+
+function getCurrencyFormatter(currency: string): Intl.NumberFormat {
+  if (!currencyFormatters.has(currency)) {
+    currencyFormatters.set(currency, new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }));
+  }
+  return currencyFormatters.get(currency)!;
+}
+
+export const ProjectStatusHero = React.memo<ProjectStatusHeroProps>(function ProjectStatusHero({ 
   project, 
   activeTeamMembers, 
   toggleSection,
   onUpdateProject
-}: ProjectStatusHeroProps) {
-  // Calculate days remaining for timeline
-  const daysRemaining = project.end_date 
-    ? Math.max(0, Math.ceil((new Date(project.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
-    : null;
+}) {
+  // Memoized date calculations for performance
+  const daysRemaining = useMemo(() => {
+    if (!project.endDate) return null;
+    const end = new Date(project.endDate);
+    const today = new Date();
+    const diffTime = end.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  }, [project.endDate]);
 
+  // Memoized progress calculations
+  const progressData = useMemo(() => {
+    const progress = project.progress || 0;
+    const circumference = 2 * Math.PI * 38; // radius = 38
+    const strokeDasharray = `${(progress / 100) * circumference} ${circumference}`;
+    
+    const status = progress === 100 
+      ? { label: 'Complete', class: 'bg-green-100 text-green-700' }
+      : progress > 50 
+        ? { label: 'In Progress', class: 'bg-blue-100 text-blue-700' }
+        : { label: 'Getting Started', class: 'bg-orange-100 text-orange-700' };
+    
+    return { progress, strokeDasharray, status };
+  }, [project.progress]);
 
-
-  // Get timeline display text
-  const getTimelineDisplay = () => {
+  // Memoize timeline display text
+  const timelineDisplay = useMemo(() => {
     if (daysRemaining === null) return '---';
     if (daysRemaining === 0) return 'Due Today';
     if (daysRemaining === 1) return '1 Day';
     if (daysRemaining <= 7) return `${daysRemaining} Days`;
     if (daysRemaining <= 30) return `${Math.ceil(daysRemaining / 7)} Weeks`;
     return `${Math.ceil(daysRemaining / 30)} Months`;
-  };
+  }, [daysRemaining]);
 
-  // Get timeline label
-  const getTimelineLabel = () => {
+  // Memoize timeline label
+  const timelineLabel = useMemo(() => {
     if (daysRemaining === null) return 'Timeline';
     if (daysRemaining === 0) return 'Due Today';
     return 'Remaining';
-  };
+  }, [daysRemaining]);
 
-  // Format budget display with proper currency formatting
-  const formatBudgetDisplay = () => {
+  // Memoize budget display with cached formatter
+  const budgetDisplay = useMemo(() => {
     const budget = project.budget || 0;
     if (budget === 0) return 'Not Set';
     
@@ -74,23 +108,30 @@ export function ProjectStatusHero({
       return `${currency} ${thousands.toFixed(thousands % 1 === 0 ? 0 : 1)}K`;
     }
     
-    // For smaller amounts, show full amount
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(budget);
-  };
+    // For smaller amounts, use cached formatter
+    return getCurrencyFormatter(currency).format(budget);
+  }, [project.budget, project.currency]);
 
-  const handleUpdateProject = () => {
+  // Memoize team member count and label
+  const teamInfo = useMemo(() => ({
+    count: activeTeamMembers.length,
+    label: activeTeamMembers.length === 1 ? 'Team Member' : 'Team Members'
+  }), [activeTeamMembers.length]);
+
+  // Use useCallback to prevent unnecessary re-renders
+  const handleUpdateProject = useCallback(() => {
     if (onUpdateProject) {
       onUpdateProject();
     } else {
       // Default behavior - navigate to edit page
       window.location.href = `/project/${project.id}/edit`;
     }
-  };
+  }, [onUpdateProject, project.id]);
+
+  // Memoize toggle section handlers to prevent re-renders
+  const handleToggleBudget = useCallback(() => toggleSection('budget'), [toggleSection]);
+  const handleTogglePhases = useCallback(() => toggleSection('phases'), [toggleSection]);
+  const handleToggleTeam = useCallback(() => toggleSection('team'), [toggleSection]);
 
   return (
     <Card className="border-slate-200/40 shadow-xl bg-gradient-to-br from-white via-buildease-blue-50/30 to-buildease-orange-50/20 backdrop-blur-md rounded-2xl overflow-hidden
@@ -145,92 +186,154 @@ export function ProjectStatusHero({
         <div className="flex items-start gap-6">
           <div className="flex-1">
           
-            {/* Key Metrics with Detail Access */}
-            <div className="grid grid-cols-3 gap-4">
-              {/* Budget Metric */}
+            {/* Enhanced Key Metrics with Detail Access */}
+            <div className="grid grid-cols-3 gap-3 sm:gap-4">
+              {/* Budget Metric - Enhanced */}
               <button 
-                onClick={() => toggleSection('budget')}
-                className="text-center p-3 bg-buildease-blue-50/50 rounded-xl hover:bg-buildease-blue-100/50 transition-colors group"
+                onClick={handleToggleBudget}
+                className="relative overflow-hidden text-center p-4 bg-gradient-to-br from-buildease-blue-50/80 via-buildease-blue-50/60 to-buildease-blue-100/40 
+                          rounded-2xl hover:from-buildease-blue-100/90 hover:via-buildease-blue-100/70 hover:to-buildease-blue-200/50 
+                          transition-all duration-300 group shadow-sm hover:shadow-lg hover:shadow-blue-500/20 
+                          border border-buildease-blue-100/50 hover:border-buildease-blue-200/70 hover:-translate-y-0.5"
               >
-                <DollarSign className="h-5 w-5 text-buildease-blue-600 mx-auto mb-1 group-hover:scale-110 transition-transform" />
-                <div className="text-lg font-bold text-slate-900">
-                  {formatBudgetDisplay()}
-                </div>
-                <div className="text-xs text-slate-600">
-                  Total Budget
+                {/* Subtle background pattern */}
+                <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                
+                <div className="relative z-10">
+                  <div className="w-10 h-10 mx-auto mb-2 bg-buildease-blue-500/10 rounded-xl flex items-center justify-center 
+                                group-hover:bg-buildease-blue-500/20 transition-colors duration-300 group-hover:scale-110">
+                    <DollarSign className="h-5 w-5 text-buildease-blue-600 group-hover:text-buildease-blue-700 transition-colors duration-300" />
+                  </div>
+                  <div className="text-lg font-bold text-slate-900 mb-1 group-hover:text-slate-800 transition-colors">
+                    {budgetDisplay}
+                  </div>
+                  <div className="text-xs text-slate-600 font-medium group-hover:text-slate-700 transition-colors">
+                    Total Budget
+                  </div>
                 </div>
               </button>
               
-              {/* Timeline Metric */}
+              {/* Timeline Metric - Enhanced */}
               <button 
-                onClick={() => toggleSection('phases')}
-                className="text-center p-3 bg-buildease-orange-50/50 rounded-xl hover:bg-buildease-orange-100/50 transition-colors group"
+                onClick={handleTogglePhases}
+                className="relative overflow-hidden text-center p-4 bg-gradient-to-br from-buildease-orange-50/80 via-buildease-orange-50/60 to-buildease-orange-100/40 
+                          rounded-2xl hover:from-buildease-orange-100/90 hover:via-buildease-orange-100/70 hover:to-buildease-orange-200/50 
+                          transition-all duration-300 group shadow-sm hover:shadow-lg hover:shadow-orange-500/20 
+                          border border-buildease-orange-100/50 hover:border-buildease-orange-200/70 hover:-translate-y-0.5"
               >
-                <Clock className="h-5 w-5 text-buildease-orange-600 mx-auto mb-1 group-hover:scale-110 transition-transform" />
-                <div className="text-lg font-bold text-slate-900">
-                  {getTimelineDisplay()}
-                </div>
-                <div className="text-xs text-slate-600">
-                  {getTimelineLabel()}
+                {/* Subtle background pattern */}
+                <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                
+                <div className="relative z-10">
+                  <div className="w-10 h-10 mx-auto mb-2 bg-buildease-orange-500/10 rounded-xl flex items-center justify-center 
+                                group-hover:bg-buildease-orange-500/20 transition-colors duration-300 group-hover:scale-110">
+                    <Clock className="h-5 w-5 text-buildease-orange-600 group-hover:text-buildease-orange-700 transition-colors duration-300" />
+                  </div>
+                  <div className="text-lg font-bold text-slate-900 mb-1 group-hover:text-slate-800 transition-colors">
+                    {timelineDisplay}
+                  </div>
+                  <div className="text-xs text-slate-600 font-medium group-hover:text-slate-700 transition-colors">
+                    {timelineLabel}
+                  </div>
                 </div>
               </button>
               
-              {/* Team Metric */}
+              {/* Team Metric - Enhanced */}
               <button 
-                onClick={() => toggleSection('team')}
-                className="text-center p-3 bg-emerald-50/50 rounded-xl hover:bg-emerald-100/50 transition-colors group"
+                onClick={handleToggleTeam}
+                className="relative overflow-hidden text-center p-4 bg-gradient-to-br from-emerald-50/80 via-emerald-50/60 to-emerald-100/40 
+                          rounded-2xl hover:from-emerald-100/90 hover:via-emerald-100/70 hover:to-emerald-200/50 
+                          transition-all duration-300 group shadow-sm hover:shadow-lg hover:shadow-emerald-500/20 
+                          border border-emerald-100/50 hover:border-emerald-200/70 hover:-translate-y-0.5"
               >
-                <Users className="h-5 w-5 text-emerald-600 mx-auto mb-1 group-hover:scale-110 transition-transform" />
-                <div className="text-lg font-bold text-slate-900">
-                  {activeTeamMembers.length}
-                </div>
-                <div className="text-xs text-slate-600">
-                  {activeTeamMembers.length === 1 ? 'Team Member' : 'Team Members'}
+                {/* Subtle background pattern */}
+                <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                
+                <div className="relative z-10">
+                  <div className="w-10 h-10 mx-auto mb-2 bg-emerald-500/10 rounded-xl flex items-center justify-center 
+                                group-hover:bg-emerald-500/20 transition-colors duration-300 group-hover:scale-110">
+                    <Users className="h-5 w-5 text-emerald-600 group-hover:text-emerald-700 transition-colors duration-300" />
+                  </div>
+                  <div className="text-lg font-bold text-slate-900 mb-1 group-hover:text-slate-800 transition-colors">
+                    {teamInfo.count}
+                  </div>
+                  <div className="text-xs text-slate-600 font-medium group-hover:text-slate-700 transition-colors">
+                    {teamInfo.label}
+                  </div>
                 </div>
               </button>
             </div>
           </div>
           
-          {/* Enhanced Progress Circle */}
+          {/* Enhanced Progress Circle with Improved Design */}
           <div className="flex-shrink-0 text-center">
-            <div className="relative w-24 h-24 mx-auto mb-3">
-              <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
+            <div className="relative w-28 h-28 mx-auto mb-4">
+              {/* Background circle with subtle glow */}
+              <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-200 rounded-full shadow-inner"></div>
+              
+              {/* Progress SVG */}
+              <svg className="w-28 h-28 transform -rotate-90 relative z-10" viewBox="0 0 100 100">
+                {/* Background track */}
                 <circle 
                   cx="50" 
                   cy="50" 
-                  r="40" 
-                  stroke="#e5e7eb" 
-                  strokeWidth="6" 
+                  r="38" 
+                  stroke="#f1f5f9" 
+                  strokeWidth="4" 
                   fill="none" 
+                  className="drop-shadow-sm"
                 />
+                {/* Progress circle with enhanced gradient */}
                 <circle 
                   cx="50" 
                   cy="50" 
-                  r="40" 
-                  stroke="url(#progressGradient)" 
-                  strokeWidth="6" 
+                  r="38" 
+                  stroke="url(#enhancedProgressGradient)" 
+                  strokeWidth="4" 
                   fill="none"
-                  strokeDasharray={`${(project.progress || 0) * 2.51} 251`}
-                  className="transition-all duration-700 drop-shadow-sm"
+                  strokeDasharray={progressData.strokeDasharray}
+                  strokeLinecap="round"
+                  className="transition-all duration-1000 ease-out drop-shadow-md"
+                  style={{
+                    filter: 'drop-shadow(0 2px 4px rgba(43, 108, 176, 0.2))'
+                  }}
                 />
                 <defs>
-                  <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#2B6CB0" />
+                  <linearGradient id="enhancedProgressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#3B82F6" />
+                    <stop offset="30%" stopColor="#2B6CB0" />
+                    <stop offset="70%" stopColor="#F59E0B" />
                     <stop offset="100%" stopColor="#ED8936" />
                   </linearGradient>
                 </defs>
               </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-xl font-bold bg-gradient-to-r from-buildease-blue-600 to-buildease-orange-600 bg-clip-text text-transparent">
-                  {project.progress || 0}%
+              
+              {/* Center content with enhanced styling */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-2xl font-bold bg-gradient-to-br from-buildease-blue-600 via-buildease-blue-700 to-buildease-orange-600 bg-clip-text text-transparent drop-shadow-sm">
+                  {progressData.progress}%
                 </span>
+                {/* Progress status indicator */}
+                <div className="w-2 h-2 rounded-full mt-1 bg-gradient-to-r from-buildease-blue-500 to-buildease-orange-500 opacity-60"></div>
+              </div>
+              
+              {/* Subtle pulse animation for active projects */}
+              {progressData.progress > 0 && progressData.progress < 100 && (
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-buildease-blue-500/10 to-buildease-orange-500/10 animate-pulse"></div>
+              )}
+            </div>
+            
+            {/* Enhanced label with status-based styling */}
+            <div className="space-y-1">
+              <div className="text-sm text-slate-700 font-semibold">Project Progress</div>
+              <div className={`text-xs px-2 py-1 rounded-full inline-block font-medium ${progressData.status.class}`}>
+                {progressData.status.label}
               </div>
             </div>
-            <div className="text-sm text-slate-600 font-semibold">Project Complete</div>
           </div>
         </div>
 
       </CardContent>
     </Card>
   );
-}
+});

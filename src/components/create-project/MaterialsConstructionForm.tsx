@@ -4,7 +4,7 @@
  * Collects materials and construction information
  */
 import { useFormContext } from 'react-hook-form';
-import { CreateProjectFormValues } from '../../pages/CreateProject';
+import { CreateProjectFormValues } from '../../pages/CreateProject/schema';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';

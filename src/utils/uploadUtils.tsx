@@ -116,10 +116,12 @@ export function calculateOverallProgress(uploads: { progress: number }[]): numbe
 /**
  * Get user-friendly error message
  */
-export function getErrorMessage(error: any): string {
+export function getErrorMessage(error: unknown): string {
   if (typeof error === 'string') return error;
-  if (error?.message) return error.message;
-  if (error?.code && UPLOAD_ERRORS[error.code as keyof typeof UPLOAD_ERRORS]) {
+  if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+    return error.message;
+  }
+  if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string' && UPLOAD_ERRORS[error.code as keyof typeof UPLOAD_ERRORS]) {
     return UPLOAD_ERRORS[error.code as keyof typeof UPLOAD_ERRORS].message;
   }
   return 'An unexpected error occurred during upload';
@@ -128,9 +130,11 @@ export function getErrorMessage(error: any): string {
 /**
  * Get recovery action for error
  */
-export function getRecoveryAction(error: any): string {
-  if (error?.recoveryAction) return error.recoveryAction;
-  if (error?.code && UPLOAD_ERRORS[error.code as keyof typeof UPLOAD_ERRORS]) {
+export function getRecoveryAction(error: unknown): string {
+  if (error && typeof error === 'object' && 'recoveryAction' in error && typeof error.recoveryAction === 'string') {
+    return error.recoveryAction;
+  }
+  if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string' && UPLOAD_ERRORS[error.code as keyof typeof UPLOAD_ERRORS]) {
     return UPLOAD_ERRORS[error.code as keyof typeof UPLOAD_ERRORS].recoveryAction;
   }
   return 'Please try again or contact support if the problem persists';

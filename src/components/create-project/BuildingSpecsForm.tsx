@@ -5,7 +5,7 @@
  */
 import React, { useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { CreateProjectFormValues } from '../../pages/CreateProject';
+import { CreateProjectFormValues } from '../../pages/CreateProject/schema';
 import { Input } from '@/components/ui/input';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';

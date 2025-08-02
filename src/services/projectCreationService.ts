@@ -153,7 +153,6 @@ export async function createProject(formData: CreateProjectFormValues, userId: s
       .insert([projectDataWithId]);
       
     if (insertError) {
-      console.error('Error inserting project:', insertError);
       return {
         success: false,
         error: `Database error: ${insertError.message}`
@@ -167,17 +166,10 @@ export async function createProject(formData: CreateProjectFormValues, userId: s
       .eq('id', projectId)
       .single();
       
-    console.log('✅ Project retrieved from database:', {
-      id: createdProject?.id,
-      name: createdProject?.name,
-      profile_image: createdProject?.profile_image,
-      inspiration_images: createdProject?.inspiration_images,
-      imagesCount: createdProject?.inspiration_images?.length || 0
-    });
+    // Project successfully retrieved from database
       
     
     if (fetchError || !createdProject) {
-      console.error('Error fetching created project:', fetchError);
       return {
         success: false,
         error: fetchError?.message || 'Could not retrieve created project'
@@ -194,18 +186,17 @@ export async function createProject(formData: CreateProjectFormValues, userId: s
       }]);
       
     if (memberError) {
-      console.warn('Warning: Could not add user as project member:', memberError);
-      // Don't fail the entire operation for this
+      // Don't fail the entire operation for this non-critical error
     }
     
     // Log the project creation in audit log (non-blocking)
-    logProjectCreation(createdProject.id, userId).catch(error => {
-      console.warn('Audit log failed (non-critical):', error);
+    logProjectCreation(createdProject.id, userId).catch(() => {
+      // Audit log failure is non-critical, operation continues
     });
     
     // Trigger AI plan generation (non-blocking)
-    initiateAIPlanGeneration(createdProject as Project, formData).catch(error => {
-      console.warn('AI plan generation failed to start (non-critical):', error);
+    initiateAIPlanGeneration(createdProject as Project, formData).catch(() => {
+      // AI plan generation failure is non-critical, operation continues
     });
     
     return {
@@ -215,7 +206,6 @@ export async function createProject(formData: CreateProjectFormValues, userId: s
     
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred while creating the project';
-    console.error('Error in createProject service:', error);
     return {
       success: false,
       error: errorMessage
@@ -309,7 +299,6 @@ export function validateProjectData(formData: CreateProjectFormValues): { isVali
  */
 async function logProjectCreation(projectId: string, userId: string): Promise<void> {
   try {
-    console.log('📝 Attempting to log project creation to audit log...');
     const { error } = await supabase
       .from(TABLE_NAMES.AUDIT_LOG)
       .insert([{
@@ -326,17 +315,12 @@ async function logProjectCreation(projectId: string, userId: string): Promise<vo
       }]);
       
     if (error) {
-      console.error('❌ Audit log insertion failed:', error);
-      if (error.message?.includes('policy')) {
-        console.error('🔒 This appears to be a Row Level Security (RLS) policy issue');
-        console.error('💡 To fix: Run the audit log permissions SQL script in Supabase');
-      }
-    } else {
-      console.log('✅ Project creation logged to audit log successfully');
+      // Audit log insertion failed - this is non-critical
+      throw new Error(`Audit log failed: ${error.message}`);
     }
   } catch (error) {
     // Don't fail the entire operation if audit logging fails
-    console.warn('⚠️ Could not log project creation (non-critical):', error);
+    throw error;
   }
 }
 
@@ -345,17 +329,14 @@ async function logProjectCreation(projectId: string, userId: string): Promise<vo
  */
 async function initiateAIPlanGeneration(project: Project, _formData: CreateProjectFormValues): Promise<void> {
   try {
-    console.log('🤖 Initiating AI plan generation for project:', project.id);
-    
     // Update project status to 'requested'
     await AIPlanService.updateProjectPlanStatus(project.id, 'requested');
     
     // Create notification for plan generation start
     try {
-      console.log('🔔 AI plan generation started for project:', project.name);
       // TODO: Implement createAIPlanNotification method in NotificationService
     } catch (notificationError) {
-      console.warn('Failed to create start notification (non-critical):', notificationError);
+      // Failed to create start notification (non-critical)
     }
     
     // Prepare AI plan generation request
@@ -387,28 +368,24 @@ async function initiateAIPlanGeneration(project: Project, _formData: CreateProje
     // Update project status to 'processing'
     await AIPlanService.updateProjectPlanStatus(project.id, 'processing');
     
-    console.log('✅ AI plan generation started successfully. Job ID:', jobId);
-    
     // Set up completion handling (in production, this would be handled by webhooks)
     const abortController = setupAIPlanCompletionHandler(project.owner_id, project.id, project.name, jobId);
     
     // Store abort controller for potential cleanup (could be stored in a Map for multiple projects)
     // In a real application, you might want to store this in a service or context
-    console.log('🎯 AI plan completion handler set up with cleanup controller for job:', jobId);
     
   } catch (error) {
-    console.error('❌ Failed to initiate AI plan generation:', error);
-    
     // Update project status to 'failed' 
     await AIPlanService.updateProjectPlanStatus(project.id, 'failed');
     
     // Create failure notification
     try {
-      console.log('🔔 AI plan generation failed for project:', project.name);
       // TODO: Implement createAIPlanNotification method in NotificationService
     } catch (notificationError) {
-      console.warn('Failed to create failure notification (non-critical):', notificationError);
+      // Failed to create failure notification (non-critical)
     }
+    
+    throw error;
   }
 }
 
@@ -433,16 +410,12 @@ function setupAIPlanCompletionHandler(
     if (customEvent.detail?.jobId === jobId) {
       try {
         // Create completion notification
-        console.log('🔔 AI plan generation completed for project:', projectName);
         // TODO: Implement createAIPlanNotification method in NotificationService
-        
-        console.log('✅ AI plan completion notification created');
         
         // Abort controller will automatically clean up the listener
         abortController.abort();
         
       } catch (error) {
-        console.warn('Failed to create completion notification:', error);
         // Still abort to prevent memory leaks
         abortController.abort();
       }
@@ -454,14 +427,12 @@ function setupAIPlanCompletionHandler(
   
   // Set up timeout cleanup (10 minutes)
   const timeoutId = setTimeout(() => {
-    console.warn(`AI plan generation timeout for job ${jobId}, cleaning up event listener`);
     abortController.abort();
   }, 10 * 60 * 1000);
   
   // Clean up timeout when aborted
   signal.addEventListener('abort', () => {
     clearTimeout(timeoutId);
-    console.log(`AI plan completion handler cleaned up for job ${jobId}`);
   });
   
   return abortController;

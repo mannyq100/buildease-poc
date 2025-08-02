@@ -1,7 +1,7 @@
 /**
  * Utility functions for project form handling
  */
-import { ProjectFormValues } from '@/pages/CreateProject';
+import { CreateProjectFormValues as ProjectFormValues } from '@/pages/CreateProject/schema';
 
 /**
  * Calculates form completion percentage
@@ -54,7 +54,7 @@ export function formatCurrencyDisplay(amount: string, currency: string): string 
     const numericValue = parseFloat(amount.replace(/,/g, ''));
     if (isNaN(numericValue)) return amount;
     
-    return new Intl.NumberFormat('en-GH', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency,
       maximumFractionDigits: 0

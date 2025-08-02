@@ -4,7 +4,7 @@
  * Collects budget and timeline information
  */
 import { useFormContext } from 'react-hook-form';
-import { CreateProjectFormValues } from '../../pages/CreateProject';
+import { CreateProjectFormValues } from '../../pages/CreateProject/schema';
 import { Input } from '@/components/ui/input';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,16 +14,120 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { format } from 'date-fns';
 import { DollarSign, Calendar as CalendarIcon, Clock, TrendingUp, AlertCircle } from 'lucide-react';
 import {cn} from '@/utils/core/ui'
-// Currency options
-const CURRENCIES = [
-  { value: 'GHS', label: 'GHS - Ghanaian Cedi' },
-  { value: 'USD', label: 'USD - US Dollar' },
-  { value: 'EUR', label: 'EUR - Euro' },
-  { value: 'GBP', label: 'GBP - British Pound' },
-  { value: 'NGN', label: 'NGN - Nigerian Naira' },
-  { value: 'ZAR', label: 'ZAR - South African Rand' },
-  { value: 'XOF', label: 'XOF - West African CFA Franc' }
-];
+import { Country } from 'country-state-city';
+// Currency option type
+interface CurrencyOption {
+  value: string;
+  label: string;
+  isMajor: boolean;
+  isRecommended?: boolean;
+  disabled?: boolean;
+}
+
+// Major global currencies (prioritized in dropdown)
+const MAJOR_CURRENCY_CODES = ['USD', 'EUR', 'GBP', 'CAD', 'XOF', 'XAF'];
+
+// Generate currency name mapping for better labels
+const CURRENCY_NAMES: Record<string, string> = {
+  'USD': 'US Dollar',
+  'EUR': 'Euro',
+  'GBP': 'British Pound',
+  'CAD': 'Canadian Dollar',
+  'XOF': 'West African CFA Franc',
+  'XAF': 'Central African CFA Franc',
+  'JPY': 'Japanese Yen',
+  'CNY': 'Chinese Yuan',
+  'AUD': 'Australian Dollar',
+  'CHF': 'Swiss Franc',
+  'GHS': 'Ghanaian Cedi',
+  'NGN': 'Nigerian Naira',
+  'ZAR': 'South African Rand',
+  'KES': 'Kenyan Shilling',
+  'UGX': 'Ugandan Shilling',
+  'TZS': 'Tanzanian Shilling',
+  'EGP': 'Egyptian Pound',
+  'MAD': 'Moroccan Dirham',
+  'INR': 'Indian Rupee',
+  'BRL': 'Brazilian Real',
+  'MXN': 'Mexican Peso',
+  'AED': 'UAE Dirham',
+  'SAR': 'Saudi Riyal',
+  'SGD': 'Singapore Dollar',
+  'HKD': 'Hong Kong Dollar',
+  'NZD': 'New Zealand Dollar',
+  'SEK': 'Swedish Krona',
+  'NOK': 'Norwegian Krone',
+  'DKK': 'Danish Krone',
+  'PLN': 'Polish Zloty',
+  'CZK': 'Czech Koruna',
+  'HUF': 'Hungarian Forint',
+  'RUB': 'Russian Ruble',
+  'TRY': 'Turkish Lira',
+  'ILS': 'Israeli Shekel',
+  'KRW': 'South Korean Won',
+  'THB': 'Thai Baht',
+  'MYR': 'Malaysian Ringgit',
+  'IDR': 'Indonesian Rupiah',
+  'PHP': 'Philippine Peso',
+  'VND': 'Vietnamese Dong'
+};
+
+// Helper function to get currency for a specific country
+const getCurrencyByCountryCode = (countryCode: string): string | null => {
+  try {
+    if (!countryCode || countryCode.trim().length === 0) return null;
+    
+    const country = Country.getCountryByCode(countryCode.trim().toUpperCase());
+    return country?.currency || null;
+  } catch (error) {
+    console.error(`Error getting currency for country ${countryCode}:`, error);
+    return null;
+  }
+};
+
+// Generate all available currencies from country-state-city library
+const generateAllCurrencies = (): CurrencyOption[] => {
+  try {
+    const countries = Country.getAllCountries();
+    const currencyMap = new Map<string, CurrencyOption>();
+    
+    // Extract unique currencies from all countries
+    countries.forEach(country => {
+      if (country.currency && country.currency.trim()) {
+        const currencyCode = country.currency.trim();
+        const currencyName = CURRENCY_NAMES[currencyCode] || currencyCode;
+        const isMajor = MAJOR_CURRENCY_CODES.includes(currencyCode);
+        
+        if (!currencyMap.has(currencyCode)) {
+          currencyMap.set(currencyCode, {
+            value: currencyCode,
+            label: `${currencyCode} - ${currencyName}`,
+            isMajor
+          });
+        }
+      }
+    });
+    
+    // Convert map to array and sort
+    return Array.from(currencyMap.values()).sort((a, b) => {
+      // Major currencies first, then alphabetical
+      if (a.isMajor && !b.isMajor) return -1;
+      if (!a.isMajor && b.isMajor) return 1;
+      return a.label.localeCompare(b.label);
+    });
+  } catch (error) {
+    console.error('Error generating currencies from country-state-city:', error);
+    // Fallback to major currencies if there's an error
+    return MAJOR_CURRENCY_CODES.map(code => ({
+      value: code,
+      label: `${code} - ${CURRENCY_NAMES[code] || code}`,
+      isMajor: true
+    }));
+  }
+};
+
+// Generate the currency list
+const ALL_CURRENCIES = generateAllCurrencies();
 
 export function BudgetTimelineForm() {
   const { control, watch } = useFormContext<CreateProjectFormValues>();
@@ -33,6 +137,71 @@ export function BudgetTimelineForm() {
   const budget = watch('budget');
   const buildingSize = watch('buildingSize');
   const buildingSizeUnit = watch('buildingSizeUnit');
+  const country = watch('country'); // Watch country to show auto-population feedback
+  
+  // Smart currency selection: prioritize country currency + major currencies
+  const getSmartCurrencyOptions = (): CurrencyOption[] => {
+    const countryCurrency = currency; // Current selected currency (could be from country auto-selection)
+    const prioritizedCurrencies: CurrencyOption[] = [];
+    
+    // Get major currencies from the dynamic list
+    const majorCurrencies = ALL_CURRENCIES.filter(c => c.isMajor);
+    
+    // Get country's currency using efficient lookup (if country is selected)
+    let suggestedCurrency: string | null = null;
+    if (country) {
+      // Try to find country ISO code from the country name
+      // This assumes the country field stores the country name, not ISO code
+      try {
+        const countries = Country.getAllCountries();
+        const countryData = countries.find(c => c.name === country);
+        if (countryData?.isoCode) {
+          suggestedCurrency = getCurrencyByCountryCode(countryData.isoCode);
+        }
+      } catch (error) {
+        console.error('Error getting country currency:', error);
+      }
+    }
+    
+    // 1. Add country's currency first if it exists and isn't already a major currency
+    const displayCurrency = countryCurrency || suggestedCurrency;
+    if (displayCurrency && !MAJOR_CURRENCY_CODES.includes(displayCurrency)) {
+      const countryCurrencyOption = ALL_CURRENCIES.find(c => c.value === displayCurrency);
+      if (countryCurrencyOption) {
+        prioritizedCurrencies.push({
+          ...countryCurrencyOption,
+          label: `⭐ ${countryCurrencyOption.label} (Recommended for ${country || 'your country'})`,
+          isRecommended: true
+        });
+      }
+    }
+    
+    // 2. Add major currencies
+    prioritizedCurrencies.push(...majorCurrencies.map(c => ({
+      ...c,
+      isRecommended: c.value === displayCurrency,
+      label: c.value === displayCurrency ? `⭐ ${c.label}` : c.label
+    })));
+    
+    // 3. Add separator if we have other currencies to show
+    const otherCurrencies = ALL_CURRENCIES
+      .filter(c => !c.isMajor && c.value !== displayCurrency)
+      .sort((a, b) => a.label.localeCompare(b.label));
+    
+    if (otherCurrencies.length > 0) {
+      prioritizedCurrencies.push({ 
+        value: 'separator', 
+        label: '──── Other Currencies ────', 
+        disabled: true, 
+        isMajor: false 
+      });
+      
+      // 4. Add other currencies (sorted alphabetically)
+      prioritizedCurrencies.push(...otherCurrencies);
+    }
+    
+    return prioritizedCurrencies;
+  };
   
   // Helper function to format currency
   const formatCurrency = (value: string, currencyCode: string) => {
@@ -125,6 +294,11 @@ export function BudgetTimelineForm() {
             <FormItem className="space-y-3">
               <FormLabel className="text-lg font-semibold text-slate-900 dark:text-white font-inter">
                 Currency
+                {country && currency && (
+                  <span className="text-sm font-normal text-[#2B6CB0] ml-2 font-opensans">
+                    (auto-selected for {country})
+                  </span>
+                )}
               </FormLabel>
               <Select 
                 onValueChange={field.onChange} 
@@ -136,13 +310,37 @@ export function BudgetTimelineForm() {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {CURRENCIES.map((currency) => (
-                    <SelectItem key={currency.value} value={currency.value}>
-                      {currency.label}
-                    </SelectItem>
-                  ))}
+                  {getSmartCurrencyOptions().map((currencyOption) => {
+                    if (currencyOption.value === 'separator') {
+                      return (
+                        <div key="separator" className="px-2 py-1 text-xs text-slate-400 font-opensans">
+                          Other Currencies
+                        </div>
+                      );
+                    }
+                    return (
+                      <SelectItem 
+                        key={currencyOption.value} 
+                        value={currencyOption.value}
+                        className={currencyOption.isRecommended ? 'bg-[#2B6CB0]/10 border-l-2 border-[#2B6CB0]' : ''}
+                      >
+                        <div className="flex items-center">
+                          {currencyOption.isRecommended && (
+                            <span className="mr-2 text-[#2B6CB0]">⭐</span>
+                          )}
+                          {currencyOption.label}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
+              {country && currency && (
+                <p className="text-sm text-[#2B6CB0] font-opensans flex items-center">
+                  <span className="mr-1">🌍</span>
+                  Currency automatically selected based on your country selection
+                </p>
+              )}
               <FormMessage className="text-red-600 font-opensans text-sm" />
             </FormItem>
           )}

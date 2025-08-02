@@ -5,7 +5,7 @@
  */
 import React, { useMemo, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { CreateProjectFormValues } from '../../pages/CreateProject';
+import { CreateProjectFormValues } from '../../pages/CreateProject/schema';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
@@ -80,7 +80,7 @@ function LocationPlotFormComponent() {
     }
   }, []);
   
-  // Load states when country changes
+  // Load states and auto-populate currency when country changes
   useEffect(() => {
     if (selectedCountry) {
       setLoadingStates(true);
@@ -90,6 +90,7 @@ function LocationPlotFormComponent() {
         const countryIsoCode = selectedCountryData?.isoCode;
         
         if (countryIsoCode) {
+          // Load states for the selected country
           const countryStates = State.getStatesOfCountry(countryIsoCode);
           const stateOptions: StateOption[] = countryStates.map(state => ({
             value: state.name, // Store readable name as value
@@ -101,6 +102,21 @@ function LocationPlotFormComponent() {
           // Sort states alphabetically
           stateOptions.sort((a, b) => a.label.localeCompare(b.label));
           setStates(stateOptions);
+          
+          // Auto-suggest currency based on selected country
+          const countryDetails = Country.getCountryByCode(countryIsoCode);
+          if (countryDetails?.currency) {
+            const currentCurrency = watch('currency');
+            
+            // Always suggest currency, but show notification if changing existing selection
+            if (currentCurrency && currentCurrency !== countryDetails.currency) {
+              console.log(`💱 Updating currency from ${currentCurrency} to ${countryDetails.currency} for ${selectedCountry}`);
+            } else {
+              console.log(`🌍 Setting currency ${countryDetails.currency} for ${selectedCountry}`);
+            }
+            
+            setValue('currency', countryDetails.currency);
+          }
         } else {
           setStates([]);
         }
@@ -108,7 +124,7 @@ function LocationPlotFormComponent() {
         // Clear the region field when country changes
         setValue('region', '');
       } catch (error) {
-        console.error('Error loading states:', error);
+        console.error('Error loading states or setting currency:', error);
         setStates([]);
       } finally {
         setLoadingStates(false);
@@ -117,15 +133,15 @@ function LocationPlotFormComponent() {
       setStates([]);
       setValue('region', '');
     }
-  }, [selectedCountry, setValue, countries]);
+  }, [selectedCountry, setValue, countries, watch]);
   
   // Memoize the size guidance function to prevent recreation
   const getSizeGuidance = useMemo(() => (unit: string) => {
     switch(unit) {
       case 'sq-m':
-        return 'Standard residential plot sizes in Ghana range from 370-740 sq meters';
+        return 'Typical residential plot sizes range from 300-1000 sq meters depending on location';
       case 'sq-ft':
-        return 'Standard residential plot sizes in Ghana range from 4,000-8,000 sq feet';
+        return 'Typical residential plot sizes range from 3,000-10,000 sq feet depending on location';
       case 'acres':
         return 'For reference, 1 acre = 4,047 sq meters or 43,560 sq feet';
       case 'hectares':
@@ -416,3 +432,6 @@ function LocationPlotFormComponent() {
 
 // Memoized export to prevent unnecessary re-renders
 export const LocationPlotForm = React.memo(LocationPlotFormComponent);
+
+// Default export for lazy loading
+export default LocationPlotForm;

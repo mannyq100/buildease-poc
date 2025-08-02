@@ -74,17 +74,17 @@ export interface Project {
   updated_at: string;
   
   // Extended data (only in project_details view)
-  details?: any;
-  timeline?: any;
-  budget_data?: any;
-  location_data?: any;
-  specs?: any;
-  materials_config?: any;
-  features?: any;
-  constraints?: any;
-  owner_info?: any;
-  recent_phases?: any[];
-  recent_transactions?: any[];
+  details?: Record<string, unknown>;
+  timeline?: Record<string, unknown>;
+  budget_data?: Record<string, unknown>;
+  location_data?: Record<string, unknown>;
+  specs?: Record<string, unknown>;
+  materials_config?: Record<string, unknown>;
+  features?: Record<string, unknown>;
+  constraints?: Record<string, unknown>;
+  owner_info?: Record<string, unknown>;
+  recent_phases?: Record<string, unknown>[];
+  recent_transactions?: Record<string, unknown>[];
   
 }
 

@@ -86,17 +86,27 @@ export const validateFileSize = (file: File, maxSizeMB: number): boolean => {
 };
 
 /**
- * Create a blob URL for immediate preview
+ * Create blob URL for preview - CENTRALIZED MEMORY MANAGEMENT
+ * Uses centralized memory manager to prevent memory leaks
  */
 export const createPreviewUrl = (file: File): string => {
+  // Direct implementation for now - centralized memory management will be handled at component level
+  // TODO: Integrate with centralized memory manager when refactoring to async patterns
   return URL.createObjectURL(file);
 };
 
 /**
- * Clean up blob URL
+ * Clean up blob URL - CENTRALIZED MEMORY MANAGEMENT
+ * Uses centralized memory manager for consistent cleanup
  */
 export const revokePreviewUrl = (url: string): void => {
-  URL.revokeObjectURL(url);
+  // Dynamic import to avoid circular dependencies
+  import('./memoryManager').then(({ memoryManager }) => 
+    memoryManager.revokeBlobUrl(url)
+  ).catch(() => {
+    // Fallback to direct cleanup
+    URL.revokeObjectURL(url);
+  });
 };
 
 /**

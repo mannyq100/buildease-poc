@@ -7,6 +7,11 @@
 import React, { Suspense } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, Settings, ImageIcon } from 'lucide-react';
+import type { ProjectDocumentsSectionProps } from './Documents/ProjectDocumentsSection';
+import type { ProjectSettingsSectionProps } from './Settings/ProjectSettingsSection';
+import type { PhaseFormProps } from './Forms/PhaseForm';
+import type { BudgetExpenseFormProps } from './Forms/BudgetExpenseForm';
+import type { TeamMemberFormProps } from './Forms/TeamMemberForm';
 
 // Loading component for documents section
 const DocumentsLoadingFallback = () => (
@@ -87,7 +92,7 @@ const FormLoadingFallback = () => (
 );
 
 // Wrapped components with Suspense
-export const ProjectDocumentsSection = React.memo(function ProjectDocumentsSection(props: any) {
+export const ProjectDocumentsSection = React.memo(function ProjectDocumentsSection(props: ProjectDocumentsSectionProps) {
   return (
     <Suspense fallback={<DocumentsLoadingFallback />}>
       <LazyProjectDocumentsSection {...props} />
@@ -95,7 +100,7 @@ export const ProjectDocumentsSection = React.memo(function ProjectDocumentsSecti
   );
 });
 
-export const ProjectSettingsSection = React.memo(function ProjectSettingsSection(props: any) {
+export const ProjectSettingsSection = React.memo(function ProjectSettingsSection(props: ProjectSettingsSectionProps) {
   return (
     <Suspense fallback={<SettingsLoadingFallback />}>
       <LazyProjectSettingsSection {...props} />
@@ -103,7 +108,7 @@ export const ProjectSettingsSection = React.memo(function ProjectSettingsSection
   );
 });
 
-export const PhaseForm = React.memo(function PhaseForm(props: any) {
+export const PhaseForm = React.memo(function PhaseForm(props: PhaseFormProps) {
   return (
     <Suspense fallback={<FormLoadingFallback />}>
       <LazyPhaseForm {...props} />
@@ -111,7 +116,7 @@ export const PhaseForm = React.memo(function PhaseForm(props: any) {
   );
 });
 
-export const BudgetExpenseForm = React.memo(function BudgetExpenseForm(props: any) {
+export const BudgetExpenseForm = React.memo(function BudgetExpenseForm(props: BudgetExpenseFormProps) {
   return (
     <Suspense fallback={<FormLoadingFallback />}>
       <LazyBudgetExpenseForm {...props} />
@@ -119,7 +124,7 @@ export const BudgetExpenseForm = React.memo(function BudgetExpenseForm(props: an
   );
 });
 
-export const TeamMemberForm = React.memo(function TeamMemberForm(props: any) {
+export const TeamMemberForm = React.memo(function TeamMemberForm(props: TeamMemberFormProps) {
   return (
     <Suspense fallback={<FormLoadingFallback />}>
       <LazyTeamMemberForm {...props} />

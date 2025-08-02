@@ -157,8 +157,8 @@ export interface ProjectDataPriority {
   };
   low: {
     materials?: Material[];
-    documents?: any[];
-    analytics?: any;
+    documents?: Record<string, unknown>[];
+    analytics?: Record<string, unknown>;
   };
 }
 
@@ -199,7 +199,7 @@ export interface OfflineMutation {
   id: string;
   type: 'create' | 'update' | 'delete';
   entity: 'project' | 'phase' | 'task' | 'material';
-  data: any;
+  data: Record<string, unknown>;
   timestamp: Date;
   retryCount: number;
 }

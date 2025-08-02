@@ -4,7 +4,7 @@
  * Collects special features and sustainability information
  */
 import { useFormContext } from 'react-hook-form';
-import { CreateProjectFormValues } from '../../pages/CreateProject';
+import { CreateProjectFormValues } from '../../pages/CreateProject/schema';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';

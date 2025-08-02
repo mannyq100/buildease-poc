@@ -16,9 +16,6 @@ import {
   Building,
   MapPin,
   Home,
-  DollarSign,
-  Layers,
-  Sparkles,
   Check,
 } from 'lucide-react';
 
@@ -38,49 +35,31 @@ interface StepNavigatorProps {
   className?: string;
 }
 
-// Step definitions - matches CreateProject wizard
+// Step definitions - streamlined 4-step wizard structure
 const steps: Step[] = [
   { 
     id: 1, 
-    title: 'Project Details', 
+    title: 'Project Essentials', 
     icon: <Building className="h-4 w-4" />,
-    description: 'Basic project information'
+    description: 'Basic project details and type'
   },
   { 
     id: 2, 
-    title: 'Location', 
+    title: 'Location & Plot', 
     icon: <MapPin className="h-4 w-4" />,
-    description: 'Location and plot details'
+    description: 'Where your project will be built'
   },
   { 
     id: 3, 
-    title: 'Building', 
+    title: 'Building & Budget', 
     icon: <Home className="h-4 w-4" />,
-    description: 'Building specifications'
+    description: 'Building specs and financial planning'
   },
   { 
     id: 4, 
-    title: 'Budget', 
-    icon: <DollarSign className="h-4 w-4" />,
-    description: 'Budget and timeline'
-  },
-  { 
-    id: 5, 
-    title: 'Materials', 
-    icon: <Layers className="h-4 w-4" />,
-    description: 'Construction materials'
-  },
-  { 
-    id: 6, 
-    title: 'Features', 
-    icon: <Sparkles className="h-4 w-4" />,
-    description: 'Special features'
-  },
-  { 
-    id: 7, 
-    title: 'Review', 
+    title: 'Review & Submit', 
     icon: <Check className="h-4 w-4" />,
-    description: 'Review and submit'
+    description: 'Review details and create project'
   },
 ];
 
