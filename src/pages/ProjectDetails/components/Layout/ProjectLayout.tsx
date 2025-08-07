@@ -13,6 +13,7 @@ import {
   ProjectDocumentsSection, 
   ProjectSettingsSection
 } from '../LazyComponents';
+import { ProjectCommentsSection } from '../Comments';
 import { TodaysFocusCard } from '../TodaysFocusCard';
 import { RecentUpdatesCard } from '../Updates/RecentUpdatesCard';
 import { ProjectStatusHero, ProjectQuickActions } from '../ProjectHeader';
@@ -162,11 +163,12 @@ export function ProjectLayout({
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 bg-white/80 backdrop-blur-sm border border-slate-200/60">
+          <TabsList className="grid w-full grid-cols-7 bg-white/80 backdrop-blur-sm border border-slate-200/60">
             <TabsTrigger value="overview" className="text-sm">Overview</TabsTrigger>
             <TabsTrigger value="budget" className="text-sm">Budget</TabsTrigger>
             <TabsTrigger value="timeline" className="text-sm">Timeline</TabsTrigger>
             <TabsTrigger value="team" className="text-sm">Team</TabsTrigger>
+            <TabsTrigger value="comments" className="text-sm">Comments</TabsTrigger>
             <TabsTrigger value="documents" className="text-sm">Media</TabsTrigger>
             <TabsTrigger value="settings" className="text-sm">Settings</TabsTrigger>
           </TabsList>
@@ -247,6 +249,11 @@ export function ProjectLayout({
               onDeleteMember={(id) => crudOperations.handleDelete('team', id)}
               onCreateMember={() => modalManagement.openCreateModal('team')}
             />
+          </TabsContent>
+
+          {/* Comments Tab */}
+          <TabsContent value="comments" className="space-y-6 mt-6">
+            <ProjectCommentsSection projectId={projectId} />
           </TabsContent>
 
           {/* Documents Tab */}

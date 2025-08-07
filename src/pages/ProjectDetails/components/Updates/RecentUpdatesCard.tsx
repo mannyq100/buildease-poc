@@ -8,8 +8,7 @@ import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useProjectDocuments } from '@/hooks/queries/useDocuments';
-import { useProjectDetailsData } from '@/hooks/queries/useProjectDetails';
+import { useRecentProjectActivities } from '@/hooks/queries/useProjectActivities';
 import { 
   Clock,
   ChevronDown,
@@ -22,7 +21,12 @@ import {
   AlertCircle,
   Info,
   Upload,
-  Edit
+  Edit,
+  DollarSign,
+  Users,
+  Hammer,
+  Trash2,
+  Plus
 } from 'lucide-react';
 
 interface Project {
@@ -32,9 +36,11 @@ interface Project {
   created_at: string;
 }
 
+import type { ProjectActivity, ActivityType } from '@/types/database';
+
 interface UpdateItem {
   id: string;
-  type: 'document_upload' | 'project_update' | 'status_change' | 'image_upload' | 'system';
+  type: ActivityType;
   title: string;
   description?: string;
   timestamp: string;
@@ -57,103 +63,76 @@ export function RecentUpdatesCard({
 }: RecentUpdatesCardProps) {
   const [showAll, setShowAll] = useState(false);
   
-  // Fetch project documents for recent uploads
-  const { data: documents = [] } = useProjectDocuments(project.id);
-  
-  // Fetch project details for additional updates
-  const { phases = [], budgetExpenses = [] } = useProjectDetailsData(project.id);
+  // Fetch real project activities with real-time updates
+  const { data: activities = [], isLoading } = useRecentProjectActivities(project.id, 20, true);
 
-  // Generate recent updates from various sources
-  const recentUpdates = useMemo((): UpdateItem[] => {
-    const updates: UpdateItem[] = [];
-    
-    // Add recent document uploads
-    documents.slice(0, 5).forEach((doc) => {
-      updates.push({
-        id: `doc-${doc.id}`,
-        type: 'document_upload',
-        title: `Document uploaded: ${doc.name}`,
-        description: doc.description || `${doc.document_type} document added to project`,
-        timestamp: doc.created_at,
-        icon: <FileText className="h-4 w-4" />,
-        status: 'success',
-        metadata: { documentType: doc.document_type }
-      });
-    });
-
-    // Add recent project updates (simulated based on updated_at)
-    const daysSinceUpdate = Math.floor((Date.now() - new Date(project.updated_at).getTime()) / (1000 * 60 * 60 * 24));
-    if (daysSinceUpdate < 7) {
-      updates.push({
-        id: `project-update-${project.id}`,
-        type: 'project_update',
-        title: 'Project details updated',
-        description: 'Project information has been modified',
-        timestamp: project.updated_at,
-        icon: <Edit className="h-4 w-4" />,
-        status: 'info'
-      });
+  // Convert ActivityType to appropriate icon
+  const getActivityIcon = (activityType: ActivityType): React.ReactNode => {
+    switch (activityType) {
+      case 'document_upload':
+        return <FileText className="h-4 w-4" />;
+      case 'document_delete':
+        return <Trash2 className="h-4 w-4" />;
+      case 'expense_create':
+      case 'expense_update':
+      case 'budget_update':
+        return <DollarSign className="h-4 w-4" />;
+      case 'expense_delete':
+        return <Trash2 className="h-4 w-4" />;
+      case 'phase_create':
+      case 'phase_update':
+        return <Hammer className="h-4 w-4" />;
+      case 'phase_delete':
+        return <Trash2 className="h-4 w-4" />;
+      case 'task_create':
+      case 'task_update':
+        return <Plus className="h-4 w-4" />;
+      case 'task_complete':
+        return <CheckCircle className="h-4 w-4" />;
+      case 'team_member_add':
+        return <Users className="h-4 w-4" />;
+      case 'team_member_remove':
+        return <Trash2 className="h-4 w-4" />;
+      case 'status_change':
+        return <AlertCircle className="h-4 w-4" />;
+      case 'project_update':
+        return <Edit className="h-4 w-4" />;
+      case 'image_upload':
+        return <ImageIcon className="h-4 w-4" />;
+      case 'inspection':
+        return <CheckCircle className="h-4 w-4" />;
+      case 'delivery':
+        return <Upload className="h-4 w-4" />;
+      case 'weather_delay':
+        return <AlertCircle className="h-4 w-4" />;
+      case 'material_add':
+      case 'material_update':
+        return <Hammer className="h-4 w-4" />;
+      case 'system':
+      default:
+        return <Info className="h-4 w-4" />;
     }
+  };
 
-    // Add some simulated construction updates
-    const simulatedUpdates: Omit<UpdateItem, 'id'>[] = [
-      {
-        type: 'status_change',
-        title: 'Foundation inspection completed',
-        description: 'All foundation work passed inspection with no issues',
-        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-        icon: <CheckCircle className="h-4 w-4" />,
-        status: 'success',
-        user: 'Inspector Johnson'
-      },
-      {
-        type: 'image_upload',
-        title: 'Progress photos added',
-        description: '5 new construction progress images uploaded',
-        timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
-        icon: <ImageIcon className="h-4 w-4" />,
-        status: 'info',
-        user: 'Site Manager'
-      },
-      {
-        type: 'status_change',
-        title: 'Materials delivered on schedule',
-        description: 'Lumber and steel beams arrived and inventoried',
-        timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-        icon: <Upload className="h-4 w-4" />,
-        status: 'success',
-        user: 'Delivery Team'
-      },
-      {
-        type: 'status_change',
-        title: 'Weather delay - rescheduled roofing',
-        description: 'Heavy rain forecast postponed roofing work to next week',
-        timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-        icon: <AlertCircle className="h-4 w-4" />,
-        status: 'warning',
-        user: 'Project Manager'
-      },
-      {
-        type: 'system',
-        title: 'Budget updated',
-        description: 'Material costs adjusted based on current market prices',
-        timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
-        icon: <Info className="h-4 w-4" />,
-        status: 'info',
-        user: 'Finance Team'
-      }
-    ];
+  // Convert ProjectActivity to UpdateItem
+  const convertActivityToUpdateItem = (activity: ProjectActivity): UpdateItem => {
+    return {
+      id: activity.id,
+      type: activity.activity_type,
+      title: activity.title,
+      description: activity.description || undefined,
+      timestamp: activity.created_at,
+      user: activity.user_name || undefined,
+      icon: getActivityIcon(activity.activity_type),
+      status: activity.status,
+      metadata: activity.metadata
+    };
+  };
 
-    simulatedUpdates.forEach((update, index) => {
-      updates.push({
-        ...update,
-        id: `simulated-${index}`
-      });
-    });
-
-    // Sort by timestamp (most recent first)
-    return updates.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }, [documents, project.updated_at, project.id]);
+  // Convert activities to update items
+  const recentUpdates = useMemo((): UpdateItem[] => {
+    return activities.map(convertActivityToUpdateItem);
+  }, [activities]);
 
   const displayedUpdates = showAll ? recentUpdates : recentUpdates.slice(0, 3);
 
@@ -229,7 +208,13 @@ export function RecentUpdatesCard({
       
       {isExpanded && (
         <CardContent className="space-y-4">
-          {recentUpdates.length > 0 ? (
+          {isLoading ? (
+            <div className="text-center py-8 text-slate-500">
+              <Clock className="h-12 w-12 mx-auto mb-4 opacity-50 animate-spin" />
+              <p className="font-medium mb-1">Loading recent updates...</p>
+              <p className="text-sm">Fetching latest project activity</p>
+            </div>
+          ) : recentUpdates.length > 0 ? (
             <>
               {/* Updates Timeline */}
               <div className="space-y-4">

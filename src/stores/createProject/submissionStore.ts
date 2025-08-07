@@ -35,7 +35,7 @@ export interface SubmissionStoreState extends ValidationState, SubmissionState {
   isStepValid: (step: WizardStep) => boolean;
   
   // Submission actions
-  submitProject: (formData: ProjectFormValues, userId: string, uploadedImages: { images: string[]; profileImage: string | null }) => Promise<void>;
+  submitProject: (formData: ProjectFormValues, userId: string) => Promise<string>; // Returns project ID
   resetSubmission: () => void;
   clearSubmitError: () => void;
 }
@@ -206,18 +206,18 @@ export const useSubmissionStore = create<SubmissionStoreState>()(
         return stepErrors.length === 0;
       },
 
-      submitProject: async (formData, userId, uploadedImages) => {
+      submitProject: async (formData, userId) => {
         set({ isSubmitting: true, submitError: null }, false, 'submitProject/start');
         
         try {
-          // Merge uploaded images into form data
-          const finalFormData = {
+          // Create project without images first
+          const projectData = {
             ...formData,
-            images: uploadedImages.images,
-            profileImage: uploadedImages.profileImage
+            images: [], // Empty initially
+            profileImage: undefined // Empty initially
           };
           
-          const result = await createProject(finalFormData, userId);
+          const result = await createProject(projectData, userId);
           
           if (result.success && result.project) {
             set({
@@ -226,11 +226,14 @@ export const useSubmissionStore = create<SubmissionStoreState>()(
               createdProjectId: result.project.id,
               submitError: null
             }, false, 'submitProject/success');
+            
+            return result.project.id; // Return project ID for image upload
           } else {
             set({
               isSubmitting: false,
               submitError: result.error || 'Failed to create project'
             }, false, 'submitProject/error');
+            throw new Error(result.error || 'Failed to create project');
           }
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
@@ -238,6 +241,7 @@ export const useSubmissionStore = create<SubmissionStoreState>()(
             isSubmitting: false,
             submitError: errorMessage
           }, false, 'submitProject/error');
+          throw error;
         }
       },
 
@@ -267,18 +271,55 @@ const selectValidationActions = (state: SubmissionStoreState) => ({
   clearValidationErrors: state.clearValidationErrors
 });
 
-const selectProjectSubmission = (state: SubmissionStoreState) => ({
-  isSubmitting: state.isSubmitting,
-  submitError: state.submitError,
-  isSuccess: state.isSuccess,
-  createdProjectId: state.createdProjectId
-});
+// Cached selectors to prevent infinite re-renders
+let cachedSubmissionState: {
+  isSubmitting: boolean;
+  submitError: string | null;
+  isSuccess: boolean;
+  createdProjectId: string | null;
+} | null = null;
 
-const selectSubmissionActions = (state: SubmissionStoreState) => ({
-  submitProject: state.submitProject,
-  resetSubmission: state.resetSubmission,
-  clearSubmitError: state.clearSubmitError
-});
+let cachedSubmissionActions: {
+  submitProject: (formData: ProjectFormValues, userId: string) => Promise<string>;
+  resetSubmission: () => void;
+  clearSubmitError: () => void;
+} | null = null;
+
+const selectProjectSubmission = (state: SubmissionStoreState) => {
+  // Only create new object if state actually changed
+  if (!cachedSubmissionState || 
+      cachedSubmissionState.isSubmitting !== state.isSubmitting ||
+      cachedSubmissionState.submitError !== state.submitError ||
+      cachedSubmissionState.isSuccess !== state.isSuccess ||
+      cachedSubmissionState.createdProjectId !== state.createdProjectId) {
+    
+    cachedSubmissionState = {
+      isSubmitting: state.isSubmitting,
+      submitError: state.submitError,
+      isSuccess: state.isSuccess,
+      createdProjectId: state.createdProjectId
+    };
+  }
+  
+  return cachedSubmissionState;
+};
+
+const selectSubmissionActions = (state: SubmissionStoreState) => {
+  // Only create new object if actions actually changed
+  if (!cachedSubmissionActions ||
+      cachedSubmissionActions.submitProject !== state.submitProject ||
+      cachedSubmissionActions.resetSubmission !== state.resetSubmission ||
+      cachedSubmissionActions.clearSubmitError !== state.clearSubmitError) {
+    
+    cachedSubmissionActions = {
+      submitProject: state.submitProject,
+      resetSubmission: state.resetSubmission,
+      clearSubmitError: state.clearSubmitError
+    };
+  }
+  
+  return cachedSubmissionActions;
+};
 
 export function useProjectValidation() {
   return useSubmissionStore(selectProjectValidation);

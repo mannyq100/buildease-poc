@@ -6,6 +6,7 @@ import { queryKeys } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
 import { uploadProjectDocument, deleteProjectDocument, type DocumentType } from '@/services/documentService';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { toast } from 'sonner';
 
 // Document interface matching database schema
@@ -106,9 +107,10 @@ export function useDocument(documentId: string) {
 /**
  * Upload a new document
  */
-export function useUploadDocument() {
+export function useUploadDocument(projectId?: string) {
   const queryClient = useQueryClient();
   const { user } = useSupabaseAuth();
+  const activityTracker = projectId ? useActivityTracker({ projectId }) : null;
 
   return useMutation({
     mutationFn: async ({
@@ -161,7 +163,7 @@ export function useUploadDocument() {
 
       return uploadResult;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: async (uploadResult, variables) => {
       // Invalidate document queries
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.documents.byProject(variables.projectId) 
@@ -171,6 +173,15 @@ export function useUploadDocument() {
         queryClient.invalidateQueries({ 
           queryKey: queryKeys.documents.byPhase(variables.phaseId) 
         });
+      }
+
+      // Track document upload activity
+      if (activityTracker) {
+        await activityTracker.trackDocumentUpload(
+          uploadResult.id || 'unknown',
+          variables.name || variables.file.name,
+          variables.documentType || 'DOCUMENT'
+        );
       }
 
       toast.success('Document uploaded successfully');
@@ -241,15 +252,17 @@ export function useUpdateDocument() {
 /**
  * Delete a document
  */
-export function useDeleteDocument() {
+export function useDeleteDocument(projectId?: string) {
   const queryClient = useQueryClient();
+  const { user } = useSupabaseAuth();
+  const activityTracker = projectId ? useActivityTracker({ projectId }) : null;
 
   return useMutation({
     mutationFn: async (documentId: string) => {
       // First get the document to access file path and project info
       const { data: document, error: fetchError } = await supabase
         .from('be_document')
-        .select('file_path, project_id, phase_id')
+        .select('file_path, project_id, phase_id, name')
         .eq('id', documentId)
         .single();
 
@@ -270,9 +283,14 @@ export function useDeleteDocument() {
         throw new Error(`Failed to delete document record: ${deleteError.message}`);
       }
 
-      return { documentId, projectId: document.project_id, phaseId: document.phase_id };
+      return { 
+        documentId, 
+        projectId: document.project_id, 
+        phaseId: document.phase_id,
+        documentName: document.name
+      };
     },
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       // Invalidate related queries
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.documents.byProject(result.projectId) 
@@ -287,6 +305,13 @@ export function useDeleteDocument() {
       queryClient.removeQueries({ 
         queryKey: queryKeys.documents.byId(result.documentId) 
       });
+
+      // Track document deletion activity
+      if (activityTracker) {
+        await activityTracker.trackDocumentDelete(
+          result.documentName
+        );
+      }
 
       toast.success('Document deleted successfully');
     },

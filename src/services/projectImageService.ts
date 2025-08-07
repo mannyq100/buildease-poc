@@ -87,7 +87,7 @@ export function validateImageFile(file: File): { isValid: boolean; error?: strin
 /**
  * Update project image array in database
  */
-async function updateProjectImageArray(
+export async function updateProjectImageArray(
   projectId: string,
   imageUrls: string[],
   type: ImageType
@@ -97,18 +97,28 @@ async function updateProjectImageArray(
     
     // Handle profile image differently (single image, not array)
     if (type === 'profile') {
-      const { error: updateError } = await supabase
+      console.log('🔄 [DEBUG] updateProjectImageArray - Profile image update');
+      console.log('🔄 [DEBUG] Project ID:', projectId);
+      console.log('🔄 [DEBUG] Image URL:', imageUrls[0]);
+      
+      const { data, error: updateError } = await supabase
         .from('be_project')
         .update({ 
           profile_image: imageUrls[0],
           updated_at: new Date().toISOString()
         })
-        .eq('id', projectId);
+        .eq('id', projectId)
+        .select(); // Add select to see what was updated
+
+      console.log('🔄 [DEBUG] Supabase update response - data:', data);
+      console.log('🔄 [DEBUG] Supabase update response - error:', updateError);
 
       if (updateError) {
+        console.error('❌ [DEBUG] Supabase update failed:', updateError);
         throw new Error(`Failed to update profile image: ${updateError.message}`);
       }
       
+      console.log('✅ [DEBUG] Profile image updated successfully in database');
       return { success: true };
     }
     

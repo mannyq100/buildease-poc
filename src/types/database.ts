@@ -16,6 +16,7 @@ export type AIPlanJobStatus = 'pending' | 'processing' | 'completed' | 'failed';
 export type PlanGenerationStatus = 'not_started' | 'requested' | 'processing' | 'completed' | 'failed';
 export type AIPlanStatus = 'draft' | 'review' | 'approved' | 'rejected' | 'archived';
 export type NotificationType = 'general' | 'plan_generation' | 'plan_completed' | 'plan_failed' | 'project_update' | 'system';
+export type ActivityType = 'document_upload' | 'document_delete' | 'project_update' | 'status_change' | 'image_upload' | 'budget_update' | 'expense_create' | 'expense_update' | 'expense_delete' | 'phase_create' | 'phase_update' | 'phase_delete' | 'task_create' | 'task_update' | 'task_complete' | 'team_member_add' | 'team_member_remove' | 'material_add' | 'material_update' | 'system' | 'inspection' | 'delivery' | 'weather_delay';
 
 // Plan progress tracking types
 export type ProgressStage = 
@@ -227,6 +228,9 @@ export interface MaterialTransaction {
 
 // Document types
 export type DocumentType = 'PERMIT' | 'DRAWING' | 'CONTRACT' | 'INVOICE' | 'RECEIPT' | 'REPORT' | 'SPECIFICATION' | 'SCHEDULE' | 'PHOTO' | 'VIDEO' | 'MANUAL' | 'CERTIFICATE' | 'OTHER';
+export type ProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed';
+export type CollectionType = 'album' | 'progress' | 'inspection' | 'before_after' | 'custom';
+export type MediaProcessingType = 'thumbnail' | 'compress' | 'watermark' | 'ocr' | 'virus_scan';
 
 export interface Document {
   id: string;
@@ -239,8 +243,116 @@ export interface Document {
   file_size?: number;
   mime_type?: string;
   metadata: Record<string, unknown>;
+  // Enhanced media management fields
+  tags?: string[];
+  caption?: string;
+  file_size_bytes?: number;
+  thumbnail_url?: string;
+  processing_status?: ProcessingStatus;
   created_at: string;
   updated_at: string;
+}
+
+// Media Collection interfaces
+export interface MediaCollection {
+  id: string;
+  project_id: string;
+  name: string;
+  description?: string;
+  cover_image_url?: string;
+  is_public: boolean;
+  collection_type: CollectionType;
+  metadata: Record<string, unknown>;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+  
+  // Joined data
+  document_count?: number;
+  documents?: Document[];
+}
+
+export interface CollectionDocument {
+  collection_id: string;
+  document_id: string;
+  sort_order: number;
+  added_at: string;
+  added_by?: string;
+  
+  // Joined document data
+  document?: Document;
+}
+
+export interface MediaProcessingQueue {
+  id: string;
+  document_id: string;
+  processing_type: MediaProcessingType;
+  status: ProcessingStatus;
+  priority: number;
+  attempt_count: number;
+  max_attempts: number;
+  error_message?: string;
+  processing_data: Record<string, unknown>;
+  result_data: Record<string, unknown>;
+  scheduled_for: string;
+  started_at?: string;
+  completed_at?: string;
+  created_at: string;
+  updated_at: string;
+  
+  // Joined document data
+  document?: Document;
+}
+
+// Media search and statistics interfaces
+export interface MediaSearchFilters {
+  searchTerm?: string;
+  tags?: string[];
+  documentTypes?: DocumentType[];
+  collectionId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  minFileSize?: number;
+  maxFileSize?: number;
+  processingStatus?: ProcessingStatus[];
+}
+
+export interface MediaSearchResult {
+  id: string;
+  name: string;
+  document_type: DocumentType;
+  file_path: string;
+  caption?: string;
+  description?: string;
+  tags?: string[];
+  file_size_bytes?: number;
+  mime_type?: string;
+  created_at: string;
+  relevance_score?: number;
+}
+
+export interface ProjectMediaStats {
+  total_documents: number;
+  total_size_bytes: number;
+  total_size_mb: number;
+  document_types: Record<string, number>;
+  recent_uploads: number;
+}
+
+// Bulk operation interfaces
+export interface BulkMediaOperation {
+  operation: 'delete' | 'tag' | 'move_to_collection' | 'update_metadata';
+  documentIds: string[];
+  data?: Record<string, unknown>;
+}
+
+export interface BulkOperationResult {
+  success: number;
+  failed: number;
+  errors: Array<{
+    documentId: string;
+    error: string;
+  }>;
 }
 
 // Permission system types
@@ -278,6 +390,46 @@ export interface Notification {
   expires_at?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// Project activity audit log interface
+export interface ProjectActivity {
+  id: string;
+  project_id: string;
+  activity_type: ActivityType;
+  title: string;
+  description?: string | null;
+  user_id?: string | null;
+  user_name?: string | null;
+  entity_type?: string | null; // 'document', 'expense', 'phase', etc.
+  entity_id?: string | null;
+  metadata: Record<string, unknown>;
+  status: 'success' | 'info' | 'warning' | 'error';
+  created_at: string;
+  updated_at: string;
+}
+
+// Comment interface for project, task, and phase comments
+export interface Comment {
+  id: string;
+  entity_type: 'project' | 'task' | 'phase';
+  entity_id: string;
+  user_id: string;
+  content: string;
+  parent_comment_id?: string | null; // For threaded comments
+  created_at: string;
+  updated_at: string;
+  
+  // Joined user information
+  user?: {
+    id: string;
+    first_name: string;
+    last_name?: string | null;
+    email: string;
+    settings?: {
+      picture_url?: string | null;
+    };
+  };
 }
 
 // Main project interface
@@ -346,10 +498,15 @@ export const TABLE_NAMES = {
   DOCUMENTS: 'be_document',
   NOTIFICATIONS: 'be_notification',
   AUDIT_LOG: 'be_audit_log',
+  PROJECT_ACTIVITIES: 'be_project_activity',
   TASKS: 'be_task',
   QUALITY_INSPECTIONS: 'be_quality_inspection',
   AI_PLAN_JOBS: 'ai_plan_jobs',
-  AI_GENERATED_PLANS: 'ai_generated_plan'
+  AI_GENERATED_PLANS: 'ai_generated_plan',
+  // Advanced media management tables
+  MEDIA_COLLECTIONS: 'media_collection',
+  COLLECTION_DOCUMENTS: 'collection_document',
+  MEDIA_PROCESSING_QUEUE: 'media_processing_queue'
 } as const;
 
 // Utility type for database insertions (excludes auto-generated fields)
@@ -358,3 +515,9 @@ export type UserInsert = Omit<User, 'id' | 'created_at' | 'updated_at' | 'versio
 export type AIPlanJobInsert = Omit<AIPlanJob, 'id' | 'created_at' | 'updated_at'>;
 export type NotificationInsert = Omit<Notification, 'id' | 'created_at' | 'updated_at'>;
 export type AIGeneratedPlanInsert = Omit<AIGeneratedPlan, 'id' | 'created_at' | 'updated_at' | 'generated_at'>;
+export type ProjectActivityInsert = Omit<ProjectActivity, 'id' | 'created_at' | 'updated_at'>;
+export type CommentInsert = Omit<Comment, 'id' | 'created_at' | 'updated_at' | 'user'>;
+export type DocumentInsert = Omit<Document, 'id' | 'created_at' | 'updated_at'>;
+export type MediaCollectionInsert = Omit<MediaCollection, 'id' | 'created_at' | 'updated_at' | 'document_count' | 'documents'>;
+export type CollectionDocumentInsert = Omit<CollectionDocument, 'added_at' | 'document'>;
+export type MediaProcessingQueueInsert = Omit<MediaProcessingQueue, 'id' | 'created_at' | 'updated_at' | 'document'>;

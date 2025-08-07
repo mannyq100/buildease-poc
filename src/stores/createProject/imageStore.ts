@@ -5,6 +5,7 @@
  */
 
 import { create } from 'zustand';
+import { useShallow } from 'zustand/react/shallow';
 import { devtools } from 'zustand/middleware';
 import { uploadFile } from '@/utils/core/storageUtils';
 
@@ -13,6 +14,16 @@ export interface LocalImageFile {
   id: string;
   file: File;
   previewUrl: string;
+}
+
+// Serializable image data for localStorage
+interface SerializableImageFile {
+  id: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  previewUrl: string;
+  fileData: string; // Base64 encoded file data
 }
 
 // Image state interface
@@ -31,7 +42,7 @@ export interface ImageStoreState extends ImageState {
   removeLocalImage: (id: string) => void;
   setProfileImage: (id: string | null) => void;
   clearAllImages: () => void;
-  uploadImages: (userId: string) => Promise<{ images: string[]; profileImage: string | null }>;
+  uploadImages: (userId: string, projectId: string) => Promise<{ images: string[]; profileImage: string | null }>;
   setUploadProgress: (progress: number) => void;
   setUploadError: (error: string | null) => void;
   resetUploadState: () => void;
@@ -47,22 +58,133 @@ function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
+// LocalStorage key
+const STORAGE_KEY = 'buildease-project-images';
+
+// Convert File to base64
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = error => reject(error);
+  });
+}
+
+// Convert base64 back to File
+function base64ToFile(base64: string, fileName: string, fileType: string): File {
+  const byteCharacters = atob(base64.split(',')[1]);
+  const byteNumbers = new Array(byteCharacters.length);
+  
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  
+  const byteArray = new Uint8Array(byteNumbers);
+  return new File([byteArray], fileName, { type: fileType });
+}
+
+// Save images to localStorage
+function saveToLocalStorage(images: LocalImageFile[], profileImageId: string | null): void {
+  try {
+    Promise.all(
+      images.map(async (img) => {
+        try {
+          const fileData = await fileToBase64(img.file);
+          return {
+            id: img.id,
+            fileName: img.file.name,
+            fileType: img.file.type,
+            fileSize: img.file.size,
+            previewUrl: img.previewUrl,
+            fileData
+          };
+        } catch (error) {
+          console.warn('Failed to serialize image:', img.file.name, error);
+          return null;
+        }
+      })
+    ).then(results => {
+      const validResults = results.filter(Boolean) as SerializableImageFile[];
+      const storageData = {
+        images: validResults,
+        profileImageId,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(storageData));
+    }).catch(error => {
+      console.warn('Failed to save images to localStorage:', error);
+    });
+  } catch (error) {
+    console.warn('Error saving to localStorage:', error);
+  }
+}
+
+// Load images from localStorage
+function loadFromLocalStorage(): { images: LocalImageFile[]; profileImageId: string | null } {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return { images: [], profileImageId: null };
+    
+    const data = JSON.parse(stored);
+    
+    // Check if data is stale (older than 24 hours)
+    const isStale = Date.now() - (data.timestamp || 0) > 24 * 60 * 60 * 1000;
+    if (isStale) {
+      localStorage.removeItem(STORAGE_KEY);
+      return { images: [], profileImageId: null };
+    }
+    
+    const images: LocalImageFile[] = data.images.map((serialized: SerializableImageFile) => {
+      try {
+        const file = base64ToFile(serialized.fileData, serialized.fileName, serialized.fileType);
+        return {
+          id: serialized.id,
+          file,
+          previewUrl: serialized.previewUrl
+        };
+      } catch (error) {
+        console.warn('Failed to deserialize image:', serialized.fileName, error);
+        return null;
+      }
+    }).filter(Boolean);
+    
+    return {
+      images,
+      profileImageId: data.profileImageId
+    };
+  } catch (error) {
+    console.warn('Error loading from localStorage:', error);
+    localStorage.removeItem(STORAGE_KEY); // Clear corrupted data
+    return { images: [], profileImageId: null };
+  }
+}
+
+// Clear localStorage
+function clearLocalStorage(): void {
+  localStorage.removeItem(STORAGE_KEY);
+}
+
 // Default image state
-const getDefaultImageState = (): ImageState => ({
-  localFiles: [],
-  localProfileImageId: null,
-  isUploading: false,
-  uploadProgress: 0,
-  uploadError: null
-});
+const getDefaultImageState = (): ImageState => {
+  // Load from localStorage on initialization
+  const stored = loadFromLocalStorage();
+  return {
+    localFiles: stored.images,
+    localProfileImageId: stored.profileImageId,
+    isUploading: false,
+    uploadProgress: 0,
+    uploadError: null
+  };
+};
 
 // Image validation
 function validateImageFile(file: File): string | null {
   const maxSize = 10 * 1024 * 1024; // 10MB
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/gif'];
   
   if (!allowedTypes.includes(file.type)) {
-    return 'Only JPEG, PNG, and WebP images are allowed';
+    return 'Only JPEG, PNG, WebP, HEIC, and GIF images are allowed';
   }
   
   if (file.size > maxSize) {
@@ -74,25 +196,29 @@ function validateImageFile(file: File): string | null {
 
 // Upload a single image file
 async function uploadSingleImage(
-  file: File, 
-  userId: string, 
-  isProfile: boolean = false
+  file: File,
+  userId: string,
+  projectId: string,
+  _isProfile: boolean = false
 ): Promise<string> {
-  const fileExtension = file.name.split('.').pop() || 'jpg';
-  const timestamp = Date.now();
-  const randomString = Math.random().toString(36).substring(2, 15);
-  const prefix = isProfile ? 'profile' : 'inspiration';
-  const fileName = `${prefix}_${timestamp}_${randomString}.${fileExtension}`;
+  // Per new flow, all images (including profile) go into the 'project-inspiration' bucket
+  const bucket = 'project-inspiration';
   
-  const filePath = `projects/${userId}/${fileName}`;
+  const uploadResult = await uploadFile(file, {
+    bucket,
+    userId,
+    projectId,
+    // Keep allowed types aligned with validation
+    allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/gif'],
+    maxSizeMB: 10,
+    onProgress: undefined // Progress handled at higher level
+  });
   
-  const uploadResult = await uploadFile(file, filePath);
-  
-  if (!uploadResult.success || !uploadResult.url) {
+  if (!uploadResult.success || !uploadResult.publicUrl) {
     throw new Error(uploadResult.error || 'Upload failed');
   }
   
-  return uploadResult.url;
+  return uploadResult.publicUrl;
 }
 
 // Create the image store
@@ -112,10 +238,16 @@ export const useImageStore = create<ImageStoreState>()(
         const previewUrl = createPreviewUrl(file);
         const newImage: LocalImageFile = { id, file, previewUrl };
 
-        set((state) => ({
-          localFiles: [...state.localFiles, newImage],
-          uploadError: null
-        }), false, 'addLocalImage');
+        set((state) => {
+          const newFiles = [...state.localFiles, newImage];
+          // Save to localStorage
+          saveToLocalStorage(newFiles, state.localProfileImageId);
+          
+          return {
+            localFiles: newFiles,
+            uploadError: null
+          };
+        }, false, 'addLocalImage');
       },
 
       removeLocalImage: (id) => {
@@ -125,24 +257,45 @@ export const useImageStore = create<ImageStoreState>()(
             URL.revokeObjectURL(imageToRemove.previewUrl);
           }
 
+          const newFiles = state.localFiles.filter(img => img.id !== id);
+          const newProfileImageId = state.localProfileImageId === id ? null : state.localProfileImageId;
+          
+          // Save to localStorage
+          saveToLocalStorage(newFiles, newProfileImageId);
+
           return {
-            localFiles: state.localFiles.filter(img => img.id !== id),
-            localProfileImageId: state.localProfileImageId === id ? null : state.localProfileImageId
+            localFiles: newFiles,
+            localProfileImageId: newProfileImageId
           };
         }, false, 'removeLocalImage');
       },
 
-      setProfileImage: (id) =>
-        set({ localProfileImageId: id }, false, 'setProfileImage'),
+      setProfileImage: (id) => {
+        set((state) => {
+          // Save to localStorage
+          saveToLocalStorage(state.localFiles, id);
+          
+          return { localProfileImageId: id };
+        }, false, 'setProfileImage');
+      },
 
       clearAllImages: () => {
         const { localFiles } = get();
         localFiles.forEach(img => URL.revokeObjectURL(img.previewUrl));
         
-        set(getDefaultImageState(), false, 'clearAllImages');
+        // Clear localStorage
+        clearLocalStorage();
+        
+        set({
+          localFiles: [],
+          localProfileImageId: null,
+          isUploading: false,
+          uploadProgress: 0,
+          uploadError: null
+        }, false, 'clearAllImages');
       },
 
-      uploadImages: async (userId) => {
+      uploadImages: async (userId, projectId) => {
         const { localFiles, localProfileImageId } = get();
         
         if (localFiles.length === 0) {
@@ -156,7 +309,7 @@ export const useImageStore = create<ImageStoreState>()(
             const isProfile = localFile.id === localProfileImageId;
             
             try {
-              const url = await uploadSingleImage(localFile.file, userId, isProfile);
+              const url = await uploadSingleImage(localFile.file, userId, projectId, isProfile);
               
               // Update progress
               const progress = ((index + 1) / localFiles.length) * 100;
@@ -213,31 +366,38 @@ export const useImageStore = create<ImageStoreState>()(
   )
 );
 
-// Convenience hooks
-// Stable selectors to prevent re-renders
-const selectProjectImages = (state: ImageStoreState) => ({
-  localFiles: state.localFiles,
-  localProfileImageId: state.localProfileImageId,
-  isUploading: state.isUploading,
-  uploadProgress: state.uploadProgress,
-  uploadError: state.uploadError
-});
+// Convenience hooks with proper shallow comparison
 
-const selectImageActions = (state: ImageStoreState) => ({
-  addLocalImage: state.addLocalImage,
-  removeLocalImage: state.removeLocalImage,
-  setProfileImage: state.setProfileImage,
-  clearAllImages: state.clearAllImages,
-  uploadImages: state.uploadImages,
-  setUploadProgress: state.setUploadProgress,
-  setUploadError: state.setUploadError,
-  resetUploadState: state.resetUploadState
-});
-
-export function useProjectImages() {
-  return useImageStore(selectProjectImages);
+export function useImageState() {
+  return useImageStore(
+    useShallow((state) => ({
+      localFiles: state.localFiles,
+      localProfileImageId: state.localProfileImageId,
+      isUploading: state.isUploading,
+      uploadProgress: state.uploadProgress,
+      uploadError: state.uploadError,
+    }))
+  );
 }
 
 export function useImageActions() {
-  return useImageStore(selectImageActions);
+  return useImageStore(
+    useShallow((state) => ({
+      addLocalImage: state.addLocalImage,
+      removeLocalImage: state.removeLocalImage,
+      setProfileImage: state.setProfileImage,
+      clearAllImages: state.clearAllImages,
+      uploadImages: state.uploadImages,
+      setUploadProgress: state.setUploadProgress,
+      setUploadError: state.setUploadError,
+      resetUploadState: state.resetUploadState,
+    }))
+  );
 }
+
+// Cleanup function for resetting store state
+export function resetImageStoreCaches() {
+  // No cached variables to reset in current implementation
+  // This function is kept for potential future use
+}
+

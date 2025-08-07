@@ -3,15 +3,13 @@
  * First step of the project creation wizard
  * Collects basic project information with real-time validation
  */
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CreateProjectFormValues } from '../../pages/CreateProject/schema';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Switch } from '@/components/ui/switch';
 import { Building, Home, Store, Hammer, User } from 'lucide-react';
 import { ProjectInspirationImages } from './ProjectInspirationImages';
 
@@ -45,9 +43,19 @@ const PROJECT_TYPES = [
 ] as const;
 
 function ProjectDetailsFormComponent() {
-  const { control, watch } = useFormContext<CreateProjectFormValues>();
-  const [isDifferentOwner, setIsDifferentOwner] = useState(false);
+  const { control, watch, setValue } = useFormContext<CreateProjectFormValues>();
   const selectedType = watch('projectType');
+  const [isDifferentOwner, setIsDifferentOwner] = useState(false);
+  
+  const handleOwnerToggle = useCallback((checked: boolean) => {
+    setIsDifferentOwner(checked);
+    // Clear owner fields when toggling off
+    if (!checked) {
+      setValue('owner', '');
+      setValue('email', '');
+      setValue('phoneNumber', '');
+    }
+  }, [setValue]);
 
   return (
     <div className="space-y-8">
@@ -104,61 +112,51 @@ function ProjectDetailsFormComponent() {
               What type of project are you building?
             </FormLabel>
             <FormControl>
-              <RadioGroup
-                onValueChange={field.onChange}
-                value={field.value}
-                className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-              >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {PROJECT_TYPES.map((type) => (
-                  <div key={type.value} className="relative">
-                    <RadioGroupItem 
-                      value={type.value} 
-                      id={`project-type-${type.value}`} 
-                      className="peer sr-only"
-                    />
-                    <Label 
-                      htmlFor={`project-type-${type.value}`}
-                      className={`flex items-start gap-4 p-5 border-2 cursor-pointer transition-all duration-300 rounded-xl shadow-sm hover:shadow-md bg-white dark:bg-slate-800 ${
-                        selectedType === type.value
-                          ? 'border-[#2B6CB0] bg-[#2B6CB0]/5 dark:bg-[#2B6CB0]/10 shadow-md'
-                          : 'border-slate-300 dark:border-slate-600 hover:border-[#2B6CB0]/50'
-                      }`}
-                    >
-                      {/* Radio Button Circle */}
-                      <div className={`relative flex-shrink-0 w-5 h-5 rounded-full border-2 mt-0.5 transition-all duration-200 ${
-                        selectedType === type.value
-                          ? 'border-[#2B6CB0] bg-[#2B6CB0]'
-                          : 'border-slate-400 dark:border-slate-500'
-                      }`}>
-                        {selectedType === type.value && (
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-2 h-2 bg-white rounded-full"></div>
-                          </div>
-                        )}
-                      </div>
+                  <div 
+                    key={type.value} 
+                    className={`flex items-start gap-4 p-5 border-2 cursor-pointer transition-all duration-300 rounded-xl shadow-sm hover:shadow-md bg-white dark:bg-slate-800 ${
+                      selectedType === type.value
+                        ? 'border-[#2B6CB0] bg-[#2B6CB0]/5 dark:bg-[#2B6CB0]/10 shadow-md'
+                        : 'border-slate-300 dark:border-slate-600 hover:border-[#2B6CB0]/50'
+                    }`}
+                    onClick={() => field.onChange(type.value)}
+                  >
+                    {/* Radio Button Circle */}
+                    <div className={`relative flex-shrink-0 w-5 h-5 rounded-full border-2 mt-0.5 transition-all duration-200 ${
+                      selectedType === type.value
+                        ? 'border-[#2B6CB0] bg-[#2B6CB0]'
+                        : 'border-slate-400 dark:border-slate-500'
+                    }`}>
+                      {selectedType === type.value && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-2 h-2 bg-white rounded-full"></div>
+                        </div>
+                      )}
+                    </div>
 
-                      {/* Icon */}
-                      <div className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 ${
-                        selectedType === type.value
-                          ? 'bg-[#2B6CB0] text-white'
-                          : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
-                      }`}>
-                        <type.IconComponent className="h-6 w-6" />
-                      </div>
+                    {/* Icon */}
+                    <div className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 ${
+                      selectedType === type.value
+                        ? 'bg-[#2B6CB0] text-white'
+                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
+                    }`}>
+                      <type.IconComponent className="h-6 w-6" />
+                    </div>
 
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-slate-900 dark:text-white mb-1 font-inter">
-                          {type.label}
-                        </h3>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 font-opensans leading-relaxed">
-                          {type.description}
-                        </p>
-                      </div>
-                    </Label>
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-slate-900 dark:text-white mb-1 font-inter">
+                        {type.label}
+                      </h3>
+                      <p className="text-sm text-slate-600 dark:text-slate-400 font-opensans leading-relaxed">
+                        {type.description}
+                      </p>
+                    </div>
                   </div>
                 ))}
-              </RadioGroup>
+              </div>
             </FormControl>
             <FormMessage className="text-red-600 font-opensans text-sm" />
           </FormItem>
@@ -176,12 +174,21 @@ function ProjectDetailsFormComponent() {
               Enable if you're creating this project for someone else
             </p>
           </div>
-          <Switch
-            id="different-owner"
-            checked={isDifferentOwner}
-            onCheckedChange={setIsDifferentOwner}
-            className="data-[state=checked]:bg-[#2B6CB0]"
-          />
+          <button
+            type="button"
+            onClick={() => handleOwnerToggle(!isDifferentOwner)}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#2B6CB0] focus:ring-offset-2 ${
+              isDifferentOwner ? 'bg-[#2B6CB0]' : 'bg-slate-300 dark:bg-slate-600'
+            }`}
+            aria-pressed={isDifferentOwner}
+            aria-label="Toggle different project owner"
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                isDifferentOwner ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
         </div>
 
         {/* Conditional Owner Details */}

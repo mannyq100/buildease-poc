@@ -18,7 +18,8 @@ import {
   MoreVertical,
   CheckCircle2,
   Clock,
-  Calendar
+  Calendar,
+  MessageCircle
 } from 'lucide-react';
 import { PhaseTaskAccordionProps } from '@/types/projectDetails';
 import { formatTaskCount, getTaskStatusColor } from '@/utils/core/taskColors';
@@ -211,13 +212,24 @@ function PhaseTaskAccordionComponent({
                           <MoreVertical className="h-4 w-4 text-slate-600" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-40">
+                      <DropdownMenuContent align="end" className="w-48">
                         <DropdownMenuItem 
                           onClick={() => onEditTask(task)}
                           className="flex items-center gap-2 py-2 touch-manipulation"
                         >
                           <Edit3 className="h-3 w-3" />
                           Edit Task
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            // Open task comments modal/dialog
+                            // This will be implemented in next step
+                            console.log('View comments for task:', task.id);
+                          }}
+                          className="flex items-center gap-2 py-2 touch-manipulation"
+                        >
+                          <MessageCircle className="h-3 w-3" />
+                          View Comments
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem 

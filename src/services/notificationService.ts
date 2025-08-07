@@ -110,6 +110,64 @@ export class NotificationService {
   }
 
   /**
+   * Create a project notification for all project members
+   */
+  static async createProjectNotification({
+    project_id,
+    title,
+    message,
+    notification_type,
+    metadata
+  }: {
+    project_id: string;
+    title: string;
+    message: string;
+    notification_type: string;
+    metadata?: Record<string, unknown>;
+  }): Promise<void> {
+    try {
+      // Get all project members
+      const { data: projectMembers, error: membersError } = await supabase
+        .from('be_project_member')
+        .select('user_id')
+        .eq('project_id', project_id);
+
+      if (membersError) {
+        console.error('Error fetching project members:', membersError);
+        return;
+      }
+
+      if (!projectMembers || projectMembers.length === 0) {
+        console.log('No project members found for notification');
+        return;
+      }
+
+      // Create notifications for all project members
+      const notifications = projectMembers.map(member => ({
+        user_id: member.user_id,
+        title,
+        message,
+        notification_type,
+        metadata: metadata || {},
+        read: false
+      }));
+
+      const { error: insertError } = await supabase
+        .from(TABLE_NAMES.NOTIFICATIONS)
+        .insert(notifications);
+
+      if (insertError) {
+        console.error('Error creating project notifications:', insertError);
+        throw new Error('Failed to create project notifications');
+      }
+
+    } catch (error) {
+      console.error('NotificationService.createProjectNotification error:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Subscribe to real-time notification updates
    */
   static subscribeToRealTimeUpdates(

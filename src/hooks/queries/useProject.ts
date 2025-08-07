@@ -9,14 +9,14 @@ import { ProjectTransformService } from '@/services/projectTransformService';
 import type { Project } from '@/types/project';
 
 /**
- * Hook to fetch a single project by ID using project_details view
+ * Hook to fetch a single project by ID using be_project table
  */
-export const useProject = (projectId: string): { data: Project | undefined; isLoading: boolean; error: any } => {
+export const useProject = (projectId: string): { data: Project | undefined; isLoading: boolean; error: Error | null } => {
   const queryResult = useQuery({
     queryKey: queryKeys.projects.detail(projectId),
     queryFn: async (): Promise<Project> => {
       const { data, error } = await supabase
-        .from('project_details')
+        .from('be_project')
         .select('*')
         .eq('id', projectId)
         .single();

@@ -2,6 +2,7 @@
  * Utility functions for project management
  */
 import { ProjectFormData, CostEstimate } from '@/types/projectInputs';
+import { supabase } from '@/lib/supabase';
 
 /**
  * Calculate a cost estimate based on project details
@@ -196,4 +197,66 @@ export function observeDarkMode(callback: () => void): () => void {
  */
 export function checkDarkMode(): boolean {
   return document.documentElement.classList.contains('dark');
+}
+
+/**
+ * Get project currency dynamically
+ */
+export async function getProjectCurrency(projectId: string): Promise<string> {
+  try {
+    const { data, error } = await supabase
+      .from('be_project')
+      .select('budget')
+      .eq('id', projectId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching project currency:', error);
+      return 'USD'; // Fallback to USD
+    }
+
+    // Extract currency from budget JSONB field
+    const currency = data?.budget?.currency;
+    return currency || 'USD'; // Fallback to USD if not set
+  } catch (error) {
+    console.error('Error in getProjectCurrency:', error);
+    return 'USD'; // Fallback to USD
+  }
+}
+
+/**
+ * Get user display name with proper null/undefined handling
+ */
+export function getUserDisplayName(user: { 
+  first_name?: string | null; 
+  last_name?: string | null; 
+  email?: string;
+} | null | undefined): string | undefined {
+  if (!user) return undefined;
+  
+  const firstName = user.first_name?.trim() || '';
+  const lastName = user.last_name?.trim() || '';
+  
+  // If we have both first and last name
+  if (firstName && lastName) {
+    return `${firstName} ${lastName}`;
+  }
+  
+  // If we only have first name
+  if (firstName) {
+    return firstName;
+  }
+  
+  // If we only have last name
+  if (lastName) {
+    return lastName;
+  }
+  
+  // Fallback to email if no names available
+  if (user.email) {
+    return user.email.split('@')[0]; // Use email username part
+  }
+  
+  // Final fallback
+  return undefined;
 } 

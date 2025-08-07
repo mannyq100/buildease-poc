@@ -1,315 +1,237 @@
 /**
  * ProjectInspirationImages Component
- * 
- * Handles the project inspiration images section
- * Allows users to upload, preview, and manage project images
- * Simplified implementation to avoid infinite loops
+ * Handles inspiration image uploads for project creation wizard
+ * Integrates with the centralized image store and localStorage persistence
  */
-import React, { useCallback, useState } from 'react';
-import { X, Upload, Camera, AlertCircle } from 'lucide-react';
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+
+import React, { useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Control } from 'react-hook-form';
-import { CreateProjectFormValues } from '@/pages/CreateProject/schema';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { X, Upload, Image as ImageIcon, Star } from 'lucide-react';
 import { cn } from '@/utils/core/ui';
-import { useToast } from '@/components/ui/use-toast';
+import { useImageState, useImageActions } from '@/stores/createProject/imageStore';
+import { toast } from 'sonner';
 
 interface ProjectInspirationImagesProps {
-  control: Control<CreateProjectFormValues>;
   className?: string;
 }
 
-interface LocalImageFile {
-  id: string;
-  file: File;
-  previewUrl: string;
-}
+const ProjectInspirationImagesComponent = ({ className }: ProjectInspirationImagesProps) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Always call hooks (React Hook rules)
+  const imageState = useImageState();
+  const imageActions = useImageActions();
+  
+  // Safe destructuring with fallbacks
+  const {
+    localFiles = [],
+    localProfileImageId = null,
+    uploadError = null
+  } = imageState || {};
+  
+  const {
+    addLocalImage = () => {},
+    removeLocalImage = () => {},
+    setProfileImage = () => {}
+  } = imageActions || {};
 
-/**
- * ProjectInspirationImages component
- * Allows users to upload and manage project inspiration images
- * Simplified implementation using local state
- */
-function ProjectInspirationImagesComponent({ control, className = '' }: ProjectInspirationImagesProps) {
-  const { toast } = useToast();
-  const [localFiles, setLocalFiles] = useState<LocalImageFile[]>([]);
-  const [profileImageId, setProfileImageId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Create preview images array from local files
-  const previewImages = localFiles;
-  
-  // Handle file input change
-  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      e.target.value = '';
-      
-      // Clear previous errors
-      setError(null);
-      setIsLoading(true);
-      
-      try {
-        // Validate file type
-        if (!file.type.startsWith('image/')) {
-          setError('Please select an image file.');
-          toast({
-            title: "Invalid file type",
-            description: "Please select an image file.",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        // Validate file size (5MB limit)
-        if (file.size > 5 * 1024 * 1024) {
-          setError('Please select an image smaller than 5MB.');
-          toast({
-            title: "File too large",
-            description: "Please select an image smaller than 5MB.",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        // Simulate processing time
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Create preview URL
-        const previewUrl = URL.createObjectURL(file);
-        const newImage: LocalImageFile = {
-          id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          file,
-          previewUrl
-        };
-        
-        setLocalFiles(prev => [...prev, newImage]);
-        
-        toast({
-          title: "Image added",
-          description: "Image has been added to your project.",
-        });
-      } catch (_err) {
-        setError('Failed to process image. Please try again.');
-        toast({
-          title: "Error",
-          description: "Failed to process image. Please try again.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  }, [toast]);
-  
+  // Handle file selection
+  const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    // Add each selected file
+    Array.from(files).forEach(file => {
+      addLocalImage(file);
+    });
+
+    // Clear input
+    event.target.value = '';
+  }, [addLocalImage]);
+
   // Handle drag and drop
-  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-  }, []);
-  
-  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleDrop = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    const files = event.dataTransfer.files;
     
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
-      
-      // Create a synthetic event to reuse the file change handler
-      const syntheticEvent = {
-        target: { files: [file], value: '' },
-        preventDefault: () => {},
-        stopPropagation: () => {}
-      } as React.ChangeEvent<HTMLInputElement>;
-      
-      handleFileChange(syntheticEvent);
-    }
-  }, [handleFileChange]);
-  
-  // Remove image
-  const removeImage = useCallback((id: string) => {
-    setLocalFiles(prev => {
-      const imageToRemove = prev.find(img => img.id === id);
-      if (imageToRemove) {
-        URL.revokeObjectURL(imageToRemove.previewUrl);
+    Array.from(files).forEach(file => {
+      if (file.type.startsWith('image/')) {
+        addLocalImage(file);
+      } else {
+        toast.error(`${file.name} is not a valid image file`);
       }
-      return prev.filter(img => img.id !== id);
     });
-    
-    // Clear profile image if it was the removed image
-    if (profileImageId === id) {
-      setProfileImageId(null);
-    }
-    
-    toast({
-      title: "Image removed",
-      description: "Image has been removed from your project.",
-    });
-  }, [profileImageId, toast]);
-  
-  // Set profile image
-  const setProfileImage = useCallback((id: string) => {
-    setProfileImageId(id);
-    toast({
-      title: "Profile image set",
-      description: "This image will be used as your project's main image.",
-    });
-  }, [toast]);
+  }, [addLocalImage]);
+
+  const handleDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+  }, []);
+
+  // Handle remove image
+  const handleRemoveImage = useCallback((imageId: string) => {
+    removeLocalImage(imageId);
+  }, [removeLocalImage]);
+
+  // Handle set profile image
+  const handleSetProfileImage = useCallback((imageId: string) => {
+    const isCurrentProfile = localProfileImageId === imageId;
+    setProfileImage(isCurrentProfile ? null : imageId);
+  }, [localProfileImageId, setProfileImage]);
+
+  // Open file dialog
+  const openFileDialog = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
 
   return (
-    <div className={`space-y-6 ${className}`}>
-      <div className="border-t border-slate-200 dark:border-slate-600 pt-8">
-      
-        
-        <FormField
-          control={control}
-          name="images"
-          render={() => (
-            <FormItem className="space-y-4">
-              <FormLabel className="text-base font-semibold text-slate-900 dark:text-white font-inter">
-                Upload Images (Optional)
-              </FormLabel>
-              <FormControl>
-                  <div className="space-y-4">
-                    {/* Enhanced Image Upload Area with Drag & Drop */}
-                    <div 
-                      className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-8 text-center transition-all duration-300 hover:border-[#2B6CB0] hover:bg-[#2B6CB0]/5 group"
-                      onDragOver={handleDragOver}
-                      onDrop={handleDrop}
-                    >
-                      <input
-                        type="file"
-                        id="inspiration-image-upload"
-                        accept="image/jpeg,image/png,image/webp"
-                        className="hidden"
-                        onChange={handleFileChange}
-                        disabled={isLoading}
-                      />
-                      <label 
-                        htmlFor="inspiration-image-upload"
-                        className="cursor-pointer flex flex-col items-center justify-center"
+    <div className={cn('space-y-4', className)}>
+      {/* Header */}
+      <div className="flex items-center gap-2">
+        <ImageIcon className="h-5 w-5 text-orange-600" />
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+          Inspiration Images
+        </h3>
+        <Badge variant="secondary" className="text-xs">
+          Optional
+        </Badge>
+      </div>
+
+      <p className="text-sm text-slate-600 dark:text-slate-400">
+        Upload images that inspire your project design. These help our AI create better plans.
+      </p>
+
+      {/* Upload Error */}
+      {uploadError && (
+        <div className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+          {uploadError}
+        </div>
+      )}
+
+      {/* Upload Area */}
+      <Card 
+        className={cn(
+          'border-2 border-dashed border-orange-300 dark:border-orange-700 transition-colors',
+          'hover:border-orange-400 hover:bg-orange-50/50 dark:hover:bg-orange-900/10'
+        )}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+      >
+        <div className="p-6 text-center">
+          <Upload className="h-12 w-12 text-orange-500 mx-auto mb-4" />
+          <p className="text-slate-600 dark:text-slate-400 mb-4">
+            Drag and drop images here, or click to browse
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={openFileDialog}
+            className="border-orange-300 text-orange-600 hover:bg-orange-50"
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Choose Images
+          </Button>
+        </div>
+      </Card>
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={handleFileSelect}
+      />
+
+      {/* Image Preview Grid */}
+      {localFiles.length > 0 && (
+        <div className="space-y-3">
+          <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            Uploaded Images ({localFiles.length})
+          </h4>
+          
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {localFiles.map((image) => {
+              const isProfile = image.id === localProfileImageId;
+              
+              return (
+                <div
+                  key={image.id}
+                  className={cn(
+                    'relative group rounded-lg overflow-hidden border-2 transition-all',
+                    isProfile
+                      ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800'
+                      : 'border-slate-200 dark:border-slate-700'
+                  )}
+                >
+                  {/* Image */}
+                  <div className="aspect-square relative">
+                    <img
+                      src={image.previewUrl}
+                      alt={image.file.name}
+                      className="w-full h-full object-cover"
+                    />
+                    
+                    {/* Profile Badge */}
+                    {isProfile && (
+                      <Badge className="absolute top-2 left-2 bg-blue-500 text-white text-xs">
+                        <Star className="h-3 w-3 mr-1" />
+                        Profile
+                      </Badge>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={isProfile ? "secondary" : "default"}
+                        onClick={() => handleSetProfileImage(image.id)}
+                        className="text-xs"
                       >
-                        <div className="w-16 h-16 bg-gradient-to-br from-[#2B6CB0]/10 to-[#ED8936]/10 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                          <Upload className="h-8 w-8 text-[#2B6CB0] group-hover:text-[#ED8936] transition-colors duration-300" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2 font-inter">
-                          Upload Inspiration Images
-                        </h3>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-1 font-opensans">
-                          Drag and drop your images here, or click to browse
-                        </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-500 font-opensans">
-                          JPG, PNG or WebP • Max 5 images • 5MB each
-                        </p>
-                      </label>
+                        <Star className="h-3 w-3 mr-1" />
+                        {isProfile ? 'Unset' : 'Profile'}
+                      </Button>
+                      
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleRemoveImage(image.id)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
                     </div>
-                    
-                    {/* Enhanced Loading Indicator */}
-                    {isLoading && (
-                      <div className="bg-gradient-to-r from-[#2B6CB0]/5 to-[#ED8936]/5 border border-[#2B6CB0]/20 p-6 rounded-xl">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-5 h-5 bg-[#2B6CB0] rounded-full animate-pulse"></div>
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300 font-opensans">
-                              Processing your inspiration image...
-                            </span>
-                          </div>
-                        </div>
-                        <Progress value={50} className="h-2" />
-                      </div>
-                    )}
-                    
-                    {/* Enhanced Error Message */}
-                    {error && (
-                      <div className="p-4 border border-red-300 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 rounded-xl">
-                        <div className="flex items-start gap-3">
-                          <div className="w-5 h-5 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center mt-0.5">
-                            <AlertCircle className="h-3 w-3 text-red-600 dark:text-red-400" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-red-800 dark:text-red-300 font-inter mb-1">
-                              Upload Error
-                            </p>
-                            <p className="text-sm text-red-700 dark:text-red-400 font-opensans">{error}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Image Grid */}
-                    {previewImages.length > 0 && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
-                        {/* Local Images with Previews */}
-                        {previewImages.map((preview) => (
-                          <div 
-                            key={preview.id} 
-                            className={cn(
-                              "relative aspect-square rounded-lg overflow-hidden border-2 transition-all duration-300",
-                              profileImageId === preview.id 
-                                ? "border-[#ED8936] ring-2 ring-[#ED8936]/20" 
-                                : "border-slate-200 dark:border-slate-600 hover:border-[#2B6CB0]"
-                            )}
-                          >
-                            <img 
-                              src={preview.previewUrl} 
-                              alt={preview.file.name || "Project inspiration"} 
-                              className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                              onError={(e) => {
-                                // Show a placeholder instead of hiding the image
-                                e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIEVycm9yPC90ZXh0Pjwvc3ZnPg==';
-                              }}
-                            />
-                            
-                            {/* Profile Image Indicator */}
-                            {profileImageId === preview.id && (
-                              <div className="absolute top-2 left-2">
-                                <div className="bg-[#ED8936] p-1.5 rounded-full shadow-lg">
-                                  <Camera className="h-3 w-3 text-white" />
-                                </div>
-                              </div>
-                            )}
-                            
-                            {/* Hover Controls */}
-                            <div className="absolute inset-0 bg-black/0 hover:bg-black/50 transition-all duration-300 flex items-center justify-center opacity-0 hover:opacity-100">
-                              <div className="flex gap-2">
-                                {profileImageId !== preview.id && (
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="min-h-[44px] px-4 py-2 bg-white/90 text-slate-800 hover:bg-white border-0 shadow-lg font-opensans rounded-xl"
-                                    onClick={() => setProfileImage(preview.id)}
-                                  >
-                                    Set as Main
-                                  </Button>
-                                )}
-                                <Button
-                                  type="button"
-                                  variant="destructive"
-                                  size="icon"
-                                  className="min-h-[44px] min-w-[44px] bg-red-500/90 hover:bg-red-600 border-0 shadow-lg rounded-xl"
-                                  onClick={() => removeImage(preview.id)}
-                                >
-                                  <X className="h-5 w-5" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+
+                  {/* Image Info */}
+                  <div className="p-2 bg-white dark:bg-slate-800">
+                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate">
+                      {image.file.name}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-500">
+                      {(image.file.size / 1024 / 1024).toFixed(1)} MB
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Help Text */}
+      <div className="text-xs text-slate-500 dark:text-slate-500 space-y-1">
+        <p>• Supported formats: JPG, PNG, WebP, HEIC, GIF</p>
+        <p>• Maximum file size: 10MB per image</p>
+        <p>• Click the star icon to set an image as your project's profile photo</p>
+        <p>• Images are automatically saved as you upload them</p>
       </div>
     </div>
   );
-}
+};
 
-// Memoized export to prevent unnecessary re-renders
+// Export memoized component to prevent infinite re-renders
 export const ProjectInspirationImages = React.memo(ProjectInspirationImagesComponent);

@@ -4,18 +4,16 @@
  * BuildEase-themed mobile-first design with shadcn-ui components
  * Refactored to use dedicated Zustand store for state management
  */
-import { lazy, Suspense, useCallback, useState } from 'react';
+import { lazy, Suspense, useCallback, useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useForm, FormProvider } from 'react-hook-form';
+import { useForm, FormProvider, type FieldPath } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { useToast } from "@/components/ui/use-toast";
 import { FormStepErrorBoundary } from "@/components/ui/form-step-error-boundary";
 import { 
-  validateStep, 
-  canAccessStep, 
-  formatValidationErrors
+  canAccessStep
 } from '@/utils/validation/projectFormValidation';
 import { 
   ProjectDetailsFormSkeleton,
@@ -24,12 +22,15 @@ import {
   ReviewSubmitFormSkeleton
 } from "@/components/ui/form-step-skeleton";
 import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
-import type { WizardStep } from '@/stores/createProject';
+// Removed unused WizardStep type import
 import { StepNavigator } from '@/components/create-project/StepNavigator';
 import { Button } from '@/components/ui/button';
 import { TOTAL_STEPS, STEP_NAMES } from './CreateProject/constants';
 import { projectFormSchema, type CreateProjectFormValues } from './CreateProject/schema';
 import { Card } from '@/components/ui/card';
+import { useSubmissionActions, useProjectSubmission } from '@/stores/createProject/submissionStore';
+import { useImageActions, useImageState } from '@/stores/createProject/imageStore';
+import { updateProjectImageArray } from '@/services/projectImageService';
 import {
   ChevronLeft,
   ChevronRight,
@@ -85,8 +86,20 @@ function CreateProjectContent() {
   
   // Use simple local state to avoid Zustand infinite loop issues
   const [currentStep, setCurrentStep] = useState<number>(1);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const totalSteps = TOTAL_STEPS;
+  
+  // Get submission store actions and state
+  const { submitProject } = useSubmissionActions();
+  const { isSubmitting, submitError, isSuccess, createdProjectId } = useProjectSubmission();
+  
+  // Get image upload actions and state
+  const { uploadImages, clearAllImages } = useImageActions();
+  const { localFiles: imageFiles, isUploading } = useImageState();
+  
+  // Use refs to track previous values and prevent infinite loops
+  const prevIsSuccessRef = useRef(false);
+  const prevSubmitErrorRef = useRef<string | null>(null);
+  const prevCreatedProjectIdRef = useRef<string | null>(null);
   
   // Initialize form with react-hook-form and zod validation
   const methods = useForm<CreateProjectFormValues>({
@@ -101,61 +114,110 @@ function CreateProjectContent() {
       location: '',
       country: '',
       region: '',
-      plotSize: '',
-      plotSizeUnit: 'sq-m',
-      terrain: '',
-      nearbyLandmarks: '',
-      buildingSize: '',
-      buildingSizeUnit: 'sq-m',
-      storeys: '',
-      bedrooms: '',
-      bathrooms: '',
-      kitchens: '',
-      livingAreas: '',
-      buildingStyle: '',
       budget: '',
-      currency: '',
-      timeframe: '',
-      expectedStartDate: '',
-      structureType: '',
-      foundationType: '',
-      roofType: '',
-      wallMaterial: '',
-      floorMaterial: '',
-      specialFeatures: [],
-      sustainabilityFeatures: [],
-      siteConstraints: '',
-      localRegulations: '',
-      additionalNotes: '',
       images: [],
+      profileImage: undefined,
     },
-    mode: 'onChange',
   });
   
-  const { handleSubmit, getValues } = methods;
-
-  // Handle next step with validation
-  const handleNext = useCallback(async () => {
-    const formData = methods.getValues();
-    
-    try {
-      // Validate current step
-      const stepResult = validateStep(currentStep as WizardStep, formData);
+  // Validate only fields for the active step (prevents blocking on future-step fields)
+  const requiredFieldsByStep = useMemo<Record<number, (keyof CreateProjectFormValues)[]>>(() => ({
+    // Step 1: Project Details
+    1: [
+      'name',
+      'projectType',
+    ],
+    // Step 2: Location & Plot
+    2: [
+      'location',
+      'country',
+      'region',
+      'plotSize',
+      'plotSizeUnit',
+    ],
+    // Step 3: Building Specs & Budget essentials (combined in BuildingBudgetForm)
+    3: [
+      'buildingSize',
+      'buildingSizeUnit',
+      'storeys',
+      'bedrooms',
+      'bathrooms',
+      'budget',
+      'currency',
+    ],
+    // Step 4: Review & Submit (no new fields; full validation will run on submit)
+    4: [],
+  }), []);
+  
+  // Handle submission success/error states with stable approach
+  useEffect(() => {
+    // Only handle success if it's a new success state
+    if (isSuccess && createdProjectId && 
+        (!prevIsSuccessRef.current || prevCreatedProjectIdRef.current !== createdProjectId)) {
       
-      if (!stepResult.isValid) {
-        // Format error messages
-        const errorMessage = formatValidationErrors(stepResult.errors);
-        
+      prevIsSuccessRef.current = true;
+      prevCreatedProjectIdRef.current = createdProjectId;
+      
+      // For now, just show success and navigate (image upload will be implemented later)
+      toast({
+        title: "Project created successfully",
+        description: "Your project has been created and AI plan generation has started.",
+      });
+      
+      navigate(`/projects/${createdProjectId}`);
+    }
+    
+    // Reset success tracking when not successful
+    if (!isSuccess) {
+      prevIsSuccessRef.current = false;
+      prevCreatedProjectIdRef.current = null;
+    }
+  }, [isSuccess, createdProjectId, toast, navigate]);
+  
+  useEffect(() => {
+    // Only handle error if it's a new error
+    if (submitError && submitError !== prevSubmitErrorRef.current) {
+      prevSubmitErrorRef.current = submitError;
+      
+      toast({
+        title: "Error",
+        description: submitError,
+        variant: "destructive",
+      });
+    }
+    
+    // Reset error tracking when no error
+    if (!submitError) {
+      prevSubmitErrorRef.current = null;
+    }
+  }, [submitError, toast]);
+  
+  // Handle form submission
+  const handleSubmit = methods.handleSubmit;
+  
+  // Handle next step
+  const handleNext = useCallback(async () => {
+    try {
+      // Validate only the current step's required fields (full validation on final step)
+      const fieldsToValidate: FieldPath<CreateProjectFormValues>[] | undefined =
+        currentStep === totalSteps
+          ? undefined
+          : (requiredFieldsByStep[currentStep] as unknown as FieldPath<CreateProjectFormValues>[]) ?? [];
+      const isValid = Array.isArray(fieldsToValidate) && fieldsToValidate.length > 0
+        ? await methods.trigger(fieldsToValidate, { shouldFocus: true })
+        : await methods.trigger(undefined, { shouldFocus: true });
+      
+      if (!isValid) {
         toast({
-          title: "Please fix the following errors:",
-          description: errorMessage || "Please check the required fields.",
+          title: "Please fix the errors",
+          description: "Complete all required fields before continuing.",
           variant: "destructive",
         });
         return;
       }
       
-      if (currentStep === TOTAL_STEPS) {
-        // Submit project
+      // Handle final step submission
+      if (currentStep === totalSteps) {
         if (!user?.id) {
           toast({
             title: "Authentication required",
@@ -165,31 +227,54 @@ function CreateProjectContent() {
           return;
         }
         
-        setIsSubmitting(true);
-        
         try {
-          // Simple project creation without complex store
-          console.log('Creating project with data:', formData);
+          // Step 1: Create project in database (without images)
+          const formData = methods.getValues();
+          const projectId = await submitProject(formData, user.id);
           
-          // Simulate project creation
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          // Step 2: Upload images if any exist
+          if (imageFiles.length > 0) {
+            toast({
+              title: "Uploading images...",
+              description: "Please wait while we upload your project images.",
+            });
+            
+            const { images, profileImage } = await uploadImages(user.id, projectId);
+
+            // Persist URLs to project record
+            try {
+              if (images.length > 0) {
+                await updateProjectImageArray(projectId, images, 'inspiration');
+              }
+              if (profileImage) {
+                await updateProjectImageArray(projectId, [profileImage], 'profile');
+              }
+
+              // Clear local images after successful persistence
+              clearAllImages();
+
+              toast({
+                title: "Images uploaded successfully",
+                description: "Your project images have been saved.",
+              });
+            } catch (persistError) {
+              console.error('Failed to persist image URLs to project:', persistError);
+              toast({
+                title: "Images uploaded, but not saved to project",
+                description: "Please try again from the project page to attach images.",
+                variant: "destructive",
+              });
+            }
+          }
           
-          toast({
-            title: "Project created successfully",
-            description: "Your project has been created.",
-          });
-          
-          // Navigate to dashboard
-          navigate('/dashboard');
+          // Navigation will be handled by the success effect
         } catch (error) {
-          console.error('Error creating project:', error);
+          console.error('Error in project creation flow:', error);
           toast({
             title: "Error",
-            description: "Failed to create project. Please try again.",
+            description: error instanceof Error ? error.message : "Failed to create project. Please try again.",
             variant: "destructive",
           });
-        } finally {
-          setIsSubmitting(false);
         }
       } else {
         // Go to next step
@@ -208,7 +293,7 @@ function CreateProjectContent() {
         variant: "destructive",
       });
     }
-  }, [currentStep, totalSteps, methods, user, navigate, toast]);
+  }, [currentStep, totalSteps, methods, user?.id, submitProject, toast, imageFiles.length, uploadImages, clearAllImages, requiredFieldsByStep]);
 
   // Handle previous step
   const handleBack = useCallback(() => {
@@ -254,7 +339,7 @@ function CreateProjectContent() {
 
   // Handle step click for navigation with access control
   const handleStepClick = useCallback((stepId: number) => {
-    const formValues = getValues();
+    const formValues = methods.getValues();
     
     // Check if user can access the target step
     if (canAccessStep(stepId, formValues) && stepId >= 1 && stepId <= TOTAL_STEPS) {
@@ -268,7 +353,7 @@ function CreateProjectContent() {
         variant: "destructive",
       });
     }
-  }, [getValues, toast]);
+  }, [methods, toast]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-buildease-blue-50/40 dark:from-slate-900 dark:to-slate-800">
@@ -355,12 +440,12 @@ function CreateProjectContent() {
                           ? "bg-gradient-to-r from-buildease-blue-500 to-buildease-blue-600 hover:from-buildease-blue-600 hover:to-buildease-blue-700 text-white disabled:from-slate-400 disabled:to-slate-500 shadow-buildease-blue-500/25 hover:shadow-buildease-blue-500/40"
                           : "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white disabled:from-slate-400 disabled:to-slate-500 shadow-orange-500/25 hover:shadow-orange-500/40"
                       }`}
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || isUploading}
                     >
-                      {isSubmitting ? (
+                      {(isSubmitting || isUploading) ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          <span>Processing...</span>
+                          <span>{isSubmitting ? 'Creating Project...' : 'Uploading Images...'}</span>
                         </>
                       ) : (
                         currentStep === totalSteps ? (
