@@ -1,5 +1,9 @@
--- Migration: 011_financial_tables.sql
--- Purpose: Defines tables for the financial domain.
+-- Migration: 005_financial_tables.sql
+-- Purpose: Defines all tables for the financial domain.
+
+-- =============================================================================
+-- FINANCIAL TRANSACTION TABLE
+-- =============================================================================
 
 -- Financial Transaction table
 CREATE TABLE construction_mgr.financial_transaction (
@@ -38,10 +42,12 @@ CREATE TABLE construction_mgr.financial_transaction (
     CONSTRAINT fk_financial_created_by FOREIGN KEY (created_by) REFERENCES construction_mgr.be_user(id) ON DELETE SET NULL,
     CONSTRAINT chk_financial_amount_positive CHECK (amount > 0)
 );
+
 CREATE TRIGGER update_financial_transaction_modtime
     BEFORE UPDATE ON construction_mgr.financial_transaction
     FOR EACH ROW
     EXECUTE FUNCTION construction_mgr.update_updated_at_column();
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_financial_transaction_project ON construction_mgr.financial_transaction (project_id);
 CREATE INDEX IF NOT EXISTS idx_financial_transaction_phase ON construction_mgr.financial_transaction (phase_id);

@@ -179,7 +179,7 @@ export const ProjectsList = memo(function ProjectsList({
               spent: project.spent,
               currency: project.currency
             }}
-            onClick={() => actions.onView(project.id)}
+            onClick={() => actions.onView(project)}
             className={cn(
               "transition-all duration-200",
               isPending && project.id.startsWith('temp-') && "opacity-75"

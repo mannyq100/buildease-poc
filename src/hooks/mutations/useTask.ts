@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { queryKeys } from '@/lib/queryClient';
 import { toast } from 'sonner';
+import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 
 // Types for task mutations
 export interface CreateTaskData {
@@ -33,10 +34,11 @@ export interface UpdateTaskData {
 }
 
 /**
- * Hook to create a new task
+ * Hook to create a new task with activity tracking
  */
 export function useCreateTask() {
   const queryClient = useQueryClient();
+  const { user } = useSupabaseAuth();
 
   return useMutation({
     mutationFn: async (data: CreateTaskData) => {
@@ -49,7 +51,7 @@ export function useCreateTask() {
       if (error) throw error;
       return task;
     },
-    onSuccess: (newTask, variables) => {
+    onSuccess: async (newTask, variables) => {
       // Invalidate and refetch related queries
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.tasks.byProject(variables.project_id) 
@@ -71,6 +73,9 @@ export function useCreateTask() {
         });
       }
 
+      // Note: Activity tracking should be handled by the calling component
+      // that has access to the activity tracker hook
+
       toast.success('Task created successfully');
     },
     onError: (error: any) => {
@@ -81,7 +86,7 @@ export function useCreateTask() {
 }
 
 /**
- * Hook to update an existing task
+ * Hook to update an existing task with activity tracking support
  */
 export function useUpdateTask() {
   const queryClient = useQueryClient();

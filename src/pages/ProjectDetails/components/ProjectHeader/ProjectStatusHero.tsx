@@ -124,7 +124,8 @@ export const ProjectStatusHero = React.memo<ProjectStatusHeroProps>(function Pro
       onUpdateProject();
     } else {
       // Default behavior - navigate to edit page
-      window.location.href = `/project/${project.id}/edit`;
+      const slugOrId = project.slug ?? project.id;
+      window.location.href = `/project/${slugOrId}/edit`;
     }
   }, [onUpdateProject, project.id]);
 

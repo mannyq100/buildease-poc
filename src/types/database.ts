@@ -442,6 +442,7 @@ export interface Project {
   timeline: ProjectTimeline;
   budget: ProjectBudget;
   owner_id: string;
+  slug?: string | null;
   profile_image?: string | null;
   inspiration_images?: string[];
   progress_images?: string[];

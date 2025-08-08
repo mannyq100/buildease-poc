@@ -1,5 +1,9 @@
--- Migration: 007_project_tables.sql
--- Purpose: Defines tables for the core project management domain.
+-- Migration: 004_project_tables.sql
+-- Purpose: Defines all tables for the core project management domain.
+
+-- =============================================================================
+-- PROJECT TABLE
+-- =============================================================================
 
 -- Project table
 CREATE TABLE construction_mgr.be_project (
@@ -41,18 +45,23 @@ CREATE TABLE construction_mgr.be_project (
     profile_image TEXT,
     inspiration_images TEXT[] DEFAULT ARRAY[]::TEXT[],
     progress_images TEXT[] DEFAULT ARRAY[]::TEXT[],
+    slug TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_timeline CHECK (
         (timeline ->> 'planned_start')::date <= (timeline ->> 'planned_end')::date
     ),
-    CONSTRAINT fk_owner FOREIGN KEY (owner_id) REFERENCES construction_mgr.be_user(id)
+    CONSTRAINT fk_owner FOREIGN KEY (owner_id) REFERENCES construction_mgr.be_user(id),
+    CONSTRAINT chk_project_slug_format CHECK (
+        slug IS NULL OR slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+    )
 );
 
 CREATE TRIGGER update_project_modtime
     BEFORE UPDATE ON construction_mgr.be_project
     FOR EACH ROW
     EXECUTE FUNCTION construction_mgr.update_updated_at_column();
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_project_owner ON construction_mgr.be_project (owner_id);
 CREATE INDEX IF NOT EXISTS idx_project_status ON construction_mgr.be_project (status);
@@ -66,6 +75,13 @@ CREATE INDEX IF NOT EXISTS idx_project_active_owner
     WHERE status IN ('PLANNING', 'IN_PROGRESS');
 CREATE INDEX IF NOT EXISTS idx_project_progress_images 
     ON construction_mgr.be_project USING gin (progress_images);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_be_project_slug_lower
+    ON construction_mgr.be_project (lower(slug))
+    WHERE slug IS NOT NULL;
+
+-- =============================================================================
+-- PROJECT MEMBERS TABLE
+-- =============================================================================
 
 -- Project Members table
 CREATE TABLE construction_mgr.be_project_member (
@@ -77,6 +93,7 @@ CREATE TABLE construction_mgr.be_project_member (
     CONSTRAINT fk_project_member_project FOREIGN KEY (project_id) REFERENCES construction_mgr.be_project(id) ON DELETE CASCADE,
     CONSTRAINT fk_project_member_user FOREIGN KEY (user_id) REFERENCES construction_mgr.be_user(id) ON DELETE CASCADE
 );
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_project_member_user ON construction_mgr.be_project_member (user_id);
 CREATE INDEX IF NOT EXISTS idx_project_member_project ON construction_mgr.be_project_member (project_id);
@@ -86,6 +103,10 @@ CREATE INDEX IF NOT EXISTS idx_project_member_user_role ON construction_mgr.be_p
 CREATE INDEX IF NOT EXISTS idx_project_member_covering 
     ON construction_mgr.be_project_member (project_id, user_id) 
     INCLUDE (role, joined_at);
+
+-- =============================================================================
+-- PROJECT PHASE TABLE
+-- =============================================================================
 
 -- Project Phase table
 CREATE TABLE construction_mgr.be_phase (
@@ -111,10 +132,12 @@ CREATE TABLE construction_mgr.be_phase (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_phase_project FOREIGN KEY (project_id) REFERENCES construction_mgr.be_project(id) ON DELETE CASCADE
 );
+
 CREATE TRIGGER update_phase_modtime
     BEFORE UPDATE ON construction_mgr.be_phase
     FOR EACH ROW
     EXECUTE FUNCTION construction_mgr.update_updated_at_column();
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_phase_project ON construction_mgr.be_phase (project_id);
 CREATE INDEX IF NOT EXISTS idx_phase_status ON construction_mgr.be_phase (status);
@@ -127,6 +150,10 @@ CREATE INDEX IF NOT EXISTS idx_phase_budget ON construction_mgr.be_phase USING g
 CREATE INDEX IF NOT EXISTS idx_phase_active_project 
     ON construction_mgr.be_phase (project_id) 
     WHERE status IN ('PLANNING', 'IN_PROGRESS');
+
+-- =============================================================================
+-- TASK TABLE
+-- =============================================================================
 
 -- Task table
 CREATE TABLE construction_mgr.be_task (
@@ -156,10 +183,12 @@ CREATE TABLE construction_mgr.be_task (
     CONSTRAINT fk_task_assigned_to FOREIGN KEY (assigned_to) REFERENCES construction_mgr.be_user(id),
     CONSTRAINT fk_task_completed_by FOREIGN KEY (completed_by) REFERENCES construction_mgr.be_user(id)
 );
+
 CREATE TRIGGER update_task_modtime
     BEFORE UPDATE ON construction_mgr.be_task
     FOR EACH ROW
     EXECUTE FUNCTION construction_mgr.update_updated_at_column();
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_task_project ON construction_mgr.be_task (project_id);
 CREATE INDEX IF NOT EXISTS idx_task_phase ON construction_mgr.be_task (phase_id);
@@ -181,6 +210,9 @@ CREATE INDEX IF NOT EXISTS idx_task_covering
 CREATE INDEX IF NOT EXISTS idx_task_created_by ON construction_mgr.be_task (created_by);
 CREATE INDEX IF NOT EXISTS idx_task_completed_by ON construction_mgr.be_task (completed_by);
 
+-- =============================================================================
+-- COMMENT TABLE
+-- =============================================================================
 
 -- Comment table
 CREATE TABLE construction_mgr.comment (
@@ -189,14 +221,26 @@ CREATE TABLE construction_mgr.comment (
     entity_id UUID NOT NULL,
     user_id UUID NOT NULL,
     content TEXT NOT NULL,
+    parent_comment_id UUID REFERENCES construction_mgr.comment(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_comment_user FOREIGN KEY (user_id) 
-        REFERENCES construction_mgr.be_user(id)
+        REFERENCES construction_mgr.be_user(id),
+    CONSTRAINT chk_comment_content_length CHECK (char_length(content) <= 2000 AND char_length(content) > 0),
+    CONSTRAINT chk_comment_content_safe CHECK (content !~ '<[^>]*>')
 );
+
 -- Indexes
 CREATE INDEX idx_comment_entity ON construction_mgr.comment(entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_comment_user_id ON construction_mgr.comment (user_id);
+CREATE INDEX idx_comment_parent ON construction_mgr.comment(parent_comment_id);
+CREATE INDEX IF NOT EXISTS idx_comment_content_gin 
+ON construction_mgr.comment 
+USING gin (to_tsvector('english', content));
+
+-- =============================================================================
+-- QUALITY INSPECTION TABLE
+-- =============================================================================
 
 -- Quality Inspection table
 CREATE TABLE construction_mgr.be_quality_inspection (
@@ -216,10 +260,12 @@ CREATE TABLE construction_mgr.be_quality_inspection (
     CONSTRAINT fk_inspection_task FOREIGN KEY (task_id) REFERENCES construction_mgr.be_task(id) ON DELETE CASCADE,
     CONSTRAINT fk_inspection_inspector FOREIGN KEY (inspector_id) REFERENCES construction_mgr.be_user(id)
 );
+
 CREATE TRIGGER update_quality_inspection_modtime
     BEFORE UPDATE ON construction_mgr.be_quality_inspection
     FOR EACH ROW
     EXECUTE FUNCTION construction_mgr.update_updated_at_column();
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_inspection_phase ON construction_mgr.be_quality_inspection (phase_id);
 CREATE INDEX IF NOT EXISTS idx_inspection_task ON construction_mgr.be_quality_inspection (task_id);
@@ -229,3 +275,42 @@ CREATE INDEX IF NOT EXISTS idx_inspection_status ON construction_mgr.be_quality_
 CREATE INDEX IF NOT EXISTS idx_inspection_checklist ON construction_mgr.be_quality_inspection USING gin (checklist_items);
 CREATE INDEX IF NOT EXISTS idx_inspection_results ON construction_mgr.be_quality_inspection USING gin (results);
 CREATE INDEX IF NOT EXISTS idx_inspection_attachments ON construction_mgr.be_quality_inspection USING gin (attachments);
+
+-- =============================================================================
+-- PROJECT ACTIVITIES TABLE
+-- =============================================================================
+
+-- Project Activities table
+CREATE TABLE construction_mgr.be_project_activity (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    project_id UUID NOT NULL REFERENCES construction_mgr.be_project(id) ON DELETE CASCADE,
+    activity_type VARCHAR(100) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    user_id UUID REFERENCES construction_mgr.be_user(id) ON DELETE SET NULL,
+    user_name VARCHAR(255),
+    entity_type VARCHAR(50), -- 'document', 'expense', 'phase', 'task', etc.
+    entity_id UUID,
+    metadata JSONB NOT NULL DEFAULT '{}',
+    status VARCHAR(20) NOT NULL DEFAULT 'info' CHECK (status IN ('success', 'info', 'warning', 'error')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for project activities
+CREATE INDEX IF NOT EXISTS idx_project_activity_project_id ON construction_mgr.be_project_activity (project_id);
+CREATE INDEX IF NOT EXISTS idx_project_activity_type ON construction_mgr.be_project_activity (activity_type);
+CREATE INDEX IF NOT EXISTS idx_project_activity_status ON construction_mgr.be_project_activity (status);
+CREATE INDEX IF NOT EXISTS idx_project_activity_user ON construction_mgr.be_project_activity (user_id);
+CREATE INDEX IF NOT EXISTS idx_project_activity_entity ON construction_mgr.be_project_activity (entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_project_activity_created_at ON construction_mgr.be_project_activity (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_project_activity_project_time ON construction_mgr.be_project_activity (project_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_project_activity_project_type ON construction_mgr.be_project_activity (project_id, activity_type);
+CREATE INDEX IF NOT EXISTS idx_project_activity_project_user ON construction_mgr.be_project_activity (project_id, user_id);
+CREATE INDEX IF NOT EXISTS idx_project_activity_metadata ON construction_mgr.be_project_activity USING gin (metadata);
+
+-- Trigger for updated_at
+CREATE TRIGGER trigger_project_activity_updated_at
+    BEFORE UPDATE ON construction_mgr.be_project_activity
+    FOR EACH ROW
+    EXECUTE FUNCTION construction_mgr.update_updated_at_column();

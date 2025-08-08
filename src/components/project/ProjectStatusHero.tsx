@@ -42,7 +42,8 @@ const ProjectStatusHero = React.forwardRef<
     if (onClick) {
       onClick();
     } else if (clickable) {
-      navigate(`/project/${project.id}`);
+      const slugOrId = project.slug ?? project.id;
+      navigate(`/project/${slugOrId}`);
     }
   };
 

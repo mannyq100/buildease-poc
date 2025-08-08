@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Outlet, useParams, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { motion as m } from 'framer-motion';
 
 import MainNavigation from './MainNavigation';
@@ -20,7 +21,7 @@ import {
   useNotificationStore
 } from '@/stores/notificationStore';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
-import { useProject } from '@/hooks/queries/useProject';
+import { supabase } from '@/lib/supabase';
 import { Building2, FolderOpen, Home } from 'lucide-react';
 
 interface BreadcrumbItem {
@@ -51,20 +52,31 @@ export function AppLayout({ showBreadcrumbs = true, className, customBreadcrumbs
   
   // Route detection for dynamic breadcrumbs
   const location = useLocation();
-  const params = useParams<{ id?: string }>();
+  const params = useParams<{ slug?: string }>();
   
   // Detect if we're on a project details page
-  const isProjectDetailsPage = location.pathname.startsWith('/project/') && params.id;
-  
-  // Fetch project data for breadcrumbs when on project details page  
-  const { data: projectForBreadcrumb, isLoading: projectLoading } = useProject(
-    (isProjectDetailsPage && params.id) ? params.id : ''
-  );
+  const isProjectDetailsPage = location.pathname.startsWith('/project/') && !!params.slug;
+
+  // Resolve slug -> project name for breadcrumbs
+  const { data: projectName, isLoading: projectLoading } = useQuery({
+    queryKey: ['projects', 'breadcrumb-name-by-slug', params.slug],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('be_project')
+        .select('name')
+        .ilike('slug', params.slug as string)
+        .single();
+      if (error || !data) throw error ?? new Error('Project not found');
+      return (data.name as string) || 'Project Details';
+    },
+    enabled: isProjectDetailsPage,
+    staleTime: 5 * 60 * 1000,
+  });
   
   
   // Create dynamic breadcrumbs for project pages
   const dynamicBreadcrumbs = useMemo(() => {
-    if (!isProjectDetailsPage) return null;
+    if (!isProjectDetailsPage) return undefined;
     
     return [
       {
@@ -82,12 +94,12 @@ export function AppLayout({ showBreadcrumbs = true, className, customBreadcrumbs
       {
         name: projectLoading 
           ? 'Loading...' 
-          : (projectForBreadcrumb?.name?.trim() || 'Project Details'),
+          : ((projectName || '').trim() || 'Project Details'),
         icon: <FolderOpen className="h-4 w-4" />,
         active: true
       }
     ];
-  }, [isProjectDetailsPage, projectLoading, projectForBreadcrumb?.name]);
+  }, [isProjectDetailsPage, projectLoading, projectName]);
   
   // Use custom breadcrumbs, then dynamic, then auto-generate
   const breadcrumbsToUse = customBreadcrumbs || dynamicBreadcrumbs;

@@ -64,13 +64,13 @@ export interface ProjectsErrorInfo {
 
 // Project card actions
 export interface ProjectCardActions {
-  onView: (projectId: string) => void;
-  onEdit: (projectId: string) => void;
-  onDelete: (projectId: string) => void;
-  onDuplicate: (projectId: string, newName: string) => void;
-  onStatusUpdate: (projectId: string, status: ProjectStatus) => void;
-  onArchive?: (projectId: string) => void;
-  onRestore?: (projectId: string) => void;
+  onView: (project: Project) => void;
+  onEdit: (project: Project) => void;
+  onDelete: (project: Project) => void;
+  onDuplicate: (project: Project, newName: string) => void;
+  onStatusUpdate: (project: Project, status: ProjectStatus) => void;
+  onArchive?: (project: Project) => void;
+  onRestore?: (project: Project) => void;
 }
 
 // Bulk operations

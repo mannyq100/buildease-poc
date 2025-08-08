@@ -88,7 +88,8 @@ export const BREADCRUMB_ITEMS = (id?: string) => [
     href: '/projects'
   },
   {
-    label: `Project ${id}`,
+    // Avoid exposing raw IDs in the UI; use a generic label here.
+    label: 'Project',
     href: `/projects/${id}`,
     active: true
   }

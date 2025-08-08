@@ -235,26 +235,28 @@ const ProjectsListSection = React.memo<{
   const { data: projects, isLoading, error } = useProjects(memoizedFilters);
 
   // Memoize action handlers to prevent unnecessary re-renders
-  const handleView = useCallback((projectId: string) => {
-    window.location.href = `/project/${projectId}`;
+  const handleView = useCallback((project: import('@/types/project').Project) => {
+    const slugOrId = project.slug ?? project.id;
+    window.location.href = `/project/${slugOrId}`;
   }, []);
 
-  const handleEdit = useCallback((projectId: string) => {
-    window.location.href = `/project/${projectId}/edit`;
+  const handleEdit = useCallback((project: import('@/types/project').Project) => {
+    const slugOrId = project.slug ?? project.id;
+    window.location.href = `/project/${slugOrId}/edit`;
   }, []);
 
-  const handleDelete = useCallback((projectId: string) => {
-    console.log('Delete project:', projectId);
+  const handleDelete = useCallback((project: import('@/types/project').Project) => {
+    console.log('Delete project:', project.id);
     // TODO: Implement with mutation hook
   }, []);
 
-  const handleDuplicate = useCallback((projectId: string, newName: string) => {
-    console.log('Duplicate project:', projectId, newName);
+  const handleDuplicate = useCallback((project: import('@/types/project').Project, newName: string) => {
+    console.log('Duplicate project:', project.id, newName);
     // TODO: Implement with mutation hook
   }, []);
 
-  const handleStatusUpdate = useCallback((projectId: string, status: string) => {
-    console.log('Update status:', projectId, status);
+  const handleStatusUpdate = useCallback((project: import('@/types/project').Project, status: string) => {
+    console.log('Update status:', project.id, status);
     // TODO: Implement with mutation hook
   }, []);
 

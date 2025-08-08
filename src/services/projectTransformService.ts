@@ -125,6 +125,7 @@ export class ProjectTransformService {
     
     return {
       // Direct mappings
+      slug: this.validateOptionalString((data as any).slug ?? undefined) || undefined,
       id: this.validateString(data.id, 'id'),
       name: this.validateString(data.name, 'name'),
       description: data.description || '',
@@ -184,6 +185,7 @@ export class ProjectTransformService {
   private static transformFromView(viewData: ProjectViewData): Project {
     return {
       // Direct mappings from view (no transformation needed)
+      slug: (viewData as any).slug ? this.validateOptionalString((viewData as any).slug) || undefined : undefined,
       id: this.validateString(viewData.id, 'id'),
       name: this.validateString(viewData.name, 'name'),
       description: viewData.description || '',

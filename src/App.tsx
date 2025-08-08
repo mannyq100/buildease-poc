@@ -147,7 +147,7 @@ function App() {
                         
                         {/* Project management routes */}
                         <Route path="projects" element={<Projects />} />
-                        <Route path="project/:id" element={<ProjectDetails />} />
+                        <Route path="project/:slug" element={<ProjectDetails />} />
                         <Route path="projects/new" element={<CreateProject />} />
 
                         

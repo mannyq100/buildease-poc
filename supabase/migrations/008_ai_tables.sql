@@ -1,5 +1,9 @@
--- Migration: 021_ai_plan_tables.sql
--- Purpose: Defines tables and functions for the AI plan generation domain.
+-- Migration: 008_ai_tables.sql
+-- Purpose: Defines all tables for AI plan generation domain.
+
+-- =============================================================================
+-- AI PLAN JOBS TABLE
+-- =============================================================================
 
 -- AI Plan Jobs table
 CREATE TABLE construction_mgr.ai_plan_jobs (
@@ -18,14 +22,20 @@ CREATE TABLE construction_mgr.ai_plan_jobs (
     CONSTRAINT fk_ai_plan_jobs_project FOREIGN KEY (project_id) REFERENCES construction_mgr.be_project(id) ON DELETE CASCADE,
     CONSTRAINT check_ai_plan_status CHECK (status IN ('pending', 'processing', 'completed', 'failed'))
 );
+
 CREATE TRIGGER update_ai_plan_jobs_modtime
     BEFORE UPDATE ON construction_mgr.ai_plan_jobs
     FOR EACH ROW
     EXECUTE FUNCTION construction_mgr.update_updated_at_column();
+
 -- Indexes
 CREATE INDEX idx_ai_plan_jobs_project_id ON construction_mgr.ai_plan_jobs(project_id);
 CREATE INDEX idx_ai_plan_jobs_status ON construction_mgr.ai_plan_jobs(status);
 CREATE INDEX idx_ai_plan_jobs_job_id ON construction_mgr.ai_plan_jobs(job_id);
+
+-- =============================================================================
+-- AI GENERATED PLAN TABLE
+-- =============================================================================
 
 -- AI Generated Plans table (supports multiple versions per project)
 CREATE TABLE construction_mgr.ai_generated_plan (
@@ -50,13 +60,14 @@ CREATE TABLE construction_mgr.ai_generated_plan (
     CONSTRAINT fk_ai_plan_job FOREIGN KEY (plan_job_id) REFERENCES construction_mgr.ai_plan_jobs(id) ON DELETE SET NULL,
     CONSTRAINT fk_ai_plan_approved_by FOREIGN KEY (approved_by) REFERENCES construction_mgr.be_user(id) ON DELETE SET NULL,
     CONSTRAINT check_ai_plan_status CHECK (status IN ('draft', 'review', 'approved', 'rejected', 'archived')),
-    CONSTRAINT unique_project_version UNIQUE (project_id, version_number),
-    CONSTRAINT unique_active_plan_per_project EXCLUDE (project_id WITH =) WHERE (is_active = true)
+    CONSTRAINT unique_project_version UNIQUE (project_id, version_number)
 );
+
 CREATE TRIGGER update_ai_generated_plan_modtime
     BEFORE UPDATE ON construction_mgr.ai_generated_plan
     FOR EACH ROW
     EXECUTE FUNCTION construction_mgr.update_updated_at_column();
+
 -- Indexes
 CREATE INDEX idx_ai_plan_project_id ON construction_mgr.ai_generated_plan(project_id);
 CREATE INDEX idx_ai_plan_version ON construction_mgr.ai_generated_plan(project_id, version_number);
@@ -64,6 +75,10 @@ CREATE INDEX idx_ai_plan_status ON construction_mgr.ai_generated_plan(status);
 CREATE INDEX idx_ai_plan_active ON construction_mgr.ai_generated_plan(project_id, is_active) WHERE is_active = true;
 CREATE INDEX idx_ai_plan_approved ON construction_mgr.ai_generated_plan(is_approved, approved_at);
 CREATE INDEX idx_ai_plan_generated_at ON construction_mgr.ai_generated_plan(generated_at);
+
+-- =============================================================================
+-- AI PLAN FUNCTIONS
+-- =============================================================================
 
 -- Function to automatically set version number for new plans
 CREATE OR REPLACE FUNCTION construction_mgr.set_ai_plan_version_number()

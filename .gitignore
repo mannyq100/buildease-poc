@@ -49,3 +49,7 @@ tasks.json
 tasks/ 
 .taskmaster
 .roo*
+
+supabase-backup-do-not-use
+**/reset_database.sh
+**/reset_database.sql

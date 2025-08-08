@@ -8,7 +8,7 @@ import React, { useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Image as ImageIcon, Star } from 'lucide-react';
+import { X, Upload, Star } from 'lucide-react';
 import { cn } from '@/utils/core/ui';
 import { useImageState, useImageActions } from '@/stores/createProject/imageStore';
 import { toast } from 'sonner';
@@ -87,20 +87,7 @@ const ProjectInspirationImagesComponent = ({ className }: ProjectInspirationImag
 
   return (
     <div className={cn('space-y-4', className)}>
-      {/* Header */}
-      <div className="flex items-center gap-2">
-        <ImageIcon className="h-5 w-5 text-orange-600" />
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-          Inspiration Images
-        </h3>
-        <Badge variant="secondary" className="text-xs">
-          Optional
-        </Badge>
-      </div>
-
-      <p className="text-sm text-slate-600 dark:text-slate-400">
-        Upload images that inspire your project design. These help our AI create better plans.
-      </p>
+      {/* Duplicate header/description removed (provided by parent section) */}
 
       {/* Upload Error */}
       {uploadError && (

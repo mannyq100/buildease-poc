@@ -14,7 +14,7 @@ export const usePageActions = (page: string) => {
           label: 'New Project',
           icon: <Plus className="h-4 w-4" />,
           variant: 'glow',
-          onClick: () => navigate('/projects/create')
+          onClick: () => navigate('/projects/new')
         },
         {
           label: 'Export',

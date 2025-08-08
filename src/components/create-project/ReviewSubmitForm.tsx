@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
 import { cn } from '@/utils/core/ui';
+import { useImageState } from '@/stores/createProject/imageStore';
 import { 
   Building, 
   MapPin, 
@@ -177,11 +178,14 @@ function ReviewSubmitForm() {
       'To be determined';
   }, [formValues.expectedStartDate]);
 
-  // For now, we'll skip the image gallery to avoid store issues
-  // This can be re-enabled once the store architecture is stabilized
-  const localFiles: { id: string; previewUrl: string; file: File }[] = [];
-  const localProfileImageId: string | null = null;
-  const profileImage = null;
+  // Pull inspiration images from the image store
+  const { localFiles = [], localProfileImageId = null } = useImageState();
+  // Fallback: if no profile selected, use the first uploaded image
+  const profileImage = useMemo(() => {
+    if (!localFiles || localFiles.length === 0) return null;
+    const selected = localFiles.find((f) => f.id === localProfileImageId);
+    return selected ?? localFiles[0];
+  }, [localFiles, localProfileImageId]);
 
   return (
     <LazyMotion features={domAnimation}>
@@ -709,9 +713,9 @@ function ReviewSubmitForm() {
                                           checked={field.value?.includes(feature)}
                                           onCheckedChange={(checked) => {
                                             return checked
-                                              ? field.onChange([...field.value, feature])
+                                              ? field.onChange([...(field.value ?? []), feature])
                                               : field.onChange(
-                                                  field.value?.filter(
+                                                  (field.value ?? []).filter(
                                                     (value) => value !== feature
                                                   )
                                                 )
@@ -761,9 +765,9 @@ function ReviewSubmitForm() {
                                           checked={field.value?.includes(feature)}
                                           onCheckedChange={(checked) => {
                                             return checked
-                                              ? field.onChange([...field.value, feature])
+                                              ? field.onChange([...(field.value ?? []), feature])
                                               : field.onChange(
-                                                  field.value?.filter(
+                                                  (field.value ?? []).filter(
                                                     (value) => value !== feature
                                                   )
                                                 )

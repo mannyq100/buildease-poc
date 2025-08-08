@@ -38,6 +38,7 @@ export const useProjects = (filters?: ProjectFilters) => {
       let query = supabase
         .from('be_project')
         .select(`
+          slug,
           id,
           name,
           description,

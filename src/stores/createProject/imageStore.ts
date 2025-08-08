@@ -305,8 +305,11 @@ export const useImageStore = create<ImageStoreState>()(
         set({ isUploading: true, uploadProgress: 0, uploadError: null }, false, 'uploadImages/start');
 
         try {
+          // Fallback: if no explicit profile selected, use the first image as profile
+          const selectedProfileId = localProfileImageId ?? localFiles[0]?.id ?? null;
+
           const uploadPromises = localFiles.map(async (localFile, index) => {
-            const isProfile = localFile.id === localProfileImageId;
+            const isProfile = selectedProfileId !== null && localFile.id === selectedProfileId;
             
             try {
               const url = await uploadSingleImage(localFile.file, userId, projectId, isProfile);

@@ -384,7 +384,7 @@ export const router = createBrowserRouter([
   },
   // Feature-based splitting
   {
-    path: '/projects/:id',
+    path: '/project/:url-slug',
     element: <ProjectDetails />,
     lazy: () => import('@/pages/ProjectDetails/loader'),
   },

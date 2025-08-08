@@ -38,6 +38,9 @@ import {
   Sparkles
 } from 'lucide-react';
 
+// Local storage key for draft autosave
+const DRAFT_KEY = 'buildease:createProject:draft:v1';
+
 // Lazy load wizard steps with intelligent prefetching  
 const ProjectDetailsForm = lazy(() => import('../components/create-project/ProjectDetailsForm'));
 const LocationPlotForm = lazy(() => import('../components/create-project/LocationPlotForm'));
@@ -87,10 +90,11 @@ function CreateProjectContent() {
   // Use simple local state to avoid Zustand infinite loop issues
   const [currentStep, setCurrentStep] = useState<number>(1);
   const totalSteps = TOTAL_STEPS;
+  const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
   
   // Get submission store actions and state
   const { submitProject } = useSubmissionActions();
-  const { isSubmitting, submitError, isSuccess, createdProjectId } = useProjectSubmission();
+  const { isSubmitting, submitError, isSuccess, createdProjectId, createdProjectSlug } = useProjectSubmission();
   
   // Get image upload actions and state
   const { uploadImages, clearAllImages } = useImageActions();
@@ -100,6 +104,7 @@ function CreateProjectContent() {
   const prevIsSuccessRef = useRef(false);
   const prevSubmitErrorRef = useRef<string | null>(null);
   const prevCreatedProjectIdRef = useRef<string | null>(null);
+  const saveTimeoutRef = useRef<number | null>(null);
   
   // Initialize form with react-hook-form and zod validation
   const methods = useForm<CreateProjectFormValues>({
@@ -119,6 +124,62 @@ function CreateProjectContent() {
       profileImage: undefined,
     },
   });
+
+  // Online/offline listeners
+  useEffect(() => {
+    function handleOnline() { setIsOnline(true); }
+    function handleOffline() { setIsOnline(false); }
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Restore draft if present
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<CreateProjectFormValues>;
+        methods.reset({
+          ...methods.getValues(),
+          ...parsed,
+        });
+        toast({
+          title: 'Draft restored',
+          description: 'We found an unsent project draft and restored it for you.',
+        });
+      }
+    } catch (e) {
+      // Ignore corrupted drafts
+      console.warn('Failed to restore draft', e);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Autosave draft with debounce
+  useEffect(() => {
+    const subscription = methods.watch((values) => {
+      if (saveTimeoutRef.current) {
+        window.clearTimeout(saveTimeoutRef.current);
+      }
+      saveTimeoutRef.current = window.setTimeout(() => {
+        try {
+          localStorage.setItem(DRAFT_KEY, JSON.stringify(values));
+        } catch (e) {
+          console.warn('Failed to save draft', e);
+        }
+      }, 600);
+    });
+    return () => {
+      subscription.unsubscribe();
+      if (saveTimeoutRef.current) {
+        window.clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [methods]);
   
   // Validate only fields for the active step (prevents blocking on future-step fields)
   const requiredFieldsByStep = useMemo<Record<number, (keyof CreateProjectFormValues)[]>>(() => ({
@@ -163,8 +224,12 @@ function CreateProjectContent() {
         title: "Project created successfully",
         description: "Your project has been created and AI plan generation has started.",
       });
+
+      // Clear draft after successful creation
+      try { localStorage.removeItem(DRAFT_KEY); } catch { /* best-effort clear; ignore quota/private mode issues */ }
       
-      navigate(`/projects/${createdProjectId}`);
+      const targetSlugOrId = createdProjectSlug ?? createdProjectId;
+      navigate(`/project/${targetSlugOrId}`);
     }
     
     // Reset success tracking when not successful
@@ -172,7 +237,7 @@ function CreateProjectContent() {
       prevIsSuccessRef.current = false;
       prevCreatedProjectIdRef.current = null;
     }
-  }, [isSuccess, createdProjectId, toast, navigate]);
+  }, [isSuccess, createdProjectId, createdProjectSlug, toast, navigate]);
   
   useEffect(() => {
     // Only handle error if it's a new error
@@ -230,7 +295,7 @@ function CreateProjectContent() {
         try {
           // Step 1: Create project in database (without images)
           const formData = methods.getValues();
-          const projectId = await submitProject(formData, user.id);
+          const { id: projectId } = await submitProject(formData, user.id);
           
           // Step 2: Upload images if any exist
           if (imageFiles.length > 0) {
@@ -355,6 +420,12 @@ function CreateProjectContent() {
     }
   }, [methods, toast]);
 
+  // Simple overall progress based on step number
+  const overallProgress = useMemo(() => {
+    const pct = Math.max(0, Math.min(100, Math.round(((currentStep - 1) / (TOTAL_STEPS)) * 100)));
+    return pct;
+  }, [currentStep]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-buildease-blue-50/40 dark:from-slate-900 dark:to-slate-800">
       <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 max-w-4xl">
@@ -369,7 +440,28 @@ function CreateProjectContent() {
           <p className="text-base md:text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto font-opensans leading-relaxed">
             Let's build something amazing together
           </p>
+          {/* Thin progress bar */}
+          <div className="mt-6 w-full max-w-2xl mx-auto">
+            <div className="h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-buildease-blue-500 dark:bg-buildease-blue-500 transition-all duration-300"
+                style={{ width: `${overallProgress}%` }}
+                aria-valuenow={overallProgress}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                role="progressbar"
+              />
+            </div>
+            <p className="sr-only">Progress: {overallProgress}%</p>
+          </div>
         </div>
+
+        {/* Offline banner */}
+        {!isOnline && (
+          <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200 px-4 py-3 text-sm font-opensans">
+            You are currently offline. Your changes are saved locally and will persist. Submit when back online.
+          </div>
+        )}
 
         {/* Enhanced Step Navigator */}
         <StepNavigator 
@@ -466,6 +558,43 @@ function CreateProjectContent() {
               </LazyMotion>
             </form> 
           </FormProvider>
+        </div>
+      </div>
+
+      {/* Mobile sticky action bar */}
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 dark:supports-[backdrop-filter]:bg-slate-900/80 px-4 py-3">
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleBack}
+            disabled={currentStep === 1}
+            className="flex-1"
+          >
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
+          <Button
+            type="button"
+            onClick={handleNext}
+            disabled={isSubmitting || isUploading}
+            className="flex-1"
+          >
+            {(isSubmitting || isUploading) ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <span>{isSubmitting ? 'Creating...' : 'Uploading...'}</span>
+              </>
+            ) : (
+              <>
+                {currentStep === totalSteps ? 'Generate Plan' : 'Continue'}
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </>
+            )}
+          </Button>
+        </div>
+        <div className="h-1 mt-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+          <div className="h-full bg-buildease-blue-500 transition-all" style={{ width: `${overallProgress}%` }} />
         </div>
       </div>
     </div>

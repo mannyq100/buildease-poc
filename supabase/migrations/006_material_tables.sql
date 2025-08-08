@@ -1,5 +1,9 @@
--- Migration: 013_material_tables.sql
--- Purpose: Defines tables for the material and inventory domain.
+-- Migration: 006_material_tables.sql
+-- Purpose: Defines all tables for the material and inventory domain.
+
+-- =============================================================================
+-- MATERIAL TABLE
+-- =============================================================================
 
 -- Material table
 CREATE TABLE construction_mgr.be_material (
@@ -24,10 +28,12 @@ CREATE TABLE construction_mgr.be_material (
     CONSTRAINT fk_material_supplier FOREIGN KEY (supplier_id) REFERENCES construction_mgr.be_user(id) ON DELETE SET NULL,
     CONSTRAINT chk_material_quantity_positive CHECK (current_quantity IS NULL OR current_quantity >= 0)
 );
+
 CREATE TRIGGER update_material_modtime
     BEFORE UPDATE ON construction_mgr.be_material
     FOR EACH ROW
     EXECUTE FUNCTION construction_mgr.update_updated_at_column();
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_material_project ON construction_mgr.be_material (project_id);
 CREATE INDEX IF NOT EXISTS idx_material_category ON construction_mgr.be_material (category);
@@ -39,6 +45,10 @@ CREATE INDEX IF NOT EXISTS idx_material_low_stock
     AND min_required_quantity IS NOT NULL 
     AND current_quantity < min_required_quantity;
 CREATE INDEX IF NOT EXISTS idx_material_supplier ON construction_mgr.be_material (supplier_id);
+
+-- =============================================================================
+-- MATERIAL TRANSACTION TABLE
+-- =============================================================================
 
 -- Material Transaction table
 CREATE TABLE construction_mgr.material_transaction (
@@ -62,10 +72,15 @@ CREATE TABLE construction_mgr.material_transaction (
     CONSTRAINT chk_material_transaction_quantity_not_zero CHECK (quantity != 0),
     CONSTRAINT chk_material_transaction_type CHECK (transaction_type IN ('PURCHASE', 'USAGE', 'ADJUSTMENT', 'RETURN'))
 );
+
 -- Indexes
 CREATE INDEX idx_material_transaction_material ON construction_mgr.material_transaction(material_id);
 CREATE INDEX idx_material_transaction_project ON construction_mgr.material_transaction(project_id);
 CREATE INDEX idx_material_transaction_created ON construction_mgr.material_transaction(created_at);
+
+-- =============================================================================
+-- MATERIAL QUANTITY UPDATE FUNCTION
+-- =============================================================================
 
 -- Function to update material quantities based on transactions
 CREATE OR REPLACE FUNCTION construction_mgr.update_material_quantity()

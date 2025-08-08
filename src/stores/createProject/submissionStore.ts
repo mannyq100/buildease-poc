@@ -23,6 +23,7 @@ export interface SubmissionState {
   submitError: string | null;
   isSuccess: boolean;
   createdProjectId: string | null;
+  createdProjectSlug: string | null;
 }
 
 // Combined store state
@@ -35,7 +36,7 @@ export interface SubmissionStoreState extends ValidationState, SubmissionState {
   isStepValid: (step: WizardStep) => boolean;
   
   // Submission actions
-  submitProject: (formData: ProjectFormValues, userId: string) => Promise<string>; // Returns project ID
+  submitProject: (formData: ProjectFormValues, userId: string) => Promise<{ id: string; slug: string }>; // Returns project identifiers
   resetSubmission: () => void;
   clearSubmitError: () => void;
 }
@@ -62,7 +63,8 @@ const getDefaultSubmissionState = (): SubmissionState => ({
   isSubmitting: false,
   submitError: null,
   isSuccess: false,
-  createdProjectId: null
+  createdProjectId: null,
+  createdProjectSlug: null
 });
 
 // Validation helper functions
@@ -224,10 +226,11 @@ export const useSubmissionStore = create<SubmissionStoreState>()(
               isSubmitting: false,
               isSuccess: true,
               createdProjectId: result.project.id,
+              createdProjectSlug: result.project.slug ?? null,
               submitError: null
             }, false, 'submitProject/success');
             
-            return result.project.id; // Return project ID for image upload
+            return { id: result.project.id, slug: result.project.slug ?? result.project.id }; // Prefer slug for navigation
           } else {
             set({
               isSubmitting: false,
@@ -277,10 +280,11 @@ let cachedSubmissionState: {
   submitError: string | null;
   isSuccess: boolean;
   createdProjectId: string | null;
+  createdProjectSlug: string | null;
 } | null = null;
 
 let cachedSubmissionActions: {
-  submitProject: (formData: ProjectFormValues, userId: string) => Promise<string>;
+  submitProject: (formData: ProjectFormValues, userId: string) => Promise<{ id: string; slug: string }>;
   resetSubmission: () => void;
   clearSubmitError: () => void;
 } | null = null;
@@ -291,13 +295,15 @@ const selectProjectSubmission = (state: SubmissionStoreState) => {
       cachedSubmissionState.isSubmitting !== state.isSubmitting ||
       cachedSubmissionState.submitError !== state.submitError ||
       cachedSubmissionState.isSuccess !== state.isSuccess ||
-      cachedSubmissionState.createdProjectId !== state.createdProjectId) {
+      cachedSubmissionState.createdProjectId !== state.createdProjectId ||
+      cachedSubmissionState.createdProjectSlug !== state.createdProjectSlug) {
     
     cachedSubmissionState = {
       isSubmitting: state.isSubmitting,
       submitError: state.submitError,
       isSuccess: state.isSuccess,
-      createdProjectId: state.createdProjectId
+      createdProjectId: state.createdProjectId,
+      createdProjectSlug: state.createdProjectSlug
     };
   }
   

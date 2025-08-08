@@ -1,11 +1,10 @@
 -- Migration: 001_core_setup.sql
--- Purpose: Foundational setup for the entire database.
+-- Purpose: Foundational setup for the entire database (Supabase).
 -- Contains:
 -- - Schema creation (construction_mgr, private)
--- - Extension enablement (uuid-ossp, pgcrypto, etc.)
+-- - Extension enablement (uuid-ossp, pgcrypto, pg_jsonschema)
 -- - Core utility functions (update_updated_at_column)
 
--- Create a new schema for all BuildEase database objects
 CREATE SCHEMA IF NOT EXISTS construction_mgr;
 
 -- Grant necessary permissions to Supabase roles for construction_mgr schema

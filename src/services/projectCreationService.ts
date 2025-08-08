@@ -3,10 +3,11 @@
  * Handles the database operations for creating new projects
  */
 import { supabase } from '@/lib/supabase';
-import { CreateProjectFormValues } from '@/pages/CreateProject';
+import { CreateProjectFormValues } from '@/pages/CreateProject/schema';
 import { validateBuildingPlotSizeRatio, validateStoreysBuildingSizeRatio } from '@/utils/projectFormUtils';
 import { Currency, Project, ProjectInsert, TABLE_NAMES, UserRole } from '@/types/database';
 import { AIPlanService } from './aiPlanService';
+import { generateUniqueProjectSlug } from '@/utils/project/slug';
 
 export interface CreateProjectResult {
   success: boolean;
@@ -19,12 +20,16 @@ export interface CreateProjectResult {
  */
 export async function createProject(formData: CreateProjectFormValues, userId: string): Promise<CreateProjectResult> {
   try {
+    // Generate URL-friendly unique slug for the project
+    const slug = await generateUniqueProjectSlug(formData.name);
+
     // Prepare the project data to match the database schema
     const projectData: ProjectInsert = {
       name: formData.name,
       description: formData.description || null,
       status: 'PLANNING', // Match the enum from schema
       owner_id: userId,
+      slug,
       profile_image: formData.profileImage || null,
       inspiration_images: formData.images || [],
       
@@ -162,7 +167,7 @@ export async function createProject(formData: CreateProjectFormValues, userId: s
     // Fetch the project by the known ID
     const { data: createdProject, error: fetchError } = await supabase
       .from(TABLE_NAMES.PROJECTS)
-      .select('id, name, description, status, details, timeline, budget, owner_id, profile_image, inspiration_images, created_at, updated_at')
+      .select('id, name, description, status, details, timeline, budget, owner_id, slug, profile_image, inspiration_images, created_at, updated_at')
       .eq('id', projectId)
       .single();
       

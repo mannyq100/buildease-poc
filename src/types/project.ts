@@ -22,6 +22,7 @@ export interface ProjectImage {
 export interface Project {
   // Core project information (matches view)
   id: string;
+  slug?: string; // URL-friendly identifier
   name: string;
   description: string;
   owner_id: string;

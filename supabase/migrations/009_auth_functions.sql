@@ -1,5 +1,9 @@
--- Migration: 004_user_auth_functions.sql
--- Purpose: Defines functions for user authentication, authorization, and profile management.
+-- Migration: 009_auth_functions.sql
+-- Purpose: Defines all functions for user authentication, authorization, and profile management.
+
+-- =============================================================================
+-- AUTH PROVIDER FUNCTIONS
+-- =============================================================================
 
 -- Function to get provider from raw_app_meta_data
 CREATE OR REPLACE FUNCTION private.get_auth_provider(app_meta_data JSONB)
@@ -35,6 +39,21 @@ EXCEPTION
         RETURN 'EMAIL';
 END;
 $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
+
+-- Simple admin check available early in the migration order
+CREATE OR REPLACE FUNCTION private.is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM construction_mgr.be_project_member
+        WHERE user_id = auth.uid() AND role = 'ADMIN'::construction_mgr.user_role
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- =============================================================================
+-- USER SYNC FUNCTIONS
+-- =============================================================================
 
 -- Function to sync new auth users to be_user table
 CREATE OR REPLACE FUNCTION construction_mgr.sync_new_auth_user()
@@ -255,35 +274,9 @@ CREATE TRIGGER auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION construction_mgr.sync_new_auth_user();
 
--- Core permission function used by all other functions
-CREATE OR REPLACE FUNCTION construction_mgr.get_user_project_permissions(
-    p_project_id UUID,
-    p_user_id UUID,
-    p_role construction_mgr.user_role,
-    p_is_owner BOOLEAN
-) RETURNS jsonb
-LANGUAGE plpgsql
-STABLE SECURITY INVOKER
-AS $$
-DECLARE
-    permission_names jsonb := '[]'::jsonb;
-BEGIN
-    
-    -- Add explicit permissions from be_project_permission table
-    WITH explicit_perms AS (
-        SELECT lower(permission::text) as perm_name
-        FROM construction_mgr.be_project_permission
-        WHERE project_id = p_project_id
-          AND user_id = p_user_id
-          AND active = TRUE
-    )
-    SELECT jsonb_agg(DISTINCT perm_name)
-    INTO permission_names
-    FROM explicit_perms;
-    
-    RETURN COALESCE(permission_names, '[]'::jsonb);
-END;
-$$;
+-- =============================================================================
+-- USER PROFILE FUNCTIONS
+-- =============================================================================
 
 -- Main user profile function used by the edge function
 CREATE OR REPLACE FUNCTION construction_mgr.get_user_profile(user_uuid UUID DEFAULT auth.uid())
@@ -397,15 +390,20 @@ AS $$
     SELECT construction_mgr.get_user_profile(auth.uid())::jsonb;
 $$;
 
--- Admin check function (needed by RLS policies in migration 005)
--- Note: This function will be enhanced in migration 008 with project-specific logic
-CREATE OR REPLACE FUNCTION private.is_admin_direct(user_id UUID)
-RETURNS BOOLEAN AS $$
+-- =============================================================================
+-- NOTIFICATION FUNCTIONS
+-- =============================================================================
+
+-- Function to automatically clean up expired notifications
+CREATE OR REPLACE FUNCTION construction_mgr.cleanup_expired_notifications()
+RETURNS INTEGER AS $$
+DECLARE
+    deleted_count INTEGER;
 BEGIN
-    -- For now, return false as a placeholder
-    -- This will be properly implemented in migration 008 when project tables exist
-    RETURN FALSE;
+    DELETE FROM construction_mgr.be_notification
+    WHERE expires_at IS NOT NULL AND expires_at < CURRENT_TIMESTAMP;
+    
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+    RETURN deleted_count;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
-

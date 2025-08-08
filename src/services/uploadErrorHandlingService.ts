@@ -399,9 +399,10 @@ class UploadErrorHandlingService {
     console.log('Showing contact project owner for:', projectId);
   }
 
-  private static navigateToProject(projectId?: string): void {
-    if (projectId) {
-      window.location.href = `/projects/${projectId}`;
+  // Navigate using slug-based routing. Accepts a project slug.
+  private static navigateToProject(projectSlug?: string): void {
+    if (projectSlug) {
+      window.location.href = `/project/${projectSlug}`;
     }
   }
 
