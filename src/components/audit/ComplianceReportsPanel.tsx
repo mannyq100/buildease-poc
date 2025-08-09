@@ -29,7 +29,8 @@ import {
   AlertTriangle,
   TrendingUp,
   Activity,
-  RefreshCw
+  RefreshCw,
+  XCircle
 } from 'lucide-react';
 import { subDays, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { toast } from 'sonner';

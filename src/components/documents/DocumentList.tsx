@@ -2,7 +2,7 @@
  * Document List Component
  * Displays project documents with download, edit, and delete functionality
  */
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { FileText, Download, Edit, Trash2, Eye, Calendar, Folder } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -31,7 +31,7 @@ export function DocumentList({
   const [loadingUrls, setLoadingUrls] = useState<Record<string, boolean>>({});
 
   const { data: documents = [], isLoading, error } = useProjectDocuments(projectId);
-  const deleteDocument = useDeleteDocument();
+  const deleteDocument = useDeleteDocument(projectId);
 
   // Filter documents by phase if phaseId is provided
   const filteredDocuments = phaseId 

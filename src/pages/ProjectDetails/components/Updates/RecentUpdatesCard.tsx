@@ -4,8 +4,9 @@
  * Mobile-first responsive design optimized for construction workflows
  */
 
-import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useMemo, useCallback } from 'react';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ProCard } from '@/components/ui/ProCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useRecentProjectActivities } from '@/hooks/queries/useProjectActivities';
@@ -47,7 +48,7 @@ interface UpdateItem {
   user?: string;
   icon: React.ReactNode;
   status: 'success' | 'info' | 'warning' | 'error';
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface RecentUpdatesCardProps {
@@ -66,8 +67,11 @@ export function RecentUpdatesCard({
   // Fetch real project activities with real-time updates
   const { data: activities = [], isLoading } = useRecentProjectActivities(project.id, 20, true);
 
-  // Convert ActivityType to appropriate icon
-  const getActivityIcon = (activityType: ActivityType): React.ReactNode => {
+  // Convert ActivityType to appropriate icon (handles both individual and batched activities)
+  const getActivityIcon = (activityType: ActivityType, metadata?: Record<string, unknown>): React.ReactNode => {
+    // Check if this is a batched activity
+    const isBatched = metadata?.batchSize && (metadata.batchSize as number) > 1;
+    const batchSize = metadata?.batchSize as number || 1;
     switch (activityType) {
       case 'document_upload':
         return <FileText className="h-4 w-4" />;
@@ -114,8 +118,11 @@ export function RecentUpdatesCard({
     }
   };
 
-  // Convert ProjectActivity to UpdateItem
-  const convertActivityToUpdateItem = (activity: ProjectActivity): UpdateItem => {
+  // Convert ProjectActivity to UpdateItem (handles batched activities)
+  const convertActivityToUpdateItem = useCallback((activity: ProjectActivity): UpdateItem => {
+    const isBatched = activity.metadata?.batchSize && (activity.metadata.batchSize as number) > 1;
+    const batchSize = activity.metadata?.batchSize as number;
+    
     return {
       id: activity.id,
       type: activity.activity_type,
@@ -123,16 +130,20 @@ export function RecentUpdatesCard({
       description: activity.description || undefined,
       timestamp: activity.created_at,
       user: activity.user_name || undefined,
-      icon: getActivityIcon(activity.activity_type),
+      icon: getActivityIcon(activity.activity_type, activity.metadata),
       status: activity.status,
-      metadata: activity.metadata
+      metadata: {
+        ...activity.metadata,
+        isBatched,
+        batchSize
+      }
     };
-  };
+  }, []);
 
   // Convert activities to update items
   const recentUpdates = useMemo((): UpdateItem[] => {
     return activities.map(convertActivityToUpdateItem);
-  }, [activities]);
+  }, [activities, convertActivityToUpdateItem]);
 
   const displayedUpdates = showAll ? recentUpdates : recentUpdates.slice(0, 3);
 
@@ -174,8 +185,8 @@ export function RecentUpdatesCard({
   };
 
   return (
-    <Card className="border-slate-200/40 shadow-xl bg-gradient-to-br from-white via-slate-50/30 to-emerald-50/20 backdrop-blur-md rounded-2xl overflow-hidden">
-      <CardHeader className="pb-4">
+    <ProCard accent="neutral" className="">
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <button
             onClick={onToggleExpanded}
@@ -234,9 +245,16 @@ export function RecentUpdatesCard({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-slate-900 truncate">
-                            {update.title}
-                          </h4>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-medium text-slate-900 truncate">
+                              {update.title}
+                            </h4>
+                            {update.metadata?.isBatched && (
+                              <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-blue-50 text-blue-600">
+                                {update.metadata.batchSize} items
+                              </Badge>
+                            )}
+                          </div>
                           {update.description && (
                             <p className="text-sm text-slate-600 mt-1 line-clamp-2">
                               {update.description}
@@ -295,6 +313,6 @@ export function RecentUpdatesCard({
           )}
         </CardContent>
       )}
-    </Card>
+    </ProCard>
   );
 }

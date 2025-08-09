@@ -269,8 +269,18 @@ export function useUpdateProjectWithTracking(projectId: string) {
               activityDescription = `Project client information was updated`;
               break;
             case 'profile_image':
-              activityTitle = 'Project image updated';
-              activityDescription = `Project profile image was changed`;
+              activityTitle = 'Profile photo updated';
+              activityDescription = `Project profile photo was changed for "${projectName}"`;
+              activityStatus = 'success';
+              break;
+            case 'inspiration_images':
+              activityTitle = 'Inspiration photos updated';
+              activityDescription = `Project inspiration gallery was updated for "${projectName}"`;
+              activityStatus = 'success';
+              break;
+            case 'progress_images':
+              activityTitle = 'Progress photos updated';
+              activityDescription = `Project progress photos were updated for "${projectName}"`;
               activityStatus = 'success';
               break;
           }
@@ -416,14 +426,16 @@ export function useUpdateProjectImagesWithTracking(projectId: string) {
         let activityDescription: string;
 
         if (imageType === 'profile') {
-          activityTitle = 'Project image updated';
-          activityDescription = `Project profile image was updated for "${displayProjectName}"`;
+          activityTitle = 'Profile photo updated';
+          activityDescription = `New project profile photo uploaded for "${displayProjectName}"`;
         } else if (imageType === 'inspiration') {
-          activityTitle = `Inspiration image${imageCount > 1 ? 's' : ''} added`;
-          activityDescription = `${imageCount} inspiration image${imageCount > 1 ? 's were' : ' was'} added to "${displayProjectName}"`;
+          const imageText = imageCount === 1 ? 'inspiration photo' : `${imageCount} inspiration photos`;
+          activityTitle = `${imageCount} inspiration ${imageCount === 1 ? 'photo' : 'photos'} added`;
+          activityDescription = `${imageText.charAt(0).toUpperCase() + imageText.slice(1)} uploaded to "${displayProjectName}" inspiration gallery`;
         } else {
-          activityTitle = `Progress image${imageCount > 1 ? 's' : ''} added`;
-          activityDescription = `${imageCount} progress image${imageCount > 1 ? 's were' : ' was'} added to "${displayProjectName}"`;
+          const imageText = imageCount === 1 ? 'progress photo' : `${imageCount} progress photos`;
+          activityTitle = `${imageCount} progress ${imageCount === 1 ? 'photo' : 'photos'} uploaded`;
+          activityDescription = `${imageText.charAt(0).toUpperCase() + imageText.slice(1)} added to "${displayProjectName}" progress documentation`;
         }
 
         await activityTracker.trackActivity(

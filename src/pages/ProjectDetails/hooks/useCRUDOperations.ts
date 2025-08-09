@@ -45,18 +45,49 @@ export function useCRUDOperations({ projectId, phases, onCloseModals }: UseCRUDO
   
   const createTask = useCreateTask();
 
-  // Generic delete handler
+  // Generic delete handler with comprehensive debug logging
   const handleDelete = async (type: 'budget' | 'phase' | 'team', id: string) => {
+    console.log('[ACTIVITY_DEBUG] [useCRUDOperations] handleDelete called from PhaseTimelineCard', {
+      type,
+      id,
+      projectId,
+      timestamp: new Date().toISOString(),
+      userId: user?.id,
+      userEmail: user?.email
+    });
+    
     try {
       if (type === 'budget') {
+        console.log('[ACTIVITY_DEBUG] [useCRUDOperations] Calling deleteBudgetExpense.mutateAsync');
         await deleteBudgetExpense.mutateAsync(id);
       } else if (type === 'phase') {
+        console.log('[ACTIVITY_DEBUG] [useCRUDOperations] Calling deletePhase.mutateAsync (useDeleteProjectDetailsPhase)', {
+          phaseId: id,
+          projectId,
+          timestamp: new Date().toISOString()
+        });
         await deletePhase.mutateAsync(id);
+        console.log('[ACTIVITY_DEBUG] [useCRUDOperations] deletePhase.mutateAsync completed successfully');
       } else if (type === 'team') {
+        console.log('[ACTIVITY_DEBUG] [useCRUDOperations] Calling deleteTeamMember.mutateAsync');
         await deleteTeamMember.mutateAsync({ memberId: id, projectId });
       }
+      
+      console.log('[ACTIVITY_DEBUG] [useCRUDOperations] Delete operation completed successfully', {
+        type,
+        id,
+        timestamp: new Date().toISOString()
+      });
+      
     } catch (error) {
-      console.error(`Failed to delete ${type}:`, error);
+      console.error('[ACTIVITY_DEBUG] [useCRUDOperations] Delete operation failed:', {
+        type,
+        id,
+        error,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+        timestamp: new Date().toISOString()
+      });
     }
   };
 
@@ -102,6 +133,13 @@ export function useCRUDOperations({ projectId, phases, onCloseModals }: UseCRUDO
   const handlePhaseSubmit = async (data: PhaseFormData, modalMode: 'create' | 'edit', editingItem?: any, selectedTaskIds?: string[]) => {
     try {
       if (modalMode === 'create') {
+        console.log('[ACTIVITY_DEBUG] [useCRUDOperations] handlePhaseSubmit - CREATE mode', {
+          phaseName: data.name,
+          projectId,
+          userId: user?.id,
+          timestamp: new Date().toISOString()
+        });
+        
         // Check for duplicate phase names
         const existingPhase = phases?.find(phase => 
           phase.name.toLowerCase().trim() === data.name.toLowerCase().trim()
@@ -133,8 +171,19 @@ export function useCRUDOperations({ projectId, phases, onCloseModals }: UseCRUDO
           details: {}
         };
         
+        console.log('[ACTIVITY_DEBUG] [useCRUDOperations] Calling createPhase.mutateAsync (useCreateProjectDetailsPhase)', {
+          phaseData,
+          timestamp: new Date().toISOString()
+        });
+        
         // Create the phase
         const createdPhase = await createPhase.mutateAsync(phaseData);
+        
+        console.log('[ACTIVITY_DEBUG] [useCRUDOperations] createPhase.mutateAsync completed successfully', {
+          createdPhaseId: createdPhase.id,
+          phaseName: createdPhase.name,
+          timestamp: new Date().toISOString()
+        });
         
         // Create selected default tasks for the phase
         if (selectedTaskIds && selectedTaskIds.length > 0 && user?.id) {
@@ -173,6 +222,24 @@ export function useCRUDOperations({ projectId, phases, onCloseModals }: UseCRUDO
           toast.success('Phase created successfully!');
         }
       } else if (editingItem) {
+        console.log('[ACTIVITY_DEBUG] [useCRUDOperations] handlePhaseSubmit - EDIT mode', {
+          phaseId: editingItem.data.id,
+          phaseName: data.name,
+          projectId,
+          userId: user?.id,
+          timestamp: new Date().toISOString()
+        });
+        
+        console.log('[ACTIVITY_DEBUG] [useCRUDOperations] Calling updatePhase.mutateAsync (useUpdateProjectDetailsPhase)', {
+          phaseId: editingItem.data.id,
+          updateData: {
+            name: data.name,
+            description: data.description,
+            status: 'in-progress'
+          },
+          timestamp: new Date().toISOString()
+        });
+        
         await updatePhase.mutateAsync({
           phaseId: editingItem.data.id,
           phase: {
@@ -181,6 +248,12 @@ export function useCRUDOperations({ projectId, phases, onCloseModals }: UseCRUDO
             status: 'in-progress'
           }
         });
+        
+        console.log('[ACTIVITY_DEBUG] [useCRUDOperations] updatePhase.mutateAsync completed successfully', {
+          phaseId: editingItem.data.id,
+          timestamp: new Date().toISOString()
+        });
+        
         toast.success('Phase updated successfully!');
       }
       onCloseModals();

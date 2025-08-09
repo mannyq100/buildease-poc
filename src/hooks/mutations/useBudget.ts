@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { queryKeys } from '@/lib/queryClient';
 import { toast } from 'sonner';
+import * as activityService from '@/services/activityService';
 
 // Types for budget mutations
 export interface BudgetExpense {
@@ -61,7 +62,15 @@ export function useCreateBudgetExpense() {
       if (error) throw error;
       return expense;
     },
-    onSuccess: (_newExpense, variables) => {
+    onSuccess: async (newExpense, variables) => {
+      console.log('[ACTIVITY_DEBUG] [useCreateBudgetExpense] onSuccess called', {
+        expenseId: newExpense.id,
+        expenseName: variables.name,
+        expenseAmount: variables.amount,
+        projectId: variables.project_id,
+        timestamp: new Date().toISOString()
+      });
+      
       // Invalidate project budget queries
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.projects.detail(variables.project_id) 
@@ -69,6 +78,79 @@ export function useCreateBudgetExpense() {
       queryClient.invalidateQueries({ 
         queryKey: ['budget', variables.project_id] 
       });
+      
+      // Fire-and-forget activity logging with comprehensive debug logging
+      console.log('[ACTIVITY_DEBUG] [useCreateBudgetExpense] Starting activity logging for budget expense creation');
+      
+      (async () => {
+        try {
+          console.log('[ACTIVITY_DEBUG] [useCreateBudgetExpense] Fetching auth user');
+          const { data: auth, error: authError } = await supabase.auth.getUser();
+          
+          if (authError) {
+            console.error('[ACTIVITY_DEBUG] [useCreateBudgetExpense] Auth error:', authError);
+            return;
+          }
+          
+          console.log('[ACTIVITY_DEBUG] [useCreateBudgetExpense] Auth user fetched successfully', {
+            userId: auth?.user?.id,
+            hasUser: !!auth?.user,
+            userMetadata: auth?.user?.user_metadata
+          });
+          
+          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
+              (auth?.user?.user_metadata?.name as string | undefined) ||
+              (auth?.user?.email as string | undefined);
+              
+          console.log('[ACTIVITY_DEBUG] [useCreateBudgetExpense] Adding expense creation to activity batch', {
+            project_id: variables.project_id,
+            activity_type: 'expense_create',
+            title: `Budget expense added: ${variables.name}`,
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'expense',
+            entity_id: newExpense.id
+          });
+          
+          // Use batching for expense creation to reduce noise when multiple expenses are added
+          const formattedAmount = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD'
+          }).format(variables.amount);
+          
+          await activityService.createBatchedActivity({
+            project_id: variables.project_id,
+            activity_type: 'expense_create',
+            title: `New ${variables.category.toLowerCase()} expense: ${variables.name}`,
+            description: `Budget expense "${variables.name}" (${formattedAmount}) was added to ${variables.category}`,
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'expense',
+            entity_id: newExpense.id,
+            metadata: {
+              expenseName: variables.name,
+              amount: variables.amount,
+              category: variables.category,
+              status: variables.status || 'planned',
+              formattedAmount
+            },
+            status: 'success'
+          });
+          
+          console.log('[ACTIVITY_DEBUG] [useCreateBudgetExpense] Activity added to batch successfully');
+          
+        } catch (e) {
+          console.error('[ACTIVITY_DEBUG] [useCreateBudgetExpense] Activity logging failed:', {
+            error: e,
+            errorMessage: e instanceof Error ? e.message : String(e),
+            errorStack: e instanceof Error ? e.stack : undefined,
+            expenseId: newExpense.id,
+            expenseName: variables.name,
+            projectId: variables.project_id,
+            timestamp: new Date().toISOString()
+          });
+        }
+      })();
       
       toast.success('Budget expense added successfully');
     },
@@ -107,7 +189,14 @@ export function useUpdateBudgetExpense() {
       if (error) throw error;
       return expense;
     },
-    onSuccess: (updatedExpense) => {
+    onSuccess: async (updatedExpense, variables) => {
+      console.log('[ACTIVITY_DEBUG] [useUpdateBudgetExpense] onSuccess called', {
+        expenseId: updatedExpense.id,
+        projectId: updatedExpense.project_id,
+        updates: variables,
+        timestamp: new Date().toISOString()
+      });
+      
       // Invalidate project budget queries
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.projects.detail(updatedExpense.project_id) 
@@ -115,6 +204,102 @@ export function useUpdateBudgetExpense() {
       queryClient.invalidateQueries({ 
         queryKey: ['budget', updatedExpense.project_id] 
       });
+      
+      // Fire-and-forget activity logging with comprehensive debug logging
+      console.log('[ACTIVITY_DEBUG] [useUpdateBudgetExpense] Starting activity logging for budget expense update');
+      
+      (async () => {
+        try {
+          console.log('[ACTIVITY_DEBUG] [useUpdateBudgetExpense] Fetching auth user');
+          const { data: auth, error: authError } = await supabase.auth.getUser();
+          
+          if (authError) {
+            console.error('[ACTIVITY_DEBUG] [useUpdateBudgetExpense] Auth error:', authError);
+            return;
+          }
+          
+          console.log('[ACTIVITY_DEBUG] [useUpdateBudgetExpense] Auth user fetched successfully', {
+            userId: auth?.user?.id,
+            hasUser: !!auth?.user,
+            userMetadata: auth?.user?.user_metadata
+          });
+          
+          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
+              (auth?.user?.user_metadata?.name as string | undefined) ||
+              (auth?.user?.email as string | undefined);
+              
+          // Extract expense name from description (reverse of the creation logic)
+          const expenseName = updatedExpense.description ? updatedExpense.description.split(' - ')[0] : 'Budget Expense';
+              
+          console.log('[ACTIVITY_DEBUG] [useUpdateBudgetExpense] Calling activityService.createActivity', {
+            project_id: updatedExpense.project_id,
+            activity_type: 'expense_update',
+            title: `Budget expense updated: ${expenseName}`,
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'expense',
+            entity_id: updatedExpense.id
+          });
+          
+          // Determine what was updated for more specific messaging
+          const updatedFields = Object.keys(variables).filter(key => key !== 'id');
+          const formattedAmount = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD'
+          }).format(updatedExpense.amount);
+          
+          let activityTitle = `Budget expense modified: ${expenseName}`;
+          let activityDescription = `Expense "${expenseName}" was updated`;
+          
+          if (updatedFields.includes('status')) {
+            activityTitle = `Expense status changed: ${expenseName}`;
+            activityDescription = `"${expenseName}" status changed to ${updatedExpense.payment_status}`;
+          } else if (updatedFields.includes('amount')) {
+            activityTitle = `Expense amount updated: ${expenseName}`;
+            activityDescription = `"${expenseName}" amount updated to ${formattedAmount}`;
+          } else if (updatedFields.includes('category')) {
+            activityTitle = `Expense moved to ${updatedExpense.category}: ${expenseName}`;
+            activityDescription = `"${expenseName}" was moved to ${updatedExpense.category} category`;
+          }
+          
+          const result = await activityService.createActivity({
+            project_id: updatedExpense.project_id,
+            activity_type: 'expense_update',
+            title: activityTitle,
+            description: activityDescription,
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'expense',
+            entity_id: updatedExpense.id,
+            metadata: {
+              expenseName,
+              amount: updatedExpense.amount,
+              category: updatedExpense.category,
+              status: updatedExpense.payment_status,
+              updates: variables,
+              updatedFields,
+              formattedAmount
+            },
+            status: 'info'
+          });
+          
+          console.log('[ACTIVITY_DEBUG] [useUpdateBudgetExpense] Activity created successfully', {
+            success: !!result,
+            activityId: result?.id,
+            result
+          });
+          
+        } catch (e) {
+          console.error('[ACTIVITY_DEBUG] [useUpdateBudgetExpense] Activity logging failed:', {
+            error: e,
+            errorMessage: e instanceof Error ? e.message : String(e),
+            errorStack: e instanceof Error ? e.stack : undefined,
+            expenseId: updatedExpense.id,
+            projectId: updatedExpense.project_id,
+            timestamp: new Date().toISOString()
+          });
+        }
+      })();
       
       toast.success('Budget expense updated successfully');
     },
@@ -147,7 +332,13 @@ export function useDeleteBudgetExpense() {
       if (error) throw error;
       return { expenseId, projectId: expense?.project_id };
     },
-    onSuccess: (result) => {
+    onSuccess: async (result, variables) => {
+      console.log('[ACTIVITY_DEBUG] [useDeleteBudgetExpense] onSuccess called', {
+        expenseId: result.expenseId,
+        projectId: result.projectId,
+        timestamp: new Date().toISOString()
+      });
+      
       if (result.projectId) {
         // Invalidate project budget queries
         queryClient.invalidateQueries({ 
@@ -157,6 +348,75 @@ export function useDeleteBudgetExpense() {
           queryKey: ['budget', result.projectId] 
         });
       }
+      
+      // Fire-and-forget activity logging with comprehensive debug logging
+      console.log('[ACTIVITY_DEBUG] [useDeleteBudgetExpense] Starting activity logging for budget expense deletion');
+      
+      (async () => {
+        try {
+          console.log('[ACTIVITY_DEBUG] [useDeleteBudgetExpense] Fetching auth user');
+          const { data: auth, error: authError } = await supabase.auth.getUser();
+          
+          if (authError) {
+            console.error('[ACTIVITY_DEBUG] [useDeleteBudgetExpense] Auth error:', authError);
+            return;
+          }
+          
+          console.log('[ACTIVITY_DEBUG] [useDeleteBudgetExpense] Auth user fetched successfully', {
+            userId: auth?.user?.id,
+            hasUser: !!auth?.user,
+            userMetadata: auth?.user?.user_metadata
+          });
+          
+          if (!result.projectId) {
+            console.warn('[ACTIVITY_DEBUG] [useDeleteBudgetExpense] No projectId available for activity logging');
+            return;
+          }
+          
+          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
+              (auth?.user?.user_metadata?.name as string | undefined) ||
+              (auth?.user?.email as string | undefined);
+              
+          console.log('[ACTIVITY_DEBUG] [useDeleteBudgetExpense] Calling activityService.createActivity', {
+            project_id: result.projectId,
+            activity_type: 'expense_delete',
+            title: `Budget expense removed: ${result.expenseId}`,
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'expense',
+            entity_id: result.expenseId
+          });
+          
+          const activityResult = await activityService.createActivity({
+            project_id: result.projectId,
+            activity_type: 'expense_delete',
+            title: `Budget expense removed from project`,
+            description: 'An expense item was deleted from the project budget',
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'expense',
+            entity_id: result.expenseId,
+            metadata: { expenseId: result.expenseId },
+            status: 'warning'
+          });
+          
+          console.log('[ACTIVITY_DEBUG] [useDeleteBudgetExpense] Activity created successfully', {
+            success: !!activityResult,
+            activityId: activityResult?.id,
+            result: activityResult
+          });
+          
+        } catch (e) {
+          console.error('[ACTIVITY_DEBUG] [useDeleteBudgetExpense] Activity logging failed:', {
+            error: e,
+            errorMessage: e instanceof Error ? e.message : String(e),
+            errorStack: e instanceof Error ? e.stack : undefined,
+            expenseId: result.expenseId,
+            projectId: result.projectId,
+            timestamp: new Date().toISOString()
+          });
+        }
+      })();
       
       toast.success('Budget expense deleted successfully');
     },

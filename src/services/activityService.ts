@@ -6,7 +6,11 @@
 
 import { supabase } from '@/lib/supabase';
 import NotificationService from './notificationService';
-import { TABLE_NAMES } from '@/types/database';
+import { logger } from '@/utils/core/logger';
+import { addActivityToBatch } from './activityBatchingService';
+// Supabase client is already configured with schema 'construction_mgr' (see lib/supabase.ts)
+// Therefore, use the unqualified table name here
+const ACTIVITY_TABLE_FQN = 'be_project_activity';
 import type { 
   ProjectActivity, 
   ProjectActivityInsert, 
@@ -50,11 +54,51 @@ const NOTIFIABLE_ACTIVITY_TYPES: ActivityType[] = [
 ];
 
 /**
- * Create a new project activity record
+ * Create a new project activity record with optional batching
  * Uses dedicated be_project_activity table for optimal performance
  */
 export async function createActivity(data: CreateActivityData): Promise<ProjectActivity | null> {
+  return createActivityDirect(data);
+}
+
+/**
+ * Create a batched activity (groups similar activities together)
+ * Reduces noise in activity feeds for common operations
+ */
+export async function createBatchedActivity(data: CreateActivityData): Promise<void> {
   try {
+    await addActivityToBatch({
+      project_id: data.project_id,
+      activity_type: data.activity_type,
+      title: data.title,
+      description: data.description,
+      user_id: data.user_id,
+      user_name: data.user_name,
+      entity_type: data.entity_type,
+      entity_id: data.entity_id,
+      metadata: data.metadata,
+      status: data.status
+    });
+  } catch (error) {
+    console.error('[ACTIVITY_BATCH] Batching failed, falling back to direct creation:', error);
+    // Fallback to direct creation if batching fails
+    await createActivityDirect(data);
+  }
+}
+
+/**
+ * Create a project activity record directly (no batching)
+ * Uses dedicated be_project_activity table for optimal performance
+ */
+export async function createActivityDirect(data: CreateActivityData): Promise<ProjectActivity | null> {
+  try {
+    console.log('[ACTIVITY_DEBUG] [ActivityService] createActivity() called with data:', {
+      data,
+      timestamp: new Date().toISOString(),
+      tableName: ACTIVITY_TABLE_FQN
+    });
+    logger.debug('[ActivityService] createActivity() called', { data });
+    
     const activityData: ProjectActivityInsert = {
       project_id: data.project_id,
       activity_type: data.activity_type,
@@ -68,25 +112,70 @@ export async function createActivity(data: CreateActivityData): Promise<ProjectA
       status: data.status || 'info'
     };
 
+    console.log('[ACTIVITY_DEBUG] [ActivityService] Prepared activityData for database insert:', {
+      activityData,
+      table: ACTIVITY_TABLE_FQN,
+      timestamp: new Date().toISOString()
+    });
+    
+    logger.debug('[ActivityService] createActivity() inserting', { table: ACTIVITY_TABLE_FQN, activityData });
+    
+    console.log('[ACTIVITY_DEBUG] [ActivityService] About to call supabase.from().insert()');
     const { data: activity, error } = await supabase
-      .from(TABLE_NAMES.PROJECT_ACTIVITIES)
+      .from(ACTIVITY_TABLE_FQN)
       .insert(activityData)
       .select()
       .single();
 
+    console.log('[ACTIVITY_DEBUG] [ActivityService] Database insert completed:', {
+      success: !!activity,
+      hasError: !!error,
+      activityId: activity?.id,
+      timestamp: new Date().toISOString()
+    });
+
     if (error) {
-      console.error('Error creating activity:', error);
+      type PgError = { message: string; code?: string; details?: string; hint?: string };
+      const pgErr = error as PgError;
+      console.error('[ACTIVITY_DEBUG] [ActivityService] Database error creating activity:', {
+        message: pgErr.message,
+        code: pgErr.code,
+        details: pgErr.details,
+        hint: pgErr.hint,
+        activityData,
+        rawError: error,
+        timestamp: new Date().toISOString()
+      });
       return null;
     }
 
+    console.log('[ACTIVITY_DEBUG] [ActivityService] Activity created successfully:', {
+      activityId: activity.id,
+      activityType: activity.activity_type,
+      projectId: activity.project_id,
+      title: activity.title,
+      timestamp: new Date().toISOString()
+    });
+
     // Send real-time notification for significant activities
     if (shouldNotify(data.activity_type)) {
+      console.log('[ACTIVITY_DEBUG] [ActivityService] Broadcasting notification for activity type:', data.activity_type);
+      logger.debug('[ActivityService] broadcasting notification', { activityType: data.activity_type });
       await broadcastActivity(activity);
+    } else {
+      console.log('[ACTIVITY_DEBUG] [ActivityService] Skipping notification broadcast for activity type:', data.activity_type);
     }
 
+    logger.debug('[ActivityService] createActivity() success', { id: activity.id });
     return activity;
   } catch (error) {
-    console.error('Error in createActivity:', error);
+    console.error('[ACTIVITY_DEBUG] [ActivityService] Unexpected error in createActivity:', {
+      error,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorStack: error instanceof Error ? error.stack : undefined,
+      inputData: data,
+      timestamp: new Date().toISOString()
+    });
     return null;
   }
 }
@@ -97,8 +186,9 @@ export async function createActivity(data: CreateActivityData): Promise<ProjectA
  */
 export async function getProjectActivities(filter: ActivityFilter): Promise<ProjectActivity[]> {
   try {
+    logger.debug('[ActivityService] getProjectActivities()', { filter });
     let query = supabase
-      .from(TABLE_NAMES.PROJECT_ACTIVITIES)
+      .from(ACTIVITY_TABLE_FQN)
       .select('*')
       .eq('project_id', filter.project_id)
       .order('created_at', { ascending: false });
@@ -144,6 +234,7 @@ export async function getProjectActivities(filter: ActivityFilter): Promise<Proj
       return [];
     }
 
+    logger.debug('[ActivityService] getProjectActivities() success', { count: activities?.length || 0 });
     return activities || [];
   } catch (error) {
     console.error('Error in getProjectActivities:', error);
@@ -173,17 +264,19 @@ export function subscribeToProjectActivities(
   projectId: string, 
   callback: (activity: ProjectActivity) => void
 ) {
+  logger.debug('[ActivityService] subscribeToProjectActivities()', { projectId });
   return supabase
     .channel(`project-activities-${projectId}`)
     .on(
       'postgres_changes',
       {
         event: 'INSERT',
-        schema: 'public',
-        table: TABLE_NAMES.PROJECT_ACTIVITIES,
+        schema: 'construction_mgr',
+        table: 'be_project_activity',
         filter: `project_id=eq.${projectId}`
       },
       (payload) => {
+        logger.debug('[ActivityService] realtime INSERT received', { projectId, table: 'be_project_activity', id: (payload.new as ProjectActivity)?.id });
         callback(payload.new as ProjectActivity);
       }
     )
@@ -201,18 +294,49 @@ export async function trackDocumentUpload(
   userId?: string, 
   userName?: string
 ): Promise<ProjectActivity | null> {
-  return createActivity({
+  console.log('[ACTIVITY_DEBUG] [ActivityService] trackDocumentUpload() called with params:', {
+    projectId,
+    documentId,
+    documentName,
+    documentType,
+    userId,
+    userName,
+    timestamp: new Date().toISOString()
+  });
+  
+  logger.debug('[ActivityService] trackDocumentUpload()', { projectId, documentId, documentName, documentType, userId, userName });
+  
+  // Get file extension for more descriptive messaging
+  const fileExtension = documentName.split('.').pop()?.toUpperCase() || '';
+  const fileTypeText = fileExtension ? ` ${fileExtension}` : '';
+  
+  const result = await createBatchedActivity({
     project_id: projectId,
     activity_type: 'document_upload',
-    title: `Document uploaded: ${documentName}`,
-    description: `${documentType} document added to project`,
+    title: `New${fileTypeText} file uploaded: ${documentName}`,
+    description: `${documentType} document "${documentName}" was added to project`,
     user_id: userId,
     user_name: userName,
     entity_type: 'document',
     entity_id: documentId,
-    metadata: { documentType, documentName },
+    metadata: { 
+      documentType, 
+      documentName, 
+      fileExtension,
+      fileTypeText 
+    },
     status: 'success'
   });
+  
+  console.log('[ACTIVITY_DEBUG] [ActivityService] trackDocumentUpload() result:', {
+    success: !!result,
+    activityId: result?.id,
+    documentId,
+    documentName,
+    timestamp: new Date().toISOString()
+  });
+  
+  return result;
 }
 
 export async function trackDocumentDelete(
@@ -221,17 +345,44 @@ export async function trackDocumentDelete(
   userId?: string, 
   userName?: string
 ): Promise<ProjectActivity | null> {
-  return createActivity({
+  console.log('[ACTIVITY_DEBUG] [ActivityService] trackDocumentDelete() called with params:', {
+    projectId,
+    documentName,
+    userId,
+    userName,
+    timestamp: new Date().toISOString()
+  });
+  
+  logger.debug('[ActivityService] trackDocumentDelete()', { projectId, documentName, userId, userName });
+  
+  // Get file extension and type for better messaging
+  const fileExtension = documentName.split('.').pop()?.toUpperCase() || '';
+  const fileTypeText = fileExtension ? ` ${fileExtension}` : '';
+  
+  const result = await createActivity({
     project_id: projectId,
     activity_type: 'document_delete',
-    title: `Document removed: ${documentName}`,
-    description: `Document deleted from project`,
+    title: `${fileTypeText} file removed: ${documentName}`,
+    description: `Document "${documentName}" was deleted from project`,
     user_id: userId,
     user_name: userName,
     entity_type: 'document',
-    metadata: { documentName },
-    status: 'info'
+    metadata: { 
+      documentName,
+      fileExtension,
+      fileTypeText 
+    },
+    status: 'warning'
   });
+  
+  console.log('[ACTIVITY_DEBUG] [ActivityService] trackDocumentDelete() result:', {
+    success: !!result,
+    activityId: result?.id,
+    documentName,
+    timestamp: new Date().toISOString()
+  });
+  
+  return result;
 }
 
 export async function trackExpenseCreate(
@@ -330,6 +481,7 @@ export async function trackBudgetUpdate(
  */
 export async function createBulkActivities(activities: CreateActivityData[]): Promise<ProjectActivity[]> {
   try {
+    logger.debug('[ActivityService] createBulkActivities() called', { count: activities.length, sample: activities[0] });
     const activityInserts: ProjectActivityInsert[] = activities.map(data => ({
       project_id: data.project_id,
       activity_type: data.activity_type,
@@ -343,8 +495,9 @@ export async function createBulkActivities(activities: CreateActivityData[]): Pr
       status: data.status || 'info'
     }));
 
+    logger.debug('[ActivityService] createBulkActivities() inserting', { table: ACTIVITY_TABLE_FQN, count: activityInserts.length });
     const { data: createdActivities, error } = await supabase
-      .from(TABLE_NAMES.PROJECT_ACTIVITIES)
+      .from(ACTIVITY_TABLE_FQN)
       .insert(activityInserts)
       .select();
 

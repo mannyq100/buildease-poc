@@ -4,7 +4,8 @@
  * Mobile-first responsive design with task management functionality
  */
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ProCard } from '@/components/ui/ProCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/shared';
@@ -34,34 +35,18 @@ interface Phase {
 
 interface TodaysFocusCardProps {
   tasks?: TaskItem[];
-  phases?: any[]; // Add phases to map phase_id to phase names
+  phases?: Phase[]; // Add phases to map phase_id to phase names
   currentPhase?: Phase;
   currentTasks?: TaskItem[];
   onCreateTask?: (phaseId: string) => void;
-  onEditTask?: (task: any, phaseId: string) => void;
+  onEditTask?: (task: TaskItem, phaseId: string) => void;
   onAddTask?: () => void;
   onUpdateTasks?: () => void;
   isExpanded?: boolean;
   onToggleExpanded?: () => void;
 }
 
-// Helper functions for task display
-const getStatusVariant = (status: TaskItem['status']) => {
-  switch (status) {
-    case 'COMPLETED':
-      return 'success';
-    case 'IN_PROGRESS':
-      return 'warning';
-    case 'BLOCKED':
-      return 'destructive';
-    case 'CANCELLED':
-      return 'secondary';
-    default:
-      return 'default';
-  }
-};
-
-// Use centralized color utility - removed duplicate function
+// Use centralized color utility - removed duplicate and unused helpers
 
 export function TodaysFocusCard({ 
   tasks = [],
@@ -69,12 +54,38 @@ export function TodaysFocusCard({
   currentPhase, 
   currentTasks = [],
   onCreateTask,
-  onEditTask,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  onEditTask: _onEditTask,
   onAddTask,
   onUpdateTasks,
   isExpanded = true,
   onToggleExpanded
 }: TodaysFocusCardProps) {
+  // Map task status to StatusBadge expected tokens
+  const mapStatusToBadge = (status: TaskItem['status']):
+    | 'success'
+    | 'warning'
+    | 'in-progress'
+    | 'cancelled'
+    | 'delayed'
+    | 'pending'
+    | 'upcoming'
+    | 'error'
+    | 'info' => {
+    switch (status) {
+      case 'COMPLETED':
+        return 'success';
+      case 'IN_PROGRESS':
+        return 'in-progress';
+      case 'BLOCKED':
+        return 'error';
+      case 'CANCELLED':
+        return 'cancelled';
+      case 'PENDING':
+      default:
+        return 'pending';
+    }
+  };
   // Helper function to get phase name by phase_id
   const getPhaseName = (phaseId: string): string => {
     const phase = phases.find(p => p.id === phaseId);
@@ -97,7 +108,7 @@ export function TodaysFocusCard({
   // Show a collapsed preview if not expanded
   if (!isExpanded) {
     return (
-      <Card className="border-slate-200/40 shadow-xl bg-gradient-to-br from-white via-slate-50/30 to-buildease-blue-50/20 backdrop-blur-md rounded-2xl">
+      <ProCard accent="blue" className="">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <button 
@@ -120,12 +131,12 @@ export function TodaysFocusCard({
             </Badge>
           </div>
         </CardHeader>
-      </Card>
+      </ProCard>
     );
   }
 
   return (
-    <Card className="border-slate-200/40 shadow-xl bg-gradient-to-br from-white via-slate-50/30 to-buildease-blue-50/20 backdrop-blur-md rounded-2xl">
+    <ProCard accent="blue" className="">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <button 
@@ -180,7 +191,7 @@ export function TodaysFocusCard({
                   )}
                 </div>
               </div>
-              <StatusBadge status={task.status.toLowerCase()} size="sm" variant="outline" />
+              <StatusBadge status={mapStatusToBadge(task.status)} size="sm" variant="outline" />
             </div>
           ))
         ) : (
@@ -211,6 +222,6 @@ export function TodaysFocusCard({
           </Button>
         </div>
       </CardContent>
-    </Card>
+    </ProCard>
   );
 }

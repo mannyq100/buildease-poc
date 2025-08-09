@@ -2,7 +2,7 @@
  * Document Upload Component
  * Mobile-first file upload with drag & drop, progress tracking, and validation
  */
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, File, X, AlertCircle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -44,7 +44,7 @@ export function DocumentUpload({
   const [isUploading, setIsUploading] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
-  const uploadDocument = useUploadDocument();
+  const uploadDocument = useUploadDocument(projectId);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const newFiles = acceptedFiles
@@ -255,7 +255,10 @@ export function DocumentUpload({
                         </p>
                         <div className="flex items-center space-x-2 text-sm text-gray-500">
                           <span>{fileWrapper.file?.size ? formatFileSize(fileWrapper.file.size) : 'Unknown size'}</span>
-                          <Badge variant={validation.isValid ? 'success' : 'destructive'} className="text-xs">
+                          <Badge
+                            variant={validation.isValid ? 'outline' : 'destructive'}
+                            className={validation.isValid ? 'text-xs border-green-200 text-green-700 bg-green-50' : 'text-xs'}
+                          >
                             {validation.isValid ? 'Valid' : 'Invalid'}
                           </Badge>
                         </div>

@@ -4,6 +4,7 @@ import { queryKeys } from '@/lib/queryClient';
 import { toast } from 'sonner';
 import { ProjectTransformService } from '@/services/projectTransformService';
 import type { ProjectStatus } from '@/types/project';
+import * as activityService from '@/services/activityService';
 
 // Types for project mutations
 export interface CreateProjectData {
@@ -65,7 +66,13 @@ export function useCreateProject() {
       if (error) throw error;
       return project;
     },
-    onSuccess: (newProject) => {
+    onSuccess: async (newProject, variables) => {
+      console.log('[ACTIVITY_DEBUG] [useCreateProject] onSuccess called', {
+        projectId: newProject.id,
+        projectName: newProject.name,
+        timestamp: new Date().toISOString()
+      });
+      
       // Invalidate and refetch user projects list
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.projects.all 
@@ -79,6 +86,80 @@ export function useCreateProject() {
         queryKeys.projects.detail(newProject.id), 
         newProject
       );
+
+      // Fire-and-forget activity logging with comprehensive debug logging
+      console.log('[ACTIVITY_DEBUG] [useCreateProject] Starting activity logging for project creation');
+      
+      (async () => {
+        try {
+          console.log('[ACTIVITY_DEBUG] [useCreateProject] Fetching auth user');
+          const { data: auth, error: authError } = await supabase.auth.getUser();
+          
+          if (authError) {
+            console.error('[ACTIVITY_DEBUG] [useCreateProject] Auth error:', authError);
+            return;
+          }
+          
+          console.log('[ACTIVITY_DEBUG] [useCreateProject] Auth user fetched successfully', {
+            userId: auth?.user?.id,
+            hasUser: !!auth?.user,
+            userMetadata: auth?.user?.user_metadata
+          });
+          
+          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
+              (auth?.user?.user_metadata?.name as string | undefined) ||
+              (auth?.user?.email as string | undefined);
+              
+          console.log('[ACTIVITY_DEBUG] [useCreateProject] Calling activityService.createActivity', {
+            project_id: newProject.id,
+            activity_type: 'project_create',
+            title: `Project created: ${variables.name}`,
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'project',
+            entity_id: newProject.id
+          });
+          
+          const result = await activityService.createActivity({
+            project_id: newProject.id,
+            activity_type: 'project_create',
+            title: `New project created: ${variables.name}`,
+            description: `Project "${variables.name}" was successfully created${variables.client_name ? ` for client ${variables.client_name}` : ''}${variables.project_type ? ` (${variables.project_type})` : ''}`,
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'project',
+            entity_id: newProject.id,
+            metadata: {
+              projectName: variables.name,
+              description: variables.description,
+              client: variables.client_name,
+              projectType: variables.project_type,
+              location: variables.location,
+              budget: variables.budget,
+              startDate: variables.start_date,
+              endDate: variables.end_date,
+              status: variables.status
+            },
+            status: 'success'
+          });
+          
+          console.log('[ACTIVITY_DEBUG] [useCreateProject] Activity created successfully', {
+            success: !!result,
+            activityId: result?.id,
+            result
+          });
+          
+        } catch (e) {
+          console.error('[ACTIVITY_DEBUG] [useCreateProject] Activity logging failed:', {
+            error: e,
+            errorMessage: e instanceof Error ? e.message : String(e),
+            errorStack: e instanceof Error ? e.stack : undefined,
+            projectId: newProject.id,
+            projectName: variables.name,
+            timestamp: new Date().toISOString()
+          });
+        }
+      })();
 
       toast.success('Project created successfully');
     },
@@ -163,7 +244,14 @@ export function useUpdateProject() {
       if (error) throw error;
       return project;
     },
-    onSuccess: (updatedProject) => {
+    onSuccess: async (updatedProject, variables) => {
+      console.log('[ACTIVITY_DEBUG] [useUpdateProject] onSuccess called', {
+        projectId: updatedProject.id,
+        projectName: updatedProject.name,
+        updates: variables,
+        timestamp: new Date().toISOString()
+      });
+      
       // Update the project in cache
       queryClient.setQueryData(
         queryKeys.projects.detail(updatedProject.id), 
@@ -177,6 +265,123 @@ export function useUpdateProject() {
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.projects.list({}) 
       });
+
+      // Fire-and-forget activity logging with comprehensive debug logging
+      console.log('[ACTIVITY_DEBUG] [useUpdateProject] Starting activity logging for project update');
+      
+      (async () => {
+        try {
+          console.log('[ACTIVITY_DEBUG] [useUpdateProject] Fetching auth user');
+          const { data: auth, error: authError } = await supabase.auth.getUser();
+          
+          if (authError) {
+            console.error('[ACTIVITY_DEBUG] [useUpdateProject] Auth error:', authError);
+            return;
+          }
+          
+          console.log('[ACTIVITY_DEBUG] [useUpdateProject] Auth user fetched successfully', {
+            userId: auth?.user?.id,
+            hasUser: !!auth?.user,
+            userMetadata: auth?.user?.user_metadata
+          });
+          
+          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
+              (auth?.user?.user_metadata?.name as string | undefined) ||
+              (auth?.user?.email as string | undefined);
+              
+          // Determine activity type and message based on what was updated
+          const wasStatusUpdate = variables.status !== undefined;
+          const wasProgressUpdate = variables.progress_percentage !== undefined;
+          const wasBudgetUpdate = variables.budget !== undefined;
+          const wasNameUpdate = variables.name !== undefined;
+          
+          const activityType = wasStatusUpdate ? 'project_status_update' : 'project_update';
+          
+          // Create more specific activity titles
+          let activityTitle: string;
+          if (wasStatusUpdate) {
+            activityTitle = `Project status changed to ${variables.status?.toUpperCase()}: ${updatedProject.name}`;
+          } else if (wasNameUpdate) {
+            activityTitle = `Project renamed: ${variables.name}`;
+          } else if (wasBudgetUpdate) {
+            activityTitle = `Project budget updated: ${updatedProject.name}`;
+          } else if (variables.client !== undefined) {
+            activityTitle = `Client information updated: ${updatedProject.name}`;
+          } else if (variables.location !== undefined) {
+            activityTitle = `Location updated: ${updatedProject.name}`;
+          } else {
+            activityTitle = `Project details updated: ${updatedProject.name}`;
+          }
+          
+          // Create more descriptive descriptions
+          let activityDescription: string;
+          if (wasStatusUpdate) {
+            activityDescription = `Project "${updatedProject.name}" status changed from previous state to ${variables.status}`;
+          } else {
+            const updates = [];
+            if (wasNameUpdate) updates.push(`name changed to "${variables.name}"`);
+            if (wasBudgetUpdate) updates.push(`budget set to $${variables.budget?.toLocaleString()}`);
+            if (variables.client !== undefined) updates.push(`client updated to "${variables.client}"`);
+            if (variables.location !== undefined) updates.push(`location updated`);
+            if (variables.description !== undefined) updates.push('description modified');
+            if (variables.project_type !== undefined) updates.push(`type set to "${variables.project_type}"`);
+            
+            activityDescription = updates.length > 0 
+              ? `Project "${updatedProject.name}" updated: ${updates.join(', ')}`
+              : `Project "${updatedProject.name}" details were modified`;
+          }
+          
+          const activityStatus = wasStatusUpdate && variables.status === 'completed' ? 'success' : 'info';
+              
+          console.log('[ACTIVITY_DEBUG] [useUpdateProject] Calling activityService.createActivity', {
+            project_id: updatedProject.id,
+            activity_type: activityType,
+            title: activityTitle,
+            description: activityDescription,
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'project',
+            entity_id: updatedProject.id
+          });
+          
+          const result = await activityService.createActivity({
+            project_id: updatedProject.id,
+            activity_type: activityType,
+            title: activityTitle,
+            description: activityDescription,
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'project',
+            entity_id: updatedProject.id,
+            metadata: {
+              projectName: updatedProject.name,
+              updatedFields: Object.keys(variables).filter(key => key !== 'id'),
+              status: variables.status,
+              progress: variables.progress_percentage,
+              budget: variables.budget,
+              client: variables.client,
+              location: variables.location
+            },
+            status: activityStatus
+          });
+          
+          console.log('[ACTIVITY_DEBUG] [useUpdateProject] Activity created successfully', {
+            success: !!result,
+            activityId: result?.id,
+            result
+          });
+          
+        } catch (e) {
+          console.error('[ACTIVITY_DEBUG] [useUpdateProject] Activity logging failed:', {
+            error: e,
+            errorMessage: e instanceof Error ? e.message : String(e),
+            errorStack: e instanceof Error ? e.stack : undefined,
+            projectId: updatedProject.id,
+            projectName: updatedProject.name,
+            timestamp: new Date().toISOString()
+          });
+        }
+      })();
 
       toast.success('Project updated successfully');
     },
@@ -261,6 +466,115 @@ export function useUpdateProjectStatus() {
           queryKey: queryKeys.projects.list({}) 
         });
       }
+    },
+    onSuccess: async (updatedProject, variables) => {
+      console.log('[ACTIVITY_DEBUG] [useUpdateProjectStatus] onSuccess called', {
+        projectId: updatedProject.id,
+        projectName: updatedProject.name,
+        newStatus: variables.status,
+        newProgress: variables.progress,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Fire-and-forget activity logging with comprehensive debug logging
+      console.log('[ACTIVITY_DEBUG] [useUpdateProjectStatus] Starting activity logging for project status update');
+      
+      (async () => {
+        try {
+          console.log('[ACTIVITY_DEBUG] [useUpdateProjectStatus] Fetching auth user');
+          const { data: auth, error: authError } = await supabase.auth.getUser();
+          
+          if (authError) {
+            console.error('[ACTIVITY_DEBUG] [useUpdateProjectStatus] Auth error:', authError);
+            return;
+          }
+          
+          console.log('[ACTIVITY_DEBUG] [useUpdateProjectStatus] Auth user fetched successfully', {
+            userId: auth?.user?.id,
+            hasUser: !!auth?.user,
+            userMetadata: auth?.user?.user_metadata
+          });
+          
+          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
+              (auth?.user?.user_metadata?.name as string | undefined) ||
+              (auth?.user?.email as string | undefined);
+              
+          // Determine activity type and message based on status
+          const wasCompleted = variables.status === 'completed';
+          const wasStarted = variables.status === 'in_progress';
+          const wasPaused = variables.status === 'on_hold';
+          
+          const activityType = 'project_status_update';
+          
+          let activityTitle: string;
+          if (wasCompleted) {
+            activityTitle = `Project completed: ${updatedProject.name} ✅`;
+          } else if (wasStarted) {
+            activityTitle = `Project started: ${updatedProject.name}`;
+          } else if (wasPaused) {
+            activityTitle = `Project paused: ${updatedProject.name}`;
+          } else {
+            activityTitle = `Status changed to ${variables.status?.toUpperCase()}: ${updatedProject.name}`;
+          }
+          
+          let activityDescription: string;
+          if (wasCompleted) {
+            activityDescription = `Project "${updatedProject.name}" has been marked as completed${variables.progress ? ` with ${variables.progress}% progress` : ''}`;
+          } else if (wasStarted) {
+            activityDescription = `Construction work has begun on project "${updatedProject.name}"${variables.progress ? ` (${variables.progress}% progress)` : ''}`;
+          } else if (wasPaused) {
+            activityDescription = `Project "${updatedProject.name}" has been temporarily paused${variables.progress ? ` at ${variables.progress}% progress` : ''}`;
+          } else {
+            activityDescription = `Project "${updatedProject.name}" status updated to ${variables.status}${variables.progress ? ` (${variables.progress}% complete)` : ''}`;
+          }
+          
+          const activityStatus = wasCompleted ? 'success' : 'info';
+              
+          console.log('[ACTIVITY_DEBUG] [useUpdateProjectStatus] Calling activityService.createActivity', {
+            project_id: updatedProject.id,
+            activity_type: activityType,
+            title: activityTitle,
+            description: activityDescription,
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'project',
+            entity_id: updatedProject.id
+          });
+          
+          const result = await activityService.createActivity({
+            project_id: updatedProject.id,
+            activity_type: activityType,
+            title: activityTitle,
+            description: activityDescription,
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'project',
+            entity_id: updatedProject.id,
+            metadata: {
+              projectName: updatedProject.name,
+              status: variables.status,
+              progress: variables.progress
+            },
+            status: activityStatus
+          });
+          
+          console.log('[ACTIVITY_DEBUG] [useUpdateProjectStatus] Activity created successfully', {
+            success: !!result,
+            activityId: result?.id,
+            result
+          });
+          
+        } catch (e) {
+          console.error('[ACTIVITY_DEBUG] [useUpdateProjectStatus] Activity logging failed:', {
+            error: e,
+            errorMessage: e instanceof Error ? e.message : String(e),
+            errorStack: e instanceof Error ? e.stack : undefined,
+            projectId: updatedProject.id,
+            projectName: updatedProject.name,
+            timestamp: new Date().toISOString()
+          });
+        }
+      })();
     }
   });
 }
@@ -281,7 +595,12 @@ export function useDeleteProject() {
       if (error) throw error;
       return projectId;
     },
-    onSuccess: (projectId) => {
+    onSuccess: async (projectId, variables) => {
+      console.log('[ACTIVITY_DEBUG] [useDeleteProject] onSuccess called', {
+        projectId,
+        timestamp: new Date().toISOString()
+      });
+      
       // Remove the project from cache
       queryClient.removeQueries({ 
         queryKey: queryKeys.projects.detail(projectId) 
@@ -307,6 +626,69 @@ export function useDeleteProject() {
       queryClient.removeQueries({ 
         queryKey: queryKeys.materials.byProject(projectId) 
       });
+
+      // Fire-and-forget activity logging with comprehensive debug logging
+      console.log('[ACTIVITY_DEBUG] [useDeleteProject] Starting activity logging for project deletion');
+      
+      (async () => {
+        try {
+          console.log('[ACTIVITY_DEBUG] [useDeleteProject] Fetching auth user');
+          const { data: auth, error: authError } = await supabase.auth.getUser();
+          
+          if (authError) {
+            console.error('[ACTIVITY_DEBUG] [useDeleteProject] Auth error:', authError);
+            return;
+          }
+          
+          console.log('[ACTIVITY_DEBUG] [useDeleteProject] Auth user fetched successfully', {
+            userId: auth?.user?.id,
+            hasUser: !!auth?.user,
+            userMetadata: auth?.user?.user_metadata
+          });
+          
+          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
+              (auth?.user?.user_metadata?.name as string | undefined) ||
+              (auth?.user?.email as string | undefined);
+              
+          console.log('[ACTIVITY_DEBUG] [useDeleteProject] Calling activityService.createActivity', {
+            project_id: projectId,
+            activity_type: 'project_delete',
+            title: `Project deleted: ${projectId}`,
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'project',
+            entity_id: projectId
+          });
+          
+          const result = await activityService.createActivity({
+            project_id: projectId,
+            activity_type: 'project_delete',
+            title: `Project permanently deleted`,
+            description: `Project (ID: ${projectId}) was permanently removed from the system`,
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'project',
+            entity_id: projectId,
+            metadata: { projectId },
+            status: 'warning'
+          });
+          
+          console.log('[ACTIVITY_DEBUG] [useDeleteProject] Activity created successfully', {
+            success: !!result,
+            activityId: result?.id,
+            result
+          });
+          
+        } catch (e) {
+          console.error('[ACTIVITY_DEBUG] [useDeleteProject] Activity logging failed:', {
+            error: e,
+            errorMessage: e instanceof Error ? e.message : String(e),
+            errorStack: e instanceof Error ? e.stack : undefined,
+            projectId,
+            timestamp: new Date().toISOString()
+          });
+        }
+      })();
 
       toast.success('Project deleted successfully');
     },
@@ -350,11 +732,91 @@ export function useAddProjectMember() {
       if (error) throw error;
       return member;
     },
-    onSuccess: (newMember, variables) => {
+    onSuccess: async (newMember, variables) => {
+      console.log('[ACTIVITY_DEBUG] [useAddProjectMember] onSuccess called', {
+        memberId: newMember.id,
+        projectId: variables.projectId,
+        userId: variables.userId,
+        role: variables.role,
+        timestamp: new Date().toISOString()
+      });
+      
       // Invalidate project members query
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.projects.members(variables.projectId) 
       });
+
+      // Fire-and-forget activity logging with comprehensive debug logging
+      console.log('[ACTIVITY_DEBUG] [useAddProjectMember] Starting activity logging for project member addition');
+      
+      (async () => {
+        try {
+          console.log('[ACTIVITY_DEBUG] [useAddProjectMember] Fetching auth user');
+          const { data: auth, error: authError } = await supabase.auth.getUser();
+          
+          if (authError) {
+            console.error('[ACTIVITY_DEBUG] [useAddProjectMember] Auth error:', authError);
+            return;
+          }
+          
+          console.log('[ACTIVITY_DEBUG] [useAddProjectMember] Auth user fetched successfully', {
+            userId: auth?.user?.id,
+            hasUser: !!auth?.user,
+            userMetadata: auth?.user?.user_metadata
+          });
+          
+          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
+              (auth?.user?.user_metadata?.name as string | undefined) ||
+              (auth?.user?.email as string | undefined);
+              
+          const memberName = newMember.user ? 
+            `${newMember.user.first_name || ''} ${newMember.user.last_name || ''}`.trim() || 'Team Member'
+            : 'Team Member';
+              
+          console.log('[ACTIVITY_DEBUG] [useAddProjectMember] Calling activityService.createActivity', {
+            project_id: variables.projectId,
+            activity_type: 'project_member_add',
+            title: `Team member added: ${memberName}`,
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'project_member',
+            entity_id: newMember.id
+          });
+          
+          const result = await activityService.createActivity({
+            project_id: variables.projectId,
+            activity_type: 'project_member_add',
+            title: `New ${variables.role} added: ${memberName}`,
+            description: `${memberName} was added to the project team with ${variables.role} permissions`,
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'project_member',
+            entity_id: newMember.id,
+            metadata: {
+              memberName,
+              role: variables.role,
+              addedUserId: variables.userId
+            },
+            status: 'success'
+          });
+          
+          console.log('[ACTIVITY_DEBUG] [useAddProjectMember] Activity created successfully', {
+            success: !!result,
+            activityId: result?.id,
+            result
+          });
+          
+        } catch (e) {
+          console.error('[ACTIVITY_DEBUG] [useAddProjectMember] Activity logging failed:', {
+            error: e,
+            errorMessage: e instanceof Error ? e.message : String(e),
+            errorStack: e instanceof Error ? e.stack : undefined,
+            memberId: newMember.id,
+            projectId: variables.projectId,
+            timestamp: new Date().toISOString()
+          });
+        }
+      })();
 
       toast.success('Team member added successfully');
     },
@@ -388,11 +850,83 @@ export function useRemoveProjectMember() {
       if (error) throw error;
       return { projectId, userId };
     },
-    onSuccess: (variables) => {
+    onSuccess: async (variables) => {
+      console.log('[ACTIVITY_DEBUG] [useRemoveProjectMember] onSuccess called', {
+        projectId: variables.projectId,
+        userId: variables.userId,
+        timestamp: new Date().toISOString()
+      });
+      
       // Invalidate project members query
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.projects.members(variables.projectId) 
       });
+
+      // Fire-and-forget activity logging with comprehensive debug logging
+      console.log('[ACTIVITY_DEBUG] [useRemoveProjectMember] Starting activity logging for project member removal');
+      
+      (async () => {
+        try {
+          console.log('[ACTIVITY_DEBUG] [useRemoveProjectMember] Fetching auth user');
+          const { data: auth, error: authError } = await supabase.auth.getUser();
+          
+          if (authError) {
+            console.error('[ACTIVITY_DEBUG] [useRemoveProjectMember] Auth error:', authError);
+            return;
+          }
+          
+          console.log('[ACTIVITY_DEBUG] [useRemoveProjectMember] Auth user fetched successfully', {
+            userId: auth?.user?.id,
+            hasUser: !!auth?.user,
+            userMetadata: auth?.user?.user_metadata
+          });
+          
+          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
+              (auth?.user?.user_metadata?.name as string | undefined) ||
+              (auth?.user?.email as string | undefined);
+              
+          console.log('[ACTIVITY_DEBUG] [useRemoveProjectMember] Calling activityService.createActivity', {
+            project_id: variables.projectId,
+            activity_type: 'project_member_remove',
+            title: `Team member removed: ${variables.userId}`,
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'project_member',
+            entity_id: variables.userId
+          });
+          
+          const result = await activityService.createActivity({
+            project_id: variables.projectId,
+            activity_type: 'project_member_remove',
+            title: `Team member removed from project`,
+            description: `Team member (ID: ${variables.userId}) was removed from the project team`,
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'project_member',
+            entity_id: variables.userId,
+            metadata: {
+              removedUserId: variables.userId
+            },
+            status: 'warning'
+          });
+          
+          console.log('[ACTIVITY_DEBUG] [useRemoveProjectMember] Activity created successfully', {
+            success: !!result,
+            activityId: result?.id,
+            result
+          });
+          
+        } catch (e) {
+          console.error('[ACTIVITY_DEBUG] [useRemoveProjectMember] Activity logging failed:', {
+            error: e,
+            errorMessage: e instanceof Error ? e.message : String(e),
+            errorStack: e instanceof Error ? e.stack : undefined,
+            projectId: variables.projectId,
+            userId: variables.userId,
+            timestamp: new Date().toISOString()
+          });
+        }
+      })();
 
       toast.success('Team member removed successfully');
     },
@@ -433,11 +967,91 @@ export function useUpdateProjectMemberRole() {
       if (error) throw error;
       return member;
     },
-    onSuccess: (updatedMember, variables) => {
+    onSuccess: async (updatedMember, variables) => {
+      console.log('[ACTIVITY_DEBUG] [useUpdateProjectMemberRole] onSuccess called', {
+        memberId: updatedMember.id,
+        projectId: variables.projectId,
+        userId: variables.userId,
+        newRole: variables.role,
+        timestamp: new Date().toISOString()
+      });
+      
       // Invalidate project members query
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.projects.members(variables.projectId) 
       });
+
+      // Fire-and-forget activity logging with comprehensive debug logging
+      console.log('[ACTIVITY_DEBUG] [useUpdateProjectMemberRole] Starting activity logging for project member role update');
+      
+      (async () => {
+        try {
+          console.log('[ACTIVITY_DEBUG] [useUpdateProjectMemberRole] Fetching auth user');
+          const { data: auth, error: authError } = await supabase.auth.getUser();
+          
+          if (authError) {
+            console.error('[ACTIVITY_DEBUG] [useUpdateProjectMemberRole] Auth error:', authError);
+            return;
+          }
+          
+          console.log('[ACTIVITY_DEBUG] [useUpdateProjectMemberRole] Auth user fetched successfully', {
+            userId: auth?.user?.id,
+            hasUser: !!auth?.user,
+            userMetadata: auth?.user?.user_metadata
+          });
+          
+          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
+              (auth?.user?.user_metadata?.name as string | undefined) ||
+              (auth?.user?.email as string | undefined);
+              
+          const memberName = updatedMember.user ? 
+            `${updatedMember.user.first_name || ''} ${updatedMember.user.last_name || ''}`.trim() || 'Team Member'
+            : 'Team Member';
+              
+          console.log('[ACTIVITY_DEBUG] [useUpdateProjectMemberRole] Calling activityService.createActivity', {
+            project_id: variables.projectId,
+            activity_type: 'project_member_role_update',
+            title: `Member role updated: ${memberName}`,
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'project_member',
+            entity_id: updatedMember.id
+          });
+          
+          const result = await activityService.createActivity({
+            project_id: variables.projectId,
+            activity_type: 'project_member_role_update',
+            title: `Role changed to ${variables.role}: ${memberName}`,
+            description: `${memberName}'s project permissions were updated to ${variables.role} level access`,
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'project_member',
+            entity_id: updatedMember.id,
+            metadata: {
+              memberName,
+              newRole: variables.role,
+              updatedUserId: variables.userId
+            },
+            status: 'info'
+          });
+          
+          console.log('[ACTIVITY_DEBUG] [useUpdateProjectMemberRole] Activity created successfully', {
+            success: !!result,
+            activityId: result?.id,
+            result
+          });
+          
+        } catch (e) {
+          console.error('[ACTIVITY_DEBUG] [useUpdateProjectMemberRole] Activity logging failed:', {
+            error: e,
+            errorMessage: e instanceof Error ? e.message : String(e),
+            errorStack: e instanceof Error ? e.stack : undefined,
+            memberId: updatedMember.id,
+            projectId: variables.projectId,
+            timestamp: new Date().toISOString()
+          });
+        }
+      })();
 
       toast.success('Member role updated successfully');
     },

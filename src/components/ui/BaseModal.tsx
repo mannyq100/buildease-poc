@@ -21,6 +21,8 @@ interface BaseModalProps {
   className?: string;
   showCloseButton?: boolean;
   preventCloseOnClickOutside?: boolean;
+  icon?: React.ReactNode;
+  stickyFooter?: boolean;
 
 }
 
@@ -46,7 +48,9 @@ export function BaseModal({
   size = 'lg',
   className,
   showCloseButton = true,
-  preventCloseOnClickOutside = false
+  preventCloseOnClickOutside = false,
+  icon,
+  stickyFooter = true
 }: BaseModalProps) {
   return (
     <Dialog 
@@ -58,13 +62,14 @@ export function BaseModal({
           sizeClasses[size],
           // Enhanced container styling
           'max-h-[92vh] overflow-hidden flex flex-col',
-          'bg-gradient-to-br from-white via-slate-50/50 to-buildease-blue-50/20',
+          'bg-gradient-to-br from-white via-slate-50/60 to-buildease-blue-50/20',
           'dark:from-slate-900 dark:via-slate-800/50 dark:to-buildease-blue-950/20',
           
           // Enhanced borders and shadows
           'border border-slate-200/60 dark:border-slate-700/60',
           'shadow-2xl shadow-slate-900/20 dark:shadow-black/40',
           'ring-1 ring-slate-200/30 dark:ring-slate-700/30',
+          'outline outline-1 -outline-offset-1 outline-transparent',
           
           // Modern rounded corners
           'rounded-2xl',
@@ -73,7 +78,7 @@ export function BaseModal({
           'backdrop-blur-xl',
           
           // Animation and transitions
-          'animate-in fade-in-0 zoom-in-95 duration-300',
+          'animate-in fade-in-0 zoom-in-95 duration-300 ease-out',
           'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
           
           // Remove default padding and hide default close button
@@ -90,12 +95,19 @@ export function BaseModal({
         onEscapeKeyDown={preventCloseOnClickOutside ? (e) => e.preventDefault() : undefined}
       >
         {/* Enhanced Header with gradient and better styling */}
-        <DialogHeader className="flex-shrink-0 px-6 sm:px-8 py-5 sm:py-6 border-b border-slate-200/50 dark:border-slate-700/50 bg-gradient-to-r from-buildease-blue-50/40 via-white/90 to-buildease-orange-50/30 dark:from-buildease-blue-950/30 dark:via-slate-800/80 dark:to-buildease-orange-950/20 backdrop-blur-sm">
+        <DialogHeader className="flex-shrink-0 px-6 sm:px-8 py-5 sm:py-6 border-b border-slate-200/50 dark:border-slate-700/50 bg-gradient-to-r from-buildease-blue-50/50 via-white/90 to-buildease-orange-50/40 dark:from-buildease-blue-950/30 dark:via-slate-800/80 dark:to-buildease-orange-950/20 backdrop-blur-sm">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
-              <DialogTitle className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
-                {title}
-              </DialogTitle>
+              <div className="flex items-center gap-3">
+                {icon && (
+                  <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-buildease-blue-500/10 to-buildease-orange-500/10 flex items-center justify-center ring-1 ring-slate-200/50 dark:ring-slate-700/50">
+                    {icon}
+                  </div>
+                )}
+                <DialogTitle className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
+                  {title}
+                </DialogTitle>
+              </div>
               {description && (
                 <DialogDescription className="mt-2 text-sm sm:text-base text-slate-600 dark:text-slate-400 leading-relaxed">
                   {description}
@@ -125,7 +137,7 @@ export function BaseModal({
         </DialogHeader>
         
         {/* Enhanced Content Area */}
-        <div className="flex-1 overflow-auto px-6 sm:px-8 py-6 bg-gradient-to-b from-white/80 to-slate-50/50 dark:from-slate-900/80 dark:to-slate-800/50 backdrop-blur-sm">
+        <div className="flex-1 overflow-auto overscroll-contain px-6 sm:px-8 py-6 bg-gradient-to-b from-white/80 to-slate-50/60 dark:from-slate-900/80 dark:to-slate-800/60 backdrop-blur-sm">
           <div className="space-y-6">
             {children}
           </div>
@@ -133,7 +145,11 @@ export function BaseModal({
         
         {/* Enhanced Footer */}
         {footer && (
-          <div className="flex-shrink-0 px-6 sm:px-8 py-4 sm:py-6 border-t border-slate-200/50 dark:border-slate-700/50 bg-gradient-to-r from-slate-50/80 via-white/90 to-slate-50/80 dark:from-slate-800/80 dark:via-slate-900/90 dark:to-slate-800/80 backdrop-blur-sm">
+          <div className={cn(
+            'flex-shrink-0 px-6 sm:px-8 py-4 sm:py-6 border-t border-slate-200/50 dark:border-slate-700/50',
+            'bg-gradient-to-r from-slate-50/80 via-white/90 to-slate-50/80 dark:from-slate-800/80 dark:via-slate-900/90 dark:to-slate-800/80 backdrop-blur-sm',
+            stickyFooter ? 'sticky bottom-0' : ''
+          )}>
             {footer}
           </div>
         )}

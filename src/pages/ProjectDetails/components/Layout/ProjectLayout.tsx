@@ -4,7 +4,7 @@
  * Follows BuildEase standards for mobile-first responsive design
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BudgetOverviewCard, BudgetExpensesList } from '../Budget';
 import { TeamMembersList } from '../Team';
@@ -17,10 +17,12 @@ import { ProjectCommentsSection } from '../Comments';
 import { TodaysFocusCard } from '../TodaysFocusCard';
 import { RecentUpdatesCard } from '../Updates/RecentUpdatesCard';
 import { ProjectStatusHero, ProjectQuickActions } from '../ProjectHeader';
+import { FloatingActionBar } from '../FloatingActionBar';
 import { ModalManager } from '../Modals/ModalManager';
 import { useProjectDetailsState } from '../../hooks/useProjectDetailsState';
 import type { TaskItem, ProjectUpdateFormData } from '../../types';
-import type { Project, BudgetExpense, TeamMember, ProjectPhase } from '@/types/database';
+import type { Project } from '@/types/project';
+import type { BudgetExpense, ProjectPhase, TeamMember } from '@/types/projectDetails';
 import type { UseMutationResult } from '@tanstack/react-query';
 
 // Helper interfaces for type safety
@@ -120,6 +122,8 @@ export function ProjectLayout({
 }: ProjectLayoutProps) {
   // UI state management for expandable sections
   const { expandedSections, toggleSection } = useProjectDetailsState(projectId);
+  // Controlled Tabs state to allow programmatic switching
+  const [activeTab, setActiveTab] = useState<'overview' | 'budget' | 'timeline' | 'team' | 'comments' | 'documents' | 'settings'>('overview');
   
   // Upload modal state management
   const [uploadModalState, setUploadModalState] = useState({
@@ -139,19 +143,65 @@ export function ProjectLayout({
     todaysFocus: true
   };
 
+  // Smooth scroll helper to section anchors and ensure correct tab is active
+  const scrollToSection = (section: string) => {
+    const sectionMap: Record<string, typeof activeTab> = {
+      overview: 'overview',
+      todaysFocus: 'overview',
+      recentUpdates: 'overview',
+      budget: 'budget',
+      timeline: 'timeline',
+      phases: 'timeline',
+      team: 'team',
+      comments: 'comments',
+      documents: 'documents',
+      settings: 'settings'
+    };
+    const targetTab = sectionMap[section] || 'overview';
+    setActiveTab(targetTab);
+    // Defer scroll slightly to allow tab content to mount
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`section-${targetTab}`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
-      <div className="container mx-auto px-4 py-6 space-y-6">
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
+      {/* Subtle grid pattern overlay */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.06] dark:opacity-[0.08]"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 1px 1px, rgba(15,23,42,0.4) 1px, transparent 0)",
+          backgroundSize: '24px 24px',
+        }}
+      />
+      {/* Ultra-light noise overlay for depth */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.04] mix-blend-overlay"
+        style={{
+          backgroundImage:
+            'repeating-linear-gradient(0deg, rgba(0,0,0,0.06) 0, rgba(0,0,0,0.06) 1px, transparent 1px, transparent 2px)',
+        }}
+      />
+      {/* Vignette to focus content subtly */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: 'radial-gradient(120% 60% at 50% -10%, transparent 60%, rgba(0,0,0,0.06) 100%)'
+        }}
+      />
+      <div className="container mx-auto px-4 py-4 md:py-6 space-y-5 md:space-y-6">
         {/* Project Header */}
-        <div className="space-y-4">
+        <div className="space-y-3 md:space-y-4">
           <ProjectStatusHero 
             project={project}
             activeTeamMembers={teamMembers || []}
-            toggleSection={(section: string) => {
-              // Simple toggle function - could be enhanced to scroll to sections
-              console.log('Toggle section:', section);
-            }}
+            toggleSection={(section: string) => scrollToSection(section)}
             onUpdateProject={() => setShowUpdateModal(true)}
           />
           <ProjectQuickActions 
@@ -162,19 +212,31 @@ export function ProjectLayout({
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-7 bg-white/80 backdrop-blur-sm border border-slate-200/60">
-            <TabsTrigger value="overview" className="text-sm">Overview</TabsTrigger>
-            <TabsTrigger value="budget" className="text-sm">Budget</TabsTrigger>
-            <TabsTrigger value="timeline" className="text-sm">Timeline</TabsTrigger>
-            <TabsTrigger value="team" className="text-sm">Team</TabsTrigger>
-            <TabsTrigger value="comments" className="text-sm">Comments</TabsTrigger>
-            <TabsTrigger value="documents" className="text-sm">Media</TabsTrigger>
-            <TabsTrigger value="settings" className="text-sm">Settings</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="w-full">
+          <TabsList className="sticky top-4 z-30 grid w-full grid-cols-7 rounded-xl bg-white/80 backdrop-blur-sm border border-slate-200/60 shadow-sm ring-1 ring-black/5 relative overflow-hidden">
+            {(() => {
+              const order = ['overview','budget','timeline','team','comments','documents','settings'] as const;
+              const index = order.indexOf(activeTab);
+              const segmentWidth = 100 / 7; // percent
+              return (
+                <div
+                  aria-hidden
+                  className="absolute bottom-0 h-0.5 bg-slate-900/20 dark:bg-white/30 transition-[left,width] duration-300 ease-out"
+                  style={{ left: `calc(${segmentWidth}% * ${index < 0 ? 0 : index})`, width: `calc(${segmentWidth}%)` }}
+                />
+              );
+            })()}
+            <TabsTrigger value="overview" className="text-sm rounded-lg data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm hover:text-slate-900 transition-colors">Overview</TabsTrigger>
+            <TabsTrigger value="budget" className="text-sm rounded-lg data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm hover:text-slate-900 transition-colors">Budget</TabsTrigger>
+            <TabsTrigger value="timeline" className="text-sm rounded-lg data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm hover:text-slate-900 transition-colors">Timeline</TabsTrigger>
+            <TabsTrigger value="team" className="text-sm rounded-lg data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm hover:text-slate-900 transition-colors">Team</TabsTrigger>
+            <TabsTrigger value="comments" className="text-sm rounded-lg data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm hover:text-slate-900 transition-colors">Comments</TabsTrigger>
+            <TabsTrigger value="documents" className="text-sm rounded-lg data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm hover:text-slate-900 transition-colors">Media</TabsTrigger>
+            <TabsTrigger value="settings" className="text-sm rounded-lg data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm hover:text-slate-900 transition-colors">Settings</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6 mt-6">
+          <TabsContent value="overview" className="space-y-6 mt-6" id="section-overview">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <TodaysFocusCard 
                 tasks={todaysFocus}
@@ -203,13 +265,13 @@ export function ProjectLayout({
                 onCreateTask={taskOperations.openCreateTaskModal}
                 onDeletePhase={(phaseId) => crudOperations.handleDelete('phase', phaseId)}
                 onEditTask={taskOperations.openEditTaskModal}
-                onDeleteTask={(taskId) => crudOperations.handleDelete('task', taskId)}
+                onDeleteTask={(taskId) => taskOperations.handleDeleteTask(taskId)}
               />
             </div>
           </TabsContent>
 
           {/* Budget Tab */}
-          <TabsContent value="budget" className="space-y-6 mt-6">
+          <TabsContent value="budget" className="space-y-6 mt-6" id="section-budget">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-1">
                 <BudgetOverviewCard 
@@ -219,49 +281,48 @@ export function ProjectLayout({
               </div>
               <div className="lg:col-span-2">
                 <BudgetExpensesList 
-                  expenses={budgetExpenses}
-                  onEdit={(expense) => modalManagement.openEditModal('budget', expense)}
-                  onDelete={(id) => crudOperations.handleDelete('budget', id)}
-                  onAdd={() => modalManagement.openCreateModal('budget')}
+                  budgetExpenses={budgetExpenses}
+                  onEditExpense={(expense) => modalManagement.openEditModal('budget', expense as unknown as Record<string, unknown>)}
+                  onDeleteExpense={(id) => crudOperations.handleDelete('budget', id)}
                 />
               </div>
             </div>
           </TabsContent>
 
           {/* Timeline Tab */}
-          <TabsContent value="timeline" className="space-y-6 mt-6">
+          <TabsContent value="timeline" className="space-y-6 mt-6" id="section-timeline">
             <PhaseTimelineCard 
               phases={phases}
               onAddPhase={() => modalManagement.openCreateModal('phase')}
-              onEditPhase={(phase) => modalManagement.openEditModal('phase', phase)}
+              onEditPhase={(phase) => modalManagement.openEditModal('phase', phase as unknown as Record<string, unknown>)}
               onCreateTask={taskOperations.openCreateTaskModal}
               onDeletePhase={(phaseId) => crudOperations.handleDelete('phase', phaseId)}
-              onEditTask={taskOperations.openEditTaskModal}
-              onDeleteTask={(taskId) => crudOperations.handleDelete('task', taskId)}
+              onEditTask={(task, phaseId) => taskOperations.openEditTaskModal(task as unknown as Record<string, unknown>, phaseId)}
+              onDeleteTask={(taskId) => taskOperations.handleDeleteTask(taskId)}
             />
           </TabsContent>
 
           {/* Team Tab */}
-          <TabsContent value="team" className="space-y-6 mt-6">
+          <TabsContent value="team" className="space-y-6 mt-6" id="section-team">
             <TeamMembersList 
-              teamMembers={teamMembers}
-              onEditMember={(member) => modalManagement.openEditModal('team', member)}
+              teamMembers={teamMembers as unknown as import('@/types/project').TeamMember[]}
+              onEditMember={(member) => modalManagement.openEditModal('team', member as unknown as Record<string, unknown>)}
               onDeleteMember={(id) => crudOperations.handleDelete('team', id)}
               onCreateMember={() => modalManagement.openCreateModal('team')}
             />
           </TabsContent>
 
           {/* Comments Tab */}
-          <TabsContent value="comments" className="space-y-6 mt-6">
+          <TabsContent value="comments" className="space-y-6 mt-6" id="section-comments">
             <ProjectCommentsSection projectId={projectId} />
           </TabsContent>
 
           {/* Documents Tab */}
-          <TabsContent value="documents" className="space-y-6 mt-6">
+          <TabsContent value="documents" className="space-y-6 mt-6" id="section-documents">
             <ProjectDocumentsSection 
               project={project}
               uploadModalState={uploadModalState}
-              onUpdateProject={async (updates) => {
+              onUpdateProject={async (updates: Record<string, unknown>) => {
                 // Update project using mutation
                 try {
                   await updateProject.mutateAsync({
@@ -285,7 +346,7 @@ export function ProjectLayout({
           </TabsContent>
 
           {/* Settings Tab */}
-          <TabsContent value="settings" className="space-y-6 mt-6">
+          <TabsContent value="settings" className="space-y-6 mt-6" id="section-settings">
             <ProjectSettingsSection 
               project={project}
               onUpdateProject={() => setShowUpdateModal(true)}
@@ -308,20 +369,62 @@ export function ProjectLayout({
           project={project}
           onCloseModals={modalManagement.closeModals}
           onCloseUpdateModal={handleCloseUpdateModal}
-          onBudgetSubmit={crudOperations.handleBudgetSubmit}
-          onPhaseSubmit={crudOperations.handlePhaseSubmit}
-          onTeamMemberSubmit={crudOperations.handleTeamMemberSubmit}
+          onBudgetSubmit={(data, mode, editingItem) => 
+            crudOperations.handleBudgetSubmit(
+              data, 
+              (mode as 'create' | 'edit'), 
+              editingItem || undefined
+            )
+          }
+          onPhaseSubmit={(data, mode, editingItem, selectedTaskIds) => 
+            crudOperations.handlePhaseSubmit(
+              data, 
+              (mode as 'create' | 'edit'), 
+              editingItem || undefined,
+              selectedTaskIds
+            )
+          }
+          onTeamMemberSubmit={(data, mode, editingItem) => 
+            crudOperations.handleTeamMemberSubmit(
+              data, 
+              (mode as 'create' | 'edit'), 
+              editingItem || undefined
+            )
+          }
           onUpdateProject={handleUpdateProject}
           taskModal={taskOperations.taskModal}
           onCloseTaskModal={taskOperations.closeTaskModal}
-          onCreateTask={taskOperations.handleCreateTask}
-          onUpdateTask={taskOperations.handleUpdateTask}
-          isCreatingTask={taskOperations.isCreatingTask}
-          isUpdatingTask={taskOperations.isUpdatingTask}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          onCreateTask={(...args: any[]) => {
+            // Expecting (taskData, phaseId, projectId) from TaskFormModal
+            const taskData = args[0];
+            const phaseId = args[1] as string;
+            const projId = (args[2] as string) || projectId;
+            return taskOperations.handleCreateTask(taskData, phaseId, projId);
+          }}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          onUpdateTask={(...args: any[]) => {
+            // Expecting (taskId, taskData) from TaskFormModal
+            const taskId = args[0] as string;
+            const taskData = args[1] as Record<string, unknown>;
+            return taskOperations.handleUpdateTask(taskId, taskData);
+          }}
+          isCreatingTask={taskOperations.isCreating}
+          isUpdatingTask={taskOperations.isUpdating}
           isLoadingBudget={crudOperations.createBudgetExpense.isPending || crudOperations.updateBudgetExpense.isPending}
           isLoadingPhase={crudOperations.createPhase.isPending || crudOperations.updatePhase.isPending}
           isLoadingTeam={crudOperations.createTeamMember.isPending || crudOperations.updateTeamMember.isPending}
           isLoadingUpdate={updateProject.isPending}
+        />
+
+        {/* Floating quick actions for mobile productivity */}
+        <FloatingActionBar
+          projectId={projectId}
+          onUpdateProgress={() => setShowUpdateModal(true)}
+          onContactTeam={() => console.log('Contact Team')}
+          onTakePhoto={() => console.log('Take Photo')}
+          onAddNote={() => console.log('Add Note')}
+          onReportIssue={() => console.log('Report Issue')}
         />
       </div>
     </div>

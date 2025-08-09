@@ -4,11 +4,12 @@
  * Displays budget summary, progress bars, and allocation breakdown
  * Mobile-first responsive design with proper number formatting
  */
-
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ProCard } from '@/components/ui/ProCard';
 import { Button } from '@/components/ui/button';
 import { DollarSign, Plus } from 'lucide-react';
 import { cn } from '@/utils/core/ui';
+import React from 'react';
 import { formatCurrency } from '@/utils/core/format';
 
 interface BudgetOverviewCardProps {
@@ -58,6 +59,13 @@ export function BudgetOverviewCard({
   const budgetUtilization = budgetData.allocated > 0 
     ? Math.round((budgetData.spent / budgetData.allocated) * 100)
     : 0;
+  // Animated progress width for micro-interaction on mount/changes
+  const [animatedWidth, setAnimatedWidth] = React.useState(0);
+  React.useEffect(() => {
+    const target = Math.min(budgetUtilization, 100);
+    const id = requestAnimationFrame(() => setAnimatedWidth(target));
+    return () => cancelAnimationFrame(id);
+  }, [budgetUtilization]);
   
   const remainingBudget = budgetData.allocated - budgetData.spent;
 
@@ -81,9 +89,10 @@ export function BudgetOverviewCard({
   };
 
   return (
-    <Card 
+    <ProCard 
+      accent="blue"
       className={cn(
-        "border-buildease-blue-200/60 shadow-xl bg-gradient-to-br from-buildease-blue-50/30 to-white backdrop-blur-md rounded-2xl",
+        '',
         className
       )}
     >
@@ -132,15 +141,17 @@ export function BudgetOverviewCard({
               {budgetUtilization}%
             </span>
           </div>
-          <div className="w-full bg-slate-200 rounded-full h-3">
+          <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
             <div 
               className={cn(
-                "h-3 rounded-full transition-all duration-300",
+                "h-3 rounded-full transition-[width] duration-700 ease-out will-change-[width]",
                 budgetUtilization > 90 ? "bg-red-500" :
                 budgetUtilization > 75 ? "bg-amber-500" :
-                "bg-emerald-500"
+                "bg-emerald-500",
+                // subtle glow
+                "shadow-[0_0_8px_rgba(16,185,129,0.35)]"
               )}
-              style={{ width: `${Math.min(budgetUtilization, 100)}%` }}
+              style={{ width: `${animatedWidth}%` }}
             />
           </div>
         </div>
@@ -199,6 +210,6 @@ export function BudgetOverviewCard({
           </div>
         </div>
       </CardContent>
-    </Card>
+    </ProCard>
   );
 }

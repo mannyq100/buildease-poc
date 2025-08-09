@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { queryKeys } from '@/lib/queryClient';
 import { toast } from 'sonner';
+import * as activityService from '@/services/activityService';
 
 // Types for ProjectDetails phase mutations
 export interface ProjectDetailsPhase {
@@ -88,7 +89,14 @@ export function useCreateProjectDetailsPhase() {
         progress_percentage: 0
       };
     },
-    onSuccess: (newPhase, variables) => {
+    onSuccess: async (newPhase, variables) => {
+      console.log('[ACTIVITY_DEBUG] [useCreateProjectDetailsPhase] onSuccess called', {
+        phaseId: newPhase.id,
+        phaseName: newPhase.name,
+        projectId: variables.project_id,
+        timestamp: new Date().toISOString()
+      });
+      
       // Invalidate project queries
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.projects.detail(variables.project_id) 
@@ -99,6 +107,79 @@ export function useCreateProjectDetailsPhase() {
       queryClient.invalidateQueries({ 
         queryKey: ['timeline', variables.project_id] 
       });
+      
+      // Fire-and-forget activity logging with comprehensive debug logging
+      console.log('[ACTIVITY_DEBUG] [useCreateProjectDetailsPhase] Starting activity logging for phase creation');
+      
+      (async () => {
+        try {
+          console.log('[ACTIVITY_DEBUG] [useCreateProjectDetailsPhase] Fetching auth user');
+          const { data: auth, error: authError } = await supabase.auth.getUser();
+          
+          if (authError) {
+            console.error('[ACTIVITY_DEBUG] [useCreateProjectDetailsPhase] Auth error:', authError);
+            return;
+          }
+          
+          console.log('[ACTIVITY_DEBUG] [useCreateProjectDetailsPhase] Auth user fetched successfully', {
+            userId: auth?.user?.id,
+            hasUser: !!auth?.user,
+            userMetadata: auth?.user?.user_metadata
+          });
+          
+          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
+              (auth?.user?.user_metadata?.name as string | undefined) ||
+              (auth?.user?.email as string | undefined);
+              
+          console.log('[ACTIVITY_DEBUG] [useCreateProjectDetailsPhase] Calling activityService.createActivity', {
+            project_id: variables.project_id,
+            activity_type: 'phase_create',
+            title: `New phase created: ${newPhase.name}`,
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'phase',
+            entity_id: newPhase.id
+          });
+          
+          const result = await activityService.createActivity({
+            project_id: variables.project_id,
+            activity_type: 'phase_create',
+            title: `New phase created: ${newPhase.name}`,
+            description: `Project phase "${newPhase.name}" was added to the project`,
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'phase',
+            entity_id: newPhase.id,
+            metadata: {
+              phaseName: newPhase.name,
+              category: newPhase.category,
+              status: newPhase.status,
+              timeline: {
+                planned_start: newPhase.start_date,
+                planned_end: newPhase.end_date
+              }
+            },
+            status: 'success'
+          });
+          
+          console.log('[ACTIVITY_DEBUG] [useCreateProjectDetailsPhase] Activity created successfully', {
+            success: !!result,
+            activityId: result?.id,
+            result
+          });
+          
+        } catch (e) {
+          console.error('[ACTIVITY_DEBUG] [useCreateProjectDetailsPhase] Activity logging failed:', {
+            error: e,
+            errorMessage: e instanceof Error ? e.message : String(e),
+            errorStack: e instanceof Error ? e.stack : undefined,
+            phaseId: newPhase.id,
+            phaseName: newPhase.name,
+            projectId: variables.project_id,
+            timestamp: new Date().toISOString()
+          });
+        }
+      })();
       
       toast.success('Phase added successfully');
     },
@@ -173,7 +254,15 @@ export function useUpdateProjectDetailsPhase() {
         progress_percentage: updateData.progress_percentage || 0
       };
     },
-    onSuccess: (updatedPhase) => {
+    onSuccess: async (updatedPhase, variables) => {
+      console.log('[ACTIVITY_DEBUG] [useUpdateProjectDetailsPhase] onSuccess called', {
+        phaseId: updatedPhase.id,
+        phaseName: updatedPhase.name,
+        projectId: updatedPhase.project_id,
+        updates: variables,
+        timestamp: new Date().toISOString()
+      });
+      
       // Invalidate project queries
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.projects.detail(updatedPhase.project_id) 
@@ -184,6 +273,84 @@ export function useUpdateProjectDetailsPhase() {
       queryClient.invalidateQueries({ 
         queryKey: ['timeline', updatedPhase.project_id] 
       });
+      
+      // Fire-and-forget activity logging with comprehensive debug logging
+      console.log('[ACTIVITY_DEBUG] [useUpdateProjectDetailsPhase] Starting activity logging for phase update');
+      
+      (async () => {
+        try {
+          console.log('[ACTIVITY_DEBUG] [useUpdateProjectDetailsPhase] Fetching auth user');
+          const { data: auth, error: authError } = await supabase.auth.getUser();
+          
+          if (authError) {
+            console.error('[ACTIVITY_DEBUG] [useUpdateProjectDetailsPhase] Auth error:', authError);
+            return;
+          }
+          
+          console.log('[ACTIVITY_DEBUG] [useUpdateProjectDetailsPhase] Auth user fetched successfully', {
+            userId: auth?.user?.id,
+            hasUser: !!auth?.user,
+            userMetadata: auth?.user?.user_metadata
+          });
+          
+          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
+              (auth?.user?.user_metadata?.name as string | undefined) ||
+              (auth?.user?.email as string | undefined);
+              
+          const wasCompleted = variables.status === 'completed';
+          const title = wasCompleted
+            ? `Phase completed: ${updatedPhase.name}`
+            : `Phase updated: ${updatedPhase.name}`;
+          const description = wasCompleted
+            ? `Project phase "${updatedPhase.name}" was marked as completed`
+            : `Project phase "${updatedPhase.name}" was modified`;
+              
+          console.log('[ACTIVITY_DEBUG] [useUpdateProjectDetailsPhase] Calling activityService.createActivity', {
+            project_id: updatedPhase.project_id,
+            activity_type: 'phase_update',
+            title,
+            description,
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'phase',
+            entity_id: updatedPhase.id
+          });
+          
+          const result = await activityService.createActivity({
+            project_id: updatedPhase.project_id,
+            activity_type: 'phase_update',
+            title,
+            description,
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'phase',
+            entity_id: updatedPhase.id,
+            metadata: {
+              phaseName: updatedPhase.name,
+              status: updatedPhase.status,
+              updates: variables
+            },
+            status: wasCompleted ? 'success' : 'info'
+          });
+          
+          console.log('[ACTIVITY_DEBUG] [useUpdateProjectDetailsPhase] Activity created successfully', {
+            success: !!result,
+            activityId: result?.id,
+            result
+          });
+          
+        } catch (e) {
+          console.error('[ACTIVITY_DEBUG] [useUpdateProjectDetailsPhase] Activity logging failed:', {
+            error: e,
+            errorMessage: e instanceof Error ? e.message : String(e),
+            errorStack: e instanceof Error ? e.stack : undefined,
+            phaseId: updatedPhase.id,
+            phaseName: updatedPhase.name,
+            projectId: updatedPhase.project_id,
+            timestamp: new Date().toISOString()
+          });
+        }
+      })();
       
       toast.success('Phase updated successfully');
     },
@@ -216,7 +383,13 @@ export function useDeleteProjectDetailsPhase() {
       if (error) throw error;
       return { phaseId, projectId: phase?.project_id };
     },
-    onSuccess: (result) => {
+    onSuccess: async (result, variables) => {
+      console.log('[ACTIVITY_DEBUG] [useDeleteProjectDetailsPhase] onSuccess called', {
+        phaseId: result.phaseId,
+        projectId: result.projectId,
+        timestamp: new Date().toISOString()
+      });
+      
       if (result.projectId) {
         // Invalidate project queries
         queryClient.invalidateQueries({ 
@@ -229,6 +402,75 @@ export function useDeleteProjectDetailsPhase() {
           queryKey: ['timeline', result.projectId] 
         });
       }
+      
+      // Fire-and-forget activity logging with comprehensive debug logging
+      console.log('[ACTIVITY_DEBUG] [useDeleteProjectDetailsPhase] Starting activity logging for phase deletion');
+      
+      (async () => {
+        try {
+          console.log('[ACTIVITY_DEBUG] [useDeleteProjectDetailsPhase] Fetching auth user');
+          const { data: auth, error: authError } = await supabase.auth.getUser();
+          
+          if (authError) {
+            console.error('[ACTIVITY_DEBUG] [useDeleteProjectDetailsPhase] Auth error:', authError);
+            return;
+          }
+          
+          console.log('[ACTIVITY_DEBUG] [useDeleteProjectDetailsPhase] Auth user fetched successfully', {
+            userId: auth?.user?.id,
+            hasUser: !!auth?.user,
+            userMetadata: auth?.user?.user_metadata
+          });
+          
+          if (!result.projectId) {
+            console.warn('[ACTIVITY_DEBUG] [useDeleteProjectDetailsPhase] No projectId available for activity logging');
+            return;
+          }
+          
+          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
+              (auth?.user?.user_metadata?.name as string | undefined) ||
+              (auth?.user?.email as string | undefined);
+              
+          console.log('[ACTIVITY_DEBUG] [useDeleteProjectDetailsPhase] Calling activityService.createActivity', {
+            project_id: result.projectId,
+            activity_type: 'phase_delete',
+            title: `Phase removed: ${result.phaseId}`,
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'phase',
+            entity_id: result.phaseId
+          });
+          
+          const activityResult = await activityService.createActivity({
+            project_id: result.projectId,
+            activity_type: 'phase_delete',
+            title: `Phase removed: ${result.phaseId}`,
+            description: 'Project phase was deleted',
+            user_id: auth?.user?.id,
+            user_name: userName,
+            entity_type: 'phase',
+            entity_id: result.phaseId,
+            metadata: { phaseId: result.phaseId },
+            status: 'warning'
+          });
+          
+          console.log('[ACTIVITY_DEBUG] [useDeleteProjectDetailsPhase] Activity created successfully', {
+            success: !!activityResult,
+            activityId: activityResult?.id,
+            result: activityResult
+          });
+          
+        } catch (e) {
+          console.error('[ACTIVITY_DEBUG] [useDeleteProjectDetailsPhase] Activity logging failed:', {
+            error: e,
+            errorMessage: e instanceof Error ? e.message : String(e),
+            errorStack: e instanceof Error ? e.stack : undefined,
+            phaseId: result.phaseId,
+            projectId: result.projectId,
+            timestamp: new Date().toISOString()
+          });
+        }
+      })();
       
       toast.success('Phase deleted successfully');
     },

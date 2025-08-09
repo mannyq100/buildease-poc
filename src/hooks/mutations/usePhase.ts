@@ -2,6 +2,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { queryKeys } from '@/lib/queryClient';
 import { toast } from 'sonner';
+import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
+import * as activityService from '@/services/activityService';
 
 // Types for phase mutations
 export interface CreatePhaseData {
@@ -49,6 +51,7 @@ export interface UpdatePhaseData {
  */
 export function useCreatePhase() {
   const queryClient = useQueryClient();
+  const { user } = useSupabaseAuth();
 
   return useMutation({
     mutationFn: async (data: CreatePhaseData) => {
@@ -82,7 +85,7 @@ export function useCreatePhase() {
       if (error) throw error;
       return phase;
     },
-    onSuccess: (newPhase, variables) => {
+    onSuccess: async (newPhase, variables) => {
       // Invalidate and refetch project phases
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.phases.byProject(variables.project_id) 
@@ -99,6 +102,67 @@ export function useCreatePhase() {
       });
 
       toast.success('Phase created successfully');
+
+      // Track activity: phase created with comprehensive debug logging
+      console.log('[ACTIVITY_DEBUG] Starting phase create activity logging', {
+        phaseId: newPhase.id,
+        phaseName: newPhase.name,
+        projectId: variables.project_id,
+        category: newPhase.category,
+        status: newPhase.status,
+        userId: user?.id,
+        hasUser: !!user,
+        timestamp: new Date().toISOString()
+      });
+      
+      try {
+        const userName = user ? `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}` : undefined;
+        
+        console.log('[ACTIVITY_DEBUG] Calling activityService.createActivity for phase create with params:', {
+          project_id: variables.project_id,
+          activity_type: 'phase_create',
+          title: `New phase created: ${newPhase.name}`,
+          user_id: user?.id,
+          user_name: userName,
+          entity_type: 'phase',
+          entity_id: newPhase.id
+        });
+        
+        const result = await activityService.createActivity({
+          project_id: variables.project_id,
+          activity_type: 'phase_create',
+          title: `New phase created: ${newPhase.name}`,
+          description: `Project phase "${newPhase.name}" was added to the project`,
+          user_id: user?.id,
+          user_name: userName,
+          entity_type: 'phase',
+          entity_id: newPhase.id,
+          metadata: {
+            phaseName: newPhase.name,
+            category: newPhase.category,
+            status: newPhase.status,
+            timeline: newPhase.timeline ?? null
+          },
+          status: 'success'
+        });
+        
+        console.log('[ACTIVITY_DEBUG] Phase create activity result:', {
+          success: !!result,
+          activityId: result?.id,
+          result
+        });
+        
+      } catch (err) {
+        console.error('[ACTIVITY_DEBUG] Failed to create activity for phase creation with full error:', {
+          error: err,
+          errorMessage: err instanceof Error ? err.message : String(err),
+          errorStack: err instanceof Error ? err.stack : undefined,
+          phaseId: newPhase.id,
+          phaseName: newPhase.name,
+          projectId: variables.project_id,
+          timestamp: new Date().toISOString()
+        });
+      }
     },
     onError: (error: any) => {
       console.error('Error creating phase:', error);
@@ -112,6 +176,7 @@ export function useCreatePhase() {
  */
 export function useUpdatePhase() {
   const queryClient = useQueryClient();
+  const { user } = useSupabaseAuth();
 
   return useMutation({
     mutationFn: async (data: UpdatePhaseData) => {
@@ -127,7 +192,7 @@ export function useUpdatePhase() {
       if (error) throw error;
       return phase;
     },
-    onSuccess: (updatedPhase) => {
+    onSuccess: async (updatedPhase, variables) => {
       // Invalidate and refetch related queries
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.phases.byProject(updatedPhase.project_id) 
@@ -142,6 +207,92 @@ export function useUpdatePhase() {
       });
 
       toast.success('Phase updated successfully');
+
+      // Track activity: phase updated / completed / timeline change with comprehensive debug logging
+      const wasCompleted = (variables as UpdatePhaseData | undefined)?.status === 'COMPLETED';
+      const timelineUpdate = (variables as UpdatePhaseData | undefined)?.timeline;
+      const hasTimelineChange = !!(timelineUpdate && (
+        timelineUpdate.planned_start !== undefined ||
+        timelineUpdate.planned_end !== undefined ||
+        timelineUpdate.actual_start !== undefined ||
+        timelineUpdate.actual_end !== undefined
+      ));
+      
+      console.log('[ACTIVITY_DEBUG] Starting phase update activity logging', {
+        phaseId: updatedPhase.id,
+        phaseName: updatedPhase.name,
+        projectId: updatedPhase.project_id,
+        wasCompleted,
+        hasTimelineChange,
+        timelineUpdate,
+        variables: variables as UpdatePhaseData | undefined,
+        userId: user?.id,
+        hasUser: !!user,
+        timestamp: new Date().toISOString()
+      });
+      
+      try {
+        const title = wasCompleted
+          ? `Phase completed: ${updatedPhase.name}`
+          : hasTimelineChange
+          ? `Phase timeline updated: ${updatedPhase.name}`
+          : `Phase updated: ${updatedPhase.name}`;
+
+        const description = wasCompleted
+          ? `Project phase "${updatedPhase.name}" was marked as completed`
+          : hasTimelineChange
+          ? `Timeline dates were updated for phase "${updatedPhase.name}"`
+          : `Project phase "${updatedPhase.name}" was modified`;
+          
+        const userName = user ? `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}` : undefined;
+        const activityStatus = wasCompleted ? 'success' : 'info';
+        
+        console.log('[ACTIVITY_DEBUG] Calling activityService.createActivity for phase update with params:', {
+          project_id: updatedPhase.project_id,
+          activity_type: 'phase_update',
+          title,
+          description,
+          user_id: user?.id,
+          user_name: userName,
+          entity_type: 'phase',
+          entity_id: updatedPhase.id,
+          status: activityStatus
+        });
+
+        const result = await activityService.createActivity({
+          project_id: updatedPhase.project_id,
+          activity_type: 'phase_update',
+          title,
+          description,
+          user_id: user?.id,
+          user_name: userName,
+          entity_type: 'phase',
+          entity_id: updatedPhase.id,
+          metadata: {
+            phaseName: updatedPhase.name,
+            status: (variables as UpdatePhaseData | undefined)?.status,
+            timelineUpdate: timelineUpdate ?? null
+          },
+          status: activityStatus
+        });
+        
+        console.log('[ACTIVITY_DEBUG] Phase update activity result:', {
+          success: !!result,
+          activityId: result?.id,
+          result
+        });
+        
+      } catch (err) {
+        console.error('[ACTIVITY_DEBUG] Failed to create activity for phase update with full error:', {
+          error: err,
+          errorMessage: err instanceof Error ? err.message : String(err),
+          errorStack: err instanceof Error ? err.stack : undefined,
+          phaseId: updatedPhase.id,
+          phaseName: updatedPhase.name,
+          projectId: updatedPhase.project_id,
+          timestamp: new Date().toISOString()
+        });
+      }
     },
     onError: (error: any) => {
       console.error('Error updating phase:', error);
@@ -155,13 +306,14 @@ export function useUpdatePhase() {
  */
 export function useDeletePhase() {
   const queryClient = useQueryClient();
+  const { user } = useSupabaseAuth();
 
   return useMutation({
     mutationFn: async (phaseId: string) => {
       // First get the phase to know which project to invalidate
       const { data: phase } = await supabase
         .from('be_phase')
-        .select('project_id')
+        .select('project_id, name')
         .eq('id', phaseId)
         .single();
 
@@ -171,9 +323,9 @@ export function useDeletePhase() {
         .eq('id', phaseId);
 
       if (error) throw error;
-      return { phaseId, projectId: phase?.project_id };
+      return { phaseId, projectId: phase?.project_id, phaseName: phase?.name as string | undefined };
     },
-    onSuccess: ({ phaseId, projectId }) => {
+    onSuccess: async ({ phaseId, projectId, phaseName }) => {
       if (projectId) {
         // Invalidate and refetch related queries
         queryClient.invalidateQueries({ 
@@ -195,6 +347,65 @@ export function useDeletePhase() {
       });
 
       toast.success('Phase deleted successfully');
+
+      // Track activity: phase deleted with comprehensive debug logging
+      console.log('[ACTIVITY_DEBUG] Starting phase delete activity logging', {
+        phaseId,
+        phaseName,
+        projectId,
+        hasProjectId: !!projectId,
+        userId: user?.id,
+        hasUser: !!user,
+        timestamp: new Date().toISOString()
+      });
+      
+      try {
+        if (projectId) {
+          const userName = user ? `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}` : undefined;
+          
+          console.log('[ACTIVITY_DEBUG] Calling activityService.createActivity for phase delete with params:', {
+            project_id: projectId,
+            activity_type: 'phase_delete',
+            title: `Phase removed: ${phaseName || phaseId}`,
+            user_id: user?.id,
+            user_name: userName,
+            entity_type: 'phase',
+            entity_id: phaseId
+          });
+          
+          const result = await activityService.createActivity({
+            project_id: projectId,
+            activity_type: 'phase_delete',
+            title: `Phase removed: ${phaseName || phaseId}`,
+            description: 'Project phase was deleted',
+            user_id: user?.id,
+            user_name: userName,
+            entity_type: 'phase',
+            entity_id: phaseId,
+            metadata: { phaseName: phaseName || null },
+            status: 'warning'
+          });
+          
+          console.log('[ACTIVITY_DEBUG] Phase delete activity result:', {
+            success: !!result,
+            activityId: result?.id,
+            result
+          });
+          
+        } else {
+          console.warn('[ACTIVITY_DEBUG] Skipping phase delete activity logging - no projectId');
+        }
+      } catch (err) {
+        console.error('[ACTIVITY_DEBUG] Failed to create activity for phase deletion with full error:', {
+          error: err,
+          errorMessage: err instanceof Error ? err.message : String(err),
+          errorStack: err instanceof Error ? err.stack : undefined,
+          phaseId,
+          phaseName,
+          projectId,
+          timestamp: new Date().toISOString()
+        });
+      }
     },
     onError: (error: any) => {
       console.error('Error deleting phase:', error);
@@ -208,6 +419,7 @@ export function useDeletePhase() {
  */
 export function useReorderPhases() {
   const queryClient = useQueryClient();
+  const { user } = useSupabaseAuth();
 
   return useMutation({
     mutationFn: async ({ 
@@ -234,13 +446,66 @@ export function useReorderPhases() {
 
       return phaseOrders;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: async (_, variables) => {
       // Invalidate and refetch project phases
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.phases.byProject(variables.projectId) 
       });
 
       toast.success('Phases reordered successfully');
+
+      // Track activity: phases reordered with comprehensive debug logging
+      console.log('[ACTIVITY_DEBUG] Starting phase reorder activity logging', {
+        projectId: variables.projectId,
+        phaseOrders: variables.phaseOrders,
+        phaseCount: variables.phaseOrders.length,
+        userId: user?.id,
+        hasUser: !!user,
+        timestamp: new Date().toISOString()
+      });
+      
+      try {
+        const userName = user ? `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}` : undefined;
+        
+        console.log('[ACTIVITY_DEBUG] Calling activityService.createActivity for phase reorder with params:', {
+          project_id: variables.projectId,
+          activity_type: 'phase_update',
+          title: 'Phases reordered',
+          user_id: user?.id,
+          user_name: userName,
+          entity_type: 'phase',
+          entity_id: undefined
+        });
+        
+        const result = await activityService.createActivity({
+          project_id: variables.projectId,
+          activity_type: 'phase_update',
+          title: 'Phases reordered',
+          description: 'The order of phases was updated',
+          user_id: user?.id,
+          user_name: userName,
+          entity_type: 'phase',
+          entity_id: undefined,
+          metadata: { orders: variables.phaseOrders },
+          status: 'info'
+        });
+        
+        console.log('[ACTIVITY_DEBUG] Phase reorder activity result:', {
+          success: !!result,
+          activityId: result?.id,
+          result
+        });
+        
+      } catch (err) {
+        console.error('[ACTIVITY_DEBUG] Failed to create activity for phase reorder with full error:', {
+          error: err,
+          errorMessage: err instanceof Error ? err.message : String(err),
+          errorStack: err instanceof Error ? err.stack : undefined,
+          projectId: variables.projectId,
+          phaseOrders: variables.phaseOrders,
+          timestamp: new Date().toISOString()
+        });
+      }
     },
     onError: (error: any) => {
       console.error('Error reordering phases:', error);

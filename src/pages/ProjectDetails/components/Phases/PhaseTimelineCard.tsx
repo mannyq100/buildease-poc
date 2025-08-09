@@ -4,7 +4,8 @@
  * Displays phase information with collapsible task sections
  */
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ProCard } from '@/components/ui/ProCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { usePhaseTasks } from '@/hooks/queries/useTask';
@@ -18,7 +19,7 @@ import {
   Trash2
 } from 'lucide-react';
 import React from 'react';
-import { ProjectPhase } from '@/types/projectDetails';
+import { ProjectPhase, EnhancedTask } from '@/types/projectDetails';
 import { formatTaskCount } from '@/utils/core/taskColors';
 
 interface PhaseTimelineCardProps {
@@ -27,7 +28,7 @@ interface PhaseTimelineCardProps {
   onEditPhase: (phase: ProjectPhase) => void;
   onDeletePhase?: (phaseId: string) => void;
   onCreateTask: (phaseId: string) => void;
-  onEditTask?: (task: any, phaseId: string) => void;
+  onEditTask?: (task: EnhancedTask, phaseId: string) => void;
   onDeleteTask?: (taskId: string) => void;
   className?: string;
 }
@@ -68,7 +69,7 @@ export function PhaseTimelineCard({
   const displayedPhases = showAllPhases ? phases : phases.slice(0, INITIAL_PHASE_LIMIT);
   const hasMorePhases = phases.length > INITIAL_PHASE_LIMIT;
   return (
-    <Card className={`border-buildease-orange-200/60 shadow-xl bg-gradient-to-br from-buildease-orange-50/30 to-white backdrop-blur-md rounded-2xl ${className || ''}`}>
+    <ProCard accent="orange" className={`${className || ''}`}>
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -100,8 +101,8 @@ export function PhaseTimelineCard({
                 onEdit={() => onEditPhase(phase)}
                 onDelete={() => onDeletePhase?.(phase.id)}
                 onCreateTask={onCreateTask}
-                onEditTask={onEditTask}
-                onDeleteTask={onDeleteTask}
+                onEditTask={onEditTask ?? (() => {})}
+                onDeleteTask={onDeleteTask ?? (() => {})}
               />
             ))}
             
@@ -144,7 +145,7 @@ export function PhaseTimelineCard({
           </div>
         )}
       </CardContent>
-    </Card>
+    </ProCard>
   );
 }
 
@@ -156,7 +157,7 @@ interface PhaseCardProps {
   onEdit: () => void;
   onDelete: () => void;
   onCreateTask: (phaseId: string) => void;
-  onEditTask: (task: any, phaseId: string) => void;
+  onEditTask: (task: EnhancedTask, phaseId: string) => void;
   onDeleteTask: (taskId: string) => void;
 }
 
@@ -175,6 +176,13 @@ function PhaseCard({
   const completedTasks = tasks.filter(t => t.status?.toUpperCase() === 'COMPLETED').length;
   const totalTasks = tasks.length;
   const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  // Animate progress bar on expand and data changes
+  const [animatedWidth, setAnimatedWidth] = React.useState(0);
+  React.useEffect(() => {
+    const target = totalTasks > 0 ? progressPercentage : 0;
+    const id = requestAnimationFrame(() => setAnimatedWidth(target));
+    return () => cancelAnimationFrame(id);
+  }, [progressPercentage, totalTasks]);
 
   return (
     <div className="bg-slate-50/50 rounded-xl border border-slate-200/60 overflow-hidden transition-all duration-300 hover:shadow-md group">
@@ -220,10 +228,10 @@ function PhaseCard({
                   <span className="text-xs text-slate-600">Progress</span>
                   <span className="text-xs font-medium text-buildease-blue-600">{progressPercentage}%</span>
                 </div>
-                <div className="w-full bg-slate-200 rounded-full h-2">
+                <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
                   <div 
-                    className="bg-buildease-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${progressPercentage}%` }}
+                    className="bg-buildease-blue-600 h-2 rounded-full transition-[width] duration-700 ease-out will-change-[width] shadow-[0_0_6px_rgba(37,99,235,0.35)]"
+                    style={{ width: `${animatedWidth}%` }}
                   />
                 </div>
               </div>
@@ -262,7 +270,7 @@ function PhaseCard({
         <div className="border-t border-slate-200/60 bg-white/50 animate-in slide-in-from-top-2 duration-300">
           <PhaseTasksSection
             phase={phase}
-            tasks={tasks}
+            tasks={tasks as unknown as EnhancedTask[]}
             isLoading={tasksLoading}
             onCreateTask={onCreateTask}
             onEditTask={onEditTask}

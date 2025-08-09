@@ -68,19 +68,6 @@ export const MediaItemCard = memo<MediaItemCardProps>(({
   const canDelete = permissions.canDelete(item);
   const canSetAsProfile = permissions.canSetAsProfile(item);
   
-  // Debug logging for Set as Profile functionality
-  console.log('🔍 [DEBUG] MediaItemCard - Item:', {
-    id: item.id,
-    name: item.name,
-    type: item.type,
-    category: item.category,
-    url: item.url
-  });
-  console.log('🔍 [DEBUG] MediaItemCard - Permissions:', {
-    canDelete,
-    canSetAsProfile,
-    showSetAsProfileButton: canSetAsProfile && item.category !== 'profile'
-  });
 
   return (
     <div className="group relative bg-white rounded-xl border border-slate-200/60 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1 transition-all duration-300 hover:border-slate-300/80">
@@ -175,7 +162,6 @@ export const MediaItemCard = memo<MediaItemCardProps>(({
               
               {canSetAsProfile && item.category !== 'profile' && (
                 <DropdownMenuItem onClick={() => {
-                  console.log('🔄 [DEBUG] Set as Profile clicked for item:', item.url);
                   onSetAsProfile(item.url);
                 }}>
                   <Star className="h-4 w-4 mr-2" />

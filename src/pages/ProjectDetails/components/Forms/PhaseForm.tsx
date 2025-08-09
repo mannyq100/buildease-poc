@@ -66,7 +66,7 @@ export function PhaseForm({
   mode,
   initialData,
   projectType,
-  projectId,
+  _projectId,
   onSubmit,
   isLoading = false
 }: PhaseFormProps) {
@@ -109,13 +109,25 @@ export function PhaseForm({
   };
 
   // Handle task template preview
-  const handleTasksPreview = (tasks: any[]) => {
-    const editableTasks: TaskTemplate[] = tasks.map((task, index) => ({
-      id: task.id || `task-${index}`,
-      name: task.name || task,
-      alternativeNames: task.alternativeNames || [],
-      enabled: true
-    }));
+  const handleTasksPreview = (
+    tasks: Array<{ id?: string; name?: string; alternativeNames?: string[] } | string>
+  ) => {
+    const editableTasks: TaskTemplate[] = tasks.map((task, index) => {
+      if (typeof task === 'string') {
+        return {
+          id: `task-${index}`,
+          name: task,
+          alternativeNames: [],
+          enabled: true,
+        };
+      }
+      return {
+        id: task.id || `task-${index}`,
+        name: task.name || `Task ${index + 1}`,
+        alternativeNames: task.alternativeNames || [],
+        enabled: true,
+      };
+    });
     setSelectedTasks(editableTasks);
   };
 
@@ -172,21 +184,23 @@ export function PhaseForm({
   const duration = calculateDuration();
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto">
+    <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto px-1 sm:px-0">
       {/* Phase Template Selection */}
       {mode === 'create' && (
-        <div className="bg-white rounded-lg border border-slate-200 p-4">
+        <div className="rounded-xl border border-slate-200/60 bg-gradient-to-br from-white via-slate-50/60 to-buildease-blue-50/20 shadow-sm p-4">
           <div className="flex items-center mb-3">
-            <Building2 className="h-5 w-5 mr-2 text-buildease-blue-600" />
-            <h3 className="font-semibold">Choose Phase Template</h3>
+            <div className="p-2 rounded-lg bg-buildease-blue-500/10 text-buildease-blue-700 mr-2 ring-1 ring-buildease-blue-200/40">
+              <Building2 className="h-4 w-4" />
+            </div>
+            <h3 className="font-semibold text-slate-900">Choose Phase Template</h3>
           </div>
           
-          <div className="bg-buildease-blue-50 rounded-lg p-3 mb-4 border border-buildease-blue-200">
+          <div className="bg-buildease-blue-50/70 rounded-lg p-3 mb-4 border border-buildease-blue-200/70">
             <div className="flex items-center justify-between text-sm">
               <span className="font-medium text-slate-700">
                 {projectType?.replace('_', ' ').replace('-', ' ') || 'Standard Project'}
               </span>
-              <span className="text-xs text-buildease-blue-600 font-medium">
+              <span className="text-xs text-buildease-blue-700 font-medium">
                 Smart Recommendations
               </span>
             </div>
@@ -211,8 +225,8 @@ export function PhaseForm({
 
       {/* Default Tasks Selection */}
       {selectedTasks.length > 0 && (
-        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-          <div className="bg-emerald-500 px-4 py-3 flex items-center justify-between">
+        <div className="rounded-xl border border-slate-200/60 overflow-hidden bg-white shadow-sm">
+          <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-3 flex items-center justify-between">
             <div className="flex items-center text-white">
               <CheckCircle2 className="h-4 w-4 mr-2" />
               <span className="font-medium text-sm">
@@ -246,10 +260,10 @@ export function PhaseForm({
               {selectedTasks.map((task, index) => (
                 <div 
                   key={task.id} 
-                  className={`flex items-center gap-3 p-2 rounded-lg transition-all duration-200 ${
+                  className={`flex items-center gap-3 p-2 rounded-lg transition-all duration-200 hover:ring-1 hover:ring-emerald-300/60 ${
                     task.enabled 
-                      ? 'bg-emerald-50 border border-emerald-200' 
-                      : 'bg-slate-50 border border-slate-200 opacity-60'
+                      ? 'bg-emerald-50/80 border border-emerald-200' 
+                      : 'bg-slate-50/80 border border-slate-200 opacity-70'
                   }`}
                 >
                   <input
@@ -285,7 +299,7 @@ export function PhaseForm({
             </div>
             
             {selectedTasks.filter(t => t.enabled).length === 0 && (
-              <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="mt-3 p-3 bg-amber-50/80 border border-amber-200 rounded-lg">
                 <div className="flex items-center">
                   <AlertTriangle className="h-4 w-4 text-amber-600 mr-2" />
                   <p className="text-amber-800 text-sm">
@@ -299,9 +313,9 @@ export function PhaseForm({
       )}
 
       {/* Phase Details */}
-      <div className="bg-white rounded-lg border border-slate-200 p-4">
+      <div className="rounded-xl border border-slate-200/60 bg-white shadow-sm p-4">
         <div className="flex items-center mb-4">
-          <div className="p-2 bg-buildease-blue-500 rounded-lg text-white mr-3">
+          <div className="p-2 bg-buildease-blue-500 rounded-lg text-white mr-3 shadow-sm">
             <Calendar className="h-4 w-4" />
           </div>
           <h3 className="font-semibold text-slate-900">Phase Details</h3>
@@ -346,7 +360,7 @@ export function PhaseForm({
           </div>
 
           {/* Timeline */}
-          <div className="bg-buildease-blue-50 rounded-lg p-4 border border-buildease-blue-200">
+          <div className="rounded-lg p-4 border border-buildease-blue-200 bg-gradient-to-br from-buildease-blue-50/80 via-white to-buildease-orange-50/40">
             <div className="flex items-center mb-3">
               <Calendar className="h-4 w-4 text-buildease-blue-600 mr-2" />
               <h4 className="font-medium text-slate-900">Timeline</h4>
@@ -387,7 +401,7 @@ export function PhaseForm({
             
             {/* Duration Display */}
             {duration > 0 && (
-              <div className="mt-3 p-2 bg-white rounded border border-buildease-blue-200">
+              <div className="mt-3 p-2 bg-white rounded border border-buildease-blue-200 shadow-sm">
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center text-slate-600">
                     <Clock className="h-4 w-4 mr-1" />
@@ -404,11 +418,11 @@ export function PhaseForm({
       </div>
 
       {/* Form Actions */}
-      <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+      <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 sticky bottom-0 bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/70 px-2 sm:px-0">
         <Button
           type="submit"
           disabled={isLoading}
-          className="bg-gradient-to-r from-buildease-orange-500 to-buildease-orange-600 hover:from-buildease-orange-600 hover:to-buildease-orange-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200"
+          className="bg-gradient-to-r from-buildease-orange-500 to-buildease-orange-600 hover:from-buildease-orange-600 hover:to-buildease-orange-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.01] active:scale-[0.99] transition-all duration-200"
         >
           {isLoading ? (
             <div className="animate-spin h-4 w-4 mr-2" />

@@ -135,9 +135,16 @@ export function PhaseSelector({
           </Button>
         </PopoverTrigger>
         
-        <PopoverContent className="w-full max-w-lg p-0 shadow-xl border-0 bg-white" align="start" sideOffset={4}>
+        <PopoverContent
+          className="w-full max-w-lg sm:max-w-xl p-0 shadow-xl border-0 bg-white max-h-[70vh] overflow-y-auto overscroll-contain z-50 touch-pan-y"
+          align="start"
+          sideOffset={4}
+          style={{ WebkitOverflowScrolling: 'touch' }}
+          onWheel={(e) => { e.stopPropagation(); }}
+          onTouchMove={(e) => { e.stopPropagation(); }}
+        >
           {/* Enhanced Search Header */}
-          <div className="flex items-center border-b border-gray-100 px-4 py-3 bg-gradient-to-r from-blue-50 to-orange-50">
+          <div className="flex items-center border-b border-gray-100 px-4 py-3 bg-gradient-to-r from-blue-50 to-orange-50 sticky top-0 z-10">
             <Search className="mr-3 h-4 w-4 shrink-0 text-blue-600" />
             <Input
               placeholder="Search construction phases..."
@@ -157,14 +164,19 @@ export function PhaseSelector({
                 <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white/80 to-transparent pointer-events-none z-10" />
               </>
             )}
-            <div 
+            <div
               ref={scrollContainerRef}
-              className="max-h-64 overflow-y-auto overscroll-contain"
-              style={{ 
+              role="listbox"
+              aria-label="Phase options"
+              className="scroll-smooth pr-1 -mr-1"
+              style={{
                 scrollbarWidth: 'thin',
-                scrollbarColor: '#94A3B8 #F1F5F9'
+                scrollbarColor: '#94A3B8 #F1F5F9',
+                msOverflowStyle: 'auto',
+                scrollbarGutter: 'stable both-edges',
               }}
-              onScroll={handleScroll}>
+              onScroll={handleScroll}
+            >
             {filteredPhases.length === 0 ? (
               <div className="p-6 text-center">
                 <div className="text-gray-400 mb-2">
@@ -182,6 +194,8 @@ export function PhaseSelector({
                 {filteredPhases.map((phase, index) => (
                   <div
                     key={phase.category}
+                    role="option"
+                    aria-selected={selectedCategory === phase.category}
                     className={`
                       relative flex cursor-pointer items-start gap-4 rounded-lg p-4 
                       transition-all duration-200 ease-in-out

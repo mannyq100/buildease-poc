@@ -5,7 +5,8 @@
  */
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ProCard } from '@/components/ui/ProCard';
 import { Users, Plus } from 'lucide-react';
 import { TeamMember } from '@/types/projectDetails';
 import { TeamMemberCard } from './TeamMemberCard';
@@ -26,7 +27,8 @@ export function TeamMembersList({
   className
 }: TeamMembersListProps) {
   return (
-    <Card className={`border-slate-200/40 shadow-xl bg-gradient-to-br from-white via-slate-50/30 to-emerald-50/20 backdrop-blur-md rounded-2xl ${className || ''}`}>
+    <ProCard accent="green" className={className}
+    >
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -61,10 +63,12 @@ export function TeamMembersList({
             ))}
           </div>
         ) : (
-          <div className="text-center py-12 text-slate-500">
-            <Users className="h-12 w-12 mx-auto mb-4 text-slate-300" />
-            <h3 className="text-lg font-medium text-slate-700 mb-2">No Team Members</h3>
-            <p className="text-sm mb-4">Start building your team by adding the first member</p>
+          <div className="text-center py-10 text-slate-600">
+            <div className="mx-auto mb-4 flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600">
+              <Users className="h-7 w-7" />
+            </div>
+            <h3 className="text-base font-semibold text-slate-800 mb-1">No Team Members Yet</h3>
+            <p className="text-sm mb-4">Invite your contractor, designer, or crew to collaborate.</p>
             <Button 
               onClick={onCreateMember}
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
@@ -75,6 +79,6 @@ export function TeamMembersList({
           </div>
         )}
       </CardContent>
-    </Card>
+    </ProCard>
   );
 }
