@@ -10,7 +10,7 @@ import { StatusBadge } from '@/components/shared';
 import { TouchOptimizedButton } from '@/components/ui/TouchOptimizedButton';
 import { 
   DollarSign, Clock, Users, MapPin, Edit3, Upload,
-  TrendingUp, AlertCircle, CheckCircle
+  TrendingUp, AlertCircle, CheckCircle, FileText, Package
 } from 'lucide-react';
 import type { Project, ProjectStatus } from '@/types/project';
 import type { ProjectPhase } from '@/types/projectDetails';
@@ -154,38 +154,38 @@ export function UnifiedProjectHeader({
   return (
     <ProCard accent="blue" className="overflow-hidden">
       {/* Header Section - Light BuildEase Blue Theme */}
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-4 sm:px-6 sm:py-5 text-white" style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' }}>
+      <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3 sm:px-6 sm:py-4 text-white" style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' }}>
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+            <div className="flex items-center gap-3 mb-1.5">
+              <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center">
                 <span className="text-lg">🏗️</span>
               </div>
               <div className="flex-1 min-w-0">
-                <h1 className="text-xl font-bold truncate">{project.name}</h1>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2">
+                  <h1 className="text-lg sm:text-xl font-bold truncate">{project.name}</h1>
                   <StatusBadge status={project.status as ProjectStatus} />
-                  {metrics.location && (
-                    <div className="flex items-center text-xs text-white/80 bg-white/10 rounded px-2 py-1">
-                      <MapPin className="h-3 w-3 mr-1" />
-                      <span className="truncate max-w-20">{metrics.location}</span>
-                    </div>
-                  )}
                 </div>
+                {metrics.location && (
+                  <div className="flex items-center text-xs text-white/80 px-2 py-1 mt-0.5">
+                    <MapPin className="h-3 w-3 mr-1" />
+                    <span className="truncate max-w-30">{metrics.location}</span>
+                  </div>
+                )}
               </div>
             </div>
             
           </div>
           
           {/* Progress Circle and Update Button */}
-          <div className="flex flex-col items-center gap-2">
-            <div className="relative w-16 h-16">
-              <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 64 64">
-                <circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.2)" strokeWidth="4" fill="none" />
+          <div className="flex flex-col items-center gap-1.5">
+            <div className="relative w-14 h-14">
+              <svg className="w-14 h-14 transform -rotate-90" viewBox="0 0 64 64">
+                <circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.2)" strokeWidth="3" fill="none" />
                 <circle 
                   cx="32" cy="32" r="28"
                   stroke="rgba(255,255,255,0.9)"
-                  strokeWidth="4" 
+                  strokeWidth="3" 
                   fill="none"
                   strokeDasharray={`${(metrics.progress / 100) * 175.9} 175.9`}
                   strokeLinecap="round"
@@ -193,14 +193,14 @@ export function UnifiedProjectHeader({
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-sm font-bold">{metrics.progress}%</span>
+                <span className="text-[13px] font-bold">{metrics.progress}%</span>
               </div>
             </div>
             {onUpdateProject && (
               <TouchOptimizedButton
                 touchSize="sm"
                 onClick={handleUpdateProject}
-                className="bg-orange-500 hover:bg-orange-600 text-white border-0 px-3 py-1.5 rounded-lg text-xs font-medium shadow-sm"
+                className="bg-orange-500 hover:bg-orange-600 text-white border-0 px-2.5 py-1 rounded-lg text-[11px] font-medium shadow-sm"
               >
                 <Edit3 className="h-3 w-3 mr-1" />
                 Update Project
@@ -226,10 +226,15 @@ export function UnifiedProjectHeader({
             tabIndex={0}
             onClick={handleAnchor('budget')}
             onKeyDown={(e) => { if (e.key === 'Enter') onScrollToSection?.('budget'); }}
-            className="space-y-1 cursor-pointer rounded-lg p-2 -m-2 hover:bg-slate-50 transition-colors"
+            className="cursor-pointer rounded-xl p-3 -m-1 hover:bg-slate-50 transition-colors border border-slate-200/70 bg-white shadow-sm hover:shadow-md"
           >
-            <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Budget</div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Budget</div>
+              <div className="h-6 w-6 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center">
+                <DollarSign className="h-3.5 w-3.5" />
+              </div>
+            </div>
+            <div className="mt-1 flex items-center gap-2">
               <span className={`text-sm font-bold ${getProgressColor(100 - metrics.spentPercentage)}`}>
                 {metrics.spentPercentage}% used
               </span>
@@ -245,11 +250,15 @@ export function UnifiedProjectHeader({
             tabIndex={0}
             onClick={handleAnchor('timeline')}
             onKeyDown={(e) => { if (e.key === 'Enter') onScrollToSection?.('timeline'); }}
-            className="space-y-1 cursor-pointer rounded-lg p-2 -m-2 hover:bg-slate-50 transition-colors"
+            className="cursor-pointer rounded-xl p-3 -m-1 hover:bg-slate-50 transition-colors border border-slate-200/70 bg-white shadow-sm"
           >
-            <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Timeline</div>
-            <div className="flex items-center gap-1">
-              <Clock className="h-3 w-3 text-slate-400" />
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Timeline</div>
+              <div className="h-6 w-6 rounded-md bg-orange-50 text-orange-600 flex items-center justify-center">
+                <Clock className="h-3.5 w-3.5" />
+              </div>
+            </div>
+            <div className="mt-1 flex items-center gap-1">
               <span className="text-sm font-bold text-slate-900">
                 {formatTimeRemaining(metrics.daysRemaining)}
               </span>
@@ -262,10 +271,15 @@ export function UnifiedProjectHeader({
             tabIndex={0}
             onClick={handleAnchor('phases')}
             onKeyDown={(e) => { if (e.key === 'Enter') onScrollToSection?.('phases'); }}
-            className="space-y-1 cursor-pointer rounded-lg p-2 -m-2 hover:bg-slate-50 transition-colors"
+            className="cursor-pointer rounded-xl p-3 -m-1 hover:bg-slate-50 transition-colors border border-slate-200/70 bg-white shadow-sm"
           >
-            <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Phases</div>
-            <div className="text-sm font-bold text-slate-900">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Phases</div>
+              <div className="h-6 w-6 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <CheckCircle className="h-3.5 w-3.5" />
+              </div>
+            </div>
+            <div className="mt-1 text-sm font-bold text-slate-900">
               {metrics.completedPhases}/{metrics.phaseCount} complete
             </div>
           </div>
@@ -276,10 +290,15 @@ export function UnifiedProjectHeader({
             tabIndex={0}
             onClick={handleAnchor('overview')}
             onKeyDown={(e) => { if (e.key === 'Enter') onScrollToSection?.('overview'); }}
-            className="space-y-1 cursor-pointer rounded-lg p-2 -m-2 hover:bg-slate-50 transition-colors"
+            className="cursor-pointer rounded-xl p-3 -m-1 hover:bg-slate-50 transition-colors border border-slate-200/70 bg-white shadow-sm"
           >
-            <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Health</div>
-            <div className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${healthConfig.bg} ${healthConfig.color}`}>
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Health</div>
+              <div className="h-6 w-6 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center">
+                <healthConfig.icon className="h-3.5 w-3.5" />
+              </div>
+            </div>
+            <div className={`mt-0.5 inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${healthConfig.bg} ${healthConfig.color}`}>
               <healthConfig.icon className="h-3 w-3" />
               <span className="capitalize">{metrics.health}</span>
             </div>
@@ -287,34 +306,41 @@ export function UnifiedProjectHeader({
         </div>
 
         {/* Secondary Info Chips */}
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-4 snap-x snap-mandatory">
+        <div className="flex gap-1.5 overflow-x-auto pb-1.5 mb-3 snap-x snap-mandatory">
           {metrics.client && metrics.client !== 'Unknown Client' && (
-            <div className="shrink-0 snap-start text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
-              Client: {metrics.client}
+            <div className="shrink-0 snap-start text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded inline-flex items-center gap-1.5">
+              <Users className="h-3 w-3" />
+              <span>Client: {metrics.client}</span>
             </div>
           )}
-          <div className="shrink-0 snap-start text-xs bg-orange-50 text-orange-700 px-2 py-1 rounded">
-            {metrics.projectType}
+          <div className="shrink-0 snap-start text-xs bg-orange-50 text-orange-700 px-2 py-1 rounded inline-flex items-center gap-1.5">
+            <TrendingUp className="h-3 w-3" />
+            <span>{metrics.projectType}</span>
           </div>
-          <div className="shrink-0 snap-start text-xs bg-emerald-50 text-emerald-700 px-2 py-1 rounded">
-            {metrics.memberCount} members
+          <div className="shrink-0 snap-start text-xs bg-emerald-50 text-emerald-700 px-2 py-1 rounded inline-flex items-center gap-1.5">
+            <Users className="h-3 w-3" />
+            <span>{metrics.memberCount} members</span>
           </div>
-          <div className="shrink-0 snap-start text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded">
-            {metrics.openTasks} open tasks
+          <div className="shrink-0 snap-start text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded inline-flex items-center gap-1.5">
+            <FileText className="h-3 w-3" />
+            <span>{metrics.openTasks} open tasks</span>
           </div>
           {metrics.documentCount > 0 && (
-            <div className="shrink-0 snap-start text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded">
-              {metrics.documentCount} docs
+            <div className="shrink-0 snap-start text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded inline-flex items-center gap-1.5">
+              <FileText className="h-3 w-3" />
+              <span>{metrics.documentCount} docs</span>
             </div>
           )}
           {metrics.materialCount > 0 && (
-            <div className="shrink-0 snap-start text-xs bg-amber-50 text-amber-700 px-2 py-1 rounded">
-              {metrics.materialCount} materials
+            <div className="shrink-0 snap-start text-xs bg-amber-50 text-amber-700 px-2 py-1 rounded inline-flex items-center gap-1.5">
+              <Package className="h-3 w-3" />
+              <span>{metrics.materialCount} materials</span>
             </div>
           )}
           {metrics.transactionCount > 0 && (
-            <div className="shrink-0 snap-start text-xs bg-green-50 text-green-700 px-2 py-1 rounded">
-              {metrics.transactionCount} expenses
+            <div className="shrink-0 snap-start text-xs bg-green-50 text-green-700 px-2 py-1 rounded inline-flex items-center gap-1.5">
+              <DollarSign className="h-3 w-3" />
+              <span>{metrics.transactionCount} expenses</span>
             </div>
           )}
         </div>
