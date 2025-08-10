@@ -2,9 +2,8 @@
  * ProjectHeader Components Barrel Export
  * 
  * Provides clean imports for the ProjectHeader components.
- * These components were extracted from ProjectDetailsContent.tsx to maintain 
- * the BuildEase 400-line limit standard.
+ * Consolidated into UnifiedProjectHeader for better screen real estate usage
+ * and improved user experience.
  */
 
-export { ProjectStatusHero } from './ProjectStatusHero';
-export { ProjectQuickActions } from './ProjectQuickActions';
+export { UnifiedProjectHeader } from './UnifiedProjectHeader';

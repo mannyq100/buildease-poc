@@ -16,7 +16,7 @@ import {
 import { ProjectCommentsSection } from '../Comments';
 import { TodaysFocusCard } from '../TodaysFocusCard';
 import { RecentUpdatesCard } from '../Updates/RecentUpdatesCard';
-import { ProjectStatusHero, ProjectQuickActions } from '../ProjectHeader';
+import { UnifiedProjectHeader } from '../ProjectHeader/UnifiedProjectHeader';
 import { FloatingActionBar } from '../FloatingActionBar';
 import { ModalManager } from '../Modals/ModalManager';
 import { useProjectDetailsState } from '../../hooks/useProjectDetailsState';
@@ -195,19 +195,19 @@ export function ProjectLayout({
           background: 'radial-gradient(120% 60% at 50% -10%, transparent 60%, rgba(0,0,0,0.06) 100%)'
         }}
       />
-      <div className="container mx-auto px-4 py-4 md:py-6 space-y-5 md:space-y-6">
-        {/* Project Header */}
+      <div className="container mx-auto px-4 py-2 md:py-6  md:space-y-6">
+        {/* Unified Project Header + Recent Updates */}
         <div className="space-y-3 md:space-y-4">
-          <ProjectStatusHero 
+          <UnifiedProjectHeader
             project={project}
+            phases={phases}
             activeTeamMembers={teamMembers || []}
-            toggleSection={(section: string) => scrollToSection(section)}
-            onUpdateProject={() => setShowUpdateModal(true)}
-          />
-          <ProjectQuickActions 
-            onCreateBudgetExpense={() => modalManagement.openCreateModal('budget')}
-            onCreatePhase={() => modalManagement.openCreateModal('phase')}
+            onOpenCreateBudget={() => modalManagement.openCreateModal('budget')}
+            onOpenCreatePhase={() => modalManagement.openCreateModal('phase')}
             onAddTeamMember={() => modalManagement.openCreateModal('team')}
+            onNavigateToDocuments={() => scrollToSection('documents')}
+            onScrollToSection={(section: string) => scrollToSection(section)}
+            onUpdateProject={() => setShowUpdateModal(true)}
           />
         </div>
 
