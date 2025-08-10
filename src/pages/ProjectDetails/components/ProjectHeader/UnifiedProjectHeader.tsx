@@ -17,6 +17,8 @@ import type { ProjectPhase } from '@/types/projectDetails';
 import type { TeamMember } from '@/types/project';
 import { useProjectSummary } from '@/hooks/queries/useProjectSummary';
 import { useProjectTasks } from '@/hooks/queries/useTask';
+import { ProCard } from '@/components/ui/ProCard';
+import type { ProjectSummary } from '@/types/projectSummary';
 
 export interface UnifiedProjectHeaderProps {
   project: Project;
@@ -84,20 +86,22 @@ export function UnifiedProjectHeader({
 
   // Process data once with useMemo
   const metrics = useMemo(() => {
-    const progress = summary?.progress ?? project.progress ?? 0;
-    const budget = summary?.budget ?? project.budget ?? 0;
-    const spent = summary?.spent ?? 0;
-    const currency = summary?.currency ?? project.currency ?? 'USD';
-    const remaining = summary?.remaining ?? (budget - spent);
+    type SummaryLike = Partial<ProjectSummary> | null;
+    const s = summary as SummaryLike;
+    const progress = s?.progress ?? project.progress ?? 0;
+    const budget = s?.budget ?? project.budget ?? 0;
+    const spent = s?.spent ?? 0;
+    const currency = s?.currency ?? project.currency ?? 'USD';
+    const remaining = s?.remaining ?? (budget - spent);
     const spentPercentage = budget > 0 ? Math.round((spent / budget) * 100) : 0;
 
     // Calculate timeline
-    const endDate = summary?.end_date || project.end_date;
+    const endDate = s?.end_date || project.end_date;
     const daysRemaining = endDate ? 
       Math.ceil((new Date(endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null;
 
     // Phase calculations
-    const phaseCount = summary?.phases ?? phases.length;
+    const phaseCount = s?.phases ?? phases.length;
     const completedPhases = phases.filter(p => 
       String(p.status || '').toUpperCase() === 'COMPLETED'
     ).length;
@@ -118,13 +122,14 @@ export function UnifiedProjectHeader({
       phaseCount,
       completedPhases,
       openTasks,
-      health: summary?.health ?? 'good',
-      memberCount: summary?.members ?? activeTeamMembers.length,
-      documentCount: summary?.documents ?? 0,
-      transactionCount: summary?.transactions ?? 0,
-      client: summary?.client,
-      location: summary?.location || project.location,
-      projectType: summary?.project_type ?? 'Construction'
+      materialCount: s?.materials ?? 0,
+      health: s?.health ?? 'good',
+      memberCount: s?.members ?? activeTeamMembers.length,
+      documentCount: s?.documents ?? 0,
+      transactionCount: s?.transactions ?? 0,
+      client: s?.client,
+      location: s?.location || project.location,
+      projectType: s?.project_type ?? 'Construction'
     };
   }, [summary, project, phases, activeTeamMembers, tasks]);
 
@@ -144,11 +149,12 @@ export function UnifiedProjectHeader({
   }, [onNavigateToDocuments, onScrollToSection]);
 
   const healthConfig = getHealthConfig(metrics.health);
+  const handleAnchor = useCallback((section: string) => () => onScrollToSection?.(section), [onScrollToSection]);
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
-      {/* Header Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5 text-white" style={{ background: 'linear-gradient(135deg, #2B6CB0 0%, #1E40AF 100%)' }}>
+    <ProCard accent="blue" className="overflow-hidden">
+      {/* Header Section - Light BuildEase Blue Theme */}
+      <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-4 sm:px-6 sm:py-5 text-white" style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' }}>
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-2">
@@ -169,15 +175,9 @@ export function UnifiedProjectHeader({
               </div>
             </div>
             
-            {/* Project Description */}
-            {project.description && (
-              <div className="mt-3 bg-white/10 rounded-lg px-3 py-2">
-                <p className="text-sm text-white/90 leading-relaxed">{project.description}</p>
-              </div>
-            )}
           </div>
           
-          {/* Progress Circle */}
+          {/* Progress Circle and Update Button */}
           <div className="flex flex-col items-center gap-2">
             <div className="relative w-16 h-16">
               <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 64 64">
@@ -196,23 +196,38 @@ export function UnifiedProjectHeader({
                 <span className="text-sm font-bold">{metrics.progress}%</span>
               </div>
             </div>
-            <TouchOptimizedButton
-              touchSize="sm"
-              onClick={handleUpdateProject}
-              className="bg-white/20 hover:bg-white/30 text-white border-0 px-3 py-1.5 rounded-lg text-xs font-medium"
-            >
-              <Edit3 className="h-3 w-3 mr-1" />
-              Edit
-            </TouchOptimizedButton>
+            {onUpdateProject && (
+              <TouchOptimizedButton
+                touchSize="sm"
+                onClick={handleUpdateProject}
+                className="bg-orange-500 hover:bg-orange-600 text-white border-0 px-3 py-1.5 rounded-lg text-xs font-medium shadow-sm"
+              >
+                <Edit3 className="h-3 w-3 mr-1" />
+                Update Project
+              </TouchOptimizedButton>
+            )}
           </div>
         </div>
       </div>
 
+      {/* Project Description - Outside Blue Background */}
+      {project.description && (
+        <div className="px-4 py-3 sm:px-6 sm:py-4 bg-slate-50 border-b border-slate-200/60">
+          <p className="text-sm text-slate-700 leading-relaxed">{project.description}</p>
+        </div>
+      )}
+
       {/* Metrics Grid */}
-      <div className="p-5">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
+      <div className="p-4 sm:p-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-5">
           {/* Budget */}
-          <div className="space-y-1">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={handleAnchor('budget')}
+            onKeyDown={(e) => { if (e.key === 'Enter') onScrollToSection?.('budget'); }}
+            className="space-y-1 cursor-pointer rounded-lg p-2 -m-2 hover:bg-slate-50 transition-colors"
+          >
             <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Budget</div>
             <div className="flex items-center gap-2">
               <span className={`text-sm font-bold ${getProgressColor(100 - metrics.spentPercentage)}`}>
@@ -225,7 +240,13 @@ export function UnifiedProjectHeader({
           </div>
 
           {/* Timeline */}
-          <div className="space-y-1">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={handleAnchor('timeline')}
+            onKeyDown={(e) => { if (e.key === 'Enter') onScrollToSection?.('timeline'); }}
+            className="space-y-1 cursor-pointer rounded-lg p-2 -m-2 hover:bg-slate-50 transition-colors"
+          >
             <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Timeline</div>
             <div className="flex items-center gap-1">
               <Clock className="h-3 w-3 text-slate-400" />
@@ -236,7 +257,13 @@ export function UnifiedProjectHeader({
           </div>
 
           {/* Phases */}
-          <div className="space-y-1">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={handleAnchor('phases')}
+            onKeyDown={(e) => { if (e.key === 'Enter') onScrollToSection?.('phases'); }}
+            className="space-y-1 cursor-pointer rounded-lg p-2 -m-2 hover:bg-slate-50 transition-colors"
+          >
             <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Phases</div>
             <div className="text-sm font-bold text-slate-900">
               {metrics.completedPhases}/{metrics.phaseCount} complete
@@ -244,7 +271,13 @@ export function UnifiedProjectHeader({
           </div>
 
           {/* Health */}
-          <div className="space-y-1">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={handleAnchor('overview')}
+            onKeyDown={(e) => { if (e.key === 'Enter') onScrollToSection?.('overview'); }}
+            className="space-y-1 cursor-pointer rounded-lg p-2 -m-2 hover:bg-slate-50 transition-colors"
+          >
             <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Health</div>
             <div className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${healthConfig.bg} ${healthConfig.color}`}>
               <healthConfig.icon className="h-3 w-3" />
@@ -254,74 +287,85 @@ export function UnifiedProjectHeader({
         </div>
 
         {/* Secondary Info Chips */}
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-4 snap-x snap-mandatory">
           {metrics.client && metrics.client !== 'Unknown Client' && (
-            <div className="shrink-0 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
+            <div className="shrink-0 snap-start text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
               Client: {metrics.client}
             </div>
           )}
-          <div className="shrink-0 text-xs bg-orange-50 text-orange-700 px-2 py-1 rounded">
+          <div className="shrink-0 snap-start text-xs bg-orange-50 text-orange-700 px-2 py-1 rounded">
             {metrics.projectType}
           </div>
-          <div className="shrink-0 text-xs bg-emerald-50 text-emerald-700 px-2 py-1 rounded">
+          <div className="shrink-0 snap-start text-xs bg-emerald-50 text-emerald-700 px-2 py-1 rounded">
             {metrics.memberCount} members
           </div>
-          <div className="shrink-0 text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded">
+          <div className="shrink-0 snap-start text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded">
             {metrics.openTasks} open tasks
           </div>
           {metrics.documentCount > 0 && (
-            <div className="shrink-0 text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded">
+            <div className="shrink-0 snap-start text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded">
               {metrics.documentCount} docs
             </div>
           )}
+          {metrics.materialCount > 0 && (
+            <div className="shrink-0 snap-start text-xs bg-amber-50 text-amber-700 px-2 py-1 rounded">
+              {metrics.materialCount} materials
+            </div>
+          )}
           {metrics.transactionCount > 0 && (
-            <div className="shrink-0 text-xs bg-green-50 text-green-700 px-2 py-1 rounded">
+            <div className="shrink-0 snap-start text-xs bg-green-50 text-green-700 px-2 py-1 rounded">
               {metrics.transactionCount} expenses
             </div>
           )}
         </div>
 
-        {/* Action Buttons - Using BuildEase Color Palette */}
+        {/* Action Buttons - Minimal Light Gray Theme for Construction */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <TouchOptimizedButton
             touchSize="sm"
             onClick={onOpenCreateBudget}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5"
-            style={{ backgroundColor: '#2B6CB0' }}
+            className="bg-stone-100 hover:bg-stone-200 active:scale-95 transition-all duration-200 text-stone-700 hover:text-stone-800 px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 border border-stone-200/60"
+            title="Add a new expense to this project"
+            aria-label="Add Expense"
           >
             <DollarSign className="h-3 w-3" />
-            Expense
+            Add Expense
           </TouchOptimizedButton>
           
           <TouchOptimizedButton
             touchSize="sm"
             onClick={onOpenCreatePhase}
-            className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5"
-            style={{ backgroundColor: '#ED8936' }}
+            className="bg-stone-100 hover:bg-stone-200 active:scale-95 transition-all duration-200 text-stone-700 hover:text-stone-800 px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 border border-stone-200/60"
+            title="Create a new project phase"
+            aria-label="Add Phase"
           >
             <Clock className="h-3 w-3" />
-            Phase
+            Add Phase
           </TouchOptimizedButton>
           
           <TouchOptimizedButton
             touchSize="sm"
             onClick={onAddTeamMember}
-            className="bg-slate-600 hover:bg-slate-700 text-white px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5"
+            className="bg-stone-100 hover:bg-stone-200 active:scale-95 transition-all duration-200 text-stone-700 hover:text-stone-800 px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 border border-stone-200/60"
+            title="Invite or add a team member"
+            aria-label="Add Team Member"
           >
             <Users className="h-3 w-3" />
-            Member
+            Add Member
           </TouchOptimizedButton>
           
           <TouchOptimizedButton
             touchSize="sm"
             onClick={handleUploadDocument}
-            className="bg-slate-600 hover:bg-slate-700 text-white px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5"
+            className="bg-stone-100 hover:bg-stone-200 active:scale-95 transition-all duration-200 text-stone-700 hover:text-stone-800 px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 border border-stone-200/60"
+            title="Upload a document or file"
+            aria-label="Upload Document"
           >
             <Upload className="h-3 w-3" />
-            Upload
+            Upload Document
           </TouchOptimizedButton>
         </div>
       </div>
-    </div>
+    </ProCard>
   );
 }

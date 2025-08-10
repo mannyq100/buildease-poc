@@ -26,11 +26,7 @@ SELECT
     
     -- Project details from JSONB
     COALESCE(p.details->>'client', 'Unknown Client') as client,
-    CONCAT_WS(', ', 
-        p.details->'location'->>'street_address',
-        p.details->'location'->>'city',
-        p.details->'location'->>'region_or_state'
-    ) as location,
+    p.details->>'location' as location,
     COALESCE(p.details->>'project_type', 'Construction') as project_type,
     
     -- Timeline (raw strings)

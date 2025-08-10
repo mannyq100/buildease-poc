@@ -226,13 +226,13 @@ export function ProjectLayout({
                 />
               );
             })()}
-            <TabsTrigger value="overview" className="text-sm rounded-lg data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm hover:text-slate-900 transition-colors">Overview</TabsTrigger>
-            <TabsTrigger value="budget" className="text-sm rounded-lg data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm hover:text-slate-900 transition-colors">Budget</TabsTrigger>
-            <TabsTrigger value="timeline" className="text-sm rounded-lg data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm hover:text-slate-900 transition-colors">Timeline</TabsTrigger>
-            <TabsTrigger value="team" className="text-sm rounded-lg data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm hover:text-slate-900 transition-colors">Team</TabsTrigger>
-            <TabsTrigger value="comments" className="text-sm rounded-lg data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm hover:text-slate-900 transition-colors">Comments</TabsTrigger>
-            <TabsTrigger value="documents" className="text-sm rounded-lg data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm hover:text-slate-900 transition-colors">Media</TabsTrigger>
-            <TabsTrigger value="settings" className="text-sm rounded-lg data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm hover:text-slate-900 transition-colors">Settings</TabsTrigger>
+            <TabsTrigger value="overview" className="text-sm rounded-lg data-[state=active]:text-white data-[state=active]:shadow-md hover:text-slate-900 transition-colors" style={{ backgroundColor: activeTab === 'overview' ? '#2B6CB0' : 'transparent' }}>Overview</TabsTrigger>
+            <TabsTrigger value="budget" className="text-sm rounded-lg data-[state=active]:text-white data-[state=active]:shadow-md hover:text-slate-900 transition-colors" style={{ backgroundColor: activeTab === 'budget' ? '#2B6CB0' : 'transparent' }}>Budget</TabsTrigger>
+            <TabsTrigger value="timeline" className="text-sm rounded-lg data-[state=active]:text-white data-[state=active]:shadow-md hover:text-slate-900 transition-colors" style={{ backgroundColor: activeTab === 'timeline' ? '#2B6CB0' : 'transparent' }}>Timeline</TabsTrigger>
+            <TabsTrigger value="team" className="text-sm rounded-lg data-[state=active]:text-white data-[state=active]:shadow-md hover:text-slate-900 transition-colors" style={{ backgroundColor: activeTab === 'team' ? '#2B6CB0' : 'transparent' }}>Team</TabsTrigger>
+            <TabsTrigger value="comments" className="text-sm rounded-lg data-[state=active]:text-white data-[state=active]:shadow-md hover:text-slate-900 transition-colors" style={{ backgroundColor: activeTab === 'comments' ? '#2B6CB0' : 'transparent' }}>Comments</TabsTrigger>
+            <TabsTrigger value="documents" className="text-sm rounded-lg data-[state=active]:text-white data-[state=active]:shadow-md hover:text-slate-900 transition-colors" style={{ backgroundColor: activeTab === 'documents' ? '#2B6CB0' : 'transparent' }}>Media</TabsTrigger>
+            <TabsTrigger value="settings" className="text-sm rounded-lg data-[state=active]:text-white data-[state=active]:shadow-md hover:text-slate-900 transition-colors" style={{ backgroundColor: activeTab === 'settings' ? '#2B6CB0' : 'transparent' }}>Settings</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
