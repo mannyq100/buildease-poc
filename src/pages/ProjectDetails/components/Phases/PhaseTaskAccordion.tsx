@@ -23,17 +23,9 @@ import {
 } from 'lucide-react';
 import { PhaseTaskAccordionProps } from '@/types/projectDetails';
 import { formatTaskCount, getTaskStatusColor } from '@/utils/core/taskColors';
+import { getPhaseBadgeColor, formatPhaseStatusLabel } from '@/utils/core/phaseStatus';
 
-// Phase status colors - keep these separate as they're different from task status colors
-const getPhaseStatusColor = (status: string): string => {
-  switch (status.toLowerCase()) {
-    case 'completed': return 'bg-green-600 text-white border-green-700';
-    case 'in-progress': return 'bg-buildease-blue-600 text-white border-buildease-blue-700';
-    case 'on-hold': return 'bg-amber-500 text-white border-amber-600';
-    case 'planning': return 'bg-slate-500 text-white border-slate-600';
-    default: return 'bg-slate-400 text-white border-slate-500';
-  }
-};
+// Phase status colors/labels are centralized in utils/core/phaseStatus
 
 // Use centralized task color utility - removed duplicate
 
@@ -72,8 +64,8 @@ function PhaseTaskAccordionComponent({
                 <CardTitle className="text-lg font-semibold text-slate-900 truncate">
                   {phase.name}
                 </CardTitle>
-                <Badge className={`px-3 py-1 text-sm font-semibold rounded-lg border-2 ${getPhaseStatusColor(phase.status)}`}>
-                  {phase.status}
+                <Badge className={`px-3 py-1 text-sm font-semibold rounded-lg border-2 ${getPhaseBadgeColor(phase.status)}`}>
+                  {formatPhaseStatusLabel(phase.status)}
                 </Badge>
               </div>
               

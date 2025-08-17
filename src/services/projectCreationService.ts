@@ -124,17 +124,30 @@ export async function createProject(formData: CreateProjectFormValues, userId: s
       },
       
       // Timeline information
-      timeline: {
-        planned_start: formData.expectedStartDate || null,
-        planned_end: null, // Will be calculated by AI based on phases
-        actual_start: null,
-        actual_end: null,
-        timeframe_months: (() => {
+      timeline: (() => {
+        const timeframeMonths = (() => {
           if (!formData.timeframe || !formData.timeframe.trim()) return null;
           const value = parseInt(formData.timeframe.trim());
           return !isNaN(value) && value > 0 ? value : null;
-        })()
-      },
+        })();
+        
+        // Calculate planned end date if we have both start date and timeframe
+        let plannedEnd = null;
+        if (formData.expectedStartDate && timeframeMonths) {
+          const startDate = new Date(formData.expectedStartDate);
+          const endDate = new Date(startDate);
+          endDate.setMonth(endDate.getMonth() + timeframeMonths);
+          plannedEnd = endDate.toISOString();
+        }
+        
+        return {
+          planned_start: formData.expectedStartDate || null,
+          planned_end: plannedEnd,
+          actual_start: null,
+          actual_end: null,
+          timeframe_months: timeframeMonths
+        };
+      })(),
       
       // Budget information
       budget: {

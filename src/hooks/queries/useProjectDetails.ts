@@ -122,27 +122,32 @@ export function useProjectBudgetSummary(projectId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('financial_transaction')
-        .select('amount, payment_status, category')
-        .eq('project_id', projectId)
-        .eq('transaction_type', 'OTHER');
+        .select('base_amount, amount, currency, payment_status, category, transaction_type')
+        .eq('project_id', projectId);
 
       if (error) throw error;
 
-      // Calculate budget summary
-      const totalBudget = data.reduce((sum, expense) => sum + expense.amount, 0);
+      // Use base_amount for consistent USD calculations
+      const totalBudget = data.reduce((sum, expense) => sum + (expense.base_amount || expense.amount), 0);
       const spentAmount = data
-        .filter(expense => expense.payment_status === 'PAID')
-        .reduce((sum, expense) => sum + expense.amount, 0);
+        .filter(expense => expense.payment_status === 'PAID' || expense.payment_status === 'COMPLETED')
+        .reduce((sum, expense) => sum + (expense.base_amount || expense.amount), 0);
       const pendingAmount = data
         .filter(expense => expense.payment_status === 'PENDING')
-        .reduce((sum, expense) => sum + expense.amount, 0);
-      const plannedAmount = data
-        .filter(expense => expense.payment_status === 'PLANNED')
-        .reduce((sum, expense) => sum + expense.amount, 0);
+        .reduce((sum, expense) => sum + (expense.base_amount || expense.amount), 0);
+      const approvedAmount = data
+        .filter(expense => expense.payment_status === 'APPROVED')
+        .reduce((sum, expense) => sum + (expense.base_amount || expense.amount), 0);
 
       // Category breakdown
       const categoryBreakdown = data.reduce((acc, expense) => {
-        acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
+        acc[expense.category] = (acc[expense.category] || 0) + (expense.base_amount || expense.amount);
+        return acc;
+      }, {} as Record<string, number>);
+
+      // Transaction type breakdown
+      const transactionTypeBreakdown = data.reduce((acc, expense) => {
+        acc[expense.transaction_type] = (acc[expense.transaction_type] || 0) + (expense.base_amount || expense.amount);
         return acc;
       }, {} as Record<string, number>);
 
@@ -150,9 +155,10 @@ export function useProjectBudgetSummary(projectId: string) {
         totalBudget,
         spentAmount,
         pendingAmount,
-        plannedAmount,
+        approvedAmount,
         remainingBudget: totalBudget - spentAmount,
         categoryBreakdown,
+        transactionTypeBreakdown,
         expenseCount: data.length
       };
     },

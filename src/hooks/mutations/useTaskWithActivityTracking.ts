@@ -12,6 +12,17 @@ import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import type { CreateTaskData, UpdateTaskData } from './useTask';
 
+// Minimal cache-safe task shape used for optimistic updates in this file
+type TaskCache = {
+  id: string;
+  project_id: string;
+  phase_id?: string;
+  title?: string;
+  status?: 'pending' | 'in-progress' | 'completed' | 'blocked' | 'cancelled';
+  progress_percentage?: number | null;
+  assigned_to?: string | null;
+};
+
 // Enhanced interfaces that include project context
 export interface CreateTaskWithTrackingData extends CreateTaskData {
   phaseTitle?: string; // For better activity descriptions
@@ -28,7 +39,7 @@ export interface UpdateTaskWithTrackingData extends UpdateTaskData {
  */
 export function useCreateTaskWithTracking(projectId: string) {
   const queryClient = useQueryClient();
-  const { user } = useSupabaseAuth();
+  const { user: _user } = useSupabaseAuth();
   const activityTracker = useActivityTracker({ projectId });
 
   return useMutation({
@@ -91,9 +102,10 @@ export function useCreateTaskWithTracking(projectId: string) {
 
       toast.success('Task created successfully');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : 'Failed to create task';
       console.error('Error creating task:', error);
-      toast.error(error.message || 'Failed to create task');
+      toast.error(message);
     }
   });
 }
@@ -107,7 +119,7 @@ export function useUpdateTaskWithTracking(projectId: string) {
 
   return useMutation({
     mutationFn: async (data: UpdateTaskWithTrackingData) => {
-      const { id, projectId: _, previousStatus, ...updateData } = data;
+      const { id, projectId: _projectId, previousStatus: _previousStatus, ...updateData } = data;
       
       const { data: task, error } = await supabase
         .from('be_task')
@@ -206,9 +218,10 @@ export function useUpdateTaskWithTracking(projectId: string) {
 
       toast.success('Task updated successfully');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : 'Failed to update task';
       console.error('Error updating task:', error);
-      toast.error(error.message || 'Failed to update task');
+      toast.error(message);
     }
   });
 }
@@ -287,9 +300,10 @@ export function useDeleteTaskWithTracking(projectId: string) {
 
       toast.success('Task deleted successfully');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : 'Failed to delete task';
       console.error('Error deleting task:', error);
-      toast.error(error.message || 'Failed to delete task');
+      toast.error(message);
     }
   });
 }
@@ -315,7 +329,7 @@ export function useUpdateTaskStatusWithTracking(projectId: string) {
       progress?: number;
       previousStatus?: string;
     }) => {
-      const updateData: any = { status };
+      const updateData: Partial<TaskCache> & { status: TaskCache['status'] } = { status };
       if (progress !== undefined) {
         updateData.progress_percentage = progress;
       }
@@ -332,10 +346,22 @@ export function useUpdateTaskStatusWithTracking(projectId: string) {
     },
     // Optimistic update
     onMutate: async ({ taskId, status, progress }) => {
+      // Cancel in-flight queries for the task detail
       await queryClient.cancelQueries({ queryKey: queryKeys.tasks.detail(taskId) });
-      const previousTask = queryClient.getQueryData(queryKeys.tasks.detail(taskId));
 
-      queryClient.setQueryData(queryKeys.tasks.detail(taskId), (old: any) => {
+      // Snapshot current caches
+      const previousTask = queryClient.getQueryData<TaskCache | undefined>(queryKeys.tasks.detail(taskId));
+
+      // Determine phase/project from cached task if available
+      const phaseId: string | undefined = previousTask?.phase_id;
+      const projectId: string | undefined = previousTask?.project_id;
+
+      // Also snapshot list caches for rollback
+      const prevByPhase = phaseId ? queryClient.getQueryData<TaskCache[] | undefined>(queryKeys.tasks.byPhase(phaseId)) : undefined;
+      const prevByProject = projectId ? queryClient.getQueryData<TaskCache[] | undefined>(queryKeys.tasks.byProject(projectId)) : undefined;
+
+      // Update task detail cache
+      queryClient.setQueryData(queryKeys.tasks.detail(taskId), (old: TaskCache | undefined) => {
         if (!old) return old;
         return {
           ...old,
@@ -344,14 +370,47 @@ export function useUpdateTaskStatusWithTracking(projectId: string) {
         };
       });
 
-      return { previousTask };
+      // Helper to update a list cache by replacing the matching task entry
+      const updateList = (list: TaskCache[] | undefined) =>
+        Array.isArray(list)
+          ? list.map((t) =>
+              t?.id === taskId
+                ? {
+                    ...t,
+                    status,
+                    ...(progress !== undefined && { progress_percentage: progress })
+                  }
+                : t
+            )
+          : list;
+
+      // Update byPhase list cache optimistically
+      if (phaseId) {
+        queryClient.setQueryData(queryKeys.tasks.byPhase(phaseId), (old: TaskCache[] | undefined) => updateList(old));
+      }
+
+      // Update byProject list cache optimistically
+      if (projectId) {
+        queryClient.setQueryData(queryKeys.tasks.byProject(projectId), (old: TaskCache[] | undefined) => updateList(old));
+      }
+
+      return { previousTask, prevByPhase, prevByProject, phaseId, projectId };
     },
     onError: (error, variables, context) => {
+      // Rollback detail cache
       if (context?.previousTask) {
         queryClient.setQueryData(queryKeys.tasks.detail(variables.taskId), context.previousTask);
       }
+      // Rollback list caches
+      if (context?.phaseId && context?.prevByPhase) {
+        queryClient.setQueryData(queryKeys.tasks.byPhase(context.phaseId), context.prevByPhase);
+      }
+      if (context?.projectId && context?.prevByProject) {
+        queryClient.setQueryData(queryKeys.tasks.byProject(context.projectId), context.prevByProject);
+      }
       console.error('Error updating task status:', error);
-      toast.error(error.message || 'Failed to update task status');
+      const message = error instanceof Error ? error.message : 'Failed to update task status';
+      toast.error(message);
     },
     onSuccess: async ({ task, taskTitle, previousStatus, newStatus }) => {
       // Invalidate related queries
@@ -480,9 +539,10 @@ export function useAssignTaskWithTracking(projectId: string) {
 
       toast.success(isAssignment ? 'Task assigned successfully' : 'Task unassigned successfully');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : 'Failed to assign task';
       console.error('Error assigning task:', error);
-      toast.error(error.message || 'Failed to assign task');
+      toast.error(message);
     }
   });
 }

@@ -10,8 +10,13 @@ import { useProjectDetailsData } from '@/hooks/queries/useProjectDetails';
 import { useProjectTasks } from '@/hooks/queries/useTask';
 import { useUpdateProject } from '@/hooks/mutations/useProject';
 import { useTaskCRUD, useCRUDOperations, useModalManagement } from '../../hooks';
+import { useTodaysFocus } from '../../hooks/useTodaysFocus';
 import { ProjectTransformService } from '@/services/projectTransformService';
 import type { TaskItem, ProjectUpdateFormData } from '../../types';
+import type { Project } from '@/types/project';
+import type { BudgetExpense, TeamMember, ProjectPhase } from '@/types/projectDetails';
+import { toDbPhaseStatus } from '@/utils/core/phaseStatus';
+import type { ProjectDetailsPhase } from '@/hooks/mutations/useProjectDetailsPhase';
 
 interface ProjectDataProviderProps {
   projectId: string;
@@ -20,11 +25,11 @@ interface ProjectDataProviderProps {
 
 interface ProjectDataContextValue {
   // Data
-  projectData: any;
-  project: any;
-  budgetExpenses: any[];
-  teamMembers: any[];
-  phases: any[];
+  projectData: unknown;
+  project: Project | null;
+  budgetExpenses: BudgetExpense[];
+  teamMembers: TeamMember[];
+  phases: ProjectPhase[];
   allProjectTasks: TaskItem[];
   todaysFocus: TaskItem[];
   
@@ -69,7 +74,7 @@ export function ProjectDataProvider({ projectId, children }: ProjectDataProvider
     project: projectData,
     budgetExpenses,
     teamMembers,
-    phases,
+    phases: rawPhases,
     isLoading: projectLoading,
     error: projectError
   } = useProjectDetailsData(projectId);
@@ -86,15 +91,44 @@ export function ProjectDataProvider({ projectId, children }: ProjectDataProvider
   // Modal management
   const modalManagement = useModalManagement();
   
+  // Normalize phases from query (UI shape) to full ProjectPhase[] expected by components
+  const normalizedPhases: ProjectPhase[] = React.useMemo(() => {
+    // phases from hook are UI-shaped: ProjectDetailsPhase
+    if (!Array.isArray(rawPhases)) return [];
+    const withIds = (rawPhases as ProjectDetailsPhase[]).filter((p): p is ProjectDetailsPhase & { id: string } => Boolean(p.id));
+    return withIds.map((p) => ({
+      id: p.id,
+      name: p.name,
+      description: p.description || '',
+      category: p.category || 'CONSTRUCTION',
+      status: toDbPhaseStatus(p.status),
+      project_id: p.project_id,
+      details: {},
+      timeline: {
+        planned_start: p.start_date || undefined,
+        planned_end: p.end_date || undefined,
+        actual_start: undefined,
+        actual_end: undefined,
+      },
+      budget: {
+        allocated: 0,
+        spent: 0,
+        currency: 'GHS',
+      },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }));
+  }, [rawPhases]);
+
   // CRUD operations
   const crudOperations = useCRUDOperations({ 
     projectId, 
-    phases, 
+    phases: normalizedPhases, 
     onCloseModals: modalManagement.closeModals 
   });
   
   // Task CRUD operations using custom hook
-  const taskOperations = useTaskCRUD(projectId);
+  const taskOperations = useTaskCRUD();
   
   // Transform project data for UI consumption
   const project = React.useMemo(() => {
@@ -102,44 +136,8 @@ export function ProjectDataProvider({ projectId, children }: ProjectDataProvider
     return ProjectTransformService.transformProjectSummary(projectData);
   }, [projectData]);
 
-  // Calculate urgency score based on multiple factors - prioritize by priority level first
-  const getUrgencyScore = React.useCallback((task: TaskItem): number => {
-    let score = 0;
-    
-    // Priority scoring (main factor) - higher weights for priority-based selection
-    const priorityScores = { 'URGENT': 100, 'HIGH': 75, 'MEDIUM': 50, 'LOW': 25 };
-    score += priorityScores[task.priority?.toUpperCase()] || 25;
-    
-    // Status scoring - blocked and in-progress tasks need attention
-    if (task.status?.toUpperCase() === 'BLOCKED') score += 30; // Blocked tasks are urgent
-    else if (task.status?.toUpperCase() === 'IN_PROGRESS') score += 20; // Continue working on these
-    
-    // Due date scoring (secondary factor) - bonus points for time-sensitive tasks
-    if (task.due_date) {
-      const dueDate = new Date(task.due_date);
-      const today = new Date();
-      const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-      
-      if (daysUntilDue < 0) score += 25; // Overdue - needs immediate attention
-      else if (daysUntilDue === 0) score += 20; // Due today
-      else if (daysUntilDue === 1) score += 15; // Due tomorrow
-      else if (daysUntilDue <= 3) score += 10; // Due within 3 days
-      else if (daysUntilDue <= 7) score += 5; // Due within a week
-    }
-    
-    return score;
-  }, []);
-
-  // Calculate today's focus tasks - show priority tasks from all phases
-  const todaysFocus = React.useMemo(() => {
-    return allProjectTasks
-      .filter(task => {
-        const status = task.status?.toUpperCase();
-        return status !== 'COMPLETED' && status !== 'CANCELLED';
-      })
-      .sort((a, b) => getUrgencyScore(b) - getUrgencyScore(a))
-      .slice(0, 5); // Show top 5 priority tasks from all phases
-  }, [allProjectTasks, getUrgencyScore]);
+  // Use reusable hook for urgency scoring and today's focus selection
+  const { todaysFocus, getUrgencyScore } = useTodaysFocus(allProjectTasks, { limit: 5 });
 
   // Handle project update
   const handleUpdateProject = React.useCallback(async (data: ProjectUpdateFormData) => {
@@ -165,7 +163,7 @@ export function ProjectDataProvider({ projectId, children }: ProjectDataProvider
     project,
     budgetExpenses,
     teamMembers,
-    phases,
+    phases: normalizedPhases,
     allProjectTasks,
     todaysFocus,
     

@@ -48,6 +48,7 @@ export const queryKeys = {
     detail: (id: string) => ['be_task', id] as const,
     byProject: (projectId: string) => ['be_task', 'project', projectId] as const,
     byPhase: (phaseId: string) => ['be_task', 'phase', phaseId] as const,
+    byUser: (userId: string) => ['be_task', 'user', userId] as const,
   },
   materials: {
     all: ['be_material'] as const,

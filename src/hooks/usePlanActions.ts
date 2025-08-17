@@ -71,7 +71,7 @@ export function usePlanActions(
         order: phaseData.order || 1,
         startDate: phaseData.startDate || new Date().toISOString().substring(0, 10),
         endDate: phaseData.endDate || new Date().toISOString().substring(0, 10),
-        status: phaseData.status || 'pending',
+        status: phaseData.status || 'PLANNING',
         progress: phaseData.progress || 0
       };
       
@@ -107,7 +107,7 @@ export function usePlanActions(
           order: phaseData.order || 1,
           startDate: phaseData.startDate || new Date().toISOString().substring(0, 10),
           endDate: phaseData.endDate || new Date().toISOString().substring(0, 10),
-          status: phaseData.status || 'pending',
+          status: phaseData.status || 'PLANNING',
           progress: phaseData.progress || 0
         };
         

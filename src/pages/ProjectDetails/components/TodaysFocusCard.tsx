@@ -54,7 +54,7 @@ export function TodaysFocusCard({
   currentPhase, 
   currentTasks = [],
   onCreateTask,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   onEditTask: _onEditTask,
   onAddTask,
   onUpdateTasks,

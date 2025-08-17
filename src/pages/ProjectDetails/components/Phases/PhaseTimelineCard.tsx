@@ -21,6 +21,7 @@ import {
 import React from 'react';
 import { ProjectPhase, EnhancedTask } from '@/types/projectDetails';
 import { formatTaskCount } from '@/utils/core/taskColors';
+import { getPhaseBadgeColor, getPhaseDotColor, formatPhaseStatusLabel } from '@/utils/core/phaseStatus';
 
 interface PhaseTimelineCardProps {
   phases: ProjectPhase[];
@@ -33,25 +34,11 @@ interface PhaseTimelineCardProps {
   className?: string;
 }
 
-// Helper function for phase status colors
-function getPhaseStatusColor(status: string): string {
-  switch (status) {
-    case 'COMPLETED':
-      return 'bg-green-100 text-green-700 border-green-200';
-    case 'IN_PROGRESS': 
-      return 'bg-buildease-blue-100 text-buildease-blue-700 border-buildease-blue-200';
-    case 'PLANNING':
-      return 'bg-slate-100 text-slate-700 border-slate-200';
-    case 'ON_HOLD':
-      return 'bg-amber-100 text-amber-700 border-amber-200';
-    case 'CANCELLED':
-      return 'bg-red-100 text-red-700 border-red-200';
-    default:
-      return 'bg-slate-100 text-slate-700 border-slate-200';
-  }
-}
+export const PhaseTimelineCard = React.memo(PhaseTimelineCardBase);
 
-export function PhaseTimelineCard({
+// Phase status colors are centralized in utils/core/phaseStatus
+
+function PhaseTimelineCardBase({
   phases,
   onAddPhase,
   onEditPhase,
@@ -191,19 +178,13 @@ function PhaseCard({
         onClick={onToggle}
       >
         <div className="flex items-center gap-4 flex-1">
-          <div className={`w-3 h-3 rounded-full ${
-            phase.status === 'COMPLETED' ? 'bg-green-500' :
-            phase.status === 'IN_PROGRESS' ? 'bg-buildease-blue-500' :
-            phase.status === 'ON_HOLD' ? 'bg-amber-500' :
-            phase.status === 'CANCELLED' ? 'bg-red-500' :
-            'bg-slate-400'
-          }`} />
+          <div className={`w-3 h-3 rounded-full ${getPhaseDotColor(phase.status)}`} />
           <div className="flex-1">
             <div className="flex items-center justify-between mb-1">
               <h4 className="font-semibold text-slate-900">{phase.name}</h4>
               <div className="flex items-center gap-2">
-                <Badge className={`px-2 py-1 rounded-full text-xs font-medium border ${getPhaseStatusColor(phase.status)}`}>
-                  {phase.status.replace('_', ' ')}
+                <Badge className={`px-2 py-1 rounded-full text-xs font-medium border ${getPhaseBadgeColor(phase.status)}`}>
+                  {formatPhaseStatusLabel(phase.status)}
                 </Badge>
                 {totalTasks > 0 && (
                   <span className="text-xs text-slate-500 bg-slate-200 px-2 py-1 rounded-full">

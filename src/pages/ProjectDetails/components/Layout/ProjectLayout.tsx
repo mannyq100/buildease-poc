@@ -5,15 +5,16 @@
  */
 
 import { useState } from 'react';
+import type { CSSProperties } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BudgetOverviewCard, BudgetExpensesList } from '../Budget';
-import { TeamMembersList } from '../Team';
 import { PhaseTimelineCard } from '../Phases';
-import { 
-  ProjectDocumentsSection, 
-  ProjectSettingsSection
+import {
+  ProjectDocumentsSection,
+  ProjectSettingsSection,
+  TeamMembersList,
+  ProjectCommentsSection,
 } from '../LazyComponents';
-import { ProjectCommentsSection } from '../Comments';
 import { TodaysFocusCard } from '../TodaysFocusCard';
 import { RecentUpdatesCard } from '../Updates/RecentUpdatesCard';
 import { UnifiedProjectHeader } from '../ProjectHeader/UnifiedProjectHeader';
@@ -226,13 +227,13 @@ export function ProjectLayout({
                 />
               );
             })()}
-            <TabsTrigger value="overview" className="text-sm rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md hover:text-slate-900 transition-colors" style={{ '--tw-bg-opacity': activeTab === 'overview' ? '1' : '0' } as any}>Overview</TabsTrigger>
-            <TabsTrigger value="budget" className="text-sm rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md hover:text-slate-900 transition-colors" style={{ '--tw-bg-opacity': activeTab === 'budget' ? '1' : '0' } as any}>Budget</TabsTrigger>
-            <TabsTrigger value="timeline" className="text-sm rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md hover:text-slate-900 transition-colors" style={{ '--tw-bg-opacity': activeTab === 'timeline' ? '1' : '0' } as any}>Timeline</TabsTrigger>
-            <TabsTrigger value="team" className="text-sm rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md hover:text-slate-900 transition-colors" style={{ '--tw-bg-opacity': activeTab === 'team' ? '1' : '0' } as any}>Team</TabsTrigger>
-            <TabsTrigger value="comments" className="text-sm rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md hover:text-slate-900 transition-colors" style={{ '--tw-bg-opacity': activeTab === 'comments' ? '1' : '0' } as any}>Comments</TabsTrigger>
-            <TabsTrigger value="documents" className="text-sm rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md hover:text-slate-900 transition-colors" style={{ '--tw-bg-opacity': activeTab === 'documents' ? '1' : '0' } as any}>Media</TabsTrigger>
-            <TabsTrigger value="settings" className="text-sm rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md hover:text-slate-900 transition-colors" style={{ '--tw-bg-opacity': activeTab === 'settings' ? '1' : '0' } as any}>Settings</TabsTrigger>
+            <TabsTrigger value="overview" className="text-sm rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md hover:text-slate-900 transition-colors" style={{ '--tw-bg-opacity': activeTab === 'overview' ? '1' : '0' } as CSSProperties}>Overview</TabsTrigger>
+            <TabsTrigger value="budget" className="text-sm rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md hover:text-slate-900 transition-colors" style={{ '--tw-bg-opacity': activeTab === 'budget' ? '1' : '0' } as CSSProperties}>Budget</TabsTrigger>
+            <TabsTrigger value="timeline" className="text-sm rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md hover:text-slate-900 transition-colors" style={{ '--tw-bg-opacity': activeTab === 'timeline' ? '1' : '0' } as CSSProperties}>Timeline</TabsTrigger>
+            <TabsTrigger value="team" className="text-sm rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md hover:text-slate-900 transition-colors" style={{ '--tw-bg-opacity': activeTab === 'team' ? '1' : '0' } as CSSProperties}>Team</TabsTrigger>
+            <TabsTrigger value="comments" className="text-sm rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md hover:text-slate-900 transition-colors" style={{ '--tw-bg-opacity': activeTab === 'comments' ? '1' : '0' } as CSSProperties}>Comments</TabsTrigger>
+            <TabsTrigger value="documents" className="text-sm rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md hover:text-slate-900 transition-colors" style={{ '--tw-bg-opacity': activeTab === 'documents' ? '1' : '0' } as CSSProperties}>Media</TabsTrigger>
+            <TabsTrigger value="settings" className="text-sm rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md hover:text-slate-900 transition-colors" style={{ '--tw-bg-opacity': activeTab === 'settings' ? '1' : '0' } as CSSProperties}>Settings</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -284,6 +285,7 @@ export function ProjectLayout({
                   budgetExpenses={budgetExpenses}
                   onEditExpense={(expense) => modalManagement.openEditModal('budget', expense as unknown as Record<string, unknown>)}
                   onDeleteExpense={(id) => crudOperations.handleDelete('budget', id)}
+                  onAddExpense={() => modalManagement.openCreateModal('budget')}
                 />
               </div>
             </div>
@@ -415,6 +417,7 @@ export function ProjectLayout({
           isLoadingPhase={crudOperations.createPhase.isPending || crudOperations.updatePhase.isPending}
           isLoadingTeam={crudOperations.createTeamMember.isPending || crudOperations.updateTeamMember.isPending}
           isLoadingUpdate={updateProject.isPending}
+          projectPhases={phases?.map(phase => ({ id: phase.id, name: phase.name })) || []}
         />
 
         {/* Floating quick actions for mobile productivity */}

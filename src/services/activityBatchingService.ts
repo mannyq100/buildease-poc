@@ -4,7 +4,6 @@
  * Groups similar activities together for better user experience
  */
 
-import { supabase } from '@/lib/supabase';
 import * as activityService from './activityService';
 import type { ActivityType } from '@/types/database';
 

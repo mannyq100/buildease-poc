@@ -2,9 +2,11 @@
  * Database schema types for BuildEase construction management
  * Based on construction_mgr schema in Supabase
  */
+import type { PhaseStatus as DBPhaseStatus } from '@/utils/core/phaseStatus';
 
 // Enums from the database schema
-export type ProjectStatus = 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'PAUSED' | 'CANCELLED';
+// Project status aligns with construction_mgr.project_status and centralized PhaseStatus
+export type ProjectStatus = DBPhaseStatus;
 export type UserRole = 'OWNER' | 'CONTRACTOR' | 'SUPPLIER' | 'WORKER' | 'ADMIN' | 'USER';
 export type Currency = 'GHS' | 'USD' | 'EUR';
 export type AuthProvider = 'GOOGLE' | 'FACEBOOK' | 'LINKEDIN' | 'AUTH0' | 'EMAIL';
@@ -16,7 +18,33 @@ export type AIPlanJobStatus = 'pending' | 'processing' | 'completed' | 'failed';
 export type PlanGenerationStatus = 'not_started' | 'requested' | 'processing' | 'completed' | 'failed';
 export type AIPlanStatus = 'draft' | 'review' | 'approved' | 'rejected' | 'archived';
 export type NotificationType = 'general' | 'plan_generation' | 'plan_completed' | 'plan_failed' | 'project_update' | 'system';
-export type ActivityType = 'document_upload' | 'document_delete' | 'project_update' | 'status_change' | 'image_upload' | 'budget_update' | 'expense_create' | 'expense_update' | 'expense_delete' | 'phase_create' | 'phase_update' | 'phase_delete' | 'task_create' | 'task_update' | 'task_complete' | 'team_member_add' | 'team_member_remove' | 'material_add' | 'material_update' | 'system' | 'inspection' | 'delivery' | 'weather_delay';
+export type ActivityType =
+  | 'document_upload'
+  | 'document_delete'
+  | 'project_update'
+  | 'status_change'
+  | 'image_upload'
+  | 'budget_update'
+  | 'expense_create'
+  | 'expense_update'
+  | 'expense_delete'
+  | 'phase_create'
+  | 'phase_update'
+  | 'phase_delete'
+  | 'task_create'
+  | 'task_update'
+  | 'task_complete'
+  | 'task_delete'
+  | 'task_assign'
+  | 'task_unassign'
+  | 'team_member_add'
+  | 'team_member_remove'
+  | 'material_add'
+  | 'material_update'
+  | 'system'
+  | 'inspection'
+  | 'delivery'
+  | 'weather_delay';
 
 // Plan progress tracking types
 export type ProgressStage = 

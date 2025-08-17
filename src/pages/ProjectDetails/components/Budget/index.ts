@@ -6,6 +6,9 @@
 export { BudgetOverviewCard } from './BudgetOverviewCard';
 export { BudgetExpensesList } from './BudgetExpensesList';
 export { BudgetModal } from './BudgetModal';
+export { default as QuickExpenseTemplates } from './QuickExpenseTemplates';
+export { default as ExpenseFilters } from './ExpenseFilters';
+export { default as SwipeableExpenseCard } from './SwipeableExpenseCard';
 
 // Re-export budget-related types for convenience
 export type { 

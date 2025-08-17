@@ -6,6 +6,7 @@
  */
 
 import { useMemo, useCallback } from 'react';
+import { formatCurrency } from '@/utils/core/format';
 import { StatusBadge } from '@/components/shared';
 import { TouchOptimizedButton } from '@/components/ui/TouchOptimizedButton';
 import { 
@@ -33,16 +34,6 @@ export interface UnifiedProjectHeaderProps {
 }
 
 // Utility functions
-const formatCurrency = (amount: number, currency: string) => {
-  if (amount >= 1_000_000) return `${currency} ${(amount / 1_000_000).toFixed(1)}M`;
-  if (amount >= 1_000) return `${currency} ${(amount / 1_000).toFixed(0)}K`;
-  return new Intl.NumberFormat('en-US', { 
-    style: 'currency', 
-    currency, 
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0 
-  }).format(amount);
-};
 
 const formatTimeRemaining = (daysRemaining: number | null) => {
   if (daysRemaining === null) return 'No deadline';

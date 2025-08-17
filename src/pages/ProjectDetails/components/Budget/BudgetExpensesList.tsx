@@ -8,14 +8,18 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Edit3, X, Calendar, Tag } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Filter, Plus } from 'lucide-react';
 import { cn } from '@/utils/core/ui';
+import ExpenseFilters, { type ExpenseFiltersState } from './ExpenseFilters';
+import SwipeableExpenseCard from './SwipeableExpenseCard';
 import type { BudgetExpense } from '@/types/projectDetails';
 
 interface BudgetExpensesListProps {
   budgetExpenses?: BudgetExpense[];
   onEditExpense: (expense: BudgetExpense) => void;
   onDeleteExpense: (expenseId: string) => void;
+  onAddExpense?: () => void;
   className?: string;
 }
 
@@ -23,47 +27,113 @@ function BudgetExpensesListComponent({
   budgetExpenses = [],
   onEditExpense,
   onDeleteExpense,
+  onAddExpense,
   className
 }: BudgetExpensesListProps) {
-  // Mock data for demonstration - will be replaced by real data from budgetExpenses prop
-  const mockExpenses = [
-    { 
-      id: '1', 
-      name: 'Foundation materials', 
-      amount: 15000, 
-      category: 'Materials', 
-      date: '2024-01-15',
-      description: 'Concrete, rebar, and foundational supplies'
-    },
-    { 
-      id: '2', 
-      name: 'Electrical supplies', 
-      amount: 8500, 
-      category: 'Materials', 
-      date: '2024-01-14',
-      description: 'Wiring, outlets, and electrical components'
-    },
-    { 
-      id: '3', 
-      name: 'Labor costs', 
-      amount: 12000, 
-      category: 'Labor', 
-      date: '2024-01-13',
-      description: 'Professional construction crew services'
+  // Filtering state
+  const [filters, setFilters] = React.useState<ExpenseFiltersState>({
+    search: '',
+    status: 'all',
+    dateRange: 'all',
+    amountRange: 'all',
+    category: 'all'
+  });
+  const [showFilters, setShowFilters] = React.useState(false);
+  // Use real data from Supabase - no mock data fallback
+  const expenses = budgetExpenses || [];
+
+  // Filtered expenses based on current filters
+  const filteredExpenses = React.useMemo(() => {
+    let filtered = [...expenses];
+
+    // Apply search filter
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      filtered = filtered.filter(expense => 
+        expense.description?.toLowerCase().includes(searchLower) ||
+        expense.category?.toLowerCase().includes(searchLower) ||
+        expense.transaction_type?.toLowerCase().includes(searchLower)
+      );
     }
-  ];
 
-  // Use real data if available, otherwise fallback to mock data
-  const expenses = budgetExpenses.length > 0 ? budgetExpenses : mockExpenses;
+    // Apply status filter
+    if (filters.status !== 'all') {
+      filtered = filtered.filter(expense => expense.payment_status === filters.status);
+    }
 
-  // Memoized formatter functions to prevent recreation on every render
-  const formatCurrency = React.useMemo(() => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    });
+    // Apply date range filter
+    if (filters.dateRange !== 'all') {
+      const now = new Date();
+      const filterDate = (() => {
+        switch (filters.dateRange) {
+          case 'today':
+            return new Date(now.setHours(0, 0, 0, 0));
+          case 'this-week':
+            const startOfWeek = new Date(now);
+            startOfWeek.setDate(now.getDate() - now.getDay());
+            return startOfWeek;
+          case 'this-month':
+            return new Date(now.getFullYear(), now.getMonth(), 1);
+          case 'last-30-days':
+            return new Date(now.setDate(now.getDate() - 30));
+          default:
+            return null;
+        }
+      })();
+
+      if (filterDate) {
+        filtered = filtered.filter(expense => 
+          new Date(expense.created_at) >= filterDate
+        );
+      }
+    }
+
+    // Apply amount range filter
+    if (filters.amountRange !== 'all') {
+      filtered = filtered.filter(expense => {
+        const amount = expense.amount;
+        switch (filters.amountRange) {
+          case 'under-100':
+            return amount < 100;
+          case '100-500':
+            return amount >= 100 && amount <= 500;
+          case '500-1000':
+            return amount >= 500 && amount <= 1000;
+          case 'over-1000':
+            return amount > 1000;
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Apply category filter
+    if (filters.category !== 'all') {
+      filtered = filtered.filter(expense => expense.category === filters.category);
+    }
+
+    return filtered;
+  }, [expenses, filters]);
+
+  // Memoized formatter function for currency
+  const formatCurrency = React.useCallback((amount: number, currency: string = 'USD') => {
+    try {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currency,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: currency === 'JPY' || currency === 'CNY' ? 0 : 2,
+      }).format(amount);
+    } catch (error) {
+      // Fallback for unsupported currencies
+      const currencySymbols: Record<string, string> = {
+        'USD': '$', 'EUR': '€', 'GBP': '£', 'CAD': 'C$', 'AUD': 'A$',
+        'JPY': '¥', 'CNY': '¥', 'INR': '₹', 'BRL': 'R$', 'MXN': '$',
+        'ZAR': 'R', 'CHF': 'CHF', 'SEK': 'kr', 'NOK': 'kr', 'DKK': 'kr'
+      };
+      const symbol = currencySymbols[currency] || currency;
+      return `${symbol}${amount.toLocaleString()}`;
+    }
   }, []);
 
   const formatDate = React.useCallback((dateString: string) => {
@@ -91,136 +161,125 @@ function BudgetExpensesListComponent({
     }
   }, []);
 
-  // Memoized computed values
+  // Memoized computed values - use base_amount for consistent USD totals
   const totalAmount = React.useMemo(() => {
-    return expenses.reduce((sum, expense) => sum + expense.amount, 0);
-  }, [expenses]);
-
-  if (expenses.length === 0) {
-    return (
-      <div className={cn("space-y-2", className)}>
-        <div className="text-sm font-medium text-slate-700">Recent Expenses</div>
-        <div className="text-center py-8 text-slate-500">
-          <div className="text-sm text-slate-600">No expenses recorded yet</div>
-        </div>
-      </div>
-    );
-  }
+    return filteredExpenses.reduce((sum, expense) => sum + (expense.base_amount || expense.amount), 0);
+  }, [filteredExpenses]);
 
   return (
-    <div className={cn("space-y-2", className)}>
-      <div className="text-sm font-medium text-slate-700 flex items-center justify-between">
-        <span>Recent Expenses</span>
-        <span className="text-xs text-slate-500">{expenses.length} items</span>
-      </div>
-      
-      <div className="space-y-2">
-        {expenses.map((expense) => (
-          <div 
-            key={expense.id} 
-            className="group relative bg-white/50 hover:bg-white/70 transition-all duration-200 rounded-lg border border-slate-200/50 hover:border-slate-300/60 hover:shadow-sm"
-          >
-            {/* Mobile-first layout */}
-            <div className="p-3 sm:p-4">
-              <div className="flex items-start justify-between gap-3">
-                {/* Expense Details */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <h4 className="text-sm font-medium text-slate-900 truncate">
-                      {expense.name}
-                    </h4>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => onEditExpense(expense)}
-                        className="h-8 w-8 p-0 hover:bg-buildease-blue-100 hover:text-buildease-blue-700"
-                        aria-label={`Edit ${expense.name}`}
-                      >
-                        <Edit3 className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => onDeleteExpense(expense.id)}
-                        className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-700"
-                        aria-label={`Delete ${expense.name}`}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {/* Expense Meta Information */}
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mb-2">
-                    <div className="flex items-center gap-1">
-                      <Tag className="h-3 w-3" />
-                      <span 
-                        className={cn(
-                          "px-2 py-0.5 rounded-full border text-xs font-medium",
-                          getCategoryColor(expense.category)
-                        )}
-                      >
-                        {expense.category}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      <span>{formatDate(expense.date)}</span>
-                    </div>
-                  </div>
-
-                  {/* Expense Description - if available */}
-                  {expense.description && (
-                    <p className="text-xs text-slate-600 line-clamp-2 mb-2">
-                      {expense.description}
-                    </p>
-                  )}
-                </div>
-
-                {/* Amount Display */}
-                <div className="text-right flex-shrink-0">
-                  <div className="text-sm font-semibold text-slate-900">
-                    {formatCurrency.format(expense.amount)}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Mobile Touch Actions - Alternative to hover actions */}
-            <div className="sm:hidden border-t border-slate-200/50 bg-slate-50/30">
-              <div className="flex">
-                <button
-                  onClick={() => onEditExpense(expense)}
-                  className="flex-1 py-2 px-3 text-xs font-medium text-buildease-blue-700 hover:bg-buildease-blue-50 transition-colors"
-                >
-                  Edit
-                </button>
-                <div className="w-px bg-slate-200" />
-                <button
-                  onClick={() => onDeleteExpense(expense.id)}
-                  className="flex-1 py-2 px-3 text-xs font-medium text-red-700 hover:bg-red-50 transition-colors"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Summary footer for multiple expenses */}
-      {expenses.length > 1 && (
-        <div className="mt-4 pt-3 border-t border-slate-200/50">
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-slate-600 font-medium">Total Expenses</span>
-            <span className="font-bold text-slate-900">
-              {formatCurrency.format(totalAmount)}
-            </span>
+    <Card className={cn("", className)}>
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg font-semibold">Expenses</CardTitle>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+              className={cn(
+                'h-8 px-3',
+                showFilters && 'bg-blue-50 border-blue-200 text-blue-700'
+              )}
+            >
+              <Filter className="h-3 w-3 mr-1" />
+              Filters
+              {(filters.search || filters.status !== 'all' || filters.dateRange !== 'all' || 
+                filters.amountRange !== 'all' || filters.category !== 'all') && (
+                <span className="ml-1 h-2 w-2 bg-blue-600 rounded-full" />
+              )}
+            </Button>
+            {onAddExpense && (
+              <Button
+                size="sm"
+                onClick={onAddExpense}
+                className="h-8 px-3 bg-blue-600 hover:bg-blue-700"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Add
+              </Button>
+            )}
           </div>
         </div>
-      )}
-    </div>
+        
+        {/* Filter Summary */}
+        <div className="flex items-center justify-between text-sm text-gray-600">
+          <span>
+            {filteredExpenses.length} of {expenses.length} expenses
+          </span>
+          {totalAmount > 0 && (
+            <span className="font-medium">
+              Total: {formatCurrency(totalAmount, 'USD')}
+            </span>
+          )}
+        </div>
+      </CardHeader>
+
+      <CardContent className="pt-0">
+        {/* Filters Panel */}
+        {showFilters && (
+          <div className="mb-4">
+            <ExpenseFilters
+              expenses={expenses}
+              filters={filters}
+              onFiltersChange={setFilters}
+            />
+          </div>
+        )}
+
+        {/* Empty State */}
+        {expenses.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-gray-500">
+              <div className="text-sm">No expenses recorded yet</div>
+              {onAddExpense && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onAddExpense}
+                  className="mt-3"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add First Expense
+                </Button>
+              )}
+            </div>
+          </div>
+        ) : filteredExpenses.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-gray-500">
+              <div className="text-sm">No expenses match your filters</div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setFilters({
+                  search: '',
+                  status: 'all',
+                  dateRange: 'all',
+                  amountRange: 'all',
+                  category: 'all'
+                })}
+                className="mt-3 text-blue-600 hover:text-blue-700"
+              >
+                Clear filters
+              </Button>
+            </div>
+          </div>
+        ) : (
+          /* Expense List */
+          <div className="space-y-3">
+            {filteredExpenses.map((expense) => (
+              <SwipeableExpenseCard
+                key={expense.id}
+                expense={expense}
+                onEdit={onEditExpense}
+                onDelete={onDeleteExpense}
+                formatCurrency={formatCurrency}
+              />
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -235,14 +294,18 @@ export const BudgetExpensesList = React.memo(BudgetExpensesListComponent, (prevP
   const expensesEqual = prevExpenses.every((prev, index) => {
     const next = nextExpenses[index];
     return prev.id === next.id && 
-           prev.name === next.name && 
+           prev.description === next.description && 
            prev.amount === next.amount && 
            prev.category === next.category && 
-           prev.date === next.date;
+           prev.payment_status === next.payment_status &&
+           prev.created_at === next.created_at;
   });
   
   return expensesEqual && 
          prevProps.onEditExpense === nextProps.onEditExpense &&
          prevProps.onDeleteExpense === nextProps.onDeleteExpense &&
+         prevProps.onAddExpense === nextProps.onAddExpense &&
          prevProps.className === nextProps.className;
 });
+
+export default BudgetExpensesList;

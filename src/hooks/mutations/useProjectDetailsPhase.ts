@@ -3,6 +3,23 @@ import { supabase } from '@/lib/supabase';
 import { queryKeys } from '@/lib/queryClient';
 import { toast } from 'sonner';
 import * as activityService from '@/services/activityService';
+import { toDbPhaseStatus, toUiPhaseStatus, type PhaseStatusUI, type PhaseStatus } from '@/utils/core/phaseStatus';
+
+// Local helper types for precise update payloads
+type PhaseTimeline = {
+  planned_start?: string;
+  planned_end?: string;
+  actual_start?: string | null;
+  actual_end?: string | null;
+};
+
+type UpdatePayload = Partial<{
+  name: string;
+  description: string | null;
+  category: string;
+  status: PhaseStatus;
+  timeline: PhaseTimeline;
+}>;
 
 // Types for ProjectDetails phase mutations
 export interface ProjectDetailsPhase {
@@ -12,7 +29,7 @@ export interface ProjectDetailsPhase {
   description?: string;
   start_date: string;
   end_date: string;
-  status: 'pending' | 'in-progress' | 'completed' | 'on-hold';
+  status: PhaseStatusUI;
   category?: string;
   progress_percentage?: number;
 }
@@ -23,8 +40,11 @@ export interface CreateProjectDetailsPhaseData {
   description?: string;
   start_date: string;
   end_date: string;
-  status?: 'pending' | 'in-progress' | 'completed' | 'on-hold';
+  status?: PhaseStatusUI;
   category?: string;
+  // Optional manual actuals for creation (defaults to null if not provided)
+  actual_start?: string | null;
+  actual_end?: string | null;
 }
 
 export interface UpdateProjectDetailsPhaseData {
@@ -33,9 +53,12 @@ export interface UpdateProjectDetailsPhaseData {
   description?: string;
   start_date?: string;
   end_date?: string;
-  status?: 'pending' | 'in-progress' | 'completed' | 'on-hold';
+  status?: PhaseStatusUI;
   category?: string;
   progress_percentage?: number;
+  // Allow explicit actual timeline updates; use undefined to skip, null to clear
+  actual_start?: string | null;
+  actual_end?: string | null;
 }
 
 /**
@@ -53,14 +76,12 @@ export function useCreateProjectDetailsPhase() {
           name: data.name,
           description: data.description || '',
           category: data.category || 'CONSTRUCTION',
-          status: data.status === 'pending' ? 'PLANNING' : 
-                  data.status === 'in-progress' ? 'IN_PROGRESS' : 
-                  data.status === 'completed' ? 'COMPLETED' : 'PAUSED',
+          status: data.status ? toDbPhaseStatus(data.status) : 'PAUSED',
           timeline: {
             planned_start: data.start_date,
             planned_end: data.end_date,
-            actual_start: null,
-            actual_end: null
+            actual_start: data.actual_start ?? null,
+            actual_end: data.actual_end ?? null
           },
           budget: {
             allocated: 0,
@@ -82,9 +103,7 @@ export function useCreateProjectDetailsPhase() {
         description: phase.description,
         start_date: phase.timeline?.planned_start || data.start_date,
         end_date: phase.timeline?.planned_end || data.end_date,
-        status: phase.status === 'PLANNING' ? 'pending' :
-                phase.status === 'IN_PROGRESS' ? 'in-progress' :
-                phase.status === 'COMPLETED' ? 'completed' : 'on-hold',
+        status: toUiPhaseStatus(phase.status),
         category: phase.category,
         progress_percentage: 0
       };
@@ -183,8 +202,9 @@ export function useCreateProjectDetailsPhase() {
       
       toast.success('Phase added successfully');
     },
-    onError: (error: any) => {
-      toast.error(`Failed to add phase: ${error.message}`);
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(`Failed to add phase: ${message}`);
     },
   });
 }
@@ -200,20 +220,23 @@ export function useUpdateProjectDetailsPhase() {
       const { id, ...updateData } = data;
       
       // Build update payload
-      const updatePayload: any = {};
+      const updatePayload: UpdatePayload = {};
       
       if (updateData.name) updatePayload.name = updateData.name;
       if (updateData.description !== undefined) updatePayload.description = updateData.description;
       if (updateData.category) updatePayload.category = updateData.category;
       
       if (updateData.status) {
-        updatePayload.status = updateData.status === 'pending' ? 'PLANNING' : 
-                              updateData.status === 'in-progress' ? 'IN_PROGRESS' : 
-                              updateData.status === 'completed' ? 'COMPLETED' : 'PAUSED';
+        updatePayload.status = toDbPhaseStatus(updateData.status);
       }
 
-      // Handle timeline updates
-      if (updateData.start_date || updateData.end_date) {
+      // Handle timeline updates (planned and/or actual)
+      if (
+        updateData.start_date !== undefined ||
+        updateData.end_date !== undefined ||
+        updateData.actual_start !== undefined ||
+        updateData.actual_end !== undefined
+      ) {
         // First get current timeline
         const { data: currentPhase } = await supabase
           .from('be_phase')
@@ -223,11 +246,14 @@ export function useUpdateProjectDetailsPhase() {
 
         const currentTimeline = currentPhase?.timeline || {};
         
-        updatePayload.timeline = {
-          ...currentTimeline,
-          ...(updateData.start_date && { planned_start: updateData.start_date }),
-          ...(updateData.end_date && { planned_end: updateData.end_date })
-        };
+        // Merge only fields explicitly provided. Allow null to clear.
+        const nextTimeline: PhaseTimeline = { ...currentTimeline };
+        if (updateData.start_date !== undefined) nextTimeline.planned_start = updateData.start_date;
+        if (updateData.end_date !== undefined) nextTimeline.planned_end = updateData.end_date;
+        if (updateData.actual_start !== undefined) nextTimeline.actual_start = updateData.actual_start;
+        if (updateData.actual_end !== undefined) nextTimeline.actual_end = updateData.actual_end;
+
+        updatePayload.timeline = nextTimeline;
       }
 
       const { data: phase, error } = await supabase
@@ -247,9 +273,7 @@ export function useUpdateProjectDetailsPhase() {
         description: phase.description,
         start_date: phase.timeline?.planned_start,
         end_date: phase.timeline?.planned_end,
-        status: phase.status === 'PLANNING' ? 'pending' :
-                phase.status === 'IN_PROGRESS' ? 'in-progress' :
-                phase.status === 'COMPLETED' ? 'completed' : 'on-hold',
+        status: toUiPhaseStatus(phase.status),
         category: phase.category,
         progress_percentage: updateData.progress_percentage || 0
       };
@@ -354,8 +378,9 @@ export function useUpdateProjectDetailsPhase() {
       
       toast.success('Phase updated successfully');
     },
-    onError: (error: any) => {
-      toast.error(`Failed to update phase: ${error.message}`);
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(`Failed to update phase: ${message}`);
     },
   });
 }
@@ -383,7 +408,7 @@ export function useDeleteProjectDetailsPhase() {
       if (error) throw error;
       return { phaseId, projectId: phase?.project_id };
     },
-    onSuccess: async (result, variables) => {
+    onSuccess: async (result, _variables) => {
       console.log('[ACTIVITY_DEBUG] [useDeleteProjectDetailsPhase] onSuccess called', {
         phaseId: result.phaseId,
         projectId: result.projectId,
@@ -474,8 +499,9 @@ export function useDeleteProjectDetailsPhase() {
       
       toast.success('Phase deleted successfully');
     },
-    onError: (error: any) => {
-      toast.error(`Failed to delete phase: ${error.message}`);
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(`Failed to delete phase: ${message}`);
     },
   });
 }
@@ -503,9 +529,7 @@ export function useProjectDetailsPhases(projectId: string) {
         description: phase.description || '',
         start_date: phase.timeline?.planned_start || '',
         end_date: phase.timeline?.planned_end || '',
-        status: phase.status === 'PLANNING' ? 'pending' :
-                phase.status === 'IN_PROGRESS' ? 'in-progress' :
-                phase.status === 'COMPLETED' ? 'completed' : 'on-hold',
+        status: toUiPhaseStatus(phase.status),
         category: phase.category,
         progress_percentage: 0 // Calculate based on tasks if needed
       }));

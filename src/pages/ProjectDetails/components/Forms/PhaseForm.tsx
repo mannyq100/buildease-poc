@@ -23,7 +23,14 @@ import {
   Plus,
   X 
 } from 'lucide-react';
-import { PhaseFormProps, PhaseFormData, FormErrors } from '@/types/projectDetails';
+import { PhaseFormProps, PhaseFormData, FormErrors, PhaseStatus } from '@/types/projectDetails';
+import { 
+  Select, 
+  SelectTrigger, 
+  SelectContent, 
+  SelectItem, 
+  SelectValue 
+} from '@/components/ui/select';
 import { ProjectType } from '@/utils/phaseUtils';
 
 // Default task template structure for compatibility
@@ -40,7 +47,9 @@ const defaultFormData: PhaseFormData = {
   category: '',
   description: '',
   startDate: '',
-  endDate: ''
+  endDate: '',
+  actualStart: undefined,
+  actualEnd: undefined
 };
 
 // Form validation
@@ -59,6 +68,11 @@ const validateForm = (data: PhaseFormData): FormErrors => {
     errors.endDate = 'End date must be after start date';
   }
 
+  // Validate actual timeline if provided
+  if (data.actualStart && data.actualEnd && new Date(data.actualStart) > new Date(data.actualEnd)) {
+    errors.actualEnd = 'Actual end must be after actual start';
+  }
+
   return errors;
 };
 
@@ -66,7 +80,6 @@ export function PhaseForm({
   mode,
   initialData,
   projectType,
-  _projectId,
   onSubmit,
   isLoading = false
 }: PhaseFormProps) {
@@ -359,6 +372,29 @@ export function PhaseForm({
             />
           </div>
 
+          {/* Status (Edit only) */}
+          {mode === 'edit' && (
+            <div>
+              <Label htmlFor="status" className="text-sm font-medium text-slate-700">
+                Status
+              </Label>
+              <Select
+                value={(formData.status || 'PLANNING') as PhaseStatus}
+                onValueChange={(val) => handleChange('status', val as PhaseStatus)}
+              >
+                <SelectTrigger id="status" className="mt-2">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PLANNING">Planning</SelectItem>
+                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                  <SelectItem value="PAUSED">Paused</SelectItem>
+                  <SelectItem value="COMPLETED">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Timeline */}
           <div className="rounded-lg p-4 border border-buildease-blue-200 bg-gradient-to-br from-buildease-blue-50/80 via-white to-buildease-orange-50/40">
             <div className="flex items-center mb-3">
@@ -394,6 +430,40 @@ export function PhaseForm({
                   <div className="flex items-center gap-1 mt-1 text-red-600 text-sm">
                     <AlertTriangle className="h-3 w-3" />
                     {errors.endDate}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Actual timeline (manual edits) */}
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="actualStart" className="text-sm font-medium text-slate-700">
+                  Actual Start (optional)
+                </Label>
+                <Input
+                  id="actualStart"
+                  type="date"
+                  value={formData.actualStart || ''}
+                  onChange={(e) => handleChange('actualStart', e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="actualEnd" className="text-sm font-medium text-slate-700">
+                  Actual End (optional)
+                </Label>
+                <Input
+                  id="actualEnd"
+                  type="date"
+                  value={formData.actualEnd || ''}
+                  onChange={(e) => handleChange('actualEnd', e.target.value)}
+                  className={`mt-1 ${errors.actualEnd ? 'border-red-500' : ''}`}
+                />
+                {errors.actualEnd && (
+                  <div className="flex items-center gap-1 mt-1 text-red-600 text-sm">
+                    <AlertTriangle className="h-3 w-3" />
+                    {errors.actualEnd}
                   </div>
                 )}
               </div>

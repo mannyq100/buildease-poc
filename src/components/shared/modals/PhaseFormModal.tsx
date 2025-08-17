@@ -41,6 +41,8 @@ export function PhaseFormModal({
     order: phase?.order || currentOrder,
     startDate: phase?.startDate || new Date().toISOString().substring(0, 10),
     endDate: phase?.endDate || new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().substring(0, 10),
+    actualStart: phase?.actualStart ?? undefined,
+    actualEnd: phase?.actualEnd ?? undefined,
     status: phase?.status || 'planning',
     progress: phase?.progress || 0,
     tasks: phase?.tasks || [],
@@ -313,6 +315,49 @@ export function PhaseFormModal({
                   onChange={field.onChange}
                   icon={Calendar}
                   required
+                  error={error?.message}
+                />
+              )}
+            />
+          </div>
+
+          {/* Actual timeline (manual) */}
+          <div className="mt-4 grid grid-cols-2 gap-6">
+            <Controller
+              control={control}
+              name="actualStart"
+              render={({ field }) => (
+                <FormField
+                  label="Actual Start (optional)"
+                  name="actualStart"
+                  type="date"
+                  value={field.value || ''}
+                  onChange={field.onChange}
+                  icon={Calendar}
+                />
+              )}
+            />
+
+            <Controller
+              control={control}
+              name="actualEnd"
+              rules={{
+                validate: (value) => {
+                  const aStart = (watch('actualStart') as string | undefined) || undefined;
+                  if (aStart && value && new Date(value) < new Date(aStart)) {
+                    return 'Actual end cannot be before actual start';
+                  }
+                  return true;
+                }
+              }}
+              render={({ field, fieldState: { error } }) => (
+                <FormField
+                  label="Actual End (optional)"
+                  name="actualEnd"
+                  type="date"
+                  value={field.value || ''}
+                  onChange={field.onChange}
+                  icon={Calendar}
                   error={error?.message}
                 />
               )}

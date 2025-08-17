@@ -4,6 +4,11 @@ import { queryKeys } from '@/lib/queryClient';
 import { toast } from 'sonner';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import * as activityService from '@/services/activityService';
+import type { PhaseStatus } from '@/utils/core/phaseStatus';
+
+function toErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : 'An error occurred';
+}
 
 // Types for phase mutations
 export interface CreatePhaseData {
@@ -11,19 +16,19 @@ export interface CreatePhaseData {
   description?: string;
   category: string;
   project_id: string;
-  status?: 'PLANNING' | 'IN_PROGRESS' | 'PAUSED' | 'COMPLETED';
+  status?: PhaseStatus;
   timeline?: {
-    planned_start?: string;
-    planned_end?: string;
-    actual_start?: string;
-    actual_end?: string;
+    planned_start?: string | null;
+    planned_end?: string | null;
+    actual_start?: string | null;
+    actual_end?: string | null;
   };
   budget?: {
     allocated?: number;
     spent?: number;
     currency?: string;
   };
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 export interface UpdatePhaseData {
@@ -31,19 +36,19 @@ export interface UpdatePhaseData {
   name?: string;
   description?: string;
   category?: string;
-  status?: 'PLANNING' | 'IN_PROGRESS' | 'PAUSED' | 'COMPLETED';
+  status?: PhaseStatus;
   timeline?: {
-    planned_start?: string;
-    planned_end?: string;
-    actual_start?: string;
-    actual_end?: string;
+    planned_start?: string | null;
+    planned_end?: string | null;
+    actual_start?: string | null;
+    actual_end?: string | null;
   };
   budget?: {
     allocated?: number;
     spent?: number;
     currency?: string;
   };
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 /**
@@ -91,11 +96,6 @@ export function useCreatePhase() {
         queryKey: queryKeys.phases.byProject(variables.project_id) 
       });
       
-      // Invalidate current phase query
-      queryClient.invalidateQueries({ 
-        queryKey: queryKeys.phases.current(variables.project_id) 
-      });
-      
       // Invalidate project query to update phase count
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.projects.detail(variables.project_id) 
@@ -116,7 +116,9 @@ export function useCreatePhase() {
       });
       
       try {
-        const userName = user ? `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}` : undefined;
+        const userName = user?.user_metadata
+          ? [user.user_metadata.first_name, user.user_metadata.last_name].filter(Boolean).join(' ') || undefined
+          : undefined;
         
         console.log('[ACTIVITY_DEBUG] Calling activityService.createActivity for phase create with params:', {
           project_id: variables.project_id,
@@ -164,9 +166,9 @@ export function useCreatePhase() {
         });
       }
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error creating phase:', error);
-      toast.error(error.message || 'Failed to create phase');
+      toast.error(toErrorMessage(error) || 'Failed to create phase');
     }
   });
 }
@@ -192,6 +194,53 @@ export function useUpdatePhase() {
       if (error) throw error;
       return phase;
     },
+    // Optimistic update: reflect status/timeline instantly
+    onMutate: async (variables) => {
+      const phaseId = variables.id;
+      const detailKey = queryKeys.phases.detail(phaseId);
+
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: detailKey });
+
+      // Snapshot previous cache
+      const prevDetail = queryClient.getQueryData(detailKey) as unknown;
+      const projectId: string | undefined = (prevDetail as { project_id?: string } | undefined)?.project_id;
+      const listKey = projectId ? queryKeys.phases.byProject(projectId) : undefined;
+      if (listKey) await queryClient.cancelQueries({ queryKey: listKey });
+      const prevList = listKey ? (queryClient.getQueryData(listKey) as unknown[]) : undefined;
+
+      // Build optimistic detail by shallow-merging and deep-merging timeline/budget
+      if (prevDetail) {
+        const optimisticDetail = {
+          ...prevDetail,
+          ...(variables.name !== undefined ? { name: variables.name } : {}),
+          ...(variables.description !== undefined ? { description: variables.description } : {}),
+          ...(variables.category !== undefined ? { category: variables.category } : {}),
+          ...(variables.status !== undefined ? { status: variables.status } : {}),
+          ...(variables.details !== undefined ? { details: variables.details } : {}),
+          ...(variables.timeline !== undefined
+            ? { timeline: { ...(prevDetail as { timeline?: { [key: string]: unknown } } | undefined)?.timeline, ...variables.timeline } }
+            : {}),
+          ...(variables.budget !== undefined
+            ? { budget: { ...(prevDetail as { budget?: { [key: string]: unknown } } | undefined)?.budget, ...variables.budget } }
+            : {}),
+        };
+        queryClient.setQueryData(detailKey, optimisticDetail);
+
+        // Update list cache if present
+        if (listKey && prevList) {
+          const nextList = prevList.map((p) => {
+            if (p && typeof p === 'object' && 'id' in (p as Record<string, unknown>)) {
+              return (p as { id?: string }).id === phaseId ? { ...(p as object), ...optimisticDetail } : p;
+            }
+            return p;
+          });
+          queryClient.setQueryData(listKey, nextList);
+        }
+      }
+
+      return { prevDetail, prevList, detailKey, listKey } as const;
+    },
     onSuccess: async (updatedPhase, variables) => {
       // Invalidate and refetch related queries
       queryClient.invalidateQueries({ 
@@ -202,9 +251,7 @@ export function useUpdatePhase() {
         queryKey: queryKeys.phases.detail(updatedPhase.id) 
       });
       
-      queryClient.invalidateQueries({ 
-        queryKey: queryKeys.phases.current(updatedPhase.project_id) 
-      });
+      // Note: no phases.current key exists; byProject + detail invalidations above suffice
 
       toast.success('Phase updated successfully');
 
@@ -244,7 +291,9 @@ export function useUpdatePhase() {
           ? `Timeline dates were updated for phase "${updatedPhase.name}"`
           : `Project phase "${updatedPhase.name}" was modified`;
           
-        const userName = user ? `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}` : undefined;
+        const userName = user?.user_metadata
+          ? [user.user_metadata.first_name, user.user_metadata.last_name].filter(Boolean).join(' ') || undefined
+          : undefined;
         const activityStatus = wasCompleted ? 'success' : 'info';
         
         console.log('[ACTIVITY_DEBUG] Calling activityService.createActivity for phase update with params:', {
@@ -294,9 +343,31 @@ export function useUpdatePhase() {
         });
       }
     },
-    onError: (error: any) => {
+    onError: (error: unknown, _variables, context) => {
       console.error('Error updating phase:', error);
-      toast.error(error.message || 'Failed to update phase');
+      // Rollback optimistic caches
+      if (context?.detailKey && context?.prevDetail !== undefined) {
+        queryClient.setQueryData(context.detailKey, context.prevDetail);
+      }
+      if (context?.listKey && context?.prevList !== undefined) {
+        queryClient.setQueryData(context.listKey, context.prevList);
+      }
+      toast.error(toErrorMessage(error) || 'Failed to update phase');
+    },
+    onSettled: async (_data, _error, variables, _context) => {
+      // Ensure caches are up-to-date after mutation settles
+      const phaseId = variables?.id;
+      if (phaseId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.phases.detail(phaseId) });
+      }
+      // Try to infer projectId from cached detail (post-mutation)
+      if (phaseId) {
+        const detail = queryClient.getQueryData(queryKeys.phases.detail(phaseId)) as unknown;
+        const projectId = (detail as { project_id?: string } | undefined)?.project_id as string | undefined;
+        if (projectId) {
+          queryClient.invalidateQueries({ queryKey: queryKeys.phases.byProject(projectId) });
+        }
+      }
     }
   });
 }
@@ -333,10 +404,6 @@ export function useDeletePhase() {
         });
         
         queryClient.invalidateQueries({ 
-          queryKey: queryKeys.phases.current(projectId) 
-        });
-        
-        queryClient.invalidateQueries({ 
           queryKey: queryKeys.projects.detail(projectId) 
         });
       }
@@ -361,7 +428,9 @@ export function useDeletePhase() {
       
       try {
         if (projectId) {
-          const userName = user ? `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}` : undefined;
+          const userName = user?.user_metadata
+            ? [user.user_metadata.first_name, user.user_metadata.last_name].filter(Boolean).join(' ') || undefined
+            : undefined;
           
           console.log('[ACTIVITY_DEBUG] Calling activityService.createActivity for phase delete with params:', {
             project_id: projectId,
@@ -407,9 +476,9 @@ export function useDeletePhase() {
         });
       }
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error deleting phase:', error);
-      toast.error(error.message || 'Failed to delete phase');
+      toast.error(toErrorMessage(error) || 'Failed to delete phase');
     }
   });
 }
@@ -423,7 +492,7 @@ export function useReorderPhases() {
 
   return useMutation({
     mutationFn: async ({ 
-      projectId, 
+      projectId: _projectId, 
       phaseOrders 
     }: { 
       projectId: string; 
@@ -465,7 +534,9 @@ export function useReorderPhases() {
       });
       
       try {
-        const userName = user ? `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}` : undefined;
+        const userName = user?.user_metadata
+          ? [user.user_metadata.first_name, user.user_metadata.last_name].filter(Boolean).join(' ') || undefined
+          : undefined;
         
         console.log('[ACTIVITY_DEBUG] Calling activityService.createActivity for phase reorder with params:', {
           project_id: variables.projectId,
@@ -507,9 +578,9 @@ export function useReorderPhases() {
         });
       }
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error reordering phases:', error);
-      toast.error(error.message || 'Failed to reorder phases');
+      toast.error(toErrorMessage(error) || 'Failed to reorder phases');
     }
   });
 }

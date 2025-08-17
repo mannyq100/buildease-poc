@@ -7,7 +7,6 @@
 import { toast } from 'sonner';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import { useActivityTracker } from './useActivityTracker';
-import { getProjectCurrency } from '@/utils/projectUtils';
 import {
   useCreateBudgetExpense,
   useUpdateBudgetExpense,
@@ -18,16 +17,18 @@ import {
   useCreateProjectDetailsPhase,
   useUpdateProjectDetailsPhase,
   useDeleteProjectDetailsPhase,
-  useCreateTask,
   useUpdateTask
 } from '@/hooks/mutations';
 import { BudgetFormData, PhaseFormData, TeamMemberFormData } from '@/types/projectDetails';
 
 interface UseEnhancedCRUDOperationsProps {
   projectId: string;
-  phases?: any[];
+  phases?: Array<{ name: string }>;
   onCloseModals: () => void;
 }
+
+// Minimal shape used by edit handlers
+interface EditingItemRef { data: { id: string } }
 
 export function useEnhancedCRUDOperations({ 
   projectId, 
@@ -50,65 +51,48 @@ export function useEnhancedCRUDOperations({
   const updatePhase = useUpdateProjectDetailsPhase();
   const deletePhase = useDeleteProjectDetailsPhase();
   
-  const createTask = useCreateTask();
   const updateTask = useUpdateTask();
 
   // Enhanced budget operations with activity tracking
   const handleBudgetSubmit = async (
     data: BudgetFormData, 
     modalMode: 'create' | 'edit', 
-    editingItem?: any
+    editingItem?: EditingItemRef
   ) => {
     try {
       if (modalMode === 'create') {
         const result = await createBudgetExpense.mutateAsync({
-          projectId,
-          expense: {
-            name: data.name,
-            amount: data.amount,
-            category: data.category,
-            status: data.status || 'planned',
-            paymentDate: data.paymentDate || new Date().toISOString().split('T')[0],
-            vendorName: data.vendorName || 'TBD',
-            description: data.description || ''
-          }
+          project_id: projectId,
+          ...data,
         });
 
         // Track expense creation activity
         await activityTracker.trackExpenseCreate(
           result.id,
-          data.name,
+          data.description || data.category,
           data.amount
         );
 
         toast.success('Budget expense created successfully!');
       } else if (editingItem) {
         await updateBudgetExpense.mutateAsync({
-          expenseId: editingItem.data.id,
-          expense: {
-            name: data.name,
-            amount: data.amount,
-            category: data.category,
-            status: data.status || 'planned',
-            paymentDate: data.paymentDate,
-            vendorName: data.vendorName,
-            description: data.description
-          }
+          id: editingItem.data.id,
+          ...data,
         });
 
         // Track expense update activity
         await activityTracker.trackActivity(
           'expense_update',
-          `Expense updated: ${data.name}`,
-          `Budget expense "${data.name}" was modified`,
+          `Expense updated: ${data.description || data.category}`,
+          `Budget expense "${data.description || data.category}" was modified`,
           {
             entityType: 'expense',
             entityId: editingItem.data.id,
             metadata: { 
-              expenseTitle: data.name, 
+              expenseTitle: data.description || data.category, 
               amount: data.amount,
               category: data.category,
-              status: data.status
+              payment_status: data.payment_status
             },
             status: 'info'
           }
@@ -126,7 +110,7 @@ export function useEnhancedCRUDOperations({
   const handlePhaseSubmit = async (
     data: PhaseFormData, 
     modalMode: 'create' | 'edit', 
-    editingItem?: any, 
+    editingItem?: EditingItemRef, 
     selectedTaskIds?: string[]
   ) => {
     try {
@@ -141,27 +125,18 @@ export function useEnhancedCRUDOperations({
           return;
         }
         
-        // Create phase with proper database structure
+        // Create phase with proper mutation payload
         const phaseData = {
+          project_id: projectId,
           name: data.name,
           description: data.description,
           category: data.category,
-          project_id: projectId,
-          status: 'PLANNING' as const,
-          timeline: {
-            planned_start: data.startDate || null,
-            planned_end: data.endDate || null,
-            actual_start: null,
-            actual_end: null
-          },
-          budget: {
-            allocated: 0,
-            spent: 0,
-            currency: await getProjectCurrency(projectId)
-          },
-          details: {}
+          start_date: data.startDate,
+          end_date: data.endDate,
+          ...(data.actualStart !== undefined && { actual_start: data.actualStart ?? null }),
+          ...(data.actualEnd !== undefined && { actual_end: data.actualEnd ?? null })
         };
-        
+
         // Create the phase
         const createdPhase = await createPhase.mutateAsync(phaseData);
 
@@ -201,12 +176,13 @@ export function useEnhancedCRUDOperations({
         }
       } else if (editingItem) {
         await updatePhase.mutateAsync({
-          phaseId: editingItem.data.id,
-          phase: {
-            name: data.name,
-            description: data.description,
-            status: 'in-progress'
-          }
+          id: editingItem.data.id,
+          name: data.name,
+          description: data.description,
+          ...(data.startDate !== undefined && { start_date: data.startDate }),
+          ...(data.endDate !== undefined && { end_date: data.endDate }),
+          ...(data.actualStart !== undefined && { actual_start: data.actualStart ?? null }),
+          ...(data.actualEnd !== undefined && { actual_end: data.actualEnd ?? null })
         });
 
         // Track phase update activity
@@ -214,8 +190,7 @@ export function useEnhancedCRUDOperations({
           editingItem.data.id,
           data.name,
           {
-            description: data.description,
-            status: 'in-progress'
+            description: data.description
           }
         );
 
@@ -231,21 +206,24 @@ export function useEnhancedCRUDOperations({
   const handleTeamMemberSubmit = async (
     data: TeamMemberFormData, 
     modalMode: 'create' | 'edit', 
-    editingItem?: any
+    editingItem?: EditingItemRef
   ) => {
     try {
+      // Map UI status to backend-accepted status
+      const mappedStatus: 'active' | 'inactive' | 'pending' | undefined =
+        data.status === 'active' ? 'active'
+        : data.status === 'on-break' ? 'inactive'
+        : data.status === 'off-site' ? 'active'
+        : undefined;
+
       if (modalMode === 'create') {
         const result = await createTeamMember.mutateAsync({
-          projectId,
-          member: {
-            name: data.name,
-            role: data.role,
-            status: data.status,
-            contactInfo: {
-              phone: data.phone || '',
-              email: data.email || ''
-            }
-          }
+          project_id: projectId,
+          name: data.name,
+          role: data.role,
+          email: data.email,
+          phone: data.phone,
+          ...(mappedStatus && { status: mappedStatus })
         });
 
         // Track team member addition activity
@@ -263,17 +241,15 @@ export function useEnhancedCRUDOperations({
         toast.success('Team member added successfully!');
       } else if (editingItem) {
         await updateTeamMember.mutateAsync({
-          memberId: editingItem.data.id,
-          member: {
-            name: data.name,
-            role: data.role,
-            status: data.status,
-            contactInfo: {
-              phone: data.phone || '',
-              email: data.email || ''
-            }
-          }
-        });
+          id: editingItem.data.id,
+          name: data.name,
+          role: data.role,
+          email: data.email,
+          phone: data.phone,
+          ...(mappedStatus && { status: mappedStatus }),
+          // Provide project_id for JSONB fallback path in useUpdateTeamMember
+          project_id: projectId
+        } as unknown as import('@/hooks/mutations').UpdateTeamMemberData);
 
         // Track team member update activity
         await activityTracker.trackActivity(
@@ -337,8 +313,8 @@ export function useEnhancedCRUDOperations({
   const handleTaskComplete = async (taskId: string, taskTitle: string, phaseId?: string) => {
     try {
       await updateTask.mutateAsync({
-        taskId,
-        task: { status: 'completed' }
+        id: taskId,
+        status: 'completed'
       });
 
       // Track task completion

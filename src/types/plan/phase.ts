@@ -26,6 +26,8 @@ export interface PlanPhase extends BasePhase {
 export interface ModalPhase extends BasePhase {
   startDate: string; // Required for forms
   endDate: string; // Required for forms
+  actualStart?: string | null; // Optional manual actual start date
+  actualEnd?: string | null;   // Optional manual actual end date
   tasks?: unknown[]; // Flexible for modal context
   materials?: unknown[]; // Flexible for modal context
 }

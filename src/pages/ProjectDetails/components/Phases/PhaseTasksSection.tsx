@@ -6,6 +6,16 @@
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { 
   Plus,
@@ -14,10 +24,17 @@ import {
   Clock,
   Edit3,
   Trash2,
-  MoreVertical
+  MoreVertical,
+  AlertCircle
 } from 'lucide-react';
 import { ProjectPhase, EnhancedTask } from '@/types/projectDetails';
 import { getTaskStatusColor, getTaskStatusIconColor, getTaskPriorityBadgeVariant, getTaskPriorityColor } from '@/utils/core/taskColors';
+import { usePhaseStatusManager } from '@/hooks/usePhaseStatusManager';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { usePhaseNotifications } from '@/hooks/usePhaseNotifications';
+import { ToastContainer } from '@/components/ToastContainer';
+import { TaskListSkeleton, OptimisticTaskCard, LoadingButton } from '@/components/LoadingSkeletons';
+import React from 'react';
 
 interface PhaseTasksSectionProps {
   phase: ProjectPhase;
@@ -30,7 +47,7 @@ interface PhaseTasksSectionProps {
 
 // Use centralized color utilities - removed duplicate functions
 
-export function PhaseTasksSection({
+function PhaseTasksSectionContent({
   phase,
   tasks,
   isLoading,
@@ -38,13 +55,58 @@ export function PhaseTasksSection({
   onEditTask,
   onDeleteTask
 }: PhaseTasksSectionProps) {
+  // Use consolidated phase status manager
+  const {
+    state: { showCompletePrompt, showReopenPrompt },
+    actions: {
+      handleConfirmComplete,
+      handleConfirmReopen,
+      handleUpdateProgress,
+      setShowCompletePrompt,
+      setShowReopenPrompt
+    },
+    taskMetrics,
+    isUpdating,
+    error,
+    retryLastOperation
+  } = usePhaseStatusManager(phase, tasks);
+
+  // Phase notifications
+  const notifications = usePhaseNotifications();
+
+  // Trigger notifications on error
+  React.useEffect(() => {
+    if (error) {
+      notifications.onPhaseUpdateError(error.message, retryLastOperation);
+    }
+  }, [error, notifications, retryLastOperation]);
+
+  // Error display component
+  const ErrorDisplay = ({ error, onRetry }: { error: Error; onRetry: () => void }) => (
+    <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <AlertCircle className="h-4 w-4 text-red-600" />
+          <span className="text-sm text-red-700">
+            Failed to update phase: {error.message}
+          </span>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onRetry}
+          className="text-red-700 border-red-300 hover:bg-red-50"
+        >
+          Retry
+        </Button>
+      </div>
+    </div>
+  );
+
   if (isLoading) {
     return (
       <div className="p-4">
-        <div className="flex items-center justify-center py-8">
-          <RefreshCw className="h-5 w-5 animate-spin text-buildease-blue-500" />
-          <span className="ml-2 text-sm text-slate-600">Loading tasks...</span>
-        </div>
+        <TaskListSkeleton count={3} />
       </div>
     );
   }
@@ -67,16 +129,25 @@ export function PhaseTasksSection({
   }
 
   return (
-    <div className="p-4 space-y-2">
-      {tasks.map((task, index) => (
-        <TaskCard
-          key={task.id}
-          task={task}
-          index={index}
-          onEdit={() => onEditTask(task, phase.id)}
-          onDelete={() => onDeleteTask(task.id)}
-        />
-      ))}
+    <>
+      <div className="p-4 space-y-2">
+        {/* Error Display */}
+        {error && <ErrorDisplay error={error} onRetry={retryLastOperation} />}
+        
+        {tasks.map((task, index) => (
+          <OptimisticTaskCard
+            key={task.id}
+            isPending={isUpdating}
+            operation="updating"
+          >
+            <TaskCard
+              task={task}
+              index={index}
+              onEdit={() => onEditTask(task, phase.id)}
+              onDelete={() => onDeleteTask(task.id)}
+            />
+          </OptimisticTaskCard>
+        ))}
       
       <div className="flex gap-2 pt-2 border-t border-slate-200/40">
         <Button 
@@ -87,12 +158,81 @@ export function PhaseTasksSection({
           <Plus className="h-4 w-4 mr-2" />
           Add Task
         </Button>
-        <Button size="sm" variant="outline" className="flex-1">
+        <LoadingButton
+          size="sm"
+          variant="outline"
+          className="flex-1"
+          onClick={handleUpdateProgress}
+          isLoading={isUpdating}
+        >
           <RefreshCw className="h-4 w-4 mr-2" />
           Update Progress
-        </Button>
+        </LoadingButton>
       </div>
+
+      <AlertDialog open={showCompletePrompt} onOpenChange={setShowCompletePrompt}>
+        <AlertDialogContent className="max-w-sm sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-slate-900">Mark phase as completed?</AlertDialogTitle>
+            <AlertDialogDescription>
+              All tasks in the phase "{phase.name}" are marked as completed. Would you like to mark this phase as Completed and set its actual end date to today?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowCompletePrompt(false)}>Not now</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmComplete}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              Mark Completed
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reopen confirmation when a task is reopened after completion */}
+      <AlertDialog open={showReopenPrompt} onOpenChange={setShowReopenPrompt}>
+        <AlertDialogContent className="max-w-sm sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-slate-900">Reopen phase?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A task was reopened after this phase was marked as Completed. Do you want to revert the phase to In Progress and clear its actual end date?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowReopenPrompt(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmReopen}
+              className="bg-buildease-blue-600 hover:bg-buildease-blue-700 text-white"
+            >
+              Reopen Phase
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+
+    {/* Toast Notifications */}
+    <ToastContainer 
+      toasts={notifications.toasts} 
+      onRemove={notifications.removeToast}
+      position="bottom-right"
+    />
+  </>
+  );
+}
+
+// Wrap with ErrorBoundary
+export function PhaseTasksSection(props: PhaseTasksSectionProps) {
+  return (
+    <ErrorBoundary
+      resetKeys={[props.phase.id, props.tasks.length]}
+      onError={(error) => {
+        console.error('PhaseTasksSection Error:', error);
+      }}
+    >
+      <PhaseTasksSectionContent {...props} />
+    </ErrorBoundary>
   );
 }
 

@@ -4,11 +4,10 @@
  * Combines building specifications and budget information for efficiency
  * Follows BuildEase mobile-first responsive design principles
  */
-import React, { useMemo, useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CreateProjectFormValues } from '../../pages/CreateProject/schema';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
@@ -25,9 +24,6 @@ import {
   TrendingUp, 
   AlertCircle 
 } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
 import { cn } from '@/utils/core/ui';
 import { Country } from 'country-state-city';
 
@@ -37,62 +33,13 @@ const SIZE_UNITS = [
   { value: 'sq-ft', label: 'Square Feet' }
 ];
 
-// Currency handling (from BudgetTimelineForm.tsx)
+// Currency handling - Dynamic from country-state-city library
 interface CurrencyOption {
   value: string;
   label: string;
-  isMajor: boolean;
   isRecommended?: boolean;
   disabled?: boolean;
 }
-
-// Major global currencies (prioritized in dropdown)
-const MAJOR_CURRENCY_CODES = ['USD', 'EUR', 'GBP', 'CAD', 'XOF', 'XAF'];
-
-// Generate currency name mapping for better labels
-const CURRENCY_NAMES: Record<string, string> = {
-  'USD': 'US Dollar',
-  'EUR': 'Euro',
-  'GBP': 'British Pound',
-  'CAD': 'Canadian Dollar',
-  'XOF': 'West African CFA Franc',
-  'XAF': 'Central African CFA Franc',
-  'JPY': 'Japanese Yen',
-  'CNY': 'Chinese Yuan',
-  'AUD': 'Australian Dollar',
-  'CHF': 'Swiss Franc',
-  'GHS': 'Ghanaian Cedi',
-  'NGN': 'Nigerian Naira',
-  'ZAR': 'South African Rand',
-  'KES': 'Kenyan Shilling',
-  'UGX': 'Ugandan Shilling',
-  'TZS': 'Tanzanian Shilling',
-  'EGP': 'Egyptian Pound',
-  'MAD': 'Moroccan Dirham',
-  'INR': 'Indian Rupee',
-  'BRL': 'Brazilian Real',
-  'MXN': 'Mexican Peso',
-  'AED': 'UAE Dirham',
-  'SAR': 'Saudi Riyal',
-  'SGD': 'Singapore Dollar',
-  'HKD': 'Hong Kong Dollar',
-  'NZD': 'New Zealand Dollar',
-  'SEK': 'Swedish Krona',
-  'NOK': 'Norwegian Krone',
-  'DKK': 'Danish Krone',
-  'PLN': 'Polish Zloty',
-  'CZK': 'Czech Koruna',
-  'HUF': 'Hungarian Forint',
-  'RUB': 'Russian Ruble',
-  'TRY': 'Turkish Lira',
-  'ILS': 'Israeli Shekel',
-  'KRW': 'South Korean Won',
-  'THB': 'Thai Baht',
-  'MYR': 'Malaysian Ringgit',
-  'IDR': 'Indonesian Rupiah',
-  'PHP': 'Philippine Peso',
-  'VND': 'Vietnamese Dong'
-};
 
 // Generate all available currencies from country-state-city library
 const generateAllCurrencies = (): CurrencyOption[] => {
@@ -104,34 +51,37 @@ const generateAllCurrencies = (): CurrencyOption[] => {
     countries.forEach(country => {
       if (country.currency && country.currency.trim()) {
         const currencyCode = country.currency.trim();
-        const currencyName = CURRENCY_NAMES[currencyCode] || currencyCode;
-        const isMajor = MAJOR_CURRENCY_CODES.includes(currencyCode);
         
         if (!currencyMap.has(currencyCode)) {
+          // Try to get a readable currency name using Intl.DisplayNames
+          let currencyName = currencyCode;
+          try {
+            const displayNames = new Intl.DisplayNames(['en'], { type: 'currency' });
+            currencyName = displayNames.of(currencyCode) || currencyCode;
+          } catch {
+            // Fallback to currency code if Intl.DisplayNames fails
+            currencyName = currencyCode;
+          }
+          
           currencyMap.set(currencyCode, {
             value: currencyCode,
-            label: `${currencyCode} - ${currencyName}`,
-            isMajor
+            label: `${currencyCode} - ${currencyName}`
           });
         }
       }
     });
     
-    // Convert map to array and sort
+    // Convert map to array and sort alphabetically
     return Array.from(currencyMap.values()).sort((a, b) => {
-      // Major currencies first, then alphabetical
-      if (a.isMajor && !b.isMajor) return -1;
-      if (!a.isMajor && b.isMajor) return 1;
       return a.label.localeCompare(b.label);
     });
   } catch (error) {
     console.error('Error generating currencies from country-state-city:', error);
-    // Fallback to major currencies if there's an error
-    return MAJOR_CURRENCY_CODES.map(code => ({
-      value: code,
-      label: `${code} - ${CURRENCY_NAMES[code] || code}`,
-      isMajor: true
-    }));
+    // Minimal fallback - just USD
+    return [{
+      value: 'USD',
+      label: 'USD - US Dollar'
+    }];
   }
 };
 
@@ -146,17 +96,28 @@ const generateNumberOptions = (max: number) => {
   }));
 };
 
-// Building styles - optional selections for better AI recommendations
+// Simplified building styles - focused on popular, widely-recognized options
 const BUILDING_STYLES = [
-  { value: 'ai-recommend', label: 'Let AI recommend' },
-  { value: 'modern', label: 'Modern' },
-  { value: 'contemporary', label: 'Contemporary' },
-  { value: 'traditional', label: 'Traditional' },
-  { value: 'colonial', label: 'Colonial' },
-  { value: 'minimalist', label: 'Minimalist' },
-  { value: 'tropical', label: 'Tropical' },
-  { value: 'mediterranean', label: 'Mediterranean' },
-  { value: 'african-contemporary', label: 'African Contemporary' }
+  { value: 'ai-recommend', label: 'Let AI recommend based on my location & preferences', category: 'AI', description: 'Our AI will suggest the best style for your project' },
+  
+  // Popular Modern Styles (3 options)
+  { value: 'modern', label: 'Modern', category: 'Contemporary', description: 'Clean lines, open spaces, minimal decoration' },
+  { value: 'contemporary', label: 'Contemporary', category: 'Contemporary', description: 'Current design trends with flexible layouts' },
+  { value: 'minimalist', label: 'Minimalist', category: 'Contemporary', description: 'Simple, uncluttered design with focus on function' },
+  
+  // Classic Traditional Styles (3 options)
+  { value: 'traditional', label: 'Traditional', category: 'Traditional', description: 'Timeless design with classic proportions' },
+  { value: 'colonial', label: 'Colonial', category: 'Traditional', description: 'Historical style with symmetrical design' },
+  { value: 'craftsman', label: 'Craftsman', category: 'Traditional', description: 'Handcrafted details with natural materials' },
+  
+  // Regional Styles (3 options)
+  { value: 'tropical', label: 'Tropical', category: 'Regional', description: 'Designed for warm, humid climates with natural ventilation' },
+  { value: 'mediterranean', label: 'Mediterranean', category: 'Regional', description: 'Inspired by coastal European architecture' },
+  { value: 'ranch', label: 'Ranch/Single-Story', category: 'Regional', description: 'Low-profile, sprawling design perfect for accessibility' },
+  
+  // Special Categories (2 options)
+  { value: 'eco-friendly', label: 'Eco-Friendly', category: 'Sustainable', description: 'Environmentally conscious design with sustainable features' },
+  { value: 'mixed', label: 'Mixed/Custom Style', category: 'Custom', description: 'Combination of different styles or unique design' }
 ];
 
 function BuildingBudgetForm() {
@@ -169,6 +130,41 @@ function BuildingBudgetForm() {
   const kitchenOptions = useMemo(() => generateNumberOptions(5), []);
   const livingAreaOptions = useMemo(() => generateNumberOptions(5), []);
 
+  // Organize building styles by category for better UX
+  const organizedBuildingStyles = useMemo(() => {
+    const categories = new Map<string, typeof BUILDING_STYLES>();
+    
+    BUILDING_STYLES.forEach(style => {
+      const category = style.category || 'Other';
+      if (!categories.has(category)) {
+        categories.set(category, []);
+      }
+      categories.get(category)!.push(style);
+    });
+    
+    // Sort categories in a logical order
+    const categoryOrder = ['AI', 'Contemporary', 'Traditional', 'Regional', 'Sustainable', 'Custom'];
+    const sortedCategories: Array<{category: string, styles: typeof BUILDING_STYLES}> = [];
+    
+    categoryOrder.forEach(category => {
+      if (categories.has(category)) {
+        sortedCategories.push({
+          category,
+          styles: categories.get(category)!
+        });
+      }
+    });
+    
+    // Add any remaining categories
+    categories.forEach((styles, category) => {
+      if (!categoryOrder.includes(category)) {
+        sortedCategories.push({ category, styles });
+      }
+    });
+    
+    return sortedCategories;
+  }, []);
+
   // Watch form values for smart calculations and guidance
   const currency = watch('currency');
   const budget = watch('budget');
@@ -176,7 +172,7 @@ function BuildingBudgetForm() {
   const buildingSizeUnit = watch('buildingSizeUnit');
   const country = watch('country');
 
-  // Smart currency selection: prioritize country currency + major currencies
+  // Smart currency selection: prioritize country currency
   const getSmartCurrencyOptions = useCallback((): CurrencyOption[] => {
     const prioritizedCurrencies: CurrencyOption[] = [];
     
@@ -186,7 +182,7 @@ function BuildingBudgetForm() {
       try {
         const countries = Country.getAllCountries();
         const countryData = countries.find(c => c.name === country);
-        if (countryData?.isoCode && countryData?.currency) {
+        if (countryData?.currency) {
           suggestedCurrency = countryData.currency;
         }
       } catch (error) {
@@ -194,47 +190,26 @@ function BuildingBudgetForm() {
       }
     }
     
-    // Get major currencies from the dynamic list
-    const majorCurrencies = ALL_CURRENCIES.filter(c => c.isMajor);
-    
-    // 1. Add country's currency first if it exists and isn't already a major currency
-    if (suggestedCurrency && !MAJOR_CURRENCY_CODES.includes(suggestedCurrency)) {
+    // 1. Add country's currency first if it exists
+    if (suggestedCurrency) {
       const countryCurrencyOption = ALL_CURRENCIES.find(c => c.value === suggestedCurrency);
       if (countryCurrencyOption) {
         prioritizedCurrencies.push({
           ...countryCurrencyOption,
-          label: countryCurrencyOption.label,
           isRecommended: true
         });
       }
     }
     
-    // 2. Add major currencies, highlighting the suggested one
-    prioritizedCurrencies.push(...majorCurrencies.map(c => ({
-      ...c,
-      isRecommended: c.value === suggestedCurrency,
-      label: c.label
-    })));
-    
-    // 3. Add separator if we have other currencies to show
+    // 2. Add remaining currencies (excluding the suggested one)
     const otherCurrencies = ALL_CURRENCIES
-      .filter(c => !c.isMajor && c.value !== suggestedCurrency)
+      .filter(c => c.value !== suggestedCurrency)
       .sort((a, b) => a.label.localeCompare(b.label));
     
-    if (otherCurrencies.length > 0) {
-      prioritizedCurrencies.push({ 
-        value: 'separator', 
-        label: '──── Other Currencies ────', 
-        disabled: true, 
-        isMajor: false 
-      });
-      
-      // 4. Add other currencies (sorted alphabetically)
-      prioritizedCurrencies.push(...otherCurrencies);
-    }
+    prioritizedCurrencies.push(...otherCurrencies);
     
     return prioritizedCurrencies;
-  }, [country, currency]);
+  }, [country]);
 
   // Helper function to format currency
   const formatCurrency = useCallback((value: string, currencyCode: string) => {
@@ -271,18 +246,8 @@ function BuildingBudgetForm() {
   
   // Helper function to get budget guidance based on currency
   const getBudgetGuidance = useCallback((currencyCode: string) => {
-    switch(currencyCode) {
-      case 'USD':
-        return 'Construction costs typically range from $150-500 per square meter depending on location, quality, and complexity.';
-      case 'EUR':
-        return 'Construction costs typically range from €120-450 per square meter depending on location, quality, and complexity.';
-      case 'GBP':
-        return 'Construction costs typically range from £100-400 per square meter depending on location, quality, and complexity.';
-      case 'GHS':
-        return 'Construction costs typically range from GHS 2,500-5,000 per square meter depending on location and quality.';
-      default:
-        return 'Construction costs vary significantly by location, quality, and local labor rates. Consider getting quotes from local contractors.';
-    }
+    // Provide general guidance since we can't maintain static cost data for all currencies
+    return `Construction costs vary significantly by location, quality, and local labor rates in ${currencyCode}. Consider getting quotes from local contractors for accurate pricing in your area.`;
   }, []);
 
   return (
@@ -542,15 +507,56 @@ function BuildingBudgetForm() {
                       <SelectValue placeholder="Select style" />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
-                    {BUILDING_STYLES.map((style) => (
-                      <SelectItem key={style.value} value={style.value}>
-                        {style.label}
-                      </SelectItem>
+                  <SelectContent className="max-h-[300px]">
+                    {organizedBuildingStyles.map(({ category, styles }) => (
+                      <div key={category}>
+                        {/* Category Header */}
+                        {category !== 'AI' && (
+                          <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                            {category} Styles
+                          </div>
+                        )}
+                        
+                        {/* Category Items */}
+                        {styles.map((style) => (
+                          <SelectItem 
+                            key={style.value} 
+                            value={style.value}
+                            className={cn(
+                              category === 'AI' && 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-500 font-medium',
+                              'py-3'
+                            )}
+                          >
+                            {style.value === 'ai-recommend' ? (
+                              <div className="flex items-start gap-3">
+                                <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5"></div>
+                                <div>
+                                  <div className="font-medium">{style.label}</div>
+                                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                    {style.description}
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <div className="font-medium">{style.label}</div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                  {style.description}
+                                </div>
+                              </div>
+                            )}
+                          </SelectItem>
+                        ))}
+                      </div>
                     ))}
                   </SelectContent>
                 </Select>
                 <FormMessage className="text-red-600 font-opensans text-sm" />
+                
+                {/* Style Description Helper */}
+                <div className="text-xs text-slate-600 dark:text-slate-400 font-opensans mt-1">
+                  💡 Not sure? Choose "Let AI recommend" for the best style based on your location, climate, and project type.
+                </div>
               </FormItem>
             )}
           />
@@ -619,24 +625,15 @@ function BuildingBudgetForm() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {getSmartCurrencyOptions().map((currencyOption) => {
-                      if (currencyOption.value === 'separator') {
-                        return (
-                          <div key="separator" className="px-2 py-1 text-xs text-slate-400 font-opensans">
-                            Other Currencies
-                          </div>
-                        );
-                      }
-                      return (
-                        <SelectItem 
-                          key={currencyOption.value} 
-                          value={currencyOption.value}
-                          className={currencyOption.isRecommended ? 'bg-[#ED8936]/10 border-l-2 border-[#ED8936]' : ''}
-                        >
-                          {currencyOption.label}
-                        </SelectItem>
-                      );
-                    })}
+                    {getSmartCurrencyOptions().map((currencyOption) => (
+                      <SelectItem 
+                        key={currencyOption.value} 
+                        value={currencyOption.value}
+                        className={currencyOption.isRecommended ? 'bg-[#ED8936]/10 border-l-2 border-[#ED8936]' : ''}
+                      >
+                        {currencyOption.isRecommended ? `${currencyOption.label} (Recommended)` : currencyOption.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FormMessage className="text-red-600 font-opensans text-sm" />
@@ -679,33 +676,28 @@ function BuildingBudgetForm() {
                 <FormLabel className="text-base font-medium text-slate-700 dark:text-slate-300 font-inter">
                   Expected Start Date <span className="text-sm font-normal text-slate-500 ml-1 font-opensans">(optional)</span>
                 </FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <div className="relative">
-                        <CalendarIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#ED8936]" />
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "h-12 pl-12 text-left font-normal w-full justify-start rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 focus:border-[#ED8936] dark:focus:border-[#ED8936] focus:ring-2 focus:ring-[#ED8936]/10 transition-all duration-200 font-opensans",
-                            !field.value && "text-slate-500 dark:text-slate-400"
-                          )}
-                        >
-                          {field.value ? format(new Date(field.value), "PPP") : <span>Select start date</span>}
-                        </Button>
-                      </div>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value ? new Date(field.value) : undefined}
-                      onSelect={(date) => field.onChange(date ? date.toISOString() : '')}
-                      disabled={(date) => date < new Date()}
-                      initialFocus
+                <FormControl>
+                  <div className="relative">
+                    <CalendarIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#ED8936]" />
+                    <Input 
+                      type="date"
+                      {...field}
+                      value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
+                      onChange={(e) => {
+                        const dateValue = e.target.value;
+                        if (dateValue) {
+                          // Convert YYYY-MM-DD to ISO string
+                          const isoDate = new Date(dateValue + 'T00:00:00').toISOString();
+                          field.onChange(isoDate);
+                        } else {
+                          field.onChange('');
+                        }
+                      }}
+                      min={new Date().toISOString().split('T')[0]} // Prevent past dates
+                      className="h-12 pl-12 text-base font-opensans border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 focus:border-[#ED8936] dark:focus:border-[#ED8936] focus:ring-2 focus:ring-[#ED8936]/10 transition-all duration-200 placeholder:text-slate-500"
                     />
-                  </PopoverContent>
-                </Popover>
+                  </div>
+                </FormControl>
                 <FormMessage className="text-red-600 font-opensans text-sm" />
               </FormItem>
             )}
@@ -734,20 +726,11 @@ function BuildingBudgetForm() {
                     Your budget: {costPerUnit.formatted} {costPerUnit.unit}
                   </span>
                   
-                  {/* Add budget assessment */}
-                  {costPerUnit.value < 2000 && currency === 'GHS' && (
-                    <div className="mt-2 flex items-center text-amber-600 dark:text-amber-400">
-                      <AlertCircle className="h-4 w-4 mr-2" />
-                      <span className="font-opensans">This budget may be low for standard construction quality</span>
-                    </div>
-                  )}
-                  
-                  {costPerUnit.value > 6000 && currency === 'GHS' && (
-                    <div className="mt-2 flex items-center text-green-600 dark:text-green-400">
-                      <AlertCircle className="h-4 w-4 mr-2" />
-                      <span className="font-opensans">This budget allows for premium construction quality</span>
-                    </div>
-                  )}
+                  {/* General budget note */}
+                  <div className="mt-2 flex items-center text-blue-600 dark:text-blue-400">
+                    <AlertCircle className="h-4 w-4 mr-2" />
+                    <span className="font-opensans">Get local quotes to validate your budget estimate</span>
+                  </div>
                 </div>
               )}
             </div>

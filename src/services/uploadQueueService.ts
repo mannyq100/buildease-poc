@@ -11,18 +11,19 @@ export interface UploadTask {
   bucket: string;
   projectId?: string;
   onProgress?: (progress: number) => void;
-  onSuccess?: (result: any) => void;
+  onSuccess?: (result: { publicUrl?: string; filePath?: string }) => void;
   onError?: (error: Error) => void;
   retryCount: number;
   maxRetries: number;
   priority: 'low' | 'normal' | 'high';
-  metadata?: Record<string, any>;
+  metadata?: Record<string, string>;
 }
 
 export interface UploadResult {
   success: boolean;
-  data?: any;
-  error?: Error;
+  publicUrl?: string;
+  filePath?: string;
+  error?: string;
   taskId: string;
 }
 
@@ -168,7 +169,7 @@ class UploadQueueService {
       // Process upload asynchronously
       this.processUpload(task).catch(error => {
         console.error('Upload processing error:', error);
-        this.handleTaskCompletion(task.id, { success: false, error, taskId: task.id });
+        this.handleTaskCompletion(task.id, { success: false, error: (error as Error).message, taskId: task.id });
       });
     }
 
@@ -185,19 +186,24 @@ class UploadQueueService {
       
       const result = await uploadFile(
         task.file,
-        task.bucket,
-        task.projectId
+        {
+          bucket: task.bucket,
+          projectId: task.projectId,
+          metadata: task.metadata,
+          onProgress: task.onProgress
+        }
       );
 
       if (result.success) {
         this.handleTaskCompletion(task.id, {
           success: true,
-          data: result.data,
+          publicUrl: result.publicUrl,
+          filePath: result.filePath,
           taskId: task.id
         });
         
         if (task.onSuccess) {
-          task.onSuccess(result.data);
+          task.onSuccess({ publicUrl: result.publicUrl, filePath: result.filePath });
         }
       } else {
         throw new Error(result.error || 'Upload failed');
@@ -226,7 +232,7 @@ class UploadQueueService {
       // Max retries exceeded
       this.handleTaskCompletion(task.id, {
         success: false,
-        error,
+        error: error.message,
         taskId: task.id
       });
 

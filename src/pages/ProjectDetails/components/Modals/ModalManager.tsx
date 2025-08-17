@@ -8,8 +8,8 @@ import React from 'react';
 import { BaseModal } from '@/components/ui/BaseModal';
 import { TaskFormModal } from './TaskFormModal';
 import { ProjectUpdateForm } from '../Forms/ProjectUpdateForm';
+import { BudgetModal } from '../Budget/BudgetModal';
 import { 
-  BudgetExpenseForm,
   PhaseForm, 
   TeamMemberForm
 } from '../LazyComponents';
@@ -49,6 +49,7 @@ interface ModalManagerProps {
   isLoadingPhase: boolean;
   isLoadingTeam: boolean;
   isLoadingUpdate: boolean;
+  projectPhases?: { id: string; name: string }[];
 }
 
 export function ModalManager({
@@ -71,31 +72,22 @@ export function ModalManager({
   isLoadingBudget,
   isLoadingPhase,
   isLoadingTeam,
-  isLoadingUpdate
+  isLoadingUpdate,
+  projectPhases
 }: ModalManagerProps) {
   return (
     <>
       {/* Budget Modal */}
-      <BaseModal
+      <BudgetModal
         isOpen={modals.showBudgetModal}
         onClose={onCloseModals}
-        title={modals.modalMode === 'create' ? 'Add New Expense' : 'Edit Expense'}
-        description="Track project expenses with precision and style"
-        size="md"
-      >
-        <BudgetExpenseForm
-          mode={modals.modalMode}
-          initialData={modals.editingItem?.type === 'budget' ? {
-            category: modals.editingItem.data.category,
-            amount: modals.editingItem.data.amount,
-            description: modals.editingItem.data.description,
-            date: modals.editingItem.data.date,
-            payment_status: modals.editingItem.data.payment_status
-          } : undefined}
-          onSubmit={(data) => onBudgetSubmit(data, modals.modalMode, modals.editingItem)}
-          isLoading={isLoadingBudget}
-        />
-      </BaseModal>
+        mode={modals.modalMode}
+        editingExpense={modals.editingItem?.type === 'budget' ? modals.editingItem.data as any : null}
+        onSave={(data) => onBudgetSubmit(data, modals.modalMode, modals.editingItem)}
+        isLoading={isLoadingBudget}
+        projectPhases={projectPhases}
+        project={project}
+      />
       
       {/* Phase Modal */}
       <BaseModal
@@ -111,6 +103,7 @@ export function ModalManager({
             name: modals.editingItem.data.name,
             category: modals.editingItem.data.category,
             description: modals.editingItem.data.description,
+            status: modals.editingItem.data.status,
             startDate: modals.editingItem.data.timeline?.planned_start || '',
             endDate: modals.editingItem.data.timeline?.planned_end || ''
           } : undefined}

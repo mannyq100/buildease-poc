@@ -7,11 +7,21 @@
 import React, { Suspense } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, Settings, ImageIcon } from 'lucide-react';
-import type { ProjectDocumentsSectionProps } from './Documents/ProjectDocumentsSection';
-import type { ProjectSettingsSectionProps } from './Settings/ProjectSettingsSection';
-import type { PhaseFormProps } from './Forms/PhaseForm';
-import type { BudgetExpenseFormProps } from './Forms/BudgetExpenseForm';
-import type { TeamMemberFormProps } from './Forms/TeamMemberForm';
+// Infer prop types directly from components to avoid importing non-exported types
+type ProjectDocumentsSectionComponent = typeof import('./Documents/ProjectDocumentsSection')['ProjectDocumentsSection'];
+type ProjectDocumentsSectionProps = React.ComponentProps<ProjectDocumentsSectionComponent>;
+type ProjectSettingsSectionComponent = typeof import('./Settings/ProjectSettingsSection')['ProjectSettingsSection'];
+type ProjectSettingsSectionProps = React.ComponentProps<ProjectSettingsSectionComponent>;
+type PhaseFormComponent = typeof import('./Forms/PhaseForm')['PhaseForm'];
+type PhaseFormProps = React.ComponentProps<PhaseFormComponent>;
+type BudgetExpenseFormComponent = typeof import('./Forms/BudgetExpenseForm')['BudgetExpenseForm'];
+type BudgetExpenseFormProps = React.ComponentProps<BudgetExpenseFormComponent>;
+type TeamMemberFormComponent = typeof import('./Forms/TeamMemberForm')['TeamMemberForm'];
+type TeamMemberFormProps = React.ComponentProps<TeamMemberFormComponent>;
+type TeamMembersListComponent = typeof import('./Team/TeamMembersList')['TeamMembersList'];
+type TeamMembersListProps = React.ComponentProps<TeamMembersListComponent>;
+type ProjectCommentsSectionComponent = typeof import('./Comments/ProjectCommentsSection')['ProjectCommentsSection'];
+type ProjectCommentsSectionProps = React.ComponentProps<ProjectCommentsSectionComponent>;
 
 // Loading component for documents section
 const DocumentsLoadingFallback = () => (
@@ -62,6 +72,19 @@ const LazyProjectSettingsSection = React.lazy(() =>
   }))
 );
 
+// Team and Comments lazy components
+const LazyTeamMembersList = React.lazy(() =>
+  import('./Team/TeamMembersList').then(module => ({
+    default: module.TeamMembersList,
+  }))
+);
+
+const LazyProjectCommentsSection = React.lazy(() =>
+  import('./Comments/ProjectCommentsSection').then(module => ({
+    default: module.ProjectCommentsSection,
+  }))
+);
+
 // Lazy-loaded forms for heavy modal content
 const LazyPhaseForm = React.lazy(() => 
   import('./Forms/PhaseForm').then(module => ({
@@ -108,6 +131,41 @@ export const ProjectSettingsSection = React.memo(function ProjectSettingsSection
   );
 });
 
+// Lightweight fallbacks for Team and Comments
+const TeamLoadingFallback = () => (
+  <div className="p-6 flex items-center justify-center">
+    <div className="flex items-center gap-2 text-slate-600">
+      <Loader2 className="h-4 w-4 animate-spin" />
+      <span className="text-sm">Loading team...</span>
+    </div>
+  </div>
+);
+
+const CommentsLoadingFallback = () => (
+  <div className="p-6 flex items-center justify-center">
+    <div className="flex items-center gap-2 text-slate-600">
+      <Loader2 className="h-4 w-4 animate-spin" />
+      <span className="text-sm">Loading comments...</span>
+    </div>
+  </div>
+);
+
+export const TeamMembersList = React.memo(function TeamMembersList(props: TeamMembersListProps) {
+  return (
+    <Suspense fallback={<TeamLoadingFallback />}>
+      <LazyTeamMembersList {...props} />
+    </Suspense>
+  );
+});
+
+export const ProjectCommentsSection = React.memo(function ProjectCommentsSection(props: ProjectCommentsSectionProps) {
+  return (
+    <Suspense fallback={<CommentsLoadingFallback />}>
+      <LazyProjectCommentsSection {...props} />
+    </Suspense>
+  );
+});
+
 export const PhaseForm = React.memo(function PhaseForm(props: PhaseFormProps) {
   return (
     <Suspense fallback={<FormLoadingFallback />}>
@@ -132,24 +190,4 @@ export const TeamMemberForm = React.memo(function TeamMemberForm(props: TeamMemb
   );
 });
 
-// Performance monitoring hook for lazy components
-export const useLazyComponentPerformance = (componentName: string) => {
-  React.useEffect(() => {
-    const startTime = performance.now();
-    
-    return () => {
-      const endTime = performance.now();
-      const loadTime = endTime - startTime;
-      
-      // Log performance metrics for mobile optimization
-      if (typeof window !== 'undefined' && window.console) {
-        console.log(`[Performance] ${componentName} lazy load time: ${loadTime.toFixed(2)}ms`);
-        
-        // Add performance marks for debugging
-        if (performance.mark) {
-          performance.mark(`${componentName}-lazy-load-complete`);
-        }
-      }
-    };
-  }, [componentName]);
-};
+// Note: Keep this file exporting only components to maintain Fast Refresh

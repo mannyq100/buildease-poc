@@ -4,14 +4,15 @@
  */
 
 import { supabase } from '@/lib/supabase';
-import { Notification, TABLE_NAMES } from '@/types/database';
+import type { RealtimeChannel } from '@supabase/supabase-js';
+import { Notification, NotificationType, TABLE_NAMES } from '@/types/database';
 
 export interface NotificationResponse {
   notifications: Notification[];
 }
 
 export class NotificationService {
-  private static realtimeSubscription: any = null;
+  private static realtimeSubscription: RealtimeChannel | null = null;
 
   /**
    * Fetch recent notifications for a user
@@ -122,10 +123,25 @@ export class NotificationService {
     project_id: string;
     title: string;
     message: string;
-    notification_type: string;
+    notification_type: NotificationType;
     metadata?: Record<string, unknown>;
   }): Promise<void> {
     try {
+      // Validate notification type against known types; fallback to 'system' if invalid
+      const VALID_TYPES = new Set<NotificationType | 'system'>([
+        'general',
+        'plan_generation',
+        'plan_completed',
+        'plan_failed',
+        'project_update',
+        'system'
+      ]);
+      const safeType = VALID_TYPES.has(notification_type) ? notification_type : 'system';
+
+      // Get current auth user for potential RLS fallback
+      const { data: auth } = await supabase.auth.getUser();
+      const currentUserId = auth?.user?.id || null;
+
       // Get all project members
       const { data: projectMembers, error: membersError } = await supabase
         .from('be_project_member')
@@ -137,17 +153,40 @@ export class NotificationService {
         return;
       }
 
-      if (!projectMembers || projectMembers.length === 0) {
-        console.log('No project members found for notification');
+      // Also include project owner if not already included
+      const { data: projectRow, error: projectError } = await supabase
+        .from(TABLE_NAMES.PROJECTS)
+        .select('owner_id')
+        .eq('id', project_id)
+        .single();
+
+      if (projectError) {
+        console.warn('Could not fetch project owner for notifications:', projectError);
+      }
+
+      const recipientIds = new Set<string>();
+      (projectMembers || []).forEach(m => recipientIds.add(m.user_id));
+      if (projectRow?.owner_id) recipientIds.add(projectRow.owner_id);
+
+      // If no recipients, consider notifying current user to preserve UX
+      if (recipientIds.size === 0 && currentUserId) {
+        recipientIds.add(currentUserId);
+        if (import.meta.env && import.meta.env.DEV) {
+          console.warn('No project recipients found; sending notification to current user only.');
+        }
+      }
+
+      if (recipientIds.size === 0) {
+        console.log('No recipients available for project notification');
         return;
       }
 
       // Create notifications for all project members
-      const notifications = projectMembers.map(member => ({
-        user_id: member.user_id,
+      const notifications = Array.from(recipientIds).map(userId => ({
+        user_id: userId,
         title,
         message,
-        notification_type,
+        notification_type: safeType,
         metadata: metadata || {},
         read: false
       }));
@@ -157,13 +196,40 @@ export class NotificationService {
         .insert(notifications);
 
       if (insertError) {
-        console.error('Error creating project notifications:', insertError);
-        throw new Error('Failed to create project notifications');
+        // If RLS prevents inserting for other users, attempt fallback to current user only
+        const isRLSError =
+          typeof insertError.message === 'string' &&
+          /row-level security|RLS|new row violates row-level security/i.test(insertError.message);
+
+        if (isRLSError && currentUserId) {
+          console.warn('RLS prevented batch notifications; retrying for current user only');
+          const { error: singleError } = await supabase
+            .from(TABLE_NAMES.NOTIFICATIONS)
+            .insert([
+              {
+                user_id: currentUserId,
+                title,
+                message,
+                notification_type: safeType,
+                metadata: metadata || {},
+                read: false
+              }
+            ]);
+
+          if (singleError) {
+            console.error('Fallback single-user notification failed:', singleError);
+          }
+        } else {
+          console.error('Error creating project notifications:', insertError);
+        }
+        // Do not throw; avoid breaking activity flow
+        return;
       }
 
     } catch (error) {
       console.error('NotificationService.createProjectNotification error:', error);
-      throw error;
+      // Swallow to avoid breaking upstream flows
+      return;
     }
   }
 

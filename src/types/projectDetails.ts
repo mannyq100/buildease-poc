@@ -2,6 +2,7 @@
  * TypeScript interfaces for ProjectDetails components
  * Following BuildEase standards for centralized type definitions
  */
+import type { ProjectStatus } from '@/types/database';
 
 // Task-related interfaces
 export interface TaskFormData {
@@ -37,15 +38,39 @@ export interface PhaseTaskAccordionProps {
   onDeleteTask: (taskId: string) => void;
 }
 
-// Budget-related interfaces
+// Financial Transaction Payment Status enum (matches database)
+export type PaymentStatus = 'PENDING' | 'PAID' | 'COMPLETED' | 'APPROVED' | 'FAILED' | 'REFUNDED' | 'CANCELLED';
+
+// Transaction Type enum (matches database)
+export type TransactionType = 'MATERIAL_PURCHASE' | 'LABOR' | 'EQUIPMENT_RENTAL' | 'PERMIT_FEE' | 'DESIGN_FEE' | 'OTHER';
+
+// Payment Method enum (matches database)
+export type PaymentMethod = 'CASH' | 'CHECK' | 'CREDIT_CARD' | 'BANK_TRANSFER' | 'OTHER';
+
+// Currency enum (popular currencies)
+export type Currency = 'USD' | 'EUR' | 'GBP' | 'CAD' | 'AUD' | 'JPY' | 'CNY' | 'INR' | 'BRL' | 'MXN' | 'ZAR' | 'CHF' | 'SEK' | 'NOK' | 'DKK';
+
+// Budget-related interfaces (aligned with financial_transaction table)
 export interface BudgetExpense {
   id: string;
-  name: string;
+  project_id: string;
+  phase_id?: string;
+  transaction_type: TransactionType;
   amount: number;
+  currency: Currency;
+  base_amount: number; // Amount in USD for consistent calculations
   description?: string;
   category: string;
-  date: string;
-  status?: 'planned' | 'approved' | 'paid';
+  payment_date?: string;
+  payment_status: PaymentStatus;
+  payment_method?: PaymentMethod;
+  receipt_url?: string;
+  approved_by?: string;
+  approved_at?: string;
+  details?: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
 }
 
 export interface BudgetSummary {
@@ -131,7 +156,7 @@ export interface ProjectPhase {
   name: string;
   description?: string;
   category: string;
-  status: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'ON_HOLD' | 'CANCELLED';
+  status: ProjectStatus;
   project_id: string;
   details: Record<string, unknown>;
   timeline: {
@@ -180,7 +205,8 @@ export interface SelectOption {
 
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 export type TaskStatus = 'pending' | 'in-progress' | 'completed' | 'blocked' | 'cancelled';
-export type PhaseStatus = 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'ON_HOLD' | 'CANCELLED';
+// For compatibility, re-export the centralized DB phase status as PhaseStatus
+export type PhaseStatus = ProjectStatus;
 
 // New interface for PhaseTimelineCard component
 export interface PhaseTimelineCardProps {
@@ -207,13 +233,15 @@ export interface PhaseTasksSectionProps {
 
 // Form Data interfaces for standardized CRUD forms
 export interface BudgetFormData {
-  name: string;
+  transaction_type: TransactionType;
   amount: number;
-  category: string;
+  currency: Currency;
   description?: string;
-  status?: 'planned' | 'approved' | 'paid';
-  paymentDate?: string;
-  vendorName?: string;
+  category: string;
+  payment_date?: string;
+  payment_status: PaymentStatus;
+  payment_method?: PaymentMethod;
+  phase_id?: string;
 }
 
 export interface PhaseFormData {
@@ -222,6 +250,9 @@ export interface PhaseFormData {
   description: string;
   startDate: string;
   endDate: string;
+  status?: PhaseStatus; // only used in edit mode to allow changing phase status
+  actualStart?: string | null; // optional manual actual start date (ISO yyyy-mm-dd)
+  actualEnd?: string | null;   // optional manual actual end date (ISO yyyy-mm-dd)
 }
 
 export interface TeamMemberFormData {

@@ -150,25 +150,17 @@ export function useCRUDOperations({ projectId, phases, onCloseModals }: UseCRUDO
           return;
         }
         
-        // Create phase with proper database structure
+        // Create phase with proper mutation payload
         const phaseData = {
+          project_id: projectId,
           name: data.name,
           description: data.description,
           category: data.category,
-          project_id: projectId,
-          status: 'PLANNING' as const,
-          timeline: {
-            planned_start: data.startDate || null,
-            planned_end: data.endDate || null,
-            actual_start: null,
-            actual_end: null
-          },
-          budget: {
-            allocated: 0,
-            spent: 0,
-            currency: 'USD'
-          },
-          details: {}
+          start_date: data.startDate,
+          end_date: data.endDate,
+          // Pass actuals only if explicitly provided; default to null when undefined
+          ...(data.actualStart !== undefined && { actual_start: data.actualStart ?? null }),
+          ...(data.actualEnd !== undefined && { actual_end: data.actualEnd ?? null })
         };
         
         console.log('[ACTIVITY_DEBUG] [useCRUDOperations] Calling createPhase.mutateAsync (useCreateProjectDetailsPhase)', {
@@ -230,24 +222,29 @@ export function useCRUDOperations({ projectId, phases, onCloseModals }: UseCRUDO
           timestamp: new Date().toISOString()
         });
         
+        const updateData: {
+          name?: string;
+          description?: string;
+          start_date?: string;
+          end_date?: string;
+          actual_start?: string | null;
+          actual_end?: string | null;
+        } = {
+          name: data.name,
+          description: data.description,
+          // Only include timeline fields if provided in the form
+          ...(data.startDate !== undefined && { start_date: data.startDate }),
+          ...(data.endDate !== undefined && { end_date: data.endDate }),
+          ...(data.actualStart !== undefined && { actual_start: data.actualStart ?? null }),
+          ...(data.actualEnd !== undefined && { actual_end: data.actualEnd ?? null })
+        };
         console.log('[ACTIVITY_DEBUG] [useCRUDOperations] Calling updatePhase.mutateAsync (useUpdateProjectDetailsPhase)', {
           phaseId: editingItem.data.id,
-          updateData: {
-            name: data.name,
-            description: data.description,
-            status: 'in-progress'
-          },
+          updateData,
           timestamp: new Date().toISOString()
         });
         
-        await updatePhase.mutateAsync({
-          phaseId: editingItem.data.id,
-          phase: {
-            name: data.name,
-            description: data.description,
-            status: 'in-progress'
-          }
-        });
+        await updatePhase.mutateAsync({ id: editingItem.data.id, ...updateData });
         
         console.log('[ACTIVITY_DEBUG] [useCRUDOperations] updatePhase.mutateAsync completed successfully', {
           phaseId: editingItem.data.id,
