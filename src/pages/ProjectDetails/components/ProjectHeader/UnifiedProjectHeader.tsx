@@ -70,6 +70,8 @@ const getHealthConfig = (health: string) => {
   return configs[health as keyof typeof configs] || configs.good;
 };
 
+
+
 export function UnifiedProjectHeader({
   project,
   phases = [],
@@ -128,7 +130,7 @@ export function UnifiedProjectHeader({
       documentCount: s?.documents ?? 0,
       transactionCount: s?.transactions ?? 0,
       client: s?.client,
-      location: s?.location || project.location,
+      location: project.location,
       projectType: s?.project_type ?? 'Construction'
     };
   }, [summary, project, phases, activeTeamMembers, tasks]);
