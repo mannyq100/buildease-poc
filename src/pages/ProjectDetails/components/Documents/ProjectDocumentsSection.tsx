@@ -239,32 +239,22 @@ export function ProjectDocumentsSection({
   }, [toast, project.id, project.inspiration_images, project.progress_images, refetchProgressImages, refetchDocuments, onUpdateProject, setDeletedItems]);
 
   const handleSetAsProfile = useCallback(async (imageUrl: string) => {
-    console.log('🔄 [DEBUG] Starting profile image update for:', imageUrl);
-    console.log('🔄 [DEBUG] Project ID:', project.id);
-    
     try {
       // Update the profile image in the database
-      console.log('🔄 [DEBUG] Calling updateProjectImageArray...');
       const result = await updateProjectImageArray(project.id, [imageUrl], 'profile');
-      console.log('🔄 [DEBUG] updateProjectImageArray result:', result);
       
       if (result.success) {
-        console.log('✅ [DEBUG] Profile image updated in database successfully');
-        
         // Add to deleted items for immediate UI feedback (remove from current position)
         const mediaItem = allMediaItems.find(item => item.url === imageUrl);
         if (mediaItem) {
-          console.log('🔄 [DEBUG] Removing image from UI:', mediaItem.id);
           setDeletedItems(prev => new Set([...prev, mediaItem.id]));
         }
         
         // Update local project state to reflect the change
-        console.log('🔄 [DEBUG] Calling onUpdateProject to sync local state...');
         try {
           await onUpdateProject({ profile_image: imageUrl });
-          console.log('✅ [DEBUG] Local project state updated successfully');
         } catch (updateError) {
-          console.warn('⚠️ [DEBUG] Local state update failed, but DB update succeeded:', updateError);
+          console.warn('Local state update failed, but DB update succeeded:', updateError);
           // Don't throw here since the DB update succeeded
         }
         
@@ -276,7 +266,7 @@ export function ProjectDocumentsSection({
         throw new Error(result.error || 'Failed to update profile image');
       }
     } catch (error) {
-      console.error('❌ [DEBUG] Error setting profile image:', error);
+      console.error('Error setting profile image:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to set profile image. Please try again.",

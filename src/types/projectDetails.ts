@@ -26,18 +26,6 @@ export interface TaskFormModalProps {
   isLoading?: boolean;
 }
 
-// Phase Task Accordion interfaces
-export interface PhaseTaskAccordionProps {
-  phase: Record<string, unknown>;
-  isExpanded: boolean;
-  onToggle: () => void;
-  onEdit: (phase: Record<string, unknown>) => void;
-  onDelete: (phaseId: string) => void;
-  onCreateTask: (phaseId: string) => void;
-  onEditTask: (task: Record<string, unknown>, phaseId: string) => void;
-  onDeleteTask: (taskId: string) => void;
-}
-
 // Financial Transaction Payment Status enum (matches database)
 export type PaymentStatus = 'PENDING' | 'PAID' | 'COMPLETED' | 'APPROVED' | 'FAILED' | 'REFUNDED' | 'CANCELLED';
 

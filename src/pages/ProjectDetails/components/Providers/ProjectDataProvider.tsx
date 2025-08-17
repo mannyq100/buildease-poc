@@ -131,9 +131,11 @@ export function ProjectDataProvider({ projectId, children }: ProjectDataProvider
   const taskOperations = useTaskCRUD();
   
   // Transform project data for UI consumption
+  // Note: projectData is already transformed by the consolidated query
   const project = React.useMemo(() => {
     if (!projectData) return null;
-    return ProjectTransformService.transformProjectSummary(projectData);
+    // The consolidated query already applies transformations, so we can use it directly
+    return projectData as Project;
   }, [projectData]);
 
   // Use reusable hook for urgency scoring and today's focus selection

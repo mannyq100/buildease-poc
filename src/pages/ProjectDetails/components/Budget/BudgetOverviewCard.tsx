@@ -31,16 +31,6 @@ export function BudgetOverviewCard({
 }: BudgetOverviewCardProps) {
   // Normalize budget data to handle both number and object types
   const getBudgetData = () => {
-    // Debug logging for budget data processing
-    console.log(' [DEBUG] BudgetOverviewCard - Project data received:', {
-      projectId: project.id,
-      projectName: project.name,
-      budget: project.budget,
-      budgetType: typeof project.budget,
-      spent: project.spent,
-      currency: project.currency
-    });
-    
     // The Project interface has budget as number, spent as number, and currency as string
     // Use these direct properties from the transformed project data
     const budgetData = {
@@ -49,7 +39,6 @@ export function BudgetOverviewCard({
       currency: project.currency || 'USD'
     };
     
-    console.log(' [DEBUG] BudgetOverviewCard - Using transformed project data:', budgetData);
     return budgetData;
   };
 

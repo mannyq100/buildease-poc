@@ -23,7 +23,7 @@ import { CONSTRUCTION_PHASES_WITH_TASKS } from '@/data/constants/constructionPha
 
 interface UseCRUDOperationsProps {
   projectId: string;
-  phases?: any[];
+  phases?: Array<{ id: string; name: string; }>;
   onCloseModals: () => void;
 }
 
@@ -45,81 +45,55 @@ export function useCRUDOperations({ projectId, phases, onCloseModals }: UseCRUDO
   
   const createTask = useCreateTask();
 
-  // Generic delete handler with comprehensive debug logging
+  // Generic delete handler
   const handleDelete = async (type: 'budget' | 'phase' | 'team', id: string) => {
-    console.log('[ACTIVITY_DEBUG] [useCRUDOperations] handleDelete called from PhaseTimelineCard', {
-      type,
-      id,
-      projectId,
-      timestamp: new Date().toISOString(),
-      userId: user?.id,
-      userEmail: user?.email
-    });
-    
     try {
       if (type === 'budget') {
-        console.log('[ACTIVITY_DEBUG] [useCRUDOperations] Calling deleteBudgetExpense.mutateAsync');
         await deleteBudgetExpense.mutateAsync(id);
       } else if (type === 'phase') {
-        console.log('[ACTIVITY_DEBUG] [useCRUDOperations] Calling deletePhase.mutateAsync (useDeleteProjectDetailsPhase)', {
-          phaseId: id,
-          projectId,
-          timestamp: new Date().toISOString()
-        });
         await deletePhase.mutateAsync(id);
-        console.log('[ACTIVITY_DEBUG] [useCRUDOperations] deletePhase.mutateAsync completed successfully');
       } else if (type === 'team') {
-        console.log('[ACTIVITY_DEBUG] [useCRUDOperations] Calling deleteTeamMember.mutateAsync');
         await deleteTeamMember.mutateAsync({ memberId: id, projectId });
       }
-      
-      console.log('[ACTIVITY_DEBUG] [useCRUDOperations] Delete operation completed successfully', {
-        type,
-        id,
-        timestamp: new Date().toISOString()
-      });
-      
     } catch (error) {
-      console.error('[ACTIVITY_DEBUG] [useCRUDOperations] Delete operation failed:', {
+      console.error('Delete operation failed:', {
         type,
         id,
-        error,
-        errorMessage: error instanceof Error ? error.message : String(error),
-        errorStack: error instanceof Error ? error.stack : undefined,
-        timestamp: new Date().toISOString()
+        error: error instanceof Error ? error.message : String(error)
       });
+      throw error;
     }
   };
 
   // Budget CRUD operations
-  const handleBudgetSubmit = async (data: BudgetFormData, modalMode: 'create' | 'edit', editingItem?: any) => {
+  const handleBudgetSubmit = async (data: BudgetFormData, modalMode: 'create' | 'edit', editingItem?: { data: { id: string; } }) => {
     try {
       if (modalMode === 'create') {
         await createBudgetExpense.mutateAsync({
-          projectId,
-          expense: {
-            name: data.name,
-            amount: data.amount,
-            category: data.category,
-            status: data.status || 'planned',
-            paymentDate: data.paymentDate || new Date().toISOString().split('T')[0],
-            vendorName: data.vendorName || 'TBD',
-            description: data.description || ''
-          }
+          project_id: projectId,
+          transaction_type: data.transaction_type,
+          amount: data.amount,
+          currency: data.currency,
+          category: data.category,
+          payment_status: data.payment_status,
+          payment_date: data.payment_date || new Date().toISOString().split('T')[0],
+          payment_method: data.payment_method,
+          description: data.description || '',
+          phase_id: data.phase_id
         });
         toast.success('Budget expense created successfully!');
       } else if (editingItem) {
         await updateBudgetExpense.mutateAsync({
-          expenseId: editingItem.data.id,
-          expense: {
-            name: data.name,
-            amount: data.amount,
-            category: data.category,
-            status: data.status || 'planned',
-            paymentDate: data.paymentDate,
-            vendorName: data.vendorName,
-            description: data.description
-          }
+          id: editingItem.data.id,
+          transaction_type: data.transaction_type,
+          amount: data.amount,
+          currency: data.currency,
+          category: data.category,
+          payment_status: data.payment_status,
+          payment_date: data.payment_date,
+          payment_method: data.payment_method,
+          description: data.description,
+          phase_id: data.phase_id
         });
         toast.success('Budget expense updated successfully!');
       }
@@ -130,15 +104,9 @@ export function useCRUDOperations({ projectId, phases, onCloseModals }: UseCRUDO
   };
 
   // Phase CRUD operations
-  const handlePhaseSubmit = async (data: PhaseFormData, modalMode: 'create' | 'edit', editingItem?: any, selectedTaskIds?: string[]) => {
+  const handlePhaseSubmit = async (data: PhaseFormData, modalMode: 'create' | 'edit', editingItem?: { data: { id: string; } }, selectedTaskIds?: string[]) => {
     try {
       if (modalMode === 'create') {
-        console.log('[ACTIVITY_DEBUG] [useCRUDOperations] handlePhaseSubmit - CREATE mode', {
-          phaseName: data.name,
-          projectId,
-          userId: user?.id,
-          timestamp: new Date().toISOString()
-        });
         
         // Check for duplicate phase names
         const existingPhase = phases?.find(phase => 
@@ -163,19 +131,8 @@ export function useCRUDOperations({ projectId, phases, onCloseModals }: UseCRUDO
           ...(data.actualEnd !== undefined && { actual_end: data.actualEnd ?? null })
         };
         
-        console.log('[ACTIVITY_DEBUG] [useCRUDOperations] Calling createPhase.mutateAsync (useCreateProjectDetailsPhase)', {
-          phaseData,
-          timestamp: new Date().toISOString()
-        });
-        
         // Create the phase
         const createdPhase = await createPhase.mutateAsync(phaseData);
-        
-        console.log('[ACTIVITY_DEBUG] [useCRUDOperations] createPhase.mutateAsync completed successfully', {
-          createdPhaseId: createdPhase.id,
-          phaseName: createdPhase.name,
-          timestamp: new Date().toISOString()
-        });
         
         // Create selected default tasks for the phase
         if (selectedTaskIds && selectedTaskIds.length > 0 && user?.id) {
@@ -185,7 +142,7 @@ export function useCRUDOperations({ projectId, phases, onCloseModals }: UseCRUDO
           const taskCreationPromises = selectedTaskIds.map(async (taskId) => {
             try {
               // Find the task template to get meaningful name and description
-              const taskTemplate = phaseTemplate?.tasks.find(task => task.id === taskId);
+              const taskTemplate = phaseTemplate?.tasks.find((task: { id: string; name: string; description?: string; }) => task.id === taskId);
               
               const taskData = {
                 title: taskTemplate?.name || `Task ${taskId}`,
@@ -214,13 +171,6 @@ export function useCRUDOperations({ projectId, phases, onCloseModals }: UseCRUDO
           toast.success('Phase created successfully!');
         }
       } else if (editingItem) {
-        console.log('[ACTIVITY_DEBUG] [useCRUDOperations] handlePhaseSubmit - EDIT mode', {
-          phaseId: editingItem.data.id,
-          phaseName: data.name,
-          projectId,
-          userId: user?.id,
-          timestamp: new Date().toISOString()
-        });
         
         const updateData: {
           name?: string;
@@ -238,18 +188,7 @@ export function useCRUDOperations({ projectId, phases, onCloseModals }: UseCRUDO
           ...(data.actualStart !== undefined && { actual_start: data.actualStart ?? null }),
           ...(data.actualEnd !== undefined && { actual_end: data.actualEnd ?? null })
         };
-        console.log('[ACTIVITY_DEBUG] [useCRUDOperations] Calling updatePhase.mutateAsync (useUpdateProjectDetailsPhase)', {
-          phaseId: editingItem.data.id,
-          updateData,
-          timestamp: new Date().toISOString()
-        });
-        
         await updatePhase.mutateAsync({ id: editingItem.data.id, ...updateData });
-        
-        console.log('[ACTIVITY_DEBUG] [useCRUDOperations] updatePhase.mutateAsync completed successfully', {
-          phaseId: editingItem.data.id,
-          timestamp: new Date().toISOString()
-        });
         
         toast.success('Phase updated successfully!');
       }
@@ -260,34 +199,24 @@ export function useCRUDOperations({ projectId, phases, onCloseModals }: UseCRUDO
   };
 
   // Team member CRUD operations
-  const handleTeamMemberSubmit = async (data: TeamMemberFormData, modalMode: 'create' | 'edit', editingItem?: any) => {
+  const handleTeamMemberSubmit = async (data: TeamMemberFormData, modalMode: 'create' | 'edit', editingItem?: { data: { id: string; } }) => {
     try {
       if (modalMode === 'create') {
         await createTeamMember.mutateAsync({
-          projectId,
-          member: {
-            name: data.name,
-            role: data.role,
-            status: data.status,
-            contactInfo: {
-              phone: data.phone || '',
-              email: data.email || ''
-            }
-          }
+          project_id: projectId,
+          name: data.name,
+          role: data.role,
+          email: data.email || '',
+          phone: data.phone || ''
         });
         toast.success('Team member added successfully!');
       } else if (editingItem) {
         await updateTeamMember.mutateAsync({
-          memberId: editingItem.data.id,
-          member: {
-            name: data.name,
-            role: data.role,
-            status: data.status,
-            contactInfo: {
-              phone: data.phone || '',
-              email: data.email || ''
-            }
-          }
+          id: editingItem.data.id,
+          name: data.name,
+          role: data.role,
+          email: data.email || '',
+          phone: data.phone || ''
         });
         toast.success('Team member updated successfully!');
       }

@@ -6,7 +6,12 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { ProjectPhase, EnhancedTask } from '@/types/projectDetails';
 import { useUpdatePhase } from '@/hooks/mutations/usePhase';
-import { toDbPhaseStatus } from '@/utils/core/phaseStatus';
+import { 
+  toDbPhaseStatus, 
+  calculatePhaseStatusFromTasks, 
+  toDbTaskStatus,
+  normalizePhaseStatusTransition 
+} from '@/utils/core/dataNormalization';
 
 interface TaskMetrics {
   total: number;
@@ -64,15 +69,9 @@ export function usePhaseStatusManager(
 
   // Memoized task metrics calculation with stable comparison
   const taskMetrics = useMemo((): TaskMetrics => {
-    // Inline the normalization to avoid function dependency
-    const normalizeStatus = (status: string | undefined): string => {
-      if (!status) return '';
-      return status.toUpperCase().replace('-', '_');
-    };
-
     const total = tasks.length;
-    const completed = tasks.filter(t => normalizeStatus(t.status) === 'COMPLETED').length;
-    const inProgress = tasks.filter(t => normalizeStatus(t.status) === 'IN_PROGRESS').length;
+    const completed = tasks.filter(t => toDbTaskStatus(t.status) === 'COMPLETED').length;
+    const inProgress = tasks.filter(t => toDbTaskStatus(t.status) === 'IN_PROGRESS').length;
     const anyProgress = inProgress > 0 || completed > 0;
     const allCompleted = total > 0 && completed === total;
     
@@ -148,13 +147,20 @@ export function usePhaseStatusManager(
 
   const handleUpdateProgress = useCallback(
     withErrorHandling(async () => {
-      // Determine next status based on current task metrics
-      let nextStatus: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' = 'PLANNING';
+      // Calculate next status based on task data using centralized logic
+      const nextStatus = calculatePhaseStatusFromTasks(tasks);
+      const currentStatus = toDbPhaseStatus(phaseStatusRef.current);
       
-      if (taskMetrics.allCompleted) {
-        nextStatus = 'COMPLETED';
-      } else if (taskMetrics.anyProgress) {
-        nextStatus = 'IN_PROGRESS';
+      // Validate transition is allowed
+      const transition = normalizePhaseStatusTransition(currentStatus, nextStatus);
+      if (!transition.isValid) {
+        console.warn(`Invalid phase status transition from ${transition.fromStatus} to ${transition.toStatus}`);
+        return;
+      }
+      
+      // Skip update if status hasn't changed
+      if (transition.fromStatus === transition.toStatus) {
+        return;
       }
 
       // Prepare timeline updates
@@ -176,7 +182,7 @@ export function usePhaseStatusManager(
           : undefined,
       });
     }),
-    [taskMetrics.allCompleted, taskMetrics.anyProgress, updatePhase, withErrorHandling]
+    [tasks, updatePhase, withErrorHandling]
   );
 
   // Stable phase status and timeline refs to prevent unnecessary re-renders
@@ -214,11 +220,15 @@ export function usePhaseStatusManager(
       }));
     }
 
-    // 2. Handle automatic IN_PROGRESS transition (only if not already updating)
-    if (currentMetrics.anyProgress && 
-        phaseStatus !== 'IN_PROGRESS' && 
-        phaseStatus !== 'COMPLETED' &&
-        !updatePhase.isPending) {
+    // 2. Handle automatic status transitions based on task data
+    const suggestedStatus = calculatePhaseStatusFromTasks(tasks);
+    if (suggestedStatus !== phaseStatus && !updatePhase.isPending) {
+      
+      // Validate the transition is allowed
+      const transition = normalizePhaseStatusTransition(phaseStatus, suggestedStatus);
+      if (!transition.isValid) {
+        return;
+      }
       
       // Prevent rapid fire updates - minimum 1 second between updates
       const now = Date.now();
@@ -230,14 +240,20 @@ export function usePhaseStatusManager(
       const nowIso = new Date().toISOString();
       const timelineUpdates: Partial<ProjectPhase['timeline']> = {};
       
-      // Set actual_start only if this is the first time we have progress
-      if (!phaseTimelineRef.current?.actual_start) {
+      // Set actual_start when moving to IN_PROGRESS or COMPLETED
+      if ((suggestedStatus === 'IN_PROGRESS' || suggestedStatus === 'COMPLETED') && 
+          !phaseTimelineRef.current?.actual_start) {
         timelineUpdates.actual_start = nowIso;
+      }
+      
+      // Set actual_end when completing
+      if (suggestedStatus === 'COMPLETED' && !phaseTimelineRef.current?.actual_end) {
+        timelineUpdates.actual_end = nowIso;
       }
       
       updatePhase.mutate({
         id: phaseIdRef.current,
-        status: 'IN_PROGRESS',
+        status: suggestedStatus,
         timeline: Object.keys(timelineUpdates).length
           ? { ...(phaseTimelineRef.current || {}), ...timelineUpdates }
           : undefined,
@@ -251,7 +267,7 @@ export function usePhaseStatusManager(
 
     // Update previous metrics
     prevMetricsRef.current = currentMetrics;
-  }, [taskMetrics, state.hasPrompted, state.showReopenPrompt, updatePhase]);
+  }, [taskMetrics, tasks, state.hasPrompted, state.showReopenPrompt, updatePhase]);
 
   // Retry function for failed operations
   const retryLastOperation = useCallback(async () => {

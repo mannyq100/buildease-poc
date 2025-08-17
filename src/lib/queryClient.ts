@@ -2,24 +2,61 @@
  * React Query client configuration optimized for BuildEase mobile-first experience
  * Configured for construction site usage with unreliable connections
  */
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, DefaultOptions } from '@tanstack/react-query';
+
+// Enhanced retry logic for construction site conditions
+const retryFunction = (failureCount: number, error: any) => {
+  // Don't retry on authentication errors
+  if (error?.status === 401 || error?.status === 403) {
+    return false;
+  }
+  
+  // Don't retry on validation errors (4xx except auth)
+  if (error?.status >= 400 && error?.status < 500 && error?.status !== 401 && error?.status !== 403) {
+    return false;
+  }
+  
+  // Retry on network errors and 5xx errors
+  return failureCount < 3;
+};
+
+// Exponential backoff with jitter for better performance under poor network conditions
+const retryDelay = (attemptIndex: number) => {
+  const baseDelay = Math.min(1000 * (2 ** attemptIndex), 30000); // Cap at 30s
+  const jitter = Math.random() * 1000; // Add up to 1s jitter
+  return baseDelay + jitter;
+};
+
+const defaultOptions: DefaultOptions = {
+  queries: {
+    // Mobile-optimized defaults for construction sites
+    staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh longer
+    gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache longer (formerly cacheTime)
+    retry: retryFunction, // Smart retry logic
+    retryDelay, // Exponential backoff with jitter
+    refetchOnWindowFocus: false, // Don't refetch when switching apps on mobile
+    refetchOnReconnect: true, // Do refetch when connection restored
+    refetchOnMount: true, // Always refetch on component mount
+    networkMode: 'online', // Only run queries when online
+    // Enhanced error handling
+    throwOnError: false, // Let components handle errors gracefully
+  },
+  mutations: {
+    retry: retryFunction, // Same smart retry for mutations
+    retryDelay, // Same backoff strategy
+    networkMode: 'online', // Only run mutations when online
+    // Enhanced error handling for mutations
+    throwOnError: false, // Let components handle errors gracefully
+  },
+};
 
 export const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      // Mobile-optimized defaults for construction sites
-      staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh longer
-      gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache longer (formerly cacheTime)
-      retry: 2, // Retry failed requests twice
-      refetchOnWindowFocus: false, // Don't refetch when switching apps on mobile
-      refetchOnReconnect: true, // Do refetch when connection restored
-      refetchOnMount: true, // Always refetch on component mount
-    },
-    mutations: {
-      retry: 1, // Retry mutations once on failure
-    },
-  },
+  defaultOptions,
 });
+
+// Initialize cache optimization
+import { initializeCacheManager } from './cacheOptimization';
+initializeCacheManager(queryClient);
 
 /**
  * Query key factory for consistent cache management
