@@ -20,6 +20,7 @@ export interface TaskFormModalProps {
   phaseId: string;
   projectId: string;
   task?: Record<string, unknown>;
+  teamMembers: TeamMember[];
   onSuccess?: () => void;
   onCreateTask?: (taskData: Record<string, unknown>, phaseId: string, projectId: string) => Promise<void>;
   onUpdateTask?: (taskId: string, taskData: Record<string, unknown>) => Promise<void>;
@@ -67,6 +68,36 @@ export interface BudgetSummary {
   currency: string;
 }
 
+// Enhanced budget interface that clearly separates allocation from expenses
+export interface ProjectBudgetData {
+  // Client-approved allocation (the actual project budget)
+  allocatedBudget: number;
+  allocatedCurrency: string;
+  
+  // Calculated from actual expenses (what has been spent/planned)
+  totalExpenses: number;
+  spentAmount: number;
+  pendingAmount: number;
+  approvedAmount: number;
+  
+  // Derived calculations
+  remainingBudget: number; // allocated - totalExpenses
+  utilization: number; // totalExpenses / allocated * 100
+  
+  // Budget health status
+  status: 'healthy' | 'warning' | 'critical' | 'over-budget';
+  
+  // All amounts in USD for consistent calculations
+  baseAmounts: {
+    allocated: number;
+    totalExpenses: number;
+    spent: number;
+    pending: number;
+    approved: number;
+    remaining: number;
+  };
+}
+
 export interface BudgetOverviewProps {
   project: {
     budget?: number | BudgetSummary;
@@ -87,6 +118,7 @@ export interface BudgetExpensesListProps {
 // Team member interfaces
 export interface TeamMember {
   id: string;
+  user_id?: string; // Added user_id for database operations
   name: string;
   role: string;
   status: 'active' | 'on-break' | 'off-site';
@@ -230,6 +262,7 @@ export interface BudgetFormData {
   payment_status: PaymentStatus;
   payment_method?: PaymentMethod;
   phase_id?: string;
+  // Note: base_amount is calculated server-side during currency conversion
 }
 
 export interface PhaseFormData {

@@ -37,6 +37,7 @@ interface BudgetMetrics {
   spent: number;
   pending: number;
   approved: number;
+  totalExpenses: number;
   remaining: number;
   utilization: number;
   status: 'healthy' | 'warning' | 'critical' | 'over-budget';
@@ -216,6 +217,7 @@ export function useMemoizedBudgetMetrics(
         spent: 0,
         pending: 0,
         approved: 0,
+        totalExpenses: 0,
         remaining: projectBudget,
         utilization: 0,
         status: 'healthy',
@@ -254,9 +256,11 @@ export function useMemoizedBudgetMetrics(
       }
     });
 
-    const allocated = projectBudget || (spent + pending + approved);
-    const remaining = allocated - spent;
-    const utilization = allocated > 0 ? (spent / allocated) * 100 : 0;
+    // FIXED: Use actual project budget allocation, not sum of expenses
+    const allocated = projectBudget; // Remove fallback to expense sum
+    const totalExpenses = spent + pending + approved;
+    const remaining = allocated - totalExpenses; // Remaining = allocation - all expenses
+    const utilization = allocated > 0 ? (totalExpenses / allocated) * 100 : 0;
 
     // Determine budget health status
     let status: BudgetMetrics['status'];
@@ -299,6 +303,7 @@ export function useMemoizedBudgetMetrics(
       spent,
       pending,
       approved,
+      totalExpenses,
       remaining,
       utilization: Math.round(utilization * 100) / 100, // Round to 2 decimal places
       status,

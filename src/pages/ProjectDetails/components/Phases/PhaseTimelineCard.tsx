@@ -19,12 +19,14 @@ import {
   Trash2
 } from 'lucide-react';
 import React from 'react';
-import { ProjectPhase, EnhancedTask } from '@/types/projectDetails';
+import { ProjectPhase, EnhancedTask, TeamMember } from '@/types/projectDetails';
 import { formatTaskCount } from '@/utils/core/taskColors';
 import { getPhaseBadgeColor, getPhaseDotColor, formatPhaseStatusLabel } from '@/utils/core/phaseStatus';
 
 interface PhaseTimelineCardProps {
   phases: ProjectPhase[];
+  teamMembers: TeamMember[];
+  projectId: string;
   onAddPhase?: () => void;
   onEditPhase: (phase: ProjectPhase) => void;
   onDeletePhase?: (phaseId: string) => void;
@@ -40,6 +42,8 @@ export const PhaseTimelineCard = React.memo(PhaseTimelineCardBase);
 
 function PhaseTimelineCardBase({
   phases,
+  teamMembers,
+  projectId,
   onAddPhase,
   onEditPhase,
   onDeletePhase,
@@ -83,6 +87,8 @@ function PhaseTimelineCardBase({
               <PhaseCard
                 key={phase.id}
                 phase={phase}
+                teamMembers={teamMembers}
+                projectId={projectId}
                 isExpanded={expandedPhases[phase.id] || false}
                 onToggle={() => setExpandedPhases(prev => ({ ...prev, [phase.id]: !prev[phase.id] }))}
                 onEdit={() => onEditPhase(phase)}
@@ -139,6 +145,8 @@ function PhaseTimelineCardBase({
 // Individual Phase Card Component
 interface PhaseCardProps {
   phase: ProjectPhase;
+  teamMembers: TeamMember[];
+  projectId: string;
   isExpanded: boolean;
   onToggle: () => void;
   onEdit: () => void;
@@ -150,6 +158,8 @@ interface PhaseCardProps {
 
 function PhaseCard({
   phase,
+  teamMembers,
+  projectId,
   isExpanded,
   onToggle,
   onEdit,
@@ -252,6 +262,8 @@ function PhaseCard({
           <PhaseTasksSection
             phase={phase}
             tasks={tasks as unknown as EnhancedTask[]}
+            teamMembers={teamMembers}
+            projectId={projectId}
             isLoading={tasksLoading}
             onCreateTask={onCreateTask}
             onEditTask={onEditTask}

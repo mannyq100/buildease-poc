@@ -11,12 +11,11 @@ import { useProjectTasks } from '@/hooks/queries/useTask';
 import { useUpdateProject } from '@/hooks/mutations/useProject';
 import { useTaskCRUD, useCRUDOperations, useModalManagement } from '../../hooks';
 import { useTodaysFocus } from '../../hooks/useTodaysFocus';
-import { ProjectTransformService } from '@/services/projectTransformService';
 import type { TaskItem, ProjectUpdateFormData } from '../../types';
 import type { Project } from '@/types/project';
 import type { BudgetExpense, TeamMember, ProjectPhase } from '@/types/projectDetails';
 import { toDbPhaseStatus } from '@/utils/core/phaseStatus';
-import type { ProjectDetailsPhase } from '@/hooks/mutations/useProjectDetailsPhase';
+import type { ProjectDetailsPhase } from '@/hooks/mutations/usePhase';
 
 interface ProjectDataProviderProps {
   projectId: string;

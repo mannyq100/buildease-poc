@@ -18,7 +18,7 @@ export {
   useUpdateProjectStatus as useUpdateProjectStatusCRUD
 } from './useProjectCRUD';
 
-// Phase mutations
+// Phase mutations (unified)
 export {
   useCreatePhase,
   useUpdatePhase,
@@ -34,6 +34,13 @@ export {
   useUpdateTaskStatus,
   useAssignTask
 } from './useTask';
+
+// Task assignment mutations
+export {
+  useAssignTask as useTaskAssignment,
+  useBulkAssignTasks,
+  useTaskAssignmentStats
+} from './useTaskAssignment';
 
 // Material mutations
 export {
@@ -61,19 +68,20 @@ export {
   useProjectTeamMembers
 } from './useTeamMember';
 
-// ProjectDetails specific phase mutations
+// ProjectDetails specific phase mutations (unified)
 export {
   useCreateProjectDetailsPhase,
   useUpdateProjectDetailsPhase,
   useDeleteProjectDetailsPhase,
   useProjectDetailsPhases
-} from './useProjectDetailsPhase';
+} from './usePhase';
 
 // Re-export types for convenience
 export type { CreateProjectData, UpdateProjectData } from './useProject';
-export type { CreatePhaseData, UpdatePhaseData } from './usePhase';
+export type { CreatePhaseData, UpdatePhaseData, CreatePhaseUIData, UpdatePhaseUIData, PhaseResponse } from './usePhase';
 export type { BudgetExpense, CreateBudgetExpenseData, UpdateBudgetExpenseData } from './useBudget';
 export type { TeamMember, CreateTeamMemberData, UpdateTeamMemberData } from './useTeamMember';
-export type { ProjectDetailsPhase, CreateProjectDetailsPhaseData, UpdateProjectDetailsPhaseData } from './useProjectDetailsPhase';
+export type { ProjectDetailsPhase, CreateProjectDetailsPhaseData, UpdateProjectDetailsPhaseData } from './usePhase';
 export type { CreateTaskData, UpdateTaskData } from './useTask';
+export type { AssignTaskData, BulkAssignTasksData } from './useTaskAssignment';
 export type { CreateMaterialData, UpdateMaterialData, MaterialTransactionData } from './useMaterial';

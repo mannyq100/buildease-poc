@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AssigneeSelect } from '@/components/ui/AssigneeSelect';
 import { RefreshCw } from 'lucide-react';
 import { TaskFormModalProps, TaskFormData, SelectOption } from '@/types/projectDetails';
 
@@ -52,6 +53,7 @@ export function TaskFormModal({
   phaseId, 
   projectId, 
   task, 
+  teamMembers,
   onSuccess,
   onCreateTask,
   onUpdateTask,
@@ -199,6 +201,31 @@ export function TaskFormModal({
             onChange={(e) => handleChange('due_date', e.target.value)}
             className="mt-1"
           />
+        </div>
+
+        {/* Assignee */}
+        <div>
+          <Label htmlFor="assigned_to">Assign To</Label>
+          <div className="mt-1">
+            <AssigneeSelect
+              value={formData.assigned_to || null}
+              onValueChange={(value) => handleChange('assigned_to', value || '')}
+              teamMembers={teamMembers
+                .filter(member => member.user_id) // Only include members with valid user_id
+                .map(member => ({
+                  id: member.user_id || member.id || '', // Use user_id for database operations
+                  name: member.name,
+                  role: member.role,
+                  email: member.email,
+                  avatar: member.avatar,
+                  status: member.status,
+                  workload: 0
+                }))}
+              placeholder="Select team member..."
+              showWorkload={false}
+              showClearButton={true}
+            />
+          </div>
         </div>
 
         {/* Form Actions */}

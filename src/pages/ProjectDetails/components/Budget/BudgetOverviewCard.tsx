@@ -29,22 +29,30 @@ export function BudgetOverviewCard({
   onAddExpense,
   className
 }: BudgetOverviewCardProps) {
-  // Normalize budget data to handle both number and object types
+  // FIXED: Proper budget data handling with validation
   const getBudgetData = () => {
-    // The Project interface has budget as number, spent as number, and currency as string
-    // Use these direct properties from the transformed project data
-    const budgetData = {
-      allocated: project.budget || 0,
-      spent: project.spent || 0,
-      currency: project.currency || 'USD'
-    };
+    // Ensure we have valid budget allocation (not calculated from expenses)
+    const allocated = project.budget || 0;
+    const spent = project.spent || 0;
+    const currency = project.currency || 'USD';
     
-    return budgetData;
+    // Validate that budget allocation is meaningful
+    if (allocated <= 0) {
+      console.warn('[BudgetOverviewCard] Project budget allocation is missing or invalid:', allocated);
+    }
+    
+    return {
+      allocated,
+      spent,
+      currency,
+      // Add validation flag
+      isValidBudget: allocated > 0
+    };
   };
 
   const budgetData = getBudgetData();
   
-  // Calculate budget utilization and remaining amount
+  // Calculate budget utilization based on spent vs allocated (not total expenses)
   const budgetUtilization = budgetData.allocated > 0 
     ? Math.round((budgetData.spent / budgetData.allocated) * 100)
     : 0;

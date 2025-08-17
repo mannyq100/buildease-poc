@@ -75,6 +75,11 @@ export function useCreateTask() {
         queryKey: queryKeys.phases.detail(variables.phase_id) 
       });
 
+      // CRITICAL: Invalidate consolidated project query for real-time updates
+      queryClient.invalidateQueries({
+        queryKey: ['project-consolidated', variables.project_id]
+      });
+
       // If assigned to someone, invalidate their tasks
       if (variables.assigned_to) {
         queryClient.invalidateQueries({ 
@@ -223,6 +228,11 @@ export function useUpdateTask() {
       
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.tasks.detail(updatedTask.id) 
+      });
+
+      // CRITICAL: Invalidate consolidated project query for real-time updates
+      queryClient.invalidateQueries({
+        queryKey: ['project-consolidated', updatedTask.project_id]
       });
 
       // If assigned to someone, invalidate their tasks
@@ -587,6 +597,30 @@ export function useUpdateTaskStatus() {
         progress: variables.progress,
         timestamp: new Date().toISOString()
       });
+      
+      // CRITICAL: Invalidate cache for real-time UI updates
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.tasks.byProject(updatedTask.project_id) 
+      });
+      
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.tasks.byPhase(updatedTask.phase_id) 
+      });
+      
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.tasks.detail(updatedTask.id) 
+      });
+
+      // CRITICAL: Invalidate consolidated project query for real-time updates
+      queryClient.invalidateQueries({
+        queryKey: ['project-consolidated', updatedTask.project_id]
+      });
+
+      if (updatedTask.assigned_to) {
+        queryClient.invalidateQueries({ 
+          queryKey: queryKeys.tasks.byUser(updatedTask.assigned_to) 
+        });
+      }
       
       // Fire-and-forget activity logging with comprehensive debug logging
       console.log('[ACTIVITY_DEBUG] [useUpdateTaskStatus] Starting activity logging for task status update');

@@ -7,7 +7,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { ProjectTransformService } from '@/services/projectTransformService';
-import { normalizeProjectData, normalizePhaseData } from '@/utils/core/dataNormalization';
+import { normalizeProjectData, normalizePhaseData, toDbPhaseStatus, toDbTaskStatus } from '@/utils/core/dataNormalization';
 
 // Types for the consolidated response
 interface ConsolidatedProjectData {
@@ -179,17 +179,26 @@ export function useConsolidatedProjectData(projectId: string) {
 
       console.timeEnd('ConsolidatedQuery');
 
-      // Calculate budget summary from actual financial data
-      const totalBudget = expensesData?.reduce((sum, expense) => 
+      // Calculate expense summary from actual financial data
+      // IMPORTANT: Use actual project budget allocation, NOT sum of expenses
+      const projectAllocatedBudget = projectData.budget || 0;
+      const totalExpenses = expensesData?.reduce((sum, expense) => 
         sum + (expense.base_amount || expense.amount), 0) || 0;
       const spentAmount = expensesData
         ?.filter(expense => expense.payment_status === 'PAID' || expense.payment_status === 'COMPLETED')
+        ?.reduce((sum, expense) => sum + (expense.base_amount || expense.amount), 0) || 0;
+      const pendingAmount = expensesData
+        ?.filter(expense => expense.payment_status === 'PENDING')
+        ?.reduce((sum, expense) => sum + (expense.base_amount || expense.amount), 0) || 0;
+      const approvedAmount = expensesData
+        ?.filter(expense => expense.payment_status === 'APPROVED')
         ?.reduce((sum, expense) => sum + (expense.base_amount || expense.amount), 0) || 0;
 
       // Normalize team members data
       const detailsMembers = projectMembersData?.details?.team_members || [];
       const normalizedRegisteredMembers = registeredMembers?.map((member, index) => ({
-        id: `registered-${member.user?.id || index}`, // Use user ID or index as fallback
+        id: member.user_id || member.user?.id || `fallback-${index}`, // Use actual user ID for database operations
+        user_id: member.user_id || member.user?.id, // Keep user_id for reference
         name: member.user ? `${member.user.first_name} ${member.user.last_name}`.trim() : 'Unknown',
         role: member.role,
         email: member.user?.email,
@@ -197,13 +206,14 @@ export function useConsolidatedProjectData(projectId: string) {
         status: 'active' // Default status for registered members
       })) || [];
       
-      const normalizedDetailsMembers = detailsMembers.map((member: any, index: number) => ({
-        id: `detail-${index}`,
-        name: member.name || 'Unknown',
-        role: member.role || 'Unknown',
-        email: member.contactInfo?.email,
-        phone: member.contactInfo?.phone,
-        status: member.status
+      const normalizedDetailsMembers = detailsMembers.map((member: Record<string, unknown>, index: number) => ({
+        id: (member.user_id as string) || (member.id as string) || `detail-${index}`,
+        user_id: member.user_id as string,
+        name: (member.name as string) || 'Unknown',
+        role: (member.role as string) || 'Unknown',
+        email: (member.contactInfo as Record<string, unknown>)?.email as string || (member.email as string),
+        phone: (member.contactInfo as Record<string, unknown>)?.phone as string || (member.phone as string),
+        status: (member.status as string) || 'active'
       }));
 
       // Normalize phases and tasks data
@@ -233,8 +243,13 @@ export function useConsolidatedProjectData(projectId: string) {
       // Return consolidated data structure
       const consolidatedData: ConsolidatedProjectData = {
         ...transformedProject,
-        budget: totalBudget || transformedProject.budget,
+        budget: projectAllocatedBudget || transformedProject.budget,
         spent: spentAmount,
+        owner: {
+          id: projectData.owner?.id || '',
+          name: projectData.owner ? `${projectData.owner.first_name} ${projectData.owner.last_name}`.trim() : 'Unknown',
+          email: projectData.owner?.email || ''
+        },
         
         expenses: expensesData?.map(expense => ({
           id: expense.id,
@@ -264,42 +279,6 @@ export function useConsolidatedProjectData(projectId: string) {
   });
 }
 
-/**
- * Derived data hooks for backwards compatibility
- * These extract specific data from the consolidated query
- */
-export function useConsolidatedProjectBudget(projectId: string) {
-  const { data, ...rest } = useConsolidatedProjectData(projectId);
-  
-  return {
-    ...rest,
-    data: data ? {
-      expenses: data.expenses,
-      totalBudget: data.budget,
-      spentAmount: data.spent,
-      remainingBudget: data.budget - data.spent,
-      currency: data.currency
-    } : undefined
-  };
-}
-
-export function useConsolidatedProjectTeam(projectId: string) {
-  const { data, ...rest } = useConsolidatedProjectData(projectId);
-  
-  return {
-    ...rest,
-    data: data?.teamMembers || []
-  };
-}
-
-export function useConsolidatedProjectPhases(projectId: string) {
-  const { data, ...rest } = useConsolidatedProjectData(projectId);
-  
-  return {
-    ...rest,
-    data: data?.phases || []
-  };
-}
 
 /**
  * Hook for project summary metrics
@@ -331,19 +310,19 @@ export function useProjectSummaryMetrics(projectId: string) {
     // Phase metrics
     phases: {
       total: data.phases.length,
-      completed: data.phases.filter(p => p.status === 'completed').length,
-      inProgress: data.phases.filter(p => p.status === 'in-progress').length,
-      pending: data.phases.filter(p => p.status === 'pending').length,
+      completed: data.phases.filter(p => toDbPhaseStatus(p.status) === 'COMPLETED').length,
+      inProgress: data.phases.filter(p => toDbPhaseStatus(p.status) === 'IN_PROGRESS').length,
+      pending: data.phases.filter(p => toDbPhaseStatus(p.status) === 'PLANNING').length,
       overallProgress: data.phases.length > 0 ? 
-        (data.phases.filter(p => p.status === 'completed').length / data.phases.length) * 100 : 0
+        (data.phases.filter(p => toDbPhaseStatus(p.status) === 'COMPLETED').length / data.phases.length) * 100 : 0
     },
     
     // Task metrics (aggregated across all phases)
     tasks: data.phases.reduce((acc, phase) => {
       acc.total += phase.tasks.length;
-      acc.completed += phase.tasks.filter(t => t.status === 'completed').length;
-      acc.inProgress += phase.tasks.filter(t => t.status === 'in-progress').length;
-      acc.pending += phase.tasks.filter(t => t.status === 'pending').length;
+      acc.completed += phase.tasks.filter(t => toDbTaskStatus(t.status) === 'COMPLETED').length;
+      acc.inProgress += phase.tasks.filter(t => toDbTaskStatus(t.status) === 'IN_PROGRESS').length;
+      acc.pending += phase.tasks.filter(t => toDbTaskStatus(t.status) === 'PENDING').length;
       return acc;
     }, { total: 0, completed: 0, inProgress: 0, pending: 0 })
   } : undefined;

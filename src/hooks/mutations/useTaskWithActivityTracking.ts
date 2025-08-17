@@ -67,6 +67,11 @@ export function useCreateTaskWithTracking(projectId: string) {
         queryKey: queryKeys.phases.detail(variables.phase_id) 
       });
 
+      // CRITICAL: Invalidate consolidated project query for real-time updates
+      queryClient.invalidateQueries({
+        queryKey: ['project-consolidated', variables.project_id]
+      });
+
       if (variables.assigned_to) {
         queryClient.invalidateQueries({ 
           queryKey: queryKeys.tasks.byUser(variables.assigned_to) 
@@ -143,6 +148,11 @@ export function useUpdateTaskWithTracking(projectId: string) {
       
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.tasks.detail(task.id) 
+      });
+
+      // CRITICAL: Invalidate consolidated project query for real-time updates
+      queryClient.invalidateQueries({
+        queryKey: ['project-consolidated', task.project_id]
       });
 
       if (task.assigned_to) {

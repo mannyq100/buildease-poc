@@ -6,6 +6,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,7 +20,6 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { 
   Plus,
-  RefreshCw,
   CheckCircle2,
   Clock,
   Edit3,
@@ -27,18 +27,22 @@ import {
   MoreVertical,
   AlertCircle
 } from 'lucide-react';
-import { ProjectPhase, EnhancedTask } from '@/types/projectDetails';
+import { ProjectPhase, EnhancedTask, TeamMember } from '@/types/projectDetails';
 import { getTaskStatusColor, getTaskStatusIconColor, getTaskPriorityBadgeVariant, getTaskPriorityColor } from '@/utils/core/taskColors';
 import { usePhaseStatusManager } from '@/hooks/usePhaseStatusManager';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { usePhaseNotifications } from '@/hooks/usePhaseNotifications';
 import { ToastContainer } from '@/components/ToastContainer';
-import { TaskListSkeleton, OptimisticTaskCard, LoadingButton } from '@/components/LoadingSkeletons';
+import { TaskListSkeleton, OptimisticTaskCard } from '@/components/LoadingSkeletons';
+import { AssigneeSelect } from '@/components/ui/AssigneeSelect';
+import { useTaskAssignment, useBulkAssignTasks } from '@/hooks/mutations';
 import React from 'react';
 
 interface PhaseTasksSectionProps {
   phase: ProjectPhase;
   tasks: EnhancedTask[];
+  teamMembers: TeamMember[];
+  projectId: string;
   isLoading: boolean;
   onCreateTask: (phaseId: string) => void;
   onEditTask: (task: EnhancedTask, phaseId: string) => void;
@@ -50,22 +54,85 @@ interface PhaseTasksSectionProps {
 function PhaseTasksSectionContent({
   phase,
   tasks,
+  teamMembers,
+  projectId,
   isLoading,
   onCreateTask,
   onEditTask,
   onDeleteTask
 }: PhaseTasksSectionProps) {
+  // Task selection state for bulk operations
+  const [selectedTasks, setSelectedTasks] = React.useState<Set<string>>(new Set());
+  const [selectionMode, setSelectionMode] = React.useState(false);
+
+  // Task selection helpers
+  const toggleTaskSelection = (taskId: string) => {
+    setSelectedTasks(prev => {
+      const newSelection = new Set(prev);
+      if (newSelection.has(taskId)) {
+        newSelection.delete(taskId);
+      } else {
+        newSelection.add(taskId);
+      }
+      return newSelection;
+    });
+  };
+
+  const selectAllTasks = () => {
+    setSelectedTasks(new Set(tasks.map(task => task.id)));
+  };
+
+  const clearSelection = () => {
+    setSelectedTasks(new Set());
+    setSelectionMode(false);
+  };
+
+  const isTaskSelected = (taskId: string) => selectedTasks.has(taskId);
+
+  // Bulk assignment mutation
+  const bulkAssignMutation = useBulkAssignTasks();
+
+  // Handle bulk assignment
+  const handleBulkAssign = async (assigneeId: string | null) => {
+    try {
+      await bulkAssignMutation.mutateAsync({
+        taskIds: Array.from(selectedTasks),
+        assignedTo: assigneeId,
+        projectId
+      });
+      clearSelection();
+    } catch (error) {
+      console.error('Failed to bulk assign tasks:', error);
+    }
+  };
+
+  // Transform team members for bulk assignment (consistent with task cards)
+  const bulkAssignMembers = React.useMemo(() => {
+    return teamMembers
+      .filter(member => member.user_id || member.id) // Include all members with valid IDs
+      .map(member => ({
+        id: member.user_id || member.id || '',
+        name: member.name,
+        role: member.role,
+        email: member.email,
+        avatar: member.avatar,
+        status: member.status === 'active' ? 'active' as const : 
+               member.status === 'on-break' ? 'inactive' as const : 
+               'inactive' as const, // Map team member status to AssigneeSelect status
+        workload: 0
+      }))
+      .filter(member => member.id.length > 0);
+  }, [teamMembers]);
   // Use consolidated phase status manager
   const {
     state: { showCompletePrompt, showReopenPrompt },
     actions: {
       handleConfirmComplete,
       handleConfirmReopen,
-      handleUpdateProgress,
       setShowCompletePrompt,
       setShowReopenPrompt
     },
-    taskMetrics,
+    // taskMetrics,
     isUpdating,
     error,
     retryLastOperation
@@ -134,6 +201,63 @@ function PhaseTasksSectionContent({
         {/* Error Display */}
         {error && <ErrorDisplay error={error} onRetry={retryLastOperation} />}
         
+        {/* Selection Toolbar */}
+        {selectionMode && (
+          <div className="flex items-center justify-between p-3 bg-buildease-blue-50 border border-buildease-blue-200 rounded-lg mb-2">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-buildease-blue-900">
+                {selectedTasks.size} of {tasks.length} selected
+              </span>
+              {selectedTasks.size < tasks.length && (
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={selectAllTasks}
+                  className="text-xs text-buildease-blue-700 border-buildease-blue-300"
+                >
+                  Select All
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={clearSelection}
+                className="text-xs"
+              >
+                Cancel
+              </Button>
+              {selectedTasks.size > 0 && (
+                <>
+                  {/* Bulk Assignment */}
+                  <AssigneeSelect
+                    value={null}
+                    onValueChange={handleBulkAssign}
+                    teamMembers={bulkAssignMembers}
+                    placeholder="Bulk assign..."
+                    variant="compact"
+                    className="min-w-[140px]"
+                    disabled={bulkAssignMutation.isPending}
+                    showWorkload={false}
+                    showClearButton={false}
+                  />
+                  
+                  {/* Mark Complete */}
+                  <Button 
+                    size="sm" 
+                    className="text-xs bg-green-600 hover:bg-green-700"
+                    onClick={() => console.log('Mark selected as complete:', Array.from(selectedTasks))}
+                  >
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    Mark Complete
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+        
         {tasks.map((task, index) => (
           <OptimisticTaskCard
             key={task.id}
@@ -142,32 +266,46 @@ function PhaseTasksSectionContent({
           >
             <TaskCard
               task={task}
+              teamMembers={teamMembers}
+              projectId={projectId}
+              phaseId={phase.id}
               index={index}
               onEdit={() => onEditTask(task, phase.id)}
               onDelete={() => onDeleteTask(task.id)}
+              selectionMode={selectionMode}
+              isSelected={isTaskSelected(task.id)}
+              onToggleSelection={() => toggleTaskSelection(task.id)}
             />
           </OptimisticTaskCard>
         ))}
       
       <div className="flex gap-2 pt-2 border-t border-slate-200/40">
-        <Button 
-          size="sm" 
-          className="flex-1 bg-buildease-blue-600 hover:bg-buildease-blue-700"
-          onClick={() => onCreateTask(phase.id)}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Task
-        </Button>
-        <LoadingButton
-          size="sm"
-          variant="outline"
-          className="flex-1"
-          onClick={handleUpdateProgress}
-          isLoading={isUpdating}
-        >
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Update Progress
-        </LoadingButton>
+        {!selectionMode ? (
+          <>
+            <Button 
+              size="sm" 
+              className="flex-1 bg-buildease-blue-600 hover:bg-buildease-blue-700"
+              onClick={() => onCreateTask(phase.id)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Task
+            </Button>
+            {tasks.length > 0 && (
+              <Button 
+                size="sm" 
+                variant="outline"
+                className="flex-shrink-0"
+                onClick={() => setSelectionMode(true)}
+              >
+                Select Tasks
+              </Button>
+            )}
+          </>
+        ) : (
+          <div className="flex-1 text-center text-sm text-slate-600">
+            Click tasks to select them for bulk operations
+          </div>
+        )}
       </div>
 
       <AlertDialog open={showCompletePrompt} onOpenChange={setShowCompletePrompt}>
@@ -239,21 +377,113 @@ export function PhaseTasksSection(props: PhaseTasksSectionProps) {
 // Individual Task Card Component
 interface TaskCardProps {
   task: EnhancedTask;
+  teamMembers: TeamMember[];
+  projectId: string;
+  phaseId: string;
   index: number;
   onEdit: () => void;
   onDelete: () => void;
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelection?: () => void;
 }
 
-function TaskCard({ task, index, onEdit, onDelete }: TaskCardProps) {
+function TaskCard({ 
+  task, 
+  teamMembers, 
+  projectId, 
+  // phaseId, // Currently unused
+  index, 
+  onEdit, 
+  onDelete, 
+  selectionMode = false,
+  isSelected = false,
+  onToggleSelection
+}: TaskCardProps) {
+  
+  // Task assignment mutation for quick assignment
+  const assignTaskMutation = useTaskAssignment();
+
+  // Handle quick assignment
+  const handleQuickAssignment = async (assignedTo: string | null) => {
+    try {
+      await assignTaskMutation.mutateAsync({
+        taskId: task.id,
+        assignedTo,
+        projectId,
+        taskTitle: task.title
+      });
+    } catch (error) {
+      console.error('Failed to assign task:', error);
+    }
+  };
+
+  // Find assigned team member with proper ID mapping and validation
+  const assignedMember = React.useMemo(() => {
+    if (!task.assigned_to) return null;
+    
+    // Find member by user_id (primary) or fallback to id
+    const member = teamMembers.find(member => 
+      member.user_id === task.assigned_to || member.id === task.assigned_to
+    );
+    
+    // Validate member exists and is active
+    if (!member) {
+      console.warn(`Assigned member ${task.assigned_to} not found in team members`);
+      return null;
+    }
+    
+    if (member.status !== 'active') {
+      console.warn(`Assigned member ${member.name} is not active (status: ${member.status})`);
+      // Still return the member but with warning - UI will handle inactive state
+    }
+    
+    return member;
+  }, [teamMembers, task.assigned_to]);
+
+  // Transform team members for AssigneeSelect with consistent ID mapping
+  const selectableMembers = React.useMemo(() => {
+    return teamMembers
+      .filter(member => member.user_id || member.id) // Include all members with valid IDs (not just active)
+      .map(member => ({
+        id: member.user_id || member.id || '', // Use user_id for database operations
+        name: member.name,
+        role: member.role,
+        email: member.email,
+        avatar: member.avatar,
+        status: member.status === 'active' ? 'active' as const : 
+               member.status === 'on-break' ? 'inactive' as const : 
+               'inactive' as const, // Map team member status to AssigneeSelect status
+        workload: 0 // TODO: Calculate from task assignment stats
+      }))
+      .filter(member => member.id.length > 0); // Filter out members without valid IDs
+  }, [teamMembers]);
   return (
     <div
-      className={`flex items-center justify-between p-4 bg-white rounded-lg border border-slate-200/40 hover:bg-slate-50/50 transition-all duration-200 group shadow-sm hover:shadow-md min-h-[56px] ${
+      className={`flex items-center justify-between p-4 bg-white rounded-lg border transition-all duration-200 group shadow-sm min-h-[56px] ${
         index === 0 ? 'animate-in fade-in slide-in-from-left-2' : ''
+      } ${
+        selectionMode 
+          ? `cursor-pointer ${isSelected ? 'border-buildease-blue-500 bg-buildease-blue-50' : 'border-slate-200/40 hover:border-buildease-blue-300'}`
+          : 'border-slate-200/40 hover:bg-slate-50/50 hover:shadow-md'
       }`}
       style={{ animationDelay: `${index * 50}ms` }}
+      onClick={selectionMode ? onToggleSelection : undefined}
     >
       <div className="flex items-center gap-4 flex-1 min-w-0">
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 flex items-center gap-3">
+          {/* Selection Checkbox (when in selection mode) */}
+          {selectionMode && (
+            <div className="flex items-center justify-center w-11 h-11">
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={onToggleSelection}
+                className="w-5 h-5"
+                aria-label={`Select task: ${task.title}`}
+              />
+            </div>
+          )}
+          {/* Status Icon */}
           <CheckCircle2 
             className={`h-5 w-5 ${getTaskStatusIconColor(task.status)} ${
               task.status?.toUpperCase() === 'COMPLETED' ? 'fill-current' : ''
@@ -267,7 +497,8 @@ function TaskCard({ task, index, onEdit, onDelete }: TaskCardProps) {
             }`}>
               {task.title}
             </span>
-            <div className="flex-shrink-0">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Priority Badge */}
               <Badge 
                 variant={getTaskPriorityBadgeVariant(task.priority)} 
                 className={`text-xs ${getTaskPriorityColor(task.priority)}`}
@@ -277,17 +508,80 @@ function TaskCard({ task, index, onEdit, onDelete }: TaskCardProps) {
             </div>
           </div>
           <div className="flex items-center gap-3 text-xs text-slate-500">
-            {task.assigned_to && (
-              <span className="bg-buildease-blue-100 text-buildease-blue-700 px-2 py-1 rounded-full font-medium">
-                Assigned
-              </span>
-            )}
             {task.due_date && (
               <span className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
                 {new Date(task.due_date).toLocaleDateString()}
               </span>
             )}
+            
+            {/* Assignee Avatar or Quick Assignment Interface */}
+            {!selectionMode && (
+              <div className="flex items-center gap-2">
+                {task.assigned_to && assignedMember ? (
+                  // Show assignee avatar with name
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className={`w-6 h-6 rounded-full transition-colors shadow-sm relative overflow-hidden ${
+                        assignedMember.status === 'active' 
+                          ? 'ring-1 ring-buildease-blue-500' 
+                          : 'ring-1 ring-yellow-500'
+                      } cursor-pointer hover:ring-2`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit();
+                      }}
+                      title={`Assigned to ${assignedMember.name} - Click to edit`}
+                    >
+                      {assignedMember.avatar ? (
+                        <img 
+                          src={assignedMember.avatar} 
+                          alt={assignedMember.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.innerHTML = `
+                                <div class="w-full h-full bg-buildease-blue-500 text-white text-xs font-medium flex items-center justify-center">
+                                  ${assignedMember.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                                </div>
+                              `;
+                            }
+                          }}
+                        />
+                      ) : (
+                        <div className={`w-full h-full text-white text-xs font-medium flex items-center justify-center ${
+                          assignedMember.status === 'active' 
+                            ? 'bg-buildease-blue-500' 
+                            : 'bg-yellow-500'
+                        }`}>
+                          {assignedMember.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-700 font-medium truncate max-w-[100px]">
+                      {assignedMember.name}
+                    </span>
+                  </div>
+                ) : (
+                  // Show quick assignment for unassigned tasks - direct AssigneeSelect
+                  <AssigneeSelect
+                    value={null}
+                    onValueChange={handleQuickAssignment}
+                    teamMembers={selectableMembers}
+                    placeholder="🏷️ Assign"
+                    variant="compact"
+                    className="min-w-[120px]"
+                    disabled={assignTaskMutation.isPending}
+                    showWorkload={false}
+                    showClearButton={false}
+                  />
+                )}
+              </div>
+            )}
+            
             {task.status && (
               <Badge 
                 variant="outline" 
@@ -303,30 +597,32 @@ function TaskCard({ task, index, onEdit, onDelete }: TaskCardProps) {
         </div>
       </div>
       
-      {/* Task Actions */}
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onEdit}>
-              <Edit3 className="h-4 w-4 mr-2" />
-              Edit Task
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem 
-              onClick={onDelete}
-              className="text-red-600 focus:text-red-600"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete Task
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      {/* Task Actions (hidden in selection mode) */}
+      {!selectionMode && (
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onEdit}>
+                <Edit3 className="h-4 w-4 mr-2" />
+                Edit Task
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={onDelete}
+                className="text-red-600 focus:text-red-600"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Task
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
     </div>
   );
 }

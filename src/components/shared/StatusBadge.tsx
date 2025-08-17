@@ -55,10 +55,32 @@ const statusBadgeVariants = cva(
   }
 );
 
+// Allowed status variant keys for the badge (must mirror cva "status" keys above)
+const STATUS_KEYS = [
+  "planning",
+  "in-progress",
+  "active",
+  "completed",
+  "on-hold",
+  "cancelled",
+  "delayed",
+  "pending",
+  "upcoming",
+  "ordered",
+  "delivered",
+  "in-use",
+  "success",
+  "warning",
+  "error",
+  "info",
+] as const;
+type StatusKey = typeof STATUS_KEYS[number];
+
 export interface StatusBadgeProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof statusBadgeVariants> {
-  status: ProjectStatus | Material['status'] | "pending" | "in-progress" | "completed" | "on-hold" | "cancelled" | "upcoming" | "planning" | "delayed" | "success" | "warning" | "error" | "info";
+  extends Omit<VariantProps<typeof statusBadgeVariants>, 'status'>,
+    React.HTMLAttributes<HTMLDivElement> {
+  // Accept broad inputs; component normalizes to our StatusKey
+  status: ProjectStatus | Material['status'] | string;
   label?: string; // Optional custom label
 }
 
@@ -117,8 +139,11 @@ const StatusBadge = React.forwardRef<HTMLDivElement, StatusBadgeProps>(
       }
     };
 
-    // Normalize status for variants
-    const normalizedStatus = status.toLowerCase().replace('_', '-') as keyof typeof statusBadgeVariants.variants.status;
+    // Normalize status for variants (handle undefined and different naming styles)
+    const statusStr = String(status ?? 'planning');
+    const normalized = statusStr.toLowerCase().replace(/_/g, '-') as StatusKey;
+    const isValidVariantKey = (STATUS_KEYS as readonly string[]).includes(normalized);
+    const effectiveStatus = (isValidVariantKey ? normalized : 'planning') as StatusKey;
 
     if (variant === "dot") {
       return (
@@ -127,9 +152,9 @@ const StatusBadge = React.forwardRef<HTMLDivElement, StatusBadgeProps>(
           className={cn("flex items-center gap-2", className)}
           {...props}
         >
-          <div className={cn("w-2 h-2 rounded-full", getDotColor(status))} />
+          <div className={cn("w-2 h-2 rounded-full", getDotColor(statusStr))} />
           <span className={cn("font-medium", size === "sm" ? "text-xs" : size === "lg" ? "text-base" : "text-sm")}>
-            {getStatusLabel(status)}
+            {getStatusLabel(statusStr)}
           </span>
         </div>
       );
@@ -140,13 +165,13 @@ const StatusBadge = React.forwardRef<HTMLDivElement, StatusBadgeProps>(
         <div
           ref={ref}
           className={cn(
-            statusBadgeVariants({ variant: "default", status: normalizedStatus, size }),
+            statusBadgeVariants({ variant: "default", status: effectiveStatus, size }),
             "bg-transparent border border-current",
             className
           )}
           {...props}
         >
-          {getStatusLabel(status)}
+          {getStatusLabel(statusStr)}
         </div>
       );
     }
@@ -154,10 +179,10 @@ const StatusBadge = React.forwardRef<HTMLDivElement, StatusBadgeProps>(
     return (
       <div
         ref={ref}
-        className={cn(statusBadgeVariants({ variant, status: normalizedStatus, size }), className)}
+        className={cn(statusBadgeVariants({ variant, status: effectiveStatus, size }), className)}
         {...props}
       >
-        {getStatusLabel(status)}
+        {getStatusLabel(statusStr)}
       </div>
     );
   }

@@ -11,10 +11,9 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertTriangle, DollarSign, Save, Plus } from 'lucide-react';
-import { BudgetExpenseFormProps, BudgetFormData, FormErrors } from '@/types/projectDetails';
+import { BudgetExpenseFormProps, BudgetFormData, FormErrors, TransactionType, PaymentStatus, PaymentMethod, Currency } from '@/types/projectDetails';
 
 // Budget category options
 const BUDGET_CATEGORIES = [
@@ -28,30 +27,60 @@ const BUDGET_CATEGORIES = [
   { value: 'Other', label: 'Other' }
 ];
 
-// Status options
-const STATUS_OPTIONS = [
-  { value: 'planned', label: 'Planned' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'paid', label: 'Paid' }
+// Transaction type options
+const TRANSACTION_TYPE_OPTIONS = [
+  { value: 'MATERIAL_PURCHASE', label: 'Material Purchase' },
+  { value: 'LABOR', label: 'Labor' },
+  { value: 'EQUIPMENT_RENTAL', label: 'Equipment Rental' },
+  { value: 'PERMIT_FEE', label: 'Permit Fee' },
+  { value: 'DESIGN_FEE', label: 'Design Fee' },
+  { value: 'OTHER', label: 'Other' }
+];
+
+// Payment status options
+const PAYMENT_STATUS_OPTIONS = [
+  { value: 'PENDING', label: 'Pending' },
+  { value: 'APPROVED', label: 'Approved' },
+  { value: 'PAID', label: 'Paid' },
+  { value: 'COMPLETED', label: 'Completed' }
+];
+
+// Payment method options
+const PAYMENT_METHOD_OPTIONS = [
+  { value: 'CASH', label: 'Cash' },
+  { value: 'CHECK', label: 'Check' },
+  { value: 'CREDIT_CARD', label: 'Credit Card' },
+  { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
+  { value: 'OTHER', label: 'Other' }
+];
+
+// Currency options
+const CURRENCY_OPTIONS = [
+  { value: 'USD', label: 'USD ($)' },
+  { value: 'EUR', label: 'EUR (€)' },
+  { value: 'GBP', label: 'GBP (£)' },
+  { value: 'CAD', label: 'CAD (C$)' }
 ];
 
 // Default form data
 const defaultFormData: BudgetFormData = {
-  name: '',
+  transaction_type: 'MATERIAL_PURCHASE',
   amount: 0,
+  currency: 'USD',
   category: 'Materials',
   description: '',
-  status: 'planned',
-  paymentDate: '',
-  vendorName: ''
+  payment_status: 'PENDING',
+  payment_method: 'CASH',
+  payment_date: '',
+  phase_id: ''
 };
 
 // Form validation
 const validateForm = (data: BudgetFormData): FormErrors => {
   const errors: FormErrors = {};
 
-  if (!data.name.trim()) {
-    errors.name = 'Expense name is required';
+  if (!data.description?.trim()) {
+    errors.description = 'Description is required';
   }
 
   if (data.amount <= 0) {
@@ -60,6 +89,10 @@ const validateForm = (data: BudgetFormData): FormErrors => {
 
   if (!data.category) {
     errors.category = 'Category is required';
+  }
+
+  if (!data.transaction_type) {
+    errors.transaction_type = 'Transaction type is required';
   }
 
   return errors;
@@ -116,30 +149,58 @@ export function BudgetExpenseForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Expense Name */}
+      {/* Description */}
       <div>
-        <Label htmlFor="name" className="text-sm font-medium text-slate-700">
-          Expense Name *
+        <Label htmlFor="description" className="text-sm font-medium text-slate-700">
+          Description *
         </Label>
         <Input
-          id="name"
+          id="description"
           type="text"
-          value={formData.name}
-          onChange={(e) => handleChange('name', e.target.value)}
-          placeholder="Enter expense name (e.g., Foundation materials)"
-          className={`mt-2 ${errors.name ? 'border-red-500' : ''}`}
+          value={formData.description || ''}
+          onChange={(e) => handleChange('description', e.target.value)}
+          placeholder="Enter expense description (e.g., Foundation materials)"
+          className={`mt-2 ${errors.description ? 'border-red-500' : ''}`}
           required
         />
-        {errors.name && (
+        {errors.description && (
           <div className="flex items-center gap-1 mt-1 text-red-600 text-sm">
             <AlertTriangle className="h-3 w-3" />
-            {errors.name}
+            {errors.description}
           </div>
         )}
       </div>
 
-      {/* Amount and Category Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Transaction Type */}
+      <div>
+        <Label htmlFor="transaction_type" className="text-sm font-medium text-slate-700">
+          Transaction Type *
+        </Label>
+        <Select
+          value={formData.transaction_type}
+          onValueChange={(value) => handleChange('transaction_type', value as TransactionType)}
+        >
+          <SelectTrigger className={`mt-2 ${errors.transaction_type ? 'border-red-500' : ''}`}>
+            <SelectValue placeholder="Select transaction type" />
+          </SelectTrigger>
+          <SelectContent>
+            {TRANSACTION_TYPE_OPTIONS.map(type => (
+              <SelectItem key={type.value} value={type.value}>
+                {type.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {errors.transaction_type && (
+          <div className="flex items-center gap-1 mt-1 text-red-600 text-sm">
+            <AlertTriangle className="h-3 w-3" />
+            {errors.transaction_type}
+          </div>
+        )}
+      </div>
+
+      {/* Amount, Currency and Category Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Amount */}
         <div>
           <Label htmlFor="amount" className="text-sm font-medium text-slate-700">
@@ -165,6 +226,28 @@ export function BudgetExpenseForm({
               {errors.amount}
             </div>
           )}
+        </div>
+
+        {/* Currency */}
+        <div>
+          <Label htmlFor="currency" className="text-sm font-medium text-slate-700">
+            Currency *
+          </Label>
+          <Select
+            value={formData.currency}
+            onValueChange={(value) => handleChange('currency', value as Currency)}
+          >
+            <SelectTrigger className="mt-2">
+              <SelectValue placeholder="Select currency" />
+            </SelectTrigger>
+            <SelectContent>
+              {CURRENCY_OPTIONS.map(currency => (
+                <SelectItem key={currency.value} value={currency.value}>
+                  {currency.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Category */}
@@ -196,22 +279,22 @@ export function BudgetExpenseForm({
         </div>
       </div>
 
-      {/* Status and Payment Date Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Status */}
+      {/* Payment Status, Method and Date Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Payment Status */}
         <div>
-          <Label htmlFor="status" className="text-sm font-medium text-slate-700">
-            Status
+          <Label htmlFor="payment_status" className="text-sm font-medium text-slate-700">
+            Payment Status
           </Label>
           <Select
-            value={formData.status}
-            onValueChange={(value) => handleChange('status', value)}
+            value={formData.payment_status}
+            onValueChange={(value) => handleChange('payment_status', value as PaymentStatus)}
           >
             <SelectTrigger className="mt-2">
               <SelectValue placeholder="Select status" />
             </SelectTrigger>
             <SelectContent>
-              {STATUS_OPTIONS.map(status => (
+              {PAYMENT_STATUS_OPTIONS.map(status => (
                 <SelectItem key={status.value} value={status.value}>
                   {status.label}
                 </SelectItem>
@@ -220,50 +303,54 @@ export function BudgetExpenseForm({
           </Select>
         </div>
 
+        {/* Payment Method */}
+        <div>
+          <Label htmlFor="payment_method" className="text-sm font-medium text-slate-700">
+            Payment Method
+          </Label>
+          <Select
+            value={formData.payment_method || ''}
+            onValueChange={(value) => handleChange('payment_method', value as PaymentMethod)}
+          >
+            <SelectTrigger className="mt-2">
+              <SelectValue placeholder="Select method" />
+            </SelectTrigger>
+            <SelectContent>
+              {PAYMENT_METHOD_OPTIONS.map(method => (
+                <SelectItem key={method.value} value={method.value}>
+                  {method.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* Payment Date */}
         <div>
-          <Label htmlFor="paymentDate" className="text-sm font-medium text-slate-700">
+          <Label htmlFor="payment_date" className="text-sm font-medium text-slate-700">
             Payment Date
           </Label>
           <Input
-            id="paymentDate"
+            id="payment_date"
             type="date"
-            value={formData.paymentDate}
-            onChange={(e) => handleChange('paymentDate', e.target.value)}
+            value={formData.payment_date || ''}
+            onChange={(e) => handleChange('payment_date', e.target.value)}
             className="mt-2"
           />
         </div>
       </div>
 
-      {/* Vendor Name */}
-      <div>
-        <Label htmlFor="vendorName" className="text-sm font-medium text-slate-700">
-          Vendor/Supplier Name
-        </Label>
-        <Input
-          id="vendorName"
-          type="text"
-          value={formData.vendorName}
-          onChange={(e) => handleChange('vendorName', e.target.value)}
-          placeholder="Enter vendor or supplier name"
-          className="mt-2"
-        />
-      </div>
-
-      {/* Description */}
-      <div>
-        <Label htmlFor="description" className="text-sm font-medium text-slate-700">
-          Description
-        </Label>
-        <Textarea
-          id="description"
-          value={formData.description}
-          onChange={(e) => handleChange('description', e.target.value)}
-          placeholder="Add notes about this expense (optional)"
-          className="mt-2 resize-none"
-          rows={3}
-        />
-      </div>
+      {/* Currency Conversion Info */}
+      {formData.currency !== 'USD' && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <div className="text-sm text-slate-700">
+            <div className="font-medium mb-1">Currency Conversion</div>
+            <div className="text-slate-600 text-xs">
+              This expense will be automatically converted to USD for consistent budget calculations. The original amount and currency will be preserved.
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Budget Impact Info */}
       <div className="bg-buildease-blue-50 border border-buildease-blue-200 rounded-lg p-4">

@@ -33,6 +33,14 @@ interface ModalManagerProps {
   projectId: string;
   projectData?: Record<string, unknown>;
   project?: Project;
+  teamMembers: Array<{
+    id: string;
+    name: string;
+    role: string;
+    email?: string;
+    avatar?: string;
+    status?: string;
+  }>;
   onCloseModals: () => void;
   onCloseUpdateModal: () => void;
   onBudgetSubmit: (data: Record<string, unknown>, mode: string, editingItem: EditingItem | null) => void;
@@ -57,6 +65,7 @@ export function ModalManager({
   projectId,
   projectData,
   project,
+  teamMembers,
   onCloseModals,
   onCloseUpdateModal,
   onBudgetSubmit,
@@ -143,6 +152,7 @@ export function ModalManager({
         phaseId={taskModal.phaseId || ''}
         projectId={projectId}
         task={taskModal.task}
+        teamMembers={teamMembers}
         onCreateTask={onCreateTask}
         onUpdateTask={onUpdateTask}
         isLoading={isCreatingTask || isUpdatingTask}

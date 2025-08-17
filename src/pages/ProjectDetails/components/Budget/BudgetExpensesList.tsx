@@ -68,10 +68,11 @@ function BudgetExpensesListComponent({
         switch (filters.dateRange) {
           case 'today':
             return new Date(now.setHours(0, 0, 0, 0));
-          case 'this-week':
+          case 'this-week': {
             const startOfWeek = new Date(now);
             startOfWeek.setDate(now.getDate() - now.getDay());
             return startOfWeek;
+          }
           case 'this-month':
             return new Date(now.getFullYear(), now.getMonth(), 1);
           case 'last-30-days':
@@ -136,7 +137,7 @@ function BudgetExpensesListComponent({
     }
   }, []);
 
-  const formatDate = React.useCallback((dateString: string) => {
+  const _formatDate = React.useCallback((dateString: string) => {
     try {
       return new Date(dateString).toLocaleDateString('en-US', {
         month: 'short',
@@ -148,7 +149,7 @@ function BudgetExpensesListComponent({
     }
   }, []);
 
-  const getCategoryColor = React.useCallback((category: string) => {
+  const _getCategoryColor = React.useCallback((category: string) => {
     switch (category.toLowerCase()) {
       case 'materials':
         return 'bg-blue-100 text-blue-800 border-blue-200';
@@ -162,8 +163,19 @@ function BudgetExpensesListComponent({
   }, []);
 
   // Memoized computed values - use base_amount for consistent USD totals
-  const totalAmount = React.useMemo(() => {
+  // Always display totals in USD for consistency across multi-currency projects
+  const totalAmountUSD = React.useMemo(() => {
     return filteredExpenses.reduce((sum, expense) => sum + (expense.base_amount || expense.amount), 0);
+  }, [filteredExpenses]);
+
+  // Also calculate totals by currency for detailed breakdown
+  const _totalsByCurrency = React.useMemo(() => {
+    const totals: Record<string, number> = {};
+    filteredExpenses.forEach(expense => {
+      const currency = expense.currency || 'USD';
+      totals[currency] = (totals[currency] || 0) + expense.amount;
+    });
+    return totals;
   }, [filteredExpenses]);
 
   return (
@@ -206,10 +218,11 @@ function BudgetExpensesListComponent({
           <span>
             {filteredExpenses.length} of {expenses.length} expenses
           </span>
-          {totalAmount > 0 && (
-            <span className="font-medium">
-              Total: {formatCurrency(totalAmount, 'USD')}
-            </span>
+          {totalAmountUSD > 0 && (
+            <div className="text-sm text-muted-foreground">
+              Total: {formatCurrency(totalAmountUSD, 'USD')}
+              {filteredExpenses.length > 0 && ` • ${filteredExpenses.length} expense${filteredExpenses.length === 1 ? '' : 's'}`}
+            </div>
           )}
         </div>
       </CardHeader>

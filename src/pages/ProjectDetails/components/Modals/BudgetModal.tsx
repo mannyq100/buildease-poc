@@ -7,10 +7,10 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BaseModal } from '@/components/ui/BaseModal';
 import { DollarSign } from 'lucide-react';
+import { BudgetFormData, TransactionType, PaymentStatus, PaymentMethod, Currency } from '@/types/projectDetails';
 
 interface BudgetModalProps {
   isOpen: boolean;
@@ -19,14 +19,6 @@ interface BudgetModalProps {
   mode: 'create' | 'edit';
   initialData?: BudgetFormData;
   isLoading?: boolean;
-}
-
-interface BudgetFormData {
-  category: string;
-  description: string;
-  budgetedAmount: number;
-  actualAmount?: number;
-  notes?: string;
 }
 
 export function BudgetModal({ 
@@ -38,16 +30,20 @@ export function BudgetModal({
   isLoading = false 
 }: BudgetModalProps) {
   const [formData, setFormData] = useState<BudgetFormData>({
-    category: initialData?.category || '',
+    transaction_type: initialData?.transaction_type || 'MATERIAL_PURCHASE',
+    amount: initialData?.amount || 0,
+    currency: initialData?.currency || 'USD',
     description: initialData?.description || '',
-    budgetedAmount: initialData?.budgetedAmount || 0,
-    actualAmount: initialData?.actualAmount || 0,
-    notes: initialData?.notes || ''
+    category: initialData?.category || 'Materials',
+    payment_date: initialData?.payment_date || '',
+    payment_status: initialData?.payment_status || 'PENDING',
+    payment_method: initialData?.payment_method || 'CASH',
+    phase_id: initialData?.phase_id || ''
   });
 
   const handleSubmit = () => {
     // Basic validation
-    if (!formData.category || !formData.description || formData.budgetedAmount <= 0) {
+    if (!formData.category || !formData.description || formData.amount <= 0) {
       return;
     }
     
@@ -90,58 +86,55 @@ export function BudgetModal({
       }
     >
       <div className="space-y-6">
-        {/* Category Selection - Construction-specific categories */}
-        <div>
-          <Label className="block text-sm font-medium text-slate-700 mb-2">
-            Budget Category
-          </Label>
-          <Select 
-            value={formData.category} 
-            onValueChange={(value) => handleInputChange('category', value)}
-          >
-            <SelectTrigger className="h-12 border-2 border-slate-300 focus:border-buildease-blue-500 rounded-lg">
-              <SelectValue placeholder="Select budget category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="materials">Materials & Supplies</SelectItem>
-              <SelectItem value="labor">Labor Costs</SelectItem>
-              <SelectItem value="equipment">Equipment Rental</SelectItem>
-              <SelectItem value="permits">Permits & Inspections</SelectItem>
-              <SelectItem value="subcontractors">Subcontractors</SelectItem>
-              <SelectItem value="utilities">Utilities</SelectItem>
-              <SelectItem value="insurance">Insurance</SelectItem>
-              <SelectItem value="contingency">Contingency</SelectItem>
-              <SelectItem value="other">Other Expenses</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
         {/* Description */}
         <div>
           <Label className="block text-sm font-medium text-slate-700 mb-2">
-            Description
+            Description *
           </Label>
           <Input
             type="text"
-            value={formData.description}
+            value={formData.description || ''}
             onChange={(e) => handleInputChange('description', e.target.value)}
-            placeholder="Enter budget item description"
+            placeholder="Enter expense description"
             className="h-12 border-2 border-slate-300 focus:border-buildease-blue-500 rounded-lg"
           />
         </div>
 
-        {/* Budget Amounts - Side by side on larger screens */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Transaction Type */}
+        <div>
+          <Label className="block text-sm font-medium text-slate-700 mb-2">
+            Transaction Type *
+          </Label>
+          <Select 
+            value={formData.transaction_type} 
+            onValueChange={(value) => handleInputChange('transaction_type', value as TransactionType)}
+          >
+            <SelectTrigger className="h-12 border-2 border-slate-300 focus:border-buildease-blue-500 rounded-lg">
+              <SelectValue placeholder="Select transaction type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="MATERIAL_PURCHASE">Material Purchase</SelectItem>
+              <SelectItem value="LABOR">Labor</SelectItem>
+              <SelectItem value="EQUIPMENT_RENTAL">Equipment Rental</SelectItem>
+              <SelectItem value="PERMIT_FEE">Permit Fee</SelectItem>
+              <SelectItem value="DESIGN_FEE">Design Fee</SelectItem>
+              <SelectItem value="OTHER">Other</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Amount, Currency and Category */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <Label className="block text-sm font-medium text-slate-700 mb-2">
-              Budgeted Amount
+              Amount *
             </Label>
             <div className="relative">
               <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-500" />
               <Input
                 type="number"
-                value={formData.budgetedAmount}
-                onChange={(e) => handleInputChange('budgetedAmount', parseFloat(e.target.value) || 0)}
+                value={formData.amount}
+                onChange={(e) => handleInputChange('amount', parseFloat(e.target.value) || 0)}
                 placeholder="0.00"
                 className="h-12 pl-10 border-2 border-slate-300 focus:border-buildease-blue-500 rounded-lg"
                 min="0"
@@ -152,53 +145,115 @@ export function BudgetModal({
 
           <div>
             <Label className="block text-sm font-medium text-slate-700 mb-2">
-              Actual Amount <span className="text-xs text-slate-500">(optional)</span>
+              Currency
             </Label>
-            <div className="relative">
-              <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-500" />
-              <Input
-                type="number"
-                value={formData.actualAmount || ''}
-                onChange={(e) => handleInputChange('actualAmount', parseFloat(e.target.value) || 0)}
-                placeholder="0.00"
-                className="h-12 pl-10 border-2 border-slate-300 focus:border-buildease-blue-500 rounded-lg"
-                min="0"
-                step="0.01"
-              />
-            </div>
+            <Select 
+              value={formData.currency} 
+              onValueChange={(value) => handleInputChange('currency', value as Currency)}
+            >
+              <SelectTrigger className="h-12 border-2 border-slate-300 focus:border-buildease-blue-500 rounded-lg">
+                <SelectValue placeholder="Currency" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="USD">USD ($)</SelectItem>
+                <SelectItem value="EUR">EUR (€)</SelectItem>
+                <SelectItem value="GBP">GBP (£)</SelectItem>
+                <SelectItem value="CAD">CAD (C$)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label className="block text-sm font-medium text-slate-700 mb-2">
+              Category
+            </Label>
+            <Select 
+              value={formData.category} 
+              onValueChange={(value) => handleInputChange('category', value)}
+            >
+              <SelectTrigger className="h-12 border-2 border-slate-300 focus:border-buildease-blue-500 rounded-lg">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Materials">Materials</SelectItem>
+                <SelectItem value="Labor">Labor</SelectItem>
+                <SelectItem value="Equipment">Equipment</SelectItem>
+                <SelectItem value="Permits">Permits</SelectItem>
+                <SelectItem value="Utilities">Utilities</SelectItem>
+                <SelectItem value="Subcontractors">Subcontractors</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
-        {/* Budget Variance Indicator */}
-        {formData.budgetedAmount > 0 && formData.actualAmount && formData.actualAmount > 0 && (
-          <div className="p-3 rounded-lg border-2 bg-slate-50">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-slate-700">Budget Variance:</span>
-              <span className={`text-sm font-semibold ${
-                formData.actualAmount <= formData.budgetedAmount 
-                  ? 'text-green-600' 
-                  : 'text-red-600'
-              }`}>
-                ${Math.abs(formData.actualAmount - formData.budgetedAmount).toFixed(2)} 
-                {formData.actualAmount <= formData.budgetedAmount ? ' under' : ' over'}
-              </span>
+        {/* Payment Status, Method and Date */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <Label className="block text-sm font-medium text-slate-700 mb-2">
+              Payment Status
+            </Label>
+            <Select 
+              value={formData.payment_status} 
+              onValueChange={(value) => handleInputChange('payment_status', value as PaymentStatus)}
+            >
+              <SelectTrigger className="h-12 border-2 border-slate-300 focus:border-buildease-blue-500 rounded-lg">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PENDING">Pending</SelectItem>
+                <SelectItem value="APPROVED">Approved</SelectItem>
+                <SelectItem value="PAID">Paid</SelectItem>
+                <SelectItem value="COMPLETED">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label className="block text-sm font-medium text-slate-700 mb-2">
+              Payment Method
+            </Label>
+            <Select 
+              value={formData.payment_method || ''} 
+              onValueChange={(value) => handleInputChange('payment_method', value as PaymentMethod)}
+            >
+              <SelectTrigger className="h-12 border-2 border-slate-300 focus:border-buildease-blue-500 rounded-lg">
+                <SelectValue placeholder="Method" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="CASH">Cash</SelectItem>
+                <SelectItem value="CHECK">Check</SelectItem>
+                <SelectItem value="CREDIT_CARD">Credit Card</SelectItem>
+                <SelectItem value="BANK_TRANSFER">Bank Transfer</SelectItem>
+                <SelectItem value="OTHER">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label className="block text-sm font-medium text-slate-700 mb-2">
+              Payment Date
+            </Label>
+            <Input
+              type="date"
+              value={formData.payment_date || ''}
+              onChange={(e) => handleInputChange('payment_date', e.target.value)}
+              className="h-12 border-2 border-slate-300 focus:border-buildease-blue-500 rounded-lg"
+            />
+          </div>
+        </div>
+
+        {/* Currency Conversion Notice */}
+        {formData.currency !== 'USD' && (
+          <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+            <div className="text-sm text-amber-800">
+              <div className="font-medium mb-1">Currency Conversion</div>
+              <div className="text-xs">
+                This expense will be automatically converted to USD for consistent budget calculations.
+              </div>
             </div>
           </div>
         )}
-
-        {/* Notes */}
-        <div>
-          <Label className="block text-sm font-medium text-slate-700 mb-2">
-            Notes <span className="text-xs text-slate-500">(optional)</span>
-          </Label>
-          <Textarea
-            value={formData.notes || ''}
-            onChange={(e) => handleInputChange('notes', e.target.value)}
-            placeholder="Add any additional notes about this budget item..."
-            className="min-h-[80px] border-2 border-slate-300 focus:border-buildease-blue-500 rounded-lg resize-none"
-            rows={3}
-          />
-        </div>
 
         {/* Construction Budget Tips */}
         <div className="p-3 bg-buildease-blue-50 rounded-lg border border-buildease-blue-200">

@@ -525,23 +525,31 @@ export function useProjectTeamMembers(projectId: string) {
           .single()
       ]);
 
-      const registeredMembers = projectMembersResult.data?.map(member => ({
-        id: member.id,
-        project_id: member.project_id,
-        user_id: member.user_id,
-        name: member.user ? `${member.user.first_name} ${member.user.last_name}`.trim() : 'Unknown User',
-        role: member.role,
-        email: member.user?.email,
-        phone: member.user?.phone,
-        status: 'active' as const,
-        avatar: member.user?.settings?.picture_url,
-        joined_at: member.joined_at
-      })) || [];
+      const registeredMembers = projectMembersResult.data
+        ?.filter(member => member.user_id && member.user) // Only include members with valid user data
+        ?.map(member => ({
+          id: member.user_id, // Use user_id for task assignment, not project_member.id
+          project_id: member.project_id,
+          user_id: member.user_id,
+          name: member.user ? `${member.user.first_name} ${member.user.last_name}`.trim() : 'Unknown User',
+          role: member.role,
+          email: member.user?.email,
+          phone: member.user?.phone,
+          status: 'active' as const,
+          avatar: member.user?.settings?.picture_url,
+          joined_at: member.joined_at
+        })) || [];
 
       const detailsMembers = projectDetailsResult.data?.details?.team_members || [];
 
-      // Combine both sources
-      return [...registeredMembers, ...detailsMembers];
+      // Filter detailsMembers to only include those with valid user_id (excluding non-registered members)
+      const validDetailsMembers = detailsMembers.filter((member: any) => 
+        member.user_id && typeof member.user_id === 'string' && 
+        member.user_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+      );
+
+      // Combine both sources - prioritize registered members
+      return [...registeredMembers, ...validDetailsMembers];
     }
   };
 }

@@ -261,6 +261,8 @@ export function ProjectLayout({
               />
               <PhaseTimelineCard 
                 phases={phases}
+                teamMembers={teamMembers}
+                projectId={project.id}
                 onAddPhase={() => modalManagement.openCreateModal('phase')}
                 onEditPhase={(phase) => modalManagement.openEditModal('phase', phase)}
                 onCreateTask={taskOperations.openCreateTaskModal}
@@ -295,6 +297,8 @@ export function ProjectLayout({
           <TabsContent value="timeline" className="space-y-6 mt-6" id="section-timeline">
             <PhaseTimelineCard 
               phases={phases}
+              teamMembers={teamMembers}
+              projectId={project.id}
               onAddPhase={() => modalManagement.openCreateModal('phase')}
               onEditPhase={(phase) => modalManagement.openEditModal('phase', phase as unknown as Record<string, unknown>)}
               onCreateTask={taskOperations.openCreateTaskModal}
@@ -369,6 +373,7 @@ export function ProjectLayout({
           projectId={projectId}
           projectData={projectData}
           project={project}
+          teamMembers={teamMembers}
           onCloseModals={modalManagement.closeModals}
           onCloseUpdateModal={handleCloseUpdateModal}
           onBudgetSubmit={(data, mode, editingItem) => 
