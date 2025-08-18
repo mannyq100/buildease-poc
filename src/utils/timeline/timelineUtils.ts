@@ -3,6 +3,85 @@
  * Handles date calculations, phase positioning, and timeline rendering logic
  */
 
+/**
+ * Get the effective dates for a phase, preferring actual dates over planned dates
+ */
+export function getEffectivePhaseDate(phase: {
+  timeline?: {
+    planned_start?: string;
+    planned_end?: string;
+    actual_start?: string;
+    actual_end?: string;
+  };
+}, type: 'start' | 'end'): Date {
+  if (type === 'start') {
+    const actualStart = phase.timeline?.actual_start;
+    const plannedStart = phase.timeline?.planned_start;
+    return new Date(actualStart || plannedStart || new Date());
+  } else {
+    const actualEnd = phase.timeline?.actual_end;
+    const plannedEnd = phase.timeline?.planned_end;
+    return new Date(actualEnd || plannedEnd || new Date());
+  }
+}
+
+/**
+ * Check if phase has actual dates (started or completed)
+ */
+export function phaseHasActualDates(phase: {
+  timeline?: {
+    actual_start?: string;
+    actual_end?: string;
+  };
+}): { hasActualStart: boolean; hasActualEnd: boolean } {
+  return {
+    hasActualStart: Boolean(phase.timeline?.actual_start),
+    hasActualEnd: Boolean(phase.timeline?.actual_end)
+  };
+}
+
+/**
+ * Get phase status based on actual vs planned dates
+ */
+export function getPhaseTimelineStatus(phase: {
+  timeline?: {
+    planned_start?: string;
+    planned_end?: string;
+    actual_start?: string;
+    actual_end?: string;
+  };
+  status?: string;
+}): 'not-started' | 'in-progress' | 'completed' | 'behind-schedule' | 'ahead-of-schedule' {
+  const { hasActualStart, hasActualEnd } = phaseHasActualDates(phase);
+  const now = new Date();
+  
+  if (hasActualEnd) {
+    // Phase is completed
+    const actualEnd = new Date(phase.timeline!.actual_end!);
+    const plannedEnd = phase.timeline?.planned_end ? new Date(phase.timeline.planned_end) : null;
+    
+    if (plannedEnd && actualEnd < plannedEnd) {
+      return 'ahead-of-schedule';
+    } else if (plannedEnd && actualEnd > plannedEnd) {
+      return 'behind-schedule';
+    }
+    return 'completed';
+  }
+  
+  if (hasActualStart) {
+    // Phase has started but not completed
+    return 'in-progress';
+  }
+  
+  // Phase not started
+  const plannedStart = phase.timeline?.planned_start ? new Date(phase.timeline.planned_start) : null;
+  if (plannedStart && now > plannedStart) {
+    return 'behind-schedule';
+  }
+  
+  return 'not-started';
+}
+
 export interface TimelinePhase {
   id: string;
   name: string;

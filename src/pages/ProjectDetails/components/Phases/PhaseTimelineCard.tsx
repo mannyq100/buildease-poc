@@ -22,6 +22,7 @@ import React from 'react';
 import { ProjectPhase, EnhancedTask, TeamMember } from '@/types/projectDetails';
 import { formatTaskCount } from '@/utils/core/taskColors';
 import { getPhaseBadgeColor, getPhaseDotColor, formatPhaseStatusLabel } from '@/utils/core/phaseStatus';
+import { phaseHasActualDates, getEffectivePhaseDate } from '@/utils/timeline/timelineUtils';
 
 interface PhaseTimelineCardProps {
   phases: ProjectPhase[];
@@ -206,10 +207,39 @@ function PhaseCard({
             {phase.description && (
               <p className="text-sm text-slate-600">{phase.description}</p>
             )}
-            {phase.timeline?.planned_start && phase.timeline?.planned_end && (
-              <div className="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                {new Date(phase.timeline.planned_start).toLocaleDateString()} - {new Date(phase.timeline.planned_end).toLocaleDateString()}
+            {(phase.timeline?.planned_start || phase.timeline?.actual_start) && (phase.timeline?.planned_end || phase.timeline?.actual_end) && (
+              <div className="text-xs text-slate-500 mt-1 space-y-1">
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  <span className="font-medium">Dates:</span>
+                  <span>
+                    {getEffectivePhaseDate(phase, 'start').toLocaleDateString()} - {getEffectivePhaseDate(phase, 'end').toLocaleDateString()}
+                  </span>
+                </div>
+                {/* Show indicator if using actual dates */}
+                {(() => {
+                  const { hasActualStart, hasActualEnd } = phaseHasActualDates(phase);
+                  if (hasActualStart || hasActualEnd) {
+                    return (
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-green-600 font-medium">
+                          {hasActualStart && hasActualEnd 
+                            ? 'Actual dates' 
+                            : hasActualStart 
+                            ? 'Started (actual start)' 
+                            : 'Completed (actual end)'}
+                        </span>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
+                      <span className="text-slate-600">Planned dates</span>
+                    </div>
+                  );
+                })()}
               </div>
             )}
             {/* Progress bar */}

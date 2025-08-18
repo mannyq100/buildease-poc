@@ -95,13 +95,19 @@ export interface PhaseResponse {
 }
 
 // Transform UI data to database format
-function transformUIToDatabase(data: CreatePhaseUIData | UpdatePhaseUIData): Partial<CreatePhaseData> {
-  const result: Partial<CreatePhaseData> = {};
+function transformUIToDatabase(data: CreatePhaseUIData | UpdatePhaseUIData): Partial<CreatePhaseData> & { id?: string } {
+  const result: Partial<CreatePhaseData> & { id?: string } = {};
   
-  if ('name' in data) result.name = data.name;
-  if ('description' in data) result.description = data.description;
-  if ('category' in data) result.category = data.category;
-  if ('project_id' in data) result.project_id = data.project_id;
+  // Always preserve ID for updates
+  if ('id' in data && data.id !== undefined) result.id = data.id;
+  
+  if ('name' in data && data.name !== undefined) result.name = data.name;
+  if ('description' in data && data.description !== undefined) result.description = data.description;
+  if ('category' in data && data.category !== undefined) result.category = data.category;
+  // Only include project_id for creates, not updates
+  if ('project_id' in data && data.project_id !== undefined) {
+    result.project_id = data.project_id;
+  }
   
   if (data.status) {
     result.status = toDbPhaseStatus(data.status);
@@ -221,19 +227,9 @@ export function useCreatePhase(options?: {
 
       toast.success('Phase created successfully');
 
-      // Track activity with comprehensive debug logging
+      // Track activity
       const phaseName = 'name' in newPhase ? newPhase.name : (newPhase as PhaseResponse).name;
       const phaseId = 'id' in newPhase ? newPhase.id : (newPhase as PhaseResponse).id;
-      
-      console.log('[ACTIVITY_DEBUG] Starting phase create activity logging', {
-        phaseId,
-        phaseName,
-        projectId,
-        uiFormat,
-        userId: user?.id,
-        hasUser: !!user,
-        timestamp: new Date().toISOString()
-      });
       
       try {
         const userName = user?.user_metadata
@@ -260,20 +256,8 @@ export function useCreatePhase(options?: {
           status: 'success'
         });
         
-        console.log('[ACTIVITY_DEBUG] Phase create activity result:', {
-          success: !!result,
-          activityId: result?.id
-        });
-        
       } catch (err) {
-        console.error('[ACTIVITY_DEBUG] Failed to create activity for phase creation:', {
-          error: err,
-          errorMessage: err instanceof Error ? err.message : String(err),
-          phaseId,
-          phaseName,
-          projectId,
-          timestamp: new Date().toISOString()
-        });
+        console.error('Failed to create activity for phase creation:', err);
       }
     },
     onError: (error: unknown) => {
@@ -304,6 +288,11 @@ export function useUpdatePhase(options?: {
       
       const { id, ...updateData } = dbData as UpdatePhaseData & { id: string };
       
+      // Filter out undefined values to prevent UUID errors
+      const cleanUpdateData = Object.fromEntries(
+        Object.entries(updateData).filter(([_, value]) => value !== undefined && value !== 'undefined')
+      );
+      
       // Handle timeline updates for UI format
       if (uiFormat && ('start_date' in data || 'end_date' in data || 'actual_start' in data || 'actual_end' in data)) {
         // Get current timeline and merge updates
@@ -327,12 +316,17 @@ export function useUpdatePhase(options?: {
       
       const { data: phase, error } = await supabase
         .from('be_phase')
-        .update(updateData)
+        .update(cleanUpdateData)
         .eq('id', id)
         .select()
         .single();
 
       if (error) throw error;
+
+      // Handle optimistic actual_end date when phase is marked as completed
+      if (uiFormat && 'status' in data && data.status === 'COMPLETED') {
+        await handlePhaseCompletionTimelineUpdate(id);
+      }
       
       // Return in requested format
       return uiFormat ? transformDatabaseToUI(phase) : phase;
@@ -412,18 +406,6 @@ export function useUpdatePhase(options?: {
       const wasCompleted = 'status' in variables ? variables.status === 'COMPLETED' || variables.status === 'completed' : false;
       const hasTimelineChange = 'timeline' in variables ? !!(variables.timeline && Object.keys(variables.timeline).length > 0) : false;
       
-      console.log('[ACTIVITY_DEBUG] Starting phase update activity logging', {
-        phaseId,
-        phaseName,
-        projectId,
-        wasCompleted,
-        hasTimelineChange,
-        variables,
-        uiFormat,
-        userId: user?.id,
-        timestamp: new Date().toISOString()
-      });
-      
       try {
         const title = wasCompleted
           ? `Phase completed: ${phaseName}`
@@ -459,20 +441,8 @@ export function useUpdatePhase(options?: {
           status: activityStatus
         });
         
-        console.log('[ACTIVITY_DEBUG] Phase update activity result:', {
-          success: !!result,
-          activityId: result?.id
-        });
-        
       } catch (err) {
-        console.error('[ACTIVITY_DEBUG] Failed to create activity for phase update:', {
-          error: err,
-          errorMessage: err instanceof Error ? err.message : String(err),
-          phaseId,
-          phaseName,
-          projectId,
-          timestamp: new Date().toISOString()
-        });
+        console.error('Failed to create activity for phase update:', err);
       }
     },
     onError: (error: unknown, _variables, context) => {
@@ -500,6 +470,52 @@ export function useUpdatePhase(options?: {
       }
     } : undefined
   });
+}
+
+/**
+ * Helper function to set actual_end when phase is marked as completed
+ */
+async function handlePhaseCompletionTimelineUpdate(phaseId: string) {
+  try {
+    // Get current phase timeline
+    const { data: phase, error } = await supabase
+      .from('be_phase')
+      .select('timeline')
+      .eq('id', phaseId)
+      .single();
+
+    if (error) {
+      console.warn('[PHASE_COMPLETION] Could not fetch phase for completion update:', error);
+      return;
+    }
+
+    const currentTimeline = phase.timeline || {};
+    
+    // Only set actual_end if not already set
+    if (!currentTimeline.actual_end) {
+      const now = new Date().toISOString().split('T')[0];
+      const updatedTimeline = {
+        ...currentTimeline,
+        actual_end: now
+      };
+
+      const { error: updateError } = await supabase
+        .from('be_phase')
+        .update({ timeline: updatedTimeline })
+        .eq('id', phaseId);
+
+      if (updateError) {
+        console.error('[PHASE_COMPLETION] Failed to update phase completion timeline:', updateError);
+      } else {
+        console.log('[PHASE_COMPLETION] Phase actual_end set on completion:', {
+          phaseId,
+          actualEnd: now
+        });
+      }
+    }
+  } catch (error) {
+    console.error('[PHASE_COMPLETION] Error in handlePhaseCompletionTimelineUpdate:', error);
+  }
 }
 
 /**
@@ -558,16 +574,7 @@ export function useDeletePhase(options?: { invalidateTimeline?: boolean }) {
 
       toast.success('Phase deleted successfully');
 
-      // Track activity with comprehensive debug logging
-      console.log('[ACTIVITY_DEBUG] Starting phase delete activity logging', {
-        phaseId,
-        phaseName,
-        projectId,
-        hasProjectId: !!projectId,
-        userId: user?.id,
-        timestamp: new Date().toISOString()
-      });
-      
+      // Track activity
       try {
         if (projectId) {
           const userName = user?.user_metadata
@@ -587,23 +594,9 @@ export function useDeletePhase(options?: { invalidateTimeline?: boolean }) {
             status: 'warning'
           });
           
-          console.log('[ACTIVITY_DEBUG] Phase delete activity result:', {
-            success: !!result,
-            activityId: result?.id
-          });
-          
-        } else {
-          console.warn('[ACTIVITY_DEBUG] Skipping phase delete activity logging - no projectId');
         }
       } catch (err) {
-        console.error('[ACTIVITY_DEBUG] Failed to create activity for phase deletion:', {
-          error: err,
-          errorMessage: err instanceof Error ? err.message : String(err),
-          phaseId,
-          phaseName,
-          projectId,
-          timestamp: new Date().toISOString()
-        });
+        console.error('Failed to create activity for phase deletion:', err);
       }
     },
     onError: (error: unknown) => {
@@ -729,3 +722,13 @@ export const useProjectDetailsPhases = (projectId: string) => useProjectPhases(p
   uiFormat: true, 
   queryKey: ['timeline', projectId] 
 });
+
+// Type aliases for backwards compatibility
+export type ProjectDetailsPhase = CreatePhaseUIData & {
+  id: string;
+  timeline?: PhaseTimeline;
+  budget?: PhaseBudget;
+  details?: Record<string, unknown>;
+  created_at?: string;
+  updated_at?: string;
+};

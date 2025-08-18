@@ -195,10 +195,8 @@ function PhaseFormContent({
     }
   };
 
-  // Expose submit handler for external use
-  React.useImperativeHandle(React.forwardRef(() => null), () => ({
-    submit: handleSubmit
-  }));
+  // Remove the invalid useImperativeHandle call
+  // The form is submitted via the form's onSubmit handler and form="phase-form" on the submit button
 
   const duration = calculateDuration();
 

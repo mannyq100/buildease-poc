@@ -30,7 +30,6 @@ export interface UpdateTaskData {
   estimated_hours?: number;
   actual_hours?: number;
   status?: 'pending' | 'in-progress' | 'completed' | 'blocked' | 'cancelled';
-  progress_percentage?: number;
   dependencies?: string[];
 }
 
@@ -53,14 +52,6 @@ export function useCreateTask() {
       return task;
     },
     onSuccess: async (newTask, variables) => {
-      console.log('[ACTIVITY_DEBUG] [useCreateTask] onSuccess called', {
-        taskId: newTask.id,
-        taskTitle: variables.title,
-        projectId: variables.project_id,
-        phaseId: variables.phase_id,
-        timestamp: new Date().toISOString()
-      });
-      
       // Invalidate and refetch related queries
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.tasks.byProject(variables.project_id) 
@@ -87,38 +78,19 @@ export function useCreateTask() {
         });
       }
 
-      // Fire-and-forget activity logging with comprehensive debug logging
-      console.log('[ACTIVITY_DEBUG] [useCreateTask] Starting activity logging for task creation');
-      
+      // Fire-and-forget activity logging
       (async () => {
         try {
-          console.log('[ACTIVITY_DEBUG] [useCreateTask] Fetching auth user');
           const { data: auth, error: authError } = await supabase.auth.getUser();
           
           if (authError) {
-            console.error('[ACTIVITY_DEBUG] [useCreateTask] Auth error:', authError);
+            console.error('Failed to get auth user for activity logging:', authError);
             return;
           }
-          
-          console.log('[ACTIVITY_DEBUG] [useCreateTask] Auth user fetched successfully', {
-            userId: auth?.user?.id,
-            hasUser: !!auth?.user,
-            userMetadata: auth?.user?.user_metadata
-          });
           
           const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
               (auth?.user?.user_metadata?.name as string | undefined) ||
               (auth?.user?.email as string | undefined);
-              
-          console.log('[ACTIVITY_DEBUG] [useCreateTask] Adding task creation to activity batch', {
-            project_id: variables.project_id,
-            activity_type: 'task_create',
-            title: `Task created: ${variables.title}`,
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'task',
-            entity_id: newTask.id
-          });
           
           // Get phase name for better context
           let phaseContext = '';
@@ -163,18 +135,8 @@ export function useCreateTask() {
             status: 'success'
           });
           
-          console.log('[ACTIVITY_DEBUG] [useCreateTask] Activity added to batch successfully');
-          
         } catch (e) {
-          console.error('[ACTIVITY_DEBUG] [useCreateTask] Activity logging failed:', {
-            error: e,
-            errorMessage: e instanceof Error ? e.message : String(e),
-            errorStack: e instanceof Error ? e.stack : undefined,
-            taskId: newTask.id,
-            taskTitle: variables.title,
-            projectId: variables.project_id,
-            timestamp: new Date().toISOString()
-          });
+          console.error('Failed to create activity for task creation:', e);
         }
       })();
 
@@ -208,15 +170,6 @@ export function useUpdateTask() {
       return task;
     },
     onSuccess: async (updatedTask, variables) => {
-      console.log('[ACTIVITY_DEBUG] [useUpdateTask] onSuccess called', {
-        taskId: updatedTask.id,
-        taskTitle: updatedTask.title,
-        projectId: updatedTask.project_id,
-        phaseId: updatedTask.phase_id,
-        updates: variables,
-        timestamp: new Date().toISOString()
-      });
-      
       // Invalidate and refetch related queries
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.tasks.byProject(updatedTask.project_id) 
@@ -242,24 +195,15 @@ export function useUpdateTask() {
         });
       }
 
-      // Fire-and-forget activity logging with comprehensive debug logging
-      console.log('[ACTIVITY_DEBUG] [useUpdateTask] Starting activity logging for task update');
-      
+      // Fire-and-forget activity logging
       (async () => {
         try {
-          console.log('[ACTIVITY_DEBUG] [useUpdateTask] Fetching auth user');
           const { data: auth, error: authError } = await supabase.auth.getUser();
           
           if (authError) {
-            console.error('[ACTIVITY_DEBUG] [useUpdateTask] Auth error:', authError);
+            console.error('Failed to get auth user for activity logging:', authError);
             return;
           }
-          
-          console.log('[ACTIVITY_DEBUG] [useUpdateTask] Auth user fetched successfully', {
-            userId: auth?.user?.id,
-            hasUser: !!auth?.user,
-            userMetadata: auth?.user?.user_metadata
-          });
           
           const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
               (auth?.user?.user_metadata?.name as string | undefined) ||
@@ -341,28 +285,13 @@ export function useUpdateTask() {
               dueDate: updatedTask.due_date,
               estimatedHours: updatedTask.estimated_hours,
               actualHours: updatedTask.actual_hours,
-              progress: updatedTask.progress_percentage,
               updatedFields: Object.keys(variables).filter(key => key !== 'id')
             },
             status: activityStatus
           });
           
-          console.log('[ACTIVITY_DEBUG] [useUpdateTask] Activity created successfully', {
-            success: !!result,
-            activityId: result?.id,
-            result
-          });
-          
         } catch (e) {
-          console.error('[ACTIVITY_DEBUG] [useUpdateTask] Activity logging failed:', {
-            error: e,
-            errorMessage: e instanceof Error ? e.message : String(e),
-            errorStack: e instanceof Error ? e.stack : undefined,
-            taskId: updatedTask.id,
-            taskTitle: updatedTask.title,
-            projectId: updatedTask.project_id,
-            timestamp: new Date().toISOString()
-          });
+          console.error('Failed to create activity for task update:', e);
         }
       })();
 
@@ -398,14 +327,7 @@ export function useDeleteTask() {
       if (error) throw error;
       return { taskId, task };
     },
-    onSuccess: async ({ taskId, task }) => {
-      console.log('[ACTIVITY_DEBUG] [useDeleteTask] onSuccess called', {
-        taskId,
-        projectId: task?.project_id,
-        phaseId: task?.phase_id,
-        timestamp: new Date().toISOString()
-      });
-      
+    onSuccess: async ({ taskId, task }) => {      
       if (task) {
         // Invalidate and refetch related queries
         queryClient.invalidateQueries({ 
@@ -433,41 +355,22 @@ export function useDeleteTask() {
         queryKey: queryKeys.tasks.detail(taskId) 
       });
 
-      // Fire-and-forget activity logging with comprehensive debug logging
+      // Fire-and-forget activity logging
       if (task?.project_id) {
-        console.log('[ACTIVITY_DEBUG] [useDeleteTask] Starting activity logging for task deletion');
-        
         (async () => {
           try {
-            console.log('[ACTIVITY_DEBUG] [useDeleteTask] Fetching auth user');
             const { data: auth, error: authError } = await supabase.auth.getUser();
             
             if (authError) {
-              console.error('[ACTIVITY_DEBUG] [useDeleteTask] Auth error:', authError);
+              console.error('Failed to get auth user for activity logging:', authError);
               return;
             }
-            
-            console.log('[ACTIVITY_DEBUG] [useDeleteTask] Auth user fetched successfully', {
-              userId: auth?.user?.id,
-              hasUser: !!auth?.user,
-              userMetadata: auth?.user?.user_metadata
-            });
             
             const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
                 (auth?.user?.user_metadata?.name as string | undefined) ||
                 (auth?.user?.email as string | undefined);
                 
             const taskTitle = (task as any)?.title || 'Unknown Task';
-                
-            console.log('[ACTIVITY_DEBUG] [useDeleteTask] Calling activityService.createActivity', {
-              project_id: task.project_id,
-              activity_type: 'task_delete',
-              title: `Task deleted: ${taskTitle}`,
-              user_id: auth?.user?.id,
-              user_name: userName,
-              entity_type: 'task',
-              entity_id: taskId
-            });
             
             const result = await activityService.createActivity({
               project_id: task.project_id,
@@ -486,21 +389,8 @@ export function useDeleteTask() {
               status: 'warning'
             });
             
-            console.log('[ACTIVITY_DEBUG] [useDeleteTask] Activity created successfully', {
-              success: !!result,
-              activityId: result?.id,
-              result
-            });
-            
           } catch (e) {
-            console.error('[ACTIVITY_DEBUG] [useDeleteTask] Activity logging failed:', {
-              error: e,
-              errorMessage: e instanceof Error ? e.message : String(e),
-              errorStack: e instanceof Error ? e.stack : undefined,
-              taskId,
-              projectId: task?.project_id,
-              timestamp: new Date().toISOString()
-            });
+            console.error('Failed to create activity for task deletion:', e);
           }
         })();
       }
@@ -515,7 +405,7 @@ export function useDeleteTask() {
 }
 
 /**
- * Hook to update task status with optimistic updates
+ * Hook to update task status with optimistic updates and phase timeline automation
  */
 export function useUpdateTaskStatus() {
   const queryClient = useQueryClient();
@@ -530,10 +420,8 @@ export function useUpdateTaskStatus() {
       status: 'pending' | 'in-progress' | 'completed' | 'blocked' | 'cancelled';
       progress?: number;
     }) => {
+      // Only update status - progress_percentage field doesn't exist in schema
       const updateData: any = { status };
-      if (progress !== undefined) {
-        updateData.progress_percentage = progress;
-      }
 
       const { data: task, error } = await supabase
         .from('be_task')
@@ -543,6 +431,12 @@ export function useUpdateTaskStatus() {
         .single();
 
       if (error) throw error;
+
+      // Handle optimistic phase timeline updates
+      if (task.phase_id && (status === 'in-progress' || status === 'completed')) {
+        await handlePhaseTimelineUpdate(task.phase_id, status);
+      }
+
       return task;
     },
     // Optimistic update
@@ -553,13 +447,12 @@ export function useUpdateTaskStatus() {
       // Snapshot the previous value
       const previousTask = queryClient.getQueryData(queryKeys.tasks.detail(taskId));
 
-      // Optimistically update to the new value
+      // Optimistically update to the new value - only update status since progress_percentage doesn't exist
       queryClient.setQueryData(queryKeys.tasks.detail(taskId), (old: any) => {
         if (!old) return old;
         return {
           ...old,
-          status,
-          ...(progress !== undefined && { progress_percentage: progress })
+          status
         };
       });
 
@@ -588,16 +481,6 @@ export function useUpdateTaskStatus() {
       }
     },
     onSuccess: async (updatedTask, variables) => {
-      console.log('[ACTIVITY_DEBUG] [useUpdateTaskStatus] onSuccess called', {
-        taskId: updatedTask.id,
-        taskTitle: updatedTask.title,
-        projectId: updatedTask.project_id,
-        phaseId: updatedTask.phase_id,
-        newStatus: variables.status,
-        progress: variables.progress,
-        timestamp: new Date().toISOString()
-      });
-      
       // CRITICAL: Invalidate cache for real-time UI updates
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.tasks.byProject(updatedTask.project_id) 
@@ -622,24 +505,15 @@ export function useUpdateTaskStatus() {
         });
       }
       
-      // Fire-and-forget activity logging with comprehensive debug logging
-      console.log('[ACTIVITY_DEBUG] [useUpdateTaskStatus] Starting activity logging for task status update');
-      
+      // Fire-and-forget activity logging
       (async () => {
         try {
-          console.log('[ACTIVITY_DEBUG] [useUpdateTaskStatus] Fetching auth user');
           const { data: auth, error: authError } = await supabase.auth.getUser();
           
           if (authError) {
-            console.error('[ACTIVITY_DEBUG] [useUpdateTaskStatus] Auth error:', authError);
+            console.error('Failed to get auth user for activity logging:', authError);
             return;
           }
-          
-          console.log('[ACTIVITY_DEBUG] [useUpdateTaskStatus] Auth user fetched successfully', {
-            userId: auth?.user?.id,
-            hasUser: !!auth?.user,
-            userMetadata: auth?.user?.user_metadata
-          });
           
           const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
               (auth?.user?.user_metadata?.name as string | undefined) ||
@@ -655,15 +529,9 @@ export function useUpdateTaskStatus() {
           if (wasCompleted) {
             activityTitle = `Task completed: ${updatedTask.title}`;
             activityDescription = `Task "${updatedTask.title}" has been completed`;
-            if (variables.progress && variables.progress < 100) {
-              activityDescription += ` (${variables.progress}% progress)`;
-            }
           } else if (variables.status === 'in-progress') {
             activityTitle = `Task started: ${updatedTask.title}`;
             activityDescription = `Work began on "${updatedTask.title}"`;
-            if (variables.progress) {
-              activityDescription += ` (${variables.progress}% progress)`;
-            }
           } else if (variables.status === 'blocked') {
             activityTitle = `Task blocked: ${updatedTask.title}`;
             activityDescription = `"${updatedTask.title}" has been blocked`;
@@ -674,17 +542,6 @@ export function useUpdateTaskStatus() {
           
           const activityStatus = wasCompleted ? 'success' : 
                                variables.status === 'blocked' || variables.status === 'cancelled' ? 'warning' : 'info';
-              
-          console.log('[ACTIVITY_DEBUG] [useUpdateTaskStatus] Calling activityService.createActivity', {
-            project_id: updatedTask.project_id,
-            activity_type: activityType,
-            title: activityTitle,
-            description: activityDescription,
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'task',
-            entity_id: updatedTask.id
-          });
           
           const result = await activityService.createActivity({
             project_id: updatedTask.project_id,
@@ -698,32 +555,98 @@ export function useUpdateTaskStatus() {
             metadata: {
               taskTitle: updatedTask.title,
               phaseId: updatedTask.phase_id,
-              newStatus: variables.status,
-              progress: variables.progress || updatedTask.progress_percentage
+              newStatus: variables.status
             },
             status: activityStatus
           });
           
-          console.log('[ACTIVITY_DEBUG] [useUpdateTaskStatus] Activity created successfully', {
-            success: !!result,
-            activityId: result?.id,
-            result
-          });
-          
         } catch (e) {
-          console.error('[ACTIVITY_DEBUG] [useUpdateTaskStatus] Activity logging failed:', {
-            error: e,
-            errorMessage: e instanceof Error ? e.message : String(e),
-            errorStack: e instanceof Error ? e.stack : undefined,
-            taskId: updatedTask.id,
-            taskTitle: updatedTask.title,
-            projectId: updatedTask.project_id,
-            timestamp: new Date().toISOString()
-          });
+          console.error('Failed to create activity for task status update:', e);
         }
       })();
     }
   });
+}
+
+/**
+ * Helper function to handle phase timeline updates based on task status changes
+ */
+async function handlePhaseTimelineUpdate(
+  phaseId: string, 
+  taskStatus: 'in-progress' | 'completed'
+) {
+  try {
+    // Get phase and its tasks to determine if timeline should be updated
+    const [phaseResponse, tasksResponse] = await Promise.all([
+      supabase
+        .from('be_phase')
+        .select('timeline, status')
+        .eq('id', phaseId)
+        .single(),
+      supabase
+        .from('be_task')
+        .select('status')
+        .eq('phase_id', phaseId)
+    ]);
+
+    if (phaseResponse.error || tasksResponse.error) {
+      console.warn('Could not fetch phase/tasks for timeline update:', {
+        phaseError: phaseResponse.error,
+        tasksError: tasksResponse.error
+      });
+      return;
+    }
+
+    const phase = phaseResponse.data;
+    const tasks = tasksResponse.data;
+    const currentTimeline = phase.timeline || {};
+    let shouldUpdatePhase = false;
+    const updates: any = {};
+
+    // Rule 1: Set actual_start when first task changes to in-progress
+    if (taskStatus === 'in-progress' && !currentTimeline.actual_start) {
+      const hasInProgressTasks = tasks.some(task => task.status === 'in-progress');
+      if (hasInProgressTasks) {
+        const now = new Date().toISOString().split('T')[0];
+        updates.timeline = {
+          ...currentTimeline,
+          actual_start: now
+        };
+        shouldUpdatePhase = true;
+      }
+    }
+
+    // Rule 2: Set actual_end when all tasks are completed OR phase status is completed
+    if (taskStatus === 'completed' && !currentTimeline.actual_end) {
+      const allTasksCompleted = tasks.length > 0 && tasks.every(task => task.status === 'completed');
+      const phaseIsCompleted = phase.status === 'COMPLETED';
+      
+      if (allTasksCompleted || phaseIsCompleted) {
+        const now = new Date().toISOString().split('T')[0];
+        updates.timeline = {
+          ...currentTimeline,
+          ...updates.timeline, // Preserve any previous updates
+          actual_end: now
+        };
+        shouldUpdatePhase = true;
+      }
+    }
+
+    // Update phase if needed
+    if (shouldUpdatePhase) {
+      const { error: updateError } = await supabase
+        .from('be_phase')
+        .update(updates)
+        .eq('id', phaseId);
+
+      if (updateError) {
+        console.error('Failed to update phase timeline:', updateError);
+      }
+    }
+
+  } catch (error) {
+    console.error('Error in handlePhaseTimelineUpdate:', error);
+  }
 }
 
 /**
@@ -751,14 +674,6 @@ export function useAssignTask() {
       return task;
     },
     onSuccess: async (updatedTask, variables) => {
-      console.log('[ACTIVITY_DEBUG] [useAssignTask] onSuccess called', {
-        taskId: variables.taskId,
-        taskTitle: updatedTask.title,
-        projectId: updatedTask.project_id,
-        assignedUserId: variables.userId,
-        timestamp: new Date().toISOString()
-      });
-      
       // Invalidate and refetch related queries
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.tasks.detail(variables.taskId) 
@@ -775,24 +690,15 @@ export function useAssignTask() {
         });
       }
 
-      // Fire-and-forget activity logging with comprehensive debug logging
-      console.log('[ACTIVITY_DEBUG] [useAssignTask] Starting activity logging for task assignment');
-      
+      // Fire-and-forget activity logging
       (async () => {
         try {
-          console.log('[ACTIVITY_DEBUG] [useAssignTask] Fetching auth user');
           const { data: auth, error: authError } = await supabase.auth.getUser();
           
           if (authError) {
-            console.error('[ACTIVITY_DEBUG] [useAssignTask] Auth error:', authError);
+            console.error('Failed to get auth user for activity logging:', authError);
             return;
           }
-          
-          console.log('[ACTIVITY_DEBUG] [useAssignTask] Auth user fetched successfully', {
-            userId: auth?.user?.id,
-            hasUser: !!auth?.user,
-            userMetadata: auth?.user?.user_metadata
-          });
           
           const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
               (auth?.user?.user_metadata?.name as string | undefined) ||
@@ -806,17 +712,6 @@ export function useAssignTask() {
           const activityDescription = isAssignment
             ? `Task "${updatedTask.title}" was assigned to a team member`
             : `Task "${updatedTask.title}" was unassigned`;
-              
-          console.log('[ACTIVITY_DEBUG] [useAssignTask] Calling activityService.createActivity', {
-            project_id: updatedTask.project_id,
-            activity_type: activityType,
-            title: activityTitle,
-            description: activityDescription,
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'task',
-            entity_id: updatedTask.id
-          });
           
           const result = await activityService.createActivity({
             project_id: updatedTask.project_id,
@@ -836,22 +731,8 @@ export function useAssignTask() {
             status: 'info'
           });
           
-          console.log('[ACTIVITY_DEBUG] [useAssignTask] Activity created successfully', {
-            success: !!result,
-            activityId: result?.id,
-            result
-          });
-          
         } catch (e) {
-          console.error('[ACTIVITY_DEBUG] [useAssignTask] Activity logging failed:', {
-            error: e,
-            errorMessage: e instanceof Error ? e.message : String(e),
-            errorStack: e instanceof Error ? e.stack : undefined,
-            taskId: variables.taskId,
-            taskTitle: updatedTask.title,
-            projectId: updatedTask.project_id,
-            timestamp: new Date().toISOString()
-          });
+          console.error('Failed to create activity for task assignment:', e);
         }
       })();
 

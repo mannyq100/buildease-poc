@@ -32,7 +32,8 @@ import {
   getMilestoneStyle,
   calculateDependencyArrows,
   generateDependencyPath,
-  calculateCriticalPath
+  calculateCriticalPath,
+  getEffectivePhaseDate
 } from '@/utils/timeline/timelineUtils';
 import { ProjectPhase } from '@/types/projectDetails';
 
@@ -82,8 +83,9 @@ export function GanttChart({
         id: phase.id,
         name: phase.name,
         status: phase.status,
-        startDate: new Date(phase.timeline?.planned_start || new Date()),
-        endDate: new Date(phase.timeline?.planned_end || new Date()),
+        // Use effective dates (actual when available, fallback to planned)
+        startDate: getEffectivePhaseDate(phase, 'start'),
+        endDate: getEffectivePhaseDate(phase, 'end'),
         actualStart: phase.timeline?.actual_start ? new Date(phase.timeline.actual_start) : undefined,
         actualEnd: phase.timeline?.actual_end ? new Date(phase.timeline.actual_end) : undefined,
         progress,

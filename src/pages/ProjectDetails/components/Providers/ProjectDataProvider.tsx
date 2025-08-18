@@ -95,29 +95,41 @@ export function ProjectDataProvider({ projectId, children }: ProjectDataProvider
     // phases from hook are UI-shaped: ProjectDetailsPhase
     if (!Array.isArray(rawPhases)) return [];
     const withIds = (rawPhases as ProjectDetailsPhase[]).filter((p): p is ProjectDetailsPhase & { id: string } => Boolean(p.id));
-    return withIds.map((p) => ({
-      id: p.id,
-      name: p.name,
-      description: p.description || '',
-      category: p.category || 'CONSTRUCTION',
-      status: toDbPhaseStatus(p.status),
-      project_id: p.project_id,
-      details: {},
-      timeline: {
-        planned_start: p.start_date || undefined,
-        planned_end: p.end_date || undefined,
-        actual_start: undefined,
-        actual_end: undefined,
-      },
-      budget: {
-        allocated: 0,
-        spent: 0,
-        currency: 'GHS',
-      },
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }));
-  }, [rawPhases]);
+    return withIds.map((p) => {
+      // Extract timeline data properly - preserve actual_start/actual_end from database
+      const timelineData = p.timeline || {};
+      
+      // Extract budget data from consolidated query if available
+      const projectCurrency = projectData?.currency || 'USD';
+      const phaseAllocatedBudget = p.budget?.allocated || 0;
+      const phaseSpentBudget = p.budget?.spent || 0;
+      
+      return {
+        id: p.id,
+        name: p.name,
+        description: p.description || '',
+        category: p.category || 'CONSTRUCTION',
+        status: toDbPhaseStatus(p.status),
+        project_id: p.project_id,
+        details: p.details || {},
+        timeline: {
+          // Preserve all timeline fields - fix the critical data loss issue
+          planned_start: timelineData.planned_start || p.start_date || undefined,
+          planned_end: timelineData.planned_end || p.end_date || undefined,
+          actual_start: timelineData.actual_start || p.actual_start || undefined,
+          actual_end: timelineData.actual_end || p.actual_end || undefined,
+        },
+        budget: {
+          // Use real budget data instead of hardcoded zeros
+          allocated: phaseAllocatedBudget,
+          spent: phaseSpentBudget,
+          currency: projectCurrency,
+        },
+        created_at: p.created_at || new Date().toISOString(),
+        updated_at: p.updated_at || new Date().toISOString(),
+      };
+    });
+  }, [rawPhases, projectData]);
 
   // CRUD operations
   const crudOperations = useCRUDOperations({ 

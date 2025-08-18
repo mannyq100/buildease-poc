@@ -35,7 +35,7 @@ import { usePhaseNotifications } from '@/hooks/usePhaseNotifications';
 import { ToastContainer } from '@/components/ToastContainer';
 import { TaskListSkeleton, OptimisticTaskCard } from '@/components/LoadingSkeletons';
 import { AssigneeSelect } from '@/components/ui/AssigneeSelect';
-import { useTaskAssignment, useBulkAssignTasks } from '@/hooks/mutations';
+import { useTaskAssignment, useBulkAssignTasks, useUpdateTaskStatus } from '@/hooks/mutations';
 import { useAutoTransitionSafe } from '@/contexts/AutoTransitionContext';
 import { AutoTransitionIndicator } from '@/components/ui/AutoTransitionIndicator';
 import React from 'react';
@@ -93,6 +93,9 @@ function PhaseTasksSectionContent({
 
   // Bulk assignment mutation
   const bulkAssignMutation = useBulkAssignTasks();
+  
+  // Bulk task completion mutation  
+  const updateTaskStatusMutation = useUpdateTaskStatus();
 
   // Handle bulk assignment
   const handleBulkAssign = async (assigneeId: string | null) => {
@@ -118,6 +121,53 @@ function PhaseTasksSectionContent({
       const friendlyMessage = getFriendlyErrorMessage(errorMessage, 'bulk_assignment');
       
       notifications.onPhaseUpdateError(friendlyMessage, () => handleBulkAssign(assigneeId));
+    }
+  };
+
+  // Handle bulk task completion
+  const handleBulkComplete = async () => {
+    try {
+      const selectedTaskIds = Array.from(selectedTasks);
+      const incompleteTasks = selectedTaskIds.filter(taskId => {
+        const task = tasks.find(t => t.id === taskId);
+        return task && task.status?.toUpperCase() !== 'COMPLETED';
+      });
+      
+      if (incompleteTasks.length === 0) {
+        notifications.success(
+          'Already Complete',
+          'All selected tasks are already completed'
+        );
+        clearSelection();
+        return;
+      }
+      
+      // Complete tasks sequentially to trigger optimistic phase updates properly
+      const completionPromises = incompleteTasks.map(taskId => 
+        updateTaskStatusMutation.mutateAsync({
+          taskId,
+          status: 'completed'
+        })
+      );
+      
+      await Promise.all(completionPromises);
+      clearSelection();
+      
+      // Show success notification
+      notifications.success(
+        'Tasks Completed',
+        `${incompleteTasks.length} task${incompleteTasks.length > 1 ? 's' : ''} marked as completed`
+      );
+      
+      // The optimistic phase completion will be handled automatically by usePhaseStatusManager
+      // when it detects all tasks in the phase are completed
+      
+    } catch (error) {
+      console.error('Failed to complete tasks:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      const friendlyMessage = getFriendlyErrorMessage(errorMessage, 'bulk_completion');
+      
+      notifications.onPhaseUpdateError(friendlyMessage, () => handleBulkComplete());
     }
   };
 
@@ -207,6 +257,8 @@ function PhaseTasksSectionContent({
     switch (context) {
       case 'bulk_assignment':
         return 'Failed to assign multiple tasks. Please try again.';
+      case 'bulk_completion':
+        return 'Failed to complete multiple tasks. Please try again.';
       case 'individual_assignment':
         return 'Failed to assign task. Please try again.';
       case 'phase_update':
@@ -359,10 +411,11 @@ function PhaseTasksSectionContent({
                   <Button 
                     size="sm" 
                     className="text-xs min-h-[40px] bg-green-600 hover:bg-green-700 active:bg-green-800 active:scale-[0.98] touch-manipulation"
-                    onClick={() => console.log('Mark selected as complete:', Array.from(selectedTasks))}
+                    onClick={handleBulkComplete}
+                    disabled={updateTaskStatusMutation.isPending}
                   >
                     <CheckCircle2 className="h-3 w-3 mr-1" />
-                    Mark Complete
+                    {updateTaskStatusMutation.isPending ? 'Completing...' : 'Mark Complete'}
                   </Button>
                 </>
               )}

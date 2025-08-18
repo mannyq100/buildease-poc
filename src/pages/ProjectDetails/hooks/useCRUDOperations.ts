@@ -172,23 +172,24 @@ export function useCRUDOperations({ projectId, phases, onCloseModals }: UseCRUDO
         }
       } else if (editingItem) {
         
-        const updateData: {
-          name?: string;
-          description?: string;
-          start_date?: string;
-          end_date?: string;
-          actual_start?: string | null;
-          actual_end?: string | null;
-        } = {
+        // Validate that we have a proper phase ID
+        const phaseId = editingItem.data.id as string;
+        if (!phaseId || phaseId === 'undefined' || phaseId === undefined) {
+          console.error('Invalid phase ID for update');
+          toast.error('Invalid phase ID - cannot update phase');
+          return;
+        }
+        // Use UI format data structure that the mutation expects
+        const uiFormatData = {
+          id: phaseId,
           name: data.name,
           description: data.description,
-          // Only include timeline fields if provided in the form
-          ...(data.startDate !== undefined && { start_date: data.startDate }),
-          ...(data.endDate !== undefined && { end_date: data.endDate }),
-          ...(data.actualStart !== undefined && { actual_start: data.actualStart ?? null }),
-          ...(data.actualEnd !== undefined && { actual_end: data.actualEnd ?? null })
+          start_date: data.startDate,
+          end_date: data.endDate,
+          ...(data.status !== undefined && { status: data.status })
         };
-        await updatePhase.mutateAsync({ id: editingItem.data.id, ...updateData });
+        
+        await updatePhase.mutateAsync(uiFormatData);
         
         toast.success('Phase updated successfully!');
       }
