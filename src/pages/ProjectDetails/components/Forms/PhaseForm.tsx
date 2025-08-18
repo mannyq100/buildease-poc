@@ -47,9 +47,7 @@ const defaultFormData: PhaseFormData = {
   category: '',
   description: '',
   startDate: '',
-  endDate: '',
-  actualStart: undefined,
-  actualEnd: undefined
+  endDate: ''
 };
 
 // Form validation
@@ -68,15 +66,16 @@ const validateForm = (data: PhaseFormData): FormErrors => {
     errors.endDate = 'End date must be after start date';
   }
 
-  // Validate actual timeline if provided
-  if (data.actualStart && data.actualEnd && new Date(data.actualStart) > new Date(data.actualEnd)) {
-    errors.actualEnd = 'Actual end must be after actual start';
-  }
-
   return errors;
 };
 
-export function PhaseForm({
+interface PhaseFormWithFooterProps extends PhaseFormProps {
+  onCancel?: () => void;
+  submitButtonText?: string;
+}
+
+// Internal form component
+function PhaseFormContent({
   mode,
   initialData,
   projectType,
@@ -174,8 +173,10 @@ export function PhaseForm({
   };
 
   // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
     
     const validationErrors = validateForm(formData);
     if (Object.keys(validationErrors).length > 0) {
@@ -194,10 +195,15 @@ export function PhaseForm({
     }
   };
 
+  // Expose submit handler for external use
+  React.useImperativeHandle(React.forwardRef(() => null), () => ({
+    submit: handleSubmit
+  }));
+
   const duration = calculateDuration();
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto px-1 sm:px-0">
+    <form onSubmit={handleSubmit} className="space-y-6" id="phase-form">
       {/* Phase Template Selection */}
       {mode === 'create' && (
         <div className="rounded-xl border border-slate-200/60 bg-gradient-to-br from-white via-slate-50/60 to-buildease-blue-50/20 shadow-sm p-4">
@@ -269,7 +275,7 @@ export function PhaseForm({
           </div>
           
           <div className="p-4">
-            <div className="space-y-2 max-h-48 overflow-y-auto">
+            <div className="space-y-2">
               {selectedTasks.map((task, index) => (
                 <div 
                   key={task.id} 
@@ -311,7 +317,7 @@ export function PhaseForm({
               ))}
             </div>
             
-            {selectedTasks.filter(t => t.enabled).length === 0 && (
+            {selectedTasks.filter(t => t.enabled).length === 0 && selectedTasks.length > 0 && (
               <div className="mt-3 p-3 bg-amber-50/80 border border-amber-200 rounded-lg">
                 <div className="flex items-center">
                   <AlertTriangle className="h-4 w-4 text-amber-600 mr-2" />
@@ -435,39 +441,6 @@ export function PhaseForm({
               </div>
             </div>
 
-            {/* Actual timeline (manual edits) */}
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="actualStart" className="text-sm font-medium text-slate-700">
-                  Actual Start (optional)
-                </Label>
-                <Input
-                  id="actualStart"
-                  type="date"
-                  value={formData.actualStart || ''}
-                  onChange={(e) => handleChange('actualStart', e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="actualEnd" className="text-sm font-medium text-slate-700">
-                  Actual End (optional)
-                </Label>
-                <Input
-                  id="actualEnd"
-                  type="date"
-                  value={formData.actualEnd || ''}
-                  onChange={(e) => handleChange('actualEnd', e.target.value)}
-                  className={`mt-1 ${errors.actualEnd ? 'border-red-500' : ''}`}
-                />
-                {errors.actualEnd && (
-                  <div className="flex items-center gap-1 mt-1 text-red-600 text-sm">
-                    <AlertTriangle className="h-3 w-3" />
-                    {errors.actualEnd}
-                  </div>
-                )}
-              </div>
-            </div>
             
             {/* Duration Display */}
             {duration > 0 && (
@@ -487,23 +460,69 @@ export function PhaseForm({
         </div>
       </div>
 
-      {/* Form Actions */}
-      <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 sticky bottom-0 bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/70 px-2 sm:px-0">
-        <Button
-          type="submit"
-          disabled={isLoading}
-          className="bg-gradient-to-r from-buildease-orange-500 to-buildease-orange-600 hover:from-buildease-orange-600 hover:to-buildease-orange-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.01] active:scale-[0.99] transition-all duration-200"
-        >
-          {isLoading ? (
-            <div className="animate-spin h-4 w-4 mr-2" />
-          ) : mode === 'create' ? (
-            <Plus className="h-5 w-5 mr-2" />
-          ) : (
-            <Save className="h-5 w-5 mr-2" />
-          )}
-          {mode === 'create' ? 'Create Phase' : 'Save Changes'}
-        </Button>
-      </div>
     </form>
+  );
+}
+
+// Footer component for BaseModal
+export function PhaseFormFooter({
+  mode,
+  isLoading = false,
+  onCancel,
+  submitButtonText
+}: {
+  mode: 'create' | 'edit';
+  isLoading?: boolean;
+  onCancel?: () => void;
+  submitButtonText?: string;
+}) {
+  return (
+    <div className="flex justify-end gap-3">
+      {onCancel && (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={isLoading}
+          className="min-h-[44px] px-6"
+        >
+          Cancel
+        </Button>
+      )}
+      <Button
+        type="submit"
+        form="phase-form"
+        disabled={isLoading}
+        className="bg-gradient-to-r from-buildease-orange-500 to-buildease-orange-600 hover:from-buildease-orange-600 hover:to-buildease-orange-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 min-h-[44px]"
+      >
+        {isLoading ? (
+          <div className="animate-spin h-4 w-4 mr-2" />
+        ) : mode === 'create' ? (
+          <Plus className="h-5 w-5 mr-2" />
+        ) : (
+          <Save className="h-5 w-5 mr-2" />
+        )}
+        {submitButtonText || (mode === 'create' ? 'Create Phase' : 'Save Changes')}
+      </Button>
+    </div>
+  );
+}
+
+// Main export component - just the form content for BaseModal
+export function PhaseForm({
+  mode,
+  initialData,
+  projectType,
+  onSubmit,
+  isLoading = false
+}: PhaseFormProps) {
+  return (
+    <PhaseFormContent 
+      mode={mode}
+      initialData={initialData}
+      projectType={projectType}
+      onSubmit={onSubmit}
+      isLoading={isLoading}
+    />
   );
 }

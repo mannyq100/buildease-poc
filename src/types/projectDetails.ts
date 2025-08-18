@@ -272,8 +272,6 @@ export interface PhaseFormData {
   startDate: string;
   endDate: string;
   status?: PhaseStatus; // only used in edit mode to allow changing phase status
-  actualStart?: string | null; // optional manual actual start date (ISO yyyy-mm-dd)
-  actualEnd?: string | null;   // optional manual actual end date (ISO yyyy-mm-dd)
 }
 
 export interface TeamMemberFormData {

@@ -162,12 +162,12 @@ export function AssigneeSelect({
                         <Badge variant="outline" className="text-xs text-gray-600">
                           {selectedMember.role}
                         </Badge>
-                        {showWorkload && selectedMember.workload && (
+                        {showWorkload && selectedMember.workload !== undefined && (
                           <Badge 
                             variant="outline" 
                             className={cn('text-xs', getWorkloadColor(selectedMember.workload))}
                           >
-                            {selectedMember.workload}% busy
+                            {selectedMember.workload === 0 ? 'Available' : `${selectedMember.workload}% busy`}
                           </Badge>
                         )}
                       </div>
@@ -273,17 +273,22 @@ export function AssigneeSelect({
                         <Badge variant="outline" className="text-xs text-gray-600">
                           {member.role}
                         </Badge>
-                        {showWorkload && member.workload && (
+                        {showWorkload && member.workload !== undefined && (
                           <Badge 
                             variant="outline" 
                             className={cn('text-xs', getWorkloadColor(member.workload))}
                           >
-                            {member.workload}% busy
+                            {member.workload === 0 ? 'Available' : `${member.workload}% busy`}
                           </Badge>
                         )}
                         {member.status === 'inactive' && (
-                          <Badge variant="outline" className="text-xs text-gray-500">
-                            Inactive
+                          <Badge variant="outline" className="text-xs text-amber-600 bg-amber-50">
+                            On Break
+                          </Badge>
+                        )}
+                        {member.status === 'active' && member.workload && member.workload >= 90 && (
+                          <Badge variant="outline" className="text-xs text-red-600 bg-red-50">
+                            Overloaded
                           </Badge>
                         )}
                       </div>

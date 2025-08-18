@@ -43,7 +43,7 @@ interface ProjectLayoutProps {
   // Data
   project: Project;
   projectData: Record<string, unknown>;
-  budgetExpenses: BudgetExpense[];
+  budgetExpenses?: BudgetExpense[];
   teamMembers: TeamMember[];
   phases: ProjectPhase[];
   todaysFocus: TaskItem[];
@@ -288,6 +288,7 @@ export function ProjectLayout({
                   onEditExpense={(expense) => modalManagement.openEditModal('budget', expense as unknown as Record<string, unknown>)}
                   onDeleteExpense={(id) => crudOperations.handleDelete('budget', id)}
                   onAddExpense={() => modalManagement.openCreateModal('budget')}
+                  projectId={projectId}
                 />
               </div>
             </div>

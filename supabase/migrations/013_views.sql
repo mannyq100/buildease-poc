@@ -144,8 +144,14 @@ WITH project_totals AS (
     p.id AS project_id,
     p.name AS project_name,
     (p.budget->>'allocated')::numeric AS total_budget,
-    (p.budget->>'spent')::numeric AS total_spent,
     (p.budget->>'currency')::text AS currency,
+    COALESCE((
+    SELECT SUM(amount)
+    FROM construction_mgr.financial_transaction ft
+    WHERE ft.project_id = p.id 
+    AND ft.payment_status IN ('PAID', 'APPROVED', 'PENDING')
+), 0) as total_spent,
+
     COUNT(ft.id) AS transaction_count
   FROM construction_mgr.be_project p
   LEFT JOIN construction_mgr.financial_transaction ft ON ft.project_id = p.id
@@ -172,42 +178,6 @@ LEFT JOIN category_totals ct ON ct.project_id = pt.project_id
 GROUP BY 
   pt.project_id, pt.project_name, pt.total_budget, 
   pt.total_spent, pt.currency, pt.transaction_count;
-
--- Create a financial summary view with RLS applied
-CREATE OR REPLACE VIEW construction_mgr.financial_summary AS
-SELECT
-    p.id AS project_id,
-    p.name AS project_name,
-    p.budget->>'allocated' AS total_budget_allocated,
-    p.budget->>'spent' AS total_budget_spent,
-    p.budget->>'currency' AS currency,
-    (
-        SELECT SUM((budget->>'allocated')::numeric)
-        FROM construction_mgr.be_phase
-        WHERE project_id = p.id
-    ) AS phases_budget_allocated,
-    (
-        SELECT SUM((budget->>'spent')::numeric)
-        FROM construction_mgr.be_phase
-        WHERE project_id = p.id
-    ) AS phases_budget_spent,
-    (
-        SELECT SUM(amount)
-        FROM construction_mgr.financial_transaction
-        WHERE project_id = p.id
-    ) AS total_expenses,
-    (
-        SELECT SUM(amount)
-        FROM construction_mgr.financial_transaction
-        WHERE project_id = p.id AND payment_status = 'PAID'
-    ) AS total_paid_expenses,
-    (
-        SELECT COUNT(*)
-        FROM construction_mgr.financial_transaction
-        WHERE project_id = p.id AND payment_status = 'PENDING'
-    ) AS pending_expenses_count
-FROM
-    construction_mgr.be_project p;
 
 -- =============================================================================
 -- MATERIAL INVENTORY VIEW
@@ -411,7 +381,6 @@ JOIN
 ALTER VIEW construction_mgr.project_summary SET (security_invoker = on);
 ALTER VIEW construction_mgr.project_members SET (security_invoker = on);
 ALTER VIEW construction_mgr.project_financial_summary SET (security_invoker = on);
-ALTER VIEW construction_mgr.financial_summary SET (security_invoker = on);
 ALTER VIEW construction_mgr.material_inventory SET (security_invoker = on);
 ALTER VIEW construction_mgr.phase_details SET (security_invoker = on);
 ALTER VIEW construction_mgr.project_activities SET (security_invoker = on);
@@ -427,7 +396,6 @@ ALTER VIEW construction_mgr.comment_summary SET (security_invoker = on);
 GRANT SELECT ON construction_mgr.project_summary TO authenticated;
 GRANT SELECT ON construction_mgr.project_members TO authenticated;
 GRANT SELECT ON construction_mgr.project_financial_summary TO authenticated;
-GRANT SELECT ON construction_mgr.financial_summary TO authenticated;
 GRANT SELECT ON construction_mgr.material_inventory TO authenticated;
 GRANT SELECT ON construction_mgr.phase_details TO authenticated;
 GRANT SELECT ON construction_mgr.project_activities TO authenticated;

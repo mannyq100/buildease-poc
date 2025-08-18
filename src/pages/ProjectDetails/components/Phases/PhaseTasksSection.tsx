@@ -101,28 +101,119 @@ function PhaseTasksSectionContent({
         projectId
       });
       clearSelection();
+      
+      // Show success notification  
+      const memberName = assigneeId ? 
+        bulkAssignMembers.find(m => m.id === assigneeId)?.name || 'team member' :
+        'No one';
+      notifications.success(
+        'Bulk Assignment Complete',
+        `${selectedTasks.size} task${selectedTasks.size > 1 ? 's' : ''} assigned to ${memberName}`
+      );
     } catch (error) {
       console.error('Failed to bulk assign tasks:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      const friendlyMessage = getFriendlyErrorMessage(errorMessage, 'bulk_assignment');
+      
+      notifications.onPhaseUpdateError(friendlyMessage, () => handleBulkAssign(assigneeId));
     }
   };
+
+  // Calculate workload for each team member based on assigned tasks
+  const calculateMemberWorkload = React.useCallback((memberId: string) => {
+    const assignedTasks = tasks.filter(task => 
+      task.assigned_to === memberId && 
+      task.status !== 'COMPLETED' && 
+      task.status !== 'CANCELLED'
+    );
+    
+    // Calculate workload based on task count and priority
+    const workloadScore = assignedTasks.reduce((score, task) => {
+      const priorityWeight = {
+        'URGENT': 4,
+        'HIGH': 3, 
+        'MEDIUM': 2,
+        'LOW': 1
+      }[task.priority] || 2;
+      return score + priorityWeight;
+    }, 0);
+    
+    // Convert to percentage (assuming max healthy workload is 12 points)
+    return Math.min(Math.round((workloadScore / 12) * 100), 100);
+  }, [tasks]);
 
   // Transform team members for bulk assignment (consistent with task cards)
   const bulkAssignMembers = React.useMemo(() => {
     return teamMembers
       .filter(member => member.user_id || member.id) // Include all members with valid IDs
-      .map(member => ({
-        id: member.user_id || member.id || '',
-        name: member.name,
-        role: member.role,
-        email: member.email,
-        avatar: member.avatar,
-        status: member.status === 'active' ? 'active' as const : 
-               member.status === 'on-break' ? 'inactive' as const : 
-               'inactive' as const, // Map team member status to AssigneeSelect status
-        workload: 0
-      }))
+      .map(member => {
+        const memberId = member.user_id || member.id || '';
+        const workload = calculateMemberWorkload(memberId);
+        
+        return {
+          id: memberId,
+          name: member.name,
+          role: member.role,
+          email: member.email,
+          avatar: member.avatar,
+          status: member.status === 'active' ? 'active' as const : 
+                 member.status === 'on-break' ? 'inactive' as const : 
+                 'inactive' as const, // Map team member status to AssigneeSelect status
+          workload
+        };
+      })
       .filter(member => member.id.length > 0);
-  }, [teamMembers]);
+  }, [teamMembers, calculateMemberWorkload]);
+
+  // Helper function to convert technical errors to user-friendly messages
+  const getFriendlyErrorMessage = React.useCallback((error: string, context: string) => {
+    const lowerError = error.toLowerCase();
+    
+    // UUID errors
+    if (lowerError.includes('invalid input syntax for type uuid')) {
+      return 'Unable to assign task. Please try selecting the team member again.';
+    }
+    
+    // Network errors
+    if (lowerError.includes('network') || lowerError.includes('connection')) {
+      return 'Connection issue. Please check your internet and try again.';
+    }
+    
+    // Permission errors
+    if (lowerError.includes('permission') || lowerError.includes('unauthorized')) {
+      return 'You don\'t have permission to perform this action.';
+    }
+    
+    // Validation errors
+    if (lowerError.includes('validation') || lowerError.includes('invalid')) {
+      return context === 'bulk_assignment' 
+        ? 'Some selected tasks couldn\'t be assigned. Please try again.'
+        : 'Task assignment failed. Please check the task details and try again.';
+    }
+    
+    // Database errors
+    if (lowerError.includes('database') || lowerError.includes('constraint')) {
+      return 'Unable to save changes. Please try again in a moment.';
+    }
+    
+    // Timeout errors
+    if (lowerError.includes('timeout') || lowerError.includes('slow')) {
+      return 'Request timed out. Please try again.';
+    }
+    
+    // Generic fallback with context
+    switch (context) {
+      case 'bulk_assignment':
+        return 'Failed to assign multiple tasks. Please try again.';
+      case 'individual_assignment':
+        return 'Failed to assign task. Please try again.';
+      case 'phase_update':
+        return 'Failed to update phase. Please try again.';
+      default:
+        return 'Something went wrong. Please try again.';
+    }
+  }, []);
+
   // Use consolidated phase status manager
   const {
     state: { showCompletePrompt, showReopenPrompt },
@@ -224,7 +315,7 @@ function PhaseTasksSectionContent({
                 size="sm" 
                 variant="outline" 
                 onClick={clearSelection}
-                className="text-xs"
+                className="text-xs min-h-[40px] active:scale-[0.98] touch-manipulation"
               >
                 Cancel
               </Button>
@@ -239,14 +330,14 @@ function PhaseTasksSectionContent({
                     variant="compact"
                     className="min-w-[140px]"
                     disabled={bulkAssignMutation.isPending}
-                    showWorkload={false}
+                    showWorkload={true}
                     showClearButton={false}
                   />
                   
                   {/* Mark Complete */}
                   <Button 
                     size="sm" 
-                    className="text-xs bg-green-600 hover:bg-green-700"
+                    className="text-xs min-h-[40px] bg-green-600 hover:bg-green-700 active:bg-green-800 active:scale-[0.98] touch-manipulation"
                     onClick={() => console.log('Mark selected as complete:', Array.from(selectedTasks))}
                   >
                     <CheckCircle2 className="h-3 w-3 mr-1" />
@@ -275,6 +366,9 @@ function PhaseTasksSectionContent({
               selectionMode={selectionMode}
               isSelected={isTaskSelected(task.id)}
               onToggleSelection={() => toggleTaskSelection(task.id)}
+              calculateMemberWorkload={calculateMemberWorkload}
+              getFriendlyErrorMessage={getFriendlyErrorMessage}
+              notifications={notifications}
             />
           </OptimisticTaskCard>
         ))}
@@ -284,7 +378,7 @@ function PhaseTasksSectionContent({
           <>
             <Button 
               size="sm" 
-              className="flex-1 bg-buildease-blue-600 hover:bg-buildease-blue-700"
+              className="flex-1 min-h-[44px] bg-buildease-blue-600 hover:bg-buildease-blue-700 active:bg-buildease-blue-800 active:scale-[0.98] touch-manipulation"
               onClick={() => onCreateTask(phase.id)}
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -294,7 +388,7 @@ function PhaseTasksSectionContent({
               <Button 
                 size="sm" 
                 variant="outline"
-                className="flex-shrink-0"
+                className="flex-shrink-0 min-h-[44px] active:scale-[0.98] touch-manipulation"
                 onClick={() => setSelectionMode(true)}
               >
                 Select Tasks
@@ -386,6 +480,9 @@ interface TaskCardProps {
   selectionMode?: boolean;
   isSelected?: boolean;
   onToggleSelection?: () => void;
+  calculateMemberWorkload: (memberId: string) => number;
+  getFriendlyErrorMessage: (error: string, context: string) => string;
+  notifications: ReturnType<typeof usePhaseNotifications>;
 }
 
 function TaskCard({ 
@@ -398,7 +495,10 @@ function TaskCard({
   onDelete, 
   selectionMode = false,
   isSelected = false,
-  onToggleSelection
+  onToggleSelection,
+  calculateMemberWorkload,
+  getFriendlyErrorMessage,
+  notifications
 }: TaskCardProps) {
   
   // Task assignment mutation for quick assignment
@@ -413,8 +513,21 @@ function TaskCard({
         projectId,
         taskTitle: task.title
       });
+      
+      // Show success notification
+      const memberName = assignedTo ? 
+        selectableMembers.find(m => m.id === assignedTo)?.name || 'team member' :
+        'No one';
+      notifications.success(
+        'Task Assigned',
+        `"${task.title}" assigned to ${memberName}`
+      );
     } catch (error) {
       console.error('Failed to assign task:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      const friendlyMessage = getFriendlyErrorMessage(errorMessage, 'individual_assignment');
+      
+      notifications.onPhaseUpdateError(friendlyMessage, () => handleQuickAssignment(assignedTo));
     }
   };
 
@@ -445,27 +558,32 @@ function TaskCard({
   const selectableMembers = React.useMemo(() => {
     return teamMembers
       .filter(member => member.user_id || member.id) // Include all members with valid IDs (not just active)
-      .map(member => ({
-        id: member.user_id || member.id || '', // Use user_id for database operations
-        name: member.name,
-        role: member.role,
-        email: member.email,
-        avatar: member.avatar,
-        status: member.status === 'active' ? 'active' as const : 
-               member.status === 'on-break' ? 'inactive' as const : 
-               'inactive' as const, // Map team member status to AssigneeSelect status
-        workload: 0 // TODO: Calculate from task assignment stats
-      }))
+      .map(member => {
+        const memberId = member.user_id || member.id || '';
+        const workload = calculateMemberWorkload(memberId);
+        
+        return {
+          id: memberId, // Use user_id for database operations
+          name: member.name,
+          role: member.role,
+          email: member.email,
+          avatar: member.avatar,
+          status: member.status === 'active' ? 'active' as const : 
+                 member.status === 'on-break' ? 'inactive' as const : 
+                 'inactive' as const, // Map team member status to AssigneeSelect status
+          workload
+        };
+      })
       .filter(member => member.id.length > 0); // Filter out members without valid IDs
-  }, [teamMembers]);
+  }, [teamMembers, calculateMemberWorkload]);
   return (
     <div
       className={`flex items-center justify-between p-4 bg-white rounded-lg border transition-all duration-200 group shadow-sm min-h-[56px] ${
         index === 0 ? 'animate-in fade-in slide-in-from-left-2' : ''
       } ${
         selectionMode 
-          ? `cursor-pointer ${isSelected ? 'border-buildease-blue-500 bg-buildease-blue-50' : 'border-slate-200/40 hover:border-buildease-blue-300'}`
-          : 'border-slate-200/40 hover:bg-slate-50/50 hover:shadow-md'
+          ? `cursor-pointer active:scale-[0.98] active:bg-buildease-blue-100 ${isSelected ? 'border-buildease-blue-500 bg-buildease-blue-50' : 'border-slate-200/40 hover:border-buildease-blue-300 active:border-buildease-blue-400'}`
+          : 'border-slate-200/40 hover:bg-slate-50/50 hover:shadow-md active:bg-slate-100/50 active:scale-[0.995]'
       }`}
       style={{ animationDelay: `${index * 50}ms` }}
       onClick={selectionMode ? onToggleSelection : undefined}
@@ -522,11 +640,11 @@ function TaskCard({
                   // Show assignee avatar with name
                   <div className="flex items-center gap-2">
                     <div 
-                      className={`w-6 h-6 rounded-full transition-colors shadow-sm relative overflow-hidden ${
+                      className={`w-6 h-6 rounded-full transition-all duration-200 shadow-sm relative overflow-hidden ${
                         assignedMember.status === 'active' 
                           ? 'ring-1 ring-buildease-blue-500' 
                           : 'ring-1 ring-yellow-500'
-                      } cursor-pointer hover:ring-2`}
+                      } cursor-pointer hover:ring-2 active:ring-3 active:scale-110 touch-manipulation`}
                       onClick={(e) => {
                         e.stopPropagation();
                         onEdit();
@@ -575,7 +693,7 @@ function TaskCard({
                     variant="compact"
                     className="min-w-[120px]"
                     disabled={assignTaskMutation.isPending}
-                    showWorkload={false}
+                    showWorkload={true}
                     showClearButton={false}
                   />
                 )}
@@ -599,24 +717,32 @@ function TaskCard({
       
       {/* Task Actions (hidden in selection mode) */}
       {!selectionMode && (
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 md:opacity-0 touch:opacity-100 transition-opacity">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                className="h-11 w-11 p-0 active:scale-95 active:bg-slate-200 touch-manipulation"
+              >
                 <MoreVertical className="h-4 w-4" />
+                <span className="sr-only">More actions</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onEdit}>
-                <Edit3 className="h-4 w-4 mr-2" />
+            <DropdownMenuContent align="end" className="min-w-[140px]">
+              <DropdownMenuItem 
+                onClick={onEdit}
+                className="py-3 px-4 text-base font-medium active:bg-slate-100 cursor-pointer touch-manipulation"
+              >
+                <Edit3 className="h-5 w-5 mr-3" />
                 Edit Task
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 onClick={onDelete}
-                className="text-red-600 focus:text-red-600"
+                className="py-3 px-4 text-base font-medium text-red-600 focus:text-red-600 active:bg-red-50 cursor-pointer touch-manipulation"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
+                <Trash2 className="h-5 w-5 mr-3" />
                 Delete Task
               </DropdownMenuItem>
             </DropdownMenuContent>

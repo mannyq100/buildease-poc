@@ -10,7 +10,8 @@ import { TaskFormModal } from './TaskFormModal';
 import { ProjectUpdateForm } from '../Forms/ProjectUpdateForm';
 import { BudgetModal } from '../Budget/BudgetModal';
 import { 
-  PhaseForm, 
+  PhaseForm,
+  PhaseFormFooter,
   TeamMemberForm
 } from '../LazyComponents';
 import type { ModalState, ProjectUpdateFormData } from '../../types';
@@ -105,6 +106,13 @@ export function ModalManager({
         title={modals.modalMode === 'create' ? 'Create New Phase' : 'Edit Phase'}
         description="Build your project timeline with precision and style"
         size="lg"
+        footer={
+          <PhaseFormFooter
+            mode={modals.modalMode}
+            isLoading={isLoadingPhase}
+            onCancel={onCloseModals}
+          />
+        }
       >
         <PhaseForm
           mode={modals.modalMode}

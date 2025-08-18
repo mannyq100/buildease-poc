@@ -19,6 +19,22 @@ interface ConsolidatedProjectData {
   spent: number;
   currency: string;
   status: string;
+  remainingBudget: number;
+  utilization: number;
+  totalExpenses: number;
+  paidAmount: number;
+  pendingAmount: number;
+  approvedAmount: number;
+  plannedAmount: number;
+  categoryTotals: {
+    material_costs: number;
+    labor_costs: number;
+    equipment_costs: number;
+    permit_costs: number;
+    design_costs: number;
+    other_costs: number;
+  };
+  transactionCount: number;
   owner: {
     id: string;
     first_name: string;
@@ -29,13 +45,23 @@ interface ConsolidatedProjectData {
   // Financial data
   expenses: Array<{
     id: string;
-    amount: number;
-    currency: string;
+    title: string;
     description?: string;
+    amount: number;
+    base_amount: number;
+    currency: string;
+    base_currency?: string;
+    exchange_rate?: number;
     category: string;
     payment_status: string;
     payment_date?: string;
+    payment_method?: string;
     transaction_type: string;
+    reference_number?: string;
+    notes?: string;
+    details: Record<string, unknown>;
+    created_at: string;
+    updated_at: string;
   }>;
   
   // Team data
@@ -82,7 +108,7 @@ export function useConsolidatedProjectData(projectId: string) {
     queryFn: async (): Promise<ConsolidatedProjectData> => {
       console.time('ConsolidatedQuery');
       
-      // Single comprehensive query with all joins
+      // Query project with financial summary from view
       const { data: projectData, error: projectError } = await supabase
         .from('be_project')
         .select(`
@@ -100,21 +126,37 @@ export function useConsolidatedProjectData(projectId: string) {
 
       if (projectError) throw projectError;
 
-      // Financial transactions query
+      // Get financial summary from view - provides pre-calculated budget data
+      const { data: financialSummary, error: financialError } = await supabase
+        .from('project_financial_summary')
+        .select('*')
+        .eq('project_id', projectId)
+        .single();
+
+      if (financialError) throw financialError;
+
+      // Financial transactions query - for detailed expense list
       const { data: expensesData, error: expensesError } = await supabase
         .from('financial_transaction')
         .select(`
           id,
+          title,
+          description,
           amount,
           base_amount,
           currency,
-          description,
+          base_currency,
+          exchange_rate,
           category,
           payment_status,
           payment_date,
+          payment_method,
           transaction_type,
+          reference_number,
+          notes,
           details,
-          created_at
+          created_at,
+          updated_at
         `)
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
@@ -179,26 +221,62 @@ export function useConsolidatedProjectData(projectId: string) {
 
       console.timeEnd('ConsolidatedQuery');
 
-      // Calculate expense summary from actual financial data
-      // IMPORTANT: Use actual project budget allocation, NOT sum of expenses
-      const projectAllocatedBudget = projectData.budget || 0;
+      // Use financial summary view data - pre-calculated and optimized
+      const projectAllocatedBudget = financialSummary.total_budget || 0;
+      const projectCurrency = financialSummary.currency || 'USD';
+      
+      // Calculate expense breakdowns from detailed transactions
+      // Use base_amount for consistency, fallback to amount if base_amount is null
+      const getTransactionAmount = (expense: {
+        base_amount?: number;
+        amount: number;
+      }) => {
+        return expense.base_amount || expense.amount || 0;
+      };
+      
       const totalExpenses = expensesData?.reduce((sum, expense) => 
-        sum + (expense.base_amount || expense.amount), 0) || 0;
-      const spentAmount = expensesData
-        ?.filter(expense => expense.payment_status === 'PAID' || expense.payment_status === 'COMPLETED')
-        ?.reduce((sum, expense) => sum + (expense.base_amount || expense.amount), 0) || 0;
+        sum + getTransactionAmount(expense), 0) || 0;
+      
+      // Calculate different expense categories
+      const paidAmount = expensesData
+        ?.filter(expense => expense.payment_status === 'PAID')
+        ?.reduce((sum, expense) => sum + getTransactionAmount(expense), 0) || 0;
+        
       const pendingAmount = expensesData
         ?.filter(expense => expense.payment_status === 'PENDING')
-        ?.reduce((sum, expense) => sum + (expense.base_amount || expense.amount), 0) || 0;
+        ?.reduce((sum, expense) => sum + getTransactionAmount(expense), 0) || 0;
+        
       const approvedAmount = expensesData
         ?.filter(expense => expense.payment_status === 'APPROVED')
-        ?.reduce((sum, expense) => sum + (expense.base_amount || expense.amount), 0) || 0;
+        ?.reduce((sum, expense) => sum + getTransactionAmount(expense), 0) || 0;
+        
+      const plannedAmount = expensesData
+        ?.filter(expense => expense.payment_status === 'PLANNED')
+        ?.reduce((sum, expense) => sum + getTransactionAmount(expense), 0) || 0;
+        
+      // For budget tracking, "spent" should include all committed expenses (PAID + APPROVED + PENDING)
+      // This matches what users see in the category breakdown
+      const spentAmount = paidAmount + approvedAmount + pendingAmount;
+        
+      // Calculate remaining budget and utilization based on committed expenses
+      const remainingBudget = projectAllocatedBudget - spentAmount;
+      const utilization = projectAllocatedBudget > 0 ? (spentAmount / projectAllocatedBudget) * 100 : 0;
+      
+      // Category totals from financial summary view
+      const categoryTotals = {
+        material_costs: financialSummary.material_costs || 0,
+        labor_costs: financialSummary.labor_costs || 0,
+        equipment_costs: financialSummary.equipment_costs || 0,
+        permit_costs: financialSummary.permit_costs || 0,
+        design_costs: financialSummary.design_costs || 0,
+        other_costs: financialSummary.other_costs || 0
+      };
 
       // Normalize team members data
       const detailsMembers = projectMembersData?.details?.team_members || [];
       const normalizedRegisteredMembers = registeredMembers?.map((member, index) => ({
-        id: member.user_id || member.user?.id || `fallback-${index}`, // Use actual user ID for database operations
-        user_id: member.user_id || member.user?.id, // Keep user_id for reference
+        id: member.user?.id || `fallback-${index}`, // Use actual user ID for database operations
+        user_id: member.user?.id, // Keep user_id for reference
         name: member.user ? `${member.user.first_name} ${member.user.last_name}`.trim() : 'Unknown',
         role: member.role,
         email: member.user?.email,
@@ -243,23 +321,44 @@ export function useConsolidatedProjectData(projectId: string) {
       // Return consolidated data structure
       const consolidatedData: ConsolidatedProjectData = {
         ...transformedProject,
-        budget: projectAllocatedBudget || transformedProject.budget,
+        budget: projectAllocatedBudget,
         spent: spentAmount,
+        currency: projectCurrency,
+        remainingBudget,
+        utilization,
+        totalExpenses,
+        paidAmount,
+        pendingAmount,
+        approvedAmount,
+        plannedAmount,
+        categoryTotals,
+        transactionCount: financialSummary.transaction_count || 0,
         owner: {
           id: projectData.owner?.id || '',
-          name: projectData.owner ? `${projectData.owner.first_name} ${projectData.owner.last_name}`.trim() : 'Unknown',
+          first_name: projectData.owner?.first_name || '',
+          last_name: projectData.owner?.last_name || '',
           email: projectData.owner?.email || ''
         },
         
         expenses: expensesData?.map(expense => ({
           id: expense.id,
-          amount: expense.amount,
-          currency: expense.currency,
+          title: expense.title,
           description: expense.description,
+          amount: expense.amount,
+          base_amount: expense.base_amount,
+          currency: expense.currency,
+          base_currency: expense.base_currency,
+          exchange_rate: expense.exchange_rate,
           category: expense.category,
           payment_status: expense.payment_status,
           payment_date: expense.payment_date,
-          transaction_type: expense.transaction_type
+          payment_method: expense.payment_method,
+          transaction_type: expense.transaction_type,
+          reference_number: expense.reference_number,
+          notes: expense.notes,
+          details: expense.details,
+          created_at: expense.created_at,
+          updated_at: expense.updated_at
         })) || [],
         
         teamMembers: [
@@ -292,8 +391,22 @@ export function useProjectSummaryMetrics(projectId: string) {
     budget: {
       allocated: data.budget,
       spent: data.spent,
-      remaining: data.budget - data.spent,
-      utilization: data.budget > 0 ? (data.spent / data.budget) * 100 : 0,
+      remaining: data.remainingBudget || (data.budget - data.spent),
+      utilization: data.utilization || (data.budget > 0 ? (data.spent / data.budget) * 100 : 0),
+      totalExpenses: data.totalExpenses || 0,
+      paidAmount: data.paidAmount || 0,
+      pendingAmount: data.pendingAmount || 0,
+      approvedAmount: data.approvedAmount || 0,
+      plannedAmount: data.plannedAmount || 0,
+      categoryTotals: data.categoryTotals || {
+        material_costs: 0,
+        labor_costs: 0,
+        equipment_costs: 0,
+        permit_costs: 0,
+        design_costs: 0,
+        other_costs: 0
+      },
+      transactionCount: data.transactionCount || 0,
       currency: data.currency
     },
     

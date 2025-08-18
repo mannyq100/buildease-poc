@@ -222,7 +222,7 @@ export function TaskFormModal({
                   workload: 0
                 }))}
               placeholder="Select team member..."
-              showWorkload={false}
+              showWorkload={true}
               showClearButton={true}
             />
           </div>

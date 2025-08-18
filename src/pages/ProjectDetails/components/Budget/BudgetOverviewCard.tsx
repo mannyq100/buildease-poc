@@ -1,13 +1,11 @@
 /**
- * BudgetOverviewCard component
- * Extracted from ProjectDetailsContent.tsx - Budget Overview Section
- * Displays budget summary, progress bars, and allocation breakdown
- * Mobile-first responsive design with proper number formatting
+ * BudgetOverviewCard component - Stunning Minimalist Design
+ * Clean, modern interface focused on digestible information
+ * Seamlessly blends with BuildEase ProjectDetails theme
  */
-import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ProCard } from '@/components/ui/ProCard';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, Plus } from 'lucide-react';
+import { Plus, TrendingUp, AlertCircle } from 'lucide-react';
 import { cn } from '@/utils/core/ui';
 import React from 'react';
 import { formatCurrency } from '@/utils/core/format';
@@ -29,184 +27,139 @@ export function BudgetOverviewCard({
   onAddExpense,
   className
 }: BudgetOverviewCardProps) {
-  // FIXED: Proper budget data handling with validation
-  const getBudgetData = () => {
-    // Ensure we have valid budget allocation (not calculated from expenses)
-    const allocated = project.budget || 0;
-    const spent = project.spent || 0;
-    const currency = project.currency || 'USD';
-    
-    // Validate that budget allocation is meaningful
-    if (allocated <= 0) {
-      console.warn('[BudgetOverviewCard] Project budget allocation is missing or invalid:', allocated);
-    }
-    
-    return {
-      allocated,
-      spent,
-      currency,
-      // Add validation flag
-      isValidBudget: allocated > 0
-    };
-  };
+  const allocated = Math.max(0, project.budget || 0);
+  const spent = Math.max(0, project.spent || 0);
+  const currency = project.currency || 'USD';
+  const remaining = allocated - spent;
+  const utilization = allocated > 0 ? (spent / allocated) * 100 : 0;
 
-  const budgetData = getBudgetData();
-  
-  // Calculate budget utilization based on spent vs allocated (not total expenses)
-  const budgetUtilization = budgetData.allocated > 0 
-    ? Math.round((budgetData.spent / budgetData.allocated) * 100)
-    : 0;
-  // Animated progress width for micro-interaction on mount/changes
-  const [animatedWidth, setAnimatedWidth] = React.useState(0);
+  // Smooth progress animation
+  const [progress, setProgress] = React.useState(0);
   React.useEffect(() => {
-    const target = Math.min(budgetUtilization, 100);
-    const id = requestAnimationFrame(() => setAnimatedWidth(target));
-    return () => cancelAnimationFrame(id);
-  }, [budgetUtilization]);
-  
-  const remainingBudget = budgetData.allocated - budgetData.spent;
+    const timer = setTimeout(() => setProgress(Math.min(utilization, 100)), 200);
+    return () => clearTimeout(timer);
+  }, [utilization]);
 
-  // Format currency amounts using the shared utility with smart formatting for large amounts
-  const formatAmount = (amount: number) => {
-    // For large amounts, use compact notation to prevent overflow
-    if (amount >= 1000000) {
-      return `${budgetData.currency === 'USD' ? '$' : budgetData.currency + ' '}${(amount / 1000000).toFixed(1)}M`;
-    } else if (amount >= 10000) {
-      return `${budgetData.currency === 'USD' ? '$' : budgetData.currency + ' '}${Math.round(amount / 1000)}K`;
-    } else {
-      return formatCurrency(amount, budgetData.currency);
-    }
+  const formatAmount = (amount: number) => formatCurrency(amount, currency);
+
+  const getStatusColor = () => {
+    if (utilization > 90) return 'text-red-500';
+    if (utilization > 75) return 'text-amber-500';
+    return 'text-emerald-500';
   };
 
-  // Determine budget status color based on utilization
-  const getBudgetStatusColor = () => {
-    if (budgetUtilization > 90) return 'text-red-600';
-    if (budgetUtilization > 75) return 'text-amber-600';
-    return 'text-emerald-600';
-  };
+  // Empty state
+  if (allocated <= 0) {
+    return (
+      <Card className={cn('border-0 bg-slate-50/30 backdrop-blur-sm', className)}>
+        <div className="p-8 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
+            <AlertCircle className="w-8 h-8 text-slate-400" />
+          </div>
+          <h3 className="text-lg font-medium text-slate-700 mb-2">No Budget Set</h3>
+          <p className="text-slate-500 mb-6">Set a project budget to track expenses</p>
+          <Button onClick={onAddExpense} className="bg-buildease-blue-600 hover:bg-buildease-blue-700">
+            <Plus className="w-4 h-4 mr-2" />
+            Set Budget
+          </Button>
+        </div>
+      </Card>
+    );
+  }
 
   return (
-    <ProCard 
-      accent="blue"
-      className={cn(
-        '',
-        className
-      )}
-    >
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-blue-600" />
-            <CardTitle className="text-lg font-bold text-slate-900">
-              Budget Overview
-            </CardTitle>
-          </div>
+    <Card className={cn('border-0 bg-white/60 backdrop-blur-sm hover:bg-white/80 transition-all duration-300', className)}>
+      <div className="p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-xl font-semibold text-slate-800">Budget</h2>
           <Button 
             size="sm" 
             onClick={onAddExpense}
-            className="bg-buildease-blue-600 hover:bg-buildease-blue-700 text-white"
+            className="bg-buildease-blue-600 hover:bg-buildease-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105"
           >
-            <Plus className="h-4 w-4 mr-1" />
-            <span className="hidden sm:inline">Add Expense</span>
-            <span className="sm:hidden">Add</span>
+            <Plus className="w-4 h-4 mr-1" />
+            Add
           </Button>
         </div>
-      </CardHeader>
       
-      <CardContent className="space-y-6">
-        {/* Budget Summary Grid - Mobile-first responsive */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="bg-slate-50/50 p-4 rounded-xl">
-            <div className="text-sm text-slate-600 mb-1 font-medium">Total Budget</div>
-            <div className="text-xl sm:text-2xl font-bold text-slate-900 truncate">
-              {formatAmount(budgetData.allocated)}
-            </div>
+        {/* Main Budget Display */}
+        <div className="text-center mb-8">
+          <div className="text-3xl font-bold text-slate-800 mb-2">
+            {formatAmount(allocated)}
           </div>
-          <div className="bg-slate-50/50 p-4 rounded-xl">
-            <div className="text-sm text-slate-600 mb-1 font-medium">Spent</div>
-            <div className="text-xl sm:text-2xl font-bold text-slate-900 truncate">
-              {formatAmount(budgetData.spent)}
+          <div className="text-sm text-slate-500 uppercase tracking-wide font-medium">
+            Total Budget
+          </div>
+        </div>
+
+        {/* Progress Circle */}
+        <div className="relative w-32 h-32 mx-auto mb-8">
+          <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 120 120">
+            <circle
+              cx="60"
+              cy="60"
+              r="50"
+              stroke="#e2e8f0"
+              strokeWidth="8"
+              fill="none"
+            />
+            <circle
+              cx="60"
+              cy="60"
+              r="50"
+              stroke={utilization > 90 ? '#ef4444' : utilization > 75 ? '#f59e0b' : '#10b981'}
+              strokeWidth="8"
+              fill="none"
+              strokeLinecap="round"
+              strokeDasharray={`${2 * Math.PI * 50}`}
+              strokeDashoffset={`${2 * Math.PI * 50 * (1 - progress / 100)}`}
+              className="transition-all duration-1000 ease-out"
+            />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center">
+              <div className={cn('text-2xl font-bold', getStatusColor())}>
+                {Math.round(utilization)}%
+              </div>
+              <div className="text-xs text-slate-500">Used</div>
             </div>
           </div>
         </div>
 
-        {/* Budget Progress Bar */}
-        <div className="space-y-2">
-          <div className="flex justify-between items-center text-sm">
-            <span className="font-medium text-slate-700">Budget Utilization</span>
-            <span className={cn("font-bold", getBudgetStatusColor())}>
-              {budgetUtilization}%
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 gap-6">
+          <div className="text-center">
+            <div className="text-lg font-semibold text-slate-700 mb-1">
+              {formatAmount(spent)}
+            </div>
+            <div className="text-xs text-slate-500 uppercase tracking-wide font-medium">
+              Spent
+            </div>
+          </div>
+          <div className="text-center">
+            <div className={cn(
+              'text-lg font-semibold mb-1',
+              remaining < 0 ? 'text-red-500' : 'text-emerald-500'
+            )}>
+              {formatAmount(Math.abs(remaining))}
+            </div>
+            <div className="text-xs text-slate-500 uppercase tracking-wide font-medium">
+              {remaining < 0 ? 'Over' : 'Remaining'}
+            </div>
+          </div>
+        </div>
+
+        {/* Status Indicator */}
+        {utilization > 90 && (
+          <div className="mt-6 flex items-center justify-center gap-2 text-red-500">
+            <TrendingUp className="w-4 h-4" />
+            <span className="text-sm font-medium">
+              {utilization > 100 ? 'Over Budget' : 'Budget Alert'}
             </span>
           </div>
-          <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
-            <div 
-              className={cn(
-                "h-3 rounded-full transition-[width] duration-700 ease-out will-change-[width]",
-                budgetUtilization > 90 ? "bg-red-500" :
-                budgetUtilization > 75 ? "bg-amber-500" :
-                "bg-emerald-500",
-                // subtle glow
-                "shadow-[0_0_8px_rgba(16,185,129,0.35)]"
-              )}
-              style={{ width: `${animatedWidth}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Remaining Budget Display */}
-        <div className="bg-gradient-to-r from-buildease-blue-50 to-slate-50 p-4 rounded-xl border border-buildease-blue-100">
-          <div className="flex justify-between items-center">
-            <div>
-              <div className="text-sm text-slate-600 font-medium">Remaining Budget</div>
-              <div className={cn(
-                "text-lg font-bold truncate",
-                remainingBudget < 0 ? "text-red-600" : "text-emerald-600"
-              )}>
-                {formatAmount(remainingBudget)}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-slate-600 font-medium">Status</div>
-              <div className={cn(
-                "text-sm font-semibold capitalize",
-                budgetUtilization > 100 ? "text-red-600" :
-                budgetUtilization > 90 ? "text-amber-600" :
-                budgetUtilization > 75 ? "text-amber-600" :
-                "text-emerald-600"
-              )}>
-                {budgetUtilization > 100 ? "Over Budget" :
-                 budgetUtilization > 90 ? "High Risk" :
-                 budgetUtilization > 75 ? "Monitor" :
-                 "On Track"}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Budget Insights - Mobile-optimized */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
-          <div className="bg-white/60 p-3 rounded-lg border border-slate-200/50">
-            <div className="text-slate-600">Avg. Monthly Spend</div>
-            <div className="font-semibold text-slate-900 truncate">
-              {formatAmount(budgetData.spent * 0.3)}
-            </div>
-          </div>
-          <div className="bg-white/60 p-3 rounded-lg border border-slate-200/50">
-            <div className="text-slate-600">Budget Health</div>
-            <div className={cn("font-semibold", getBudgetStatusColor())}>
-              {budgetUtilization > 90 ? "Critical" :
-               budgetUtilization > 75 ? "Warning" :
-               "Healthy"}
-            </div>
-          </div>
-          <div className="bg-white/60 p-3 rounded-lg border border-slate-200/50 sm:col-span-2 lg:col-span-1">
-            <div className="text-slate-600">Projected Total</div>
-            <div className="font-semibold text-slate-900 truncate">
-              {formatAmount(budgetData.allocated)}
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </ProCard>
+        )}
+      </div>
+    </Card>
   );
 }

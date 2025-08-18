@@ -92,6 +92,12 @@ const LazyPhaseForm = React.lazy(() =>
   }))
 );
 
+const LazyPhaseFormFooter = React.lazy(() => 
+  import('./Forms/PhaseForm').then(module => ({
+    default: module.PhaseFormFooter
+  }))
+);
+
 const LazyBudgetExpenseForm = React.lazy(() => 
   import('./Forms/BudgetExpenseForm').then(module => ({
     default: module.BudgetExpenseForm
@@ -186,6 +192,18 @@ export const TeamMemberForm = React.memo(function TeamMemberForm(props: TeamMemb
   return (
     <Suspense fallback={<FormLoadingFallback />}>
       <LazyTeamMemberForm {...props} />
+    </Suspense>
+  );
+});
+
+// PhaseFormFooter component for modal footers
+type PhaseFormFooterComponent = typeof import('./Forms/PhaseForm')['PhaseFormFooter'];
+type PhaseFormFooterProps = React.ComponentProps<PhaseFormFooterComponent>;
+
+export const PhaseFormFooter = React.memo(function PhaseFormFooter(props: PhaseFormFooterProps) {
+  return (
+    <Suspense fallback={<FormLoadingFallback />}>
+      <LazyPhaseFormFooter {...props} />
     </Suspense>
   );
 });
