@@ -5,8 +5,59 @@
 -- PROJECT SUMMARY VIEW
 -- =============================================================================
 
--- View to show project summary information for user
+-- Optimized view using CTEs to eliminate redundant subqueries
 CREATE OR REPLACE VIEW construction_mgr.project_summary AS
+WITH task_progress AS (
+    SELECT 
+        t.project_id,
+        t.phase_id,
+        AVG(CASE t.status
+            WHEN 'COMPLETED' THEN 100
+            WHEN 'IN_PROGRESS' THEN 50
+            ELSE 0
+        END) as phase_task_progress
+    FROM construction_mgr.be_task t
+    GROUP BY t.project_id, t.phase_id
+),
+project_aggregates AS (
+    SELECT 
+        p.id,
+        -- Financial aggregation (single query)
+        COALESCE(SUM(ft.amount) FILTER (WHERE ft.payment_status IN ('PAID', 'APPROVED', 'PENDING')), 0) as spent_amount,
+        COUNT(ft.id) as transaction_count,
+        -- Phase aggregation
+        COUNT(ph.id) as phase_count,
+        -- Task aggregation with progress calculation
+        COUNT(t.id) FILTER (WHERE t.status IN ('PENDING', 'IN_PROGRESS')) as open_task_count,
+        COALESCE(
+            ROUND(
+                CASE 
+                    WHEN COUNT(ph.id) = 0 THEN 0
+                    ELSE AVG(
+                        CASE ph.status 
+                            WHEN 'COMPLETED' THEN 100
+                            WHEN 'IN_PROGRESS' THEN COALESCE(tp.phase_task_progress, 50)
+                            WHEN 'PLANNING' THEN 10
+                            ELSE 0
+                        END
+                    )
+                END
+            ), 0
+        ) as progress_percentage,
+        -- Other counts
+        COUNT(DISTINCT m.id) as material_count,
+        COUNT(DISTINCT d.id) as document_count,
+        COUNT(DISTINCT pm.user_id) as member_count
+    FROM construction_mgr.be_project p
+    LEFT JOIN construction_mgr.financial_transaction ft ON ft.project_id = p.id
+    LEFT JOIN construction_mgr.be_phase ph ON ph.project_id = p.id
+    LEFT JOIN construction_mgr.be_task t ON t.project_id = p.id
+    LEFT JOIN task_progress tp ON tp.project_id = p.id AND tp.phase_id = ph.id
+    LEFT JOIN construction_mgr.be_material m ON m.project_id = p.id
+    LEFT JOIN construction_mgr.be_document d ON d.project_id = p.id
+    LEFT JOIN construction_mgr.be_project_member pm ON pm.project_id = p.id
+    GROUP BY p.id
+)
 SELECT
     p.id,
     p.name,
@@ -33,36 +84,25 @@ SELECT
     p.timeline->>'planned_start' AS start_date,
     p.timeline->>'planned_end' AS end_date,
     
-    -- Financial data with proper casting and user-set currency
+    -- Financial data (optimized with single calculation)
     COALESCE((p.budget->>'allocated')::numeric, 0) as budget,
-    COALESCE((p.budget->>'spent')::numeric, 0) as spent,
+    agg.spent_amount as spent,
     COALESCE(p.budget->>'currency', 'USD') as currency,
     CASE 
         WHEN COALESCE((p.budget->>'allocated')::numeric, 0) > 0 
-        THEN ROUND((COALESCE((p.budget->>'spent')::numeric, 0) / (p.budget->>'allocated')::numeric * 100), 1)
+        THEN ROUND((agg.spent_amount / (p.budget->>'allocated')::numeric * 100), 1)
         ELSE 0 
     END as spent_percentage,
-    COALESCE((p.budget->>'allocated')::numeric, 0) - COALESCE((p.budget->>'spent')::numeric, 0) as remaining,
+    COALESCE((p.budget->>'allocated')::numeric, 0) - agg.spent_amount as remaining,
     
-    -- Progress calculation (deterministic based on phases)
-    COALESCE((
-        SELECT ROUND(AVG(
-            CASE status 
-                WHEN 'COMPLETED' THEN 100
-                WHEN 'IN_PROGRESS' THEN 60
-                WHEN 'PLANNING' THEN 20
-                ELSE 0
-            END
-        ), 0)
-        FROM construction_mgr.be_phase
-        WHERE project_id = p.id
-    ), 0) as progress,
+    -- Progress (from aggregated calculation)
+    agg.progress_percentage as progress,
     
-    -- Health status based on timeline and budget
+    -- Health status (using pre-calculated spent)
     CASE 
         WHEN p.status = 'COMPLETED' THEN 'excellent'
-        WHEN COALESCE((p.budget->>'spent')::numeric, 0) > COALESCE((p.budget->>'allocated')::numeric, 0) * 1.2 THEN 'poor'
-        WHEN COALESCE((p.budget->>'spent')::numeric, 0) > COALESCE((p.budget->>'allocated')::numeric, 0) * 1.1 THEN 'fair'
+        WHEN agg.spent_amount > COALESCE((p.budget->>'allocated')::numeric, 0) * 1.2 THEN 'poor'
+        WHEN agg.spent_amount > COALESCE((p.budget->>'allocated')::numeric, 0) * 1.1 THEN 'fair'
         ELSE 'good'
     END as health,
     
@@ -73,36 +113,13 @@ SELECT
         ELSE COALESCE(CONCAT(u.first_name, ' ', u.last_name), 'Project Owner')
     END as owner_name,
     
-    -- Counts
-    COALESCE((
-        SELECT COUNT(*)
-        FROM construction_mgr.be_phase
-        WHERE project_id = p.id
-    ), 0) AS phases,
-    
-    COALESCE((
-        SELECT COUNT(*)
-        FROM construction_mgr.be_material
-        WHERE project_id = p.id
-    ), 0) AS materials,
-    
-    COALESCE((
-        SELECT COUNT(*)
-        FROM construction_mgr.be_document
-        WHERE project_id = p.id
-    ), 0) AS documents,
-    
-    COALESCE((
-        SELECT COUNT(*)
-        FROM construction_mgr.be_project_member
-        WHERE project_id = p.id
-    ), 0) AS members,
-    
-    COALESCE((
-        SELECT COUNT(*)
-        FROM construction_mgr.financial_transaction
-        WHERE project_id = p.id
-    ), 0) AS transactions,
+    -- Counts (from aggregated data)
+    agg.phase_count AS phases,
+    agg.material_count AS materials,
+    agg.document_count AS documents,
+    agg.member_count AS members,
+    agg.transaction_count AS transactions,
+    agg.open_task_count AS open_tasks,
     
     -- Audit fields
     p.created_at,
@@ -110,7 +127,9 @@ SELECT
 FROM
     construction_mgr.be_project p
 LEFT JOIN
-    construction_mgr.be_user u ON p.owner_id = u.id;
+    construction_mgr.be_user u ON p.owner_id = u.id
+LEFT JOIN
+    project_aggregates agg ON agg.id = p.id;
 
 -- =============================================================================
 -- PROJECT MEMBERS VIEW
@@ -137,47 +156,28 @@ JOIN
 -- FINANCIAL SUMMARY VIEWS
 -- =============================================================================
 
--- View to show financial transaction summary by project
+-- Optimized view using single aggregation pass for better performance
 CREATE OR REPLACE VIEW construction_mgr.project_financial_summary AS
-WITH project_totals AS (
+WITH financial_aggregates AS (
   SELECT 
     p.id AS project_id,
     p.name AS project_name,
     (p.budget->>'allocated')::numeric AS total_budget,
     (p.budget->>'currency')::text AS currency,
-    COALESCE((
-    SELECT SUM(amount)
-    FROM construction_mgr.financial_transaction ft
-    WHERE ft.project_id = p.id 
-    AND ft.payment_status IN ('PAID', 'APPROVED', 'PENDING')
-), 0) as total_spent,
-
-    COUNT(ft.id) AS transaction_count
+    -- Single pass aggregation with FILTER clauses
+    COUNT(ft.id) AS transaction_count,
+    COALESCE(SUM(ft.amount) FILTER (WHERE ft.payment_status IN ('PAID', 'APPROVED', 'PENDING')), 0) AS total_spent,
+    COALESCE(SUM(ft.amount) FILTER (WHERE ft.transaction_type = 'MATERIAL_PURCHASE'), 0) AS material_costs,
+    COALESCE(SUM(ft.amount) FILTER (WHERE ft.transaction_type = 'LABOR'), 0) AS labor_costs,
+    COALESCE(SUM(ft.amount) FILTER (WHERE ft.transaction_type = 'EQUIPMENT_RENTAL'), 0) AS equipment_costs,
+    COALESCE(SUM(ft.amount) FILTER (WHERE ft.transaction_type = 'PERMIT_FEE'), 0) AS permit_costs,
+    COALESCE(SUM(ft.amount) FILTER (WHERE ft.transaction_type = 'DESIGN_FEE'), 0) AS design_costs,
+    COALESCE(SUM(ft.amount) FILTER (WHERE ft.transaction_type = 'OTHER'), 0) AS other_costs
   FROM construction_mgr.be_project p
   LEFT JOIN construction_mgr.financial_transaction ft ON ft.project_id = p.id
   GROUP BY p.id, p.name, p.budget
-),
-category_totals AS (
-  SELECT 
-    project_id,
-    transaction_type AS category,
-    SUM(amount) AS amount
-  FROM construction_mgr.financial_transaction
-  GROUP BY project_id, transaction_type
 )
-SELECT 
-  pt.*,
-  COALESCE(SUM(ct.amount) FILTER (WHERE ct.category = 'MATERIAL_PURCHASE'), 0) AS material_costs,
-  COALESCE(SUM(ct.amount) FILTER (WHERE ct.category = 'LABOR'), 0) AS labor_costs,
-  COALESCE(SUM(ct.amount) FILTER (WHERE ct.category = 'EQUIPMENT_RENTAL'), 0) AS equipment_costs,
-  COALESCE(SUM(ct.amount) FILTER (WHERE ct.category = 'PERMIT_FEE'), 0) AS permit_costs,
-  COALESCE(SUM(ct.amount) FILTER (WHERE ct.category = 'DESIGN_FEE'), 0) AS design_costs,
-  COALESCE(SUM(ct.amount) FILTER (WHERE ct.category = 'OTHER'), 0) AS other_costs
-FROM project_totals pt
-LEFT JOIN category_totals ct ON ct.project_id = pt.project_id
-GROUP BY 
-  pt.project_id, pt.project_name, pt.total_budget, 
-  pt.total_spent, pt.currency, pt.transaction_count;
+SELECT * FROM financial_aggregates;
 
 -- =============================================================================
 -- MATERIAL INVENTORY VIEW

@@ -9,14 +9,12 @@ import { Plus, TrendingUp, AlertCircle } from 'lucide-react';
 import { cn } from '@/utils/core/ui';
 import React from 'react';
 import { formatCurrency } from '@/utils/core/format';
+import { useConsolidatedProjectData } from '@/hooks/queries/useConsolidatedProjectData';
 
 interface BudgetOverviewCardProps {
   project: {
     id: string;
     name: string;
-    budget: number;
-    spent: number;
-    currency: string;
   };
   onAddExpense?: () => void;
   className?: string;
@@ -27,26 +25,96 @@ export function BudgetOverviewCard({
   onAddExpense,
   className
 }: BudgetOverviewCardProps) {
-  const allocated = Math.max(0, project.budget || 0);
-  const spent = Math.max(0, project.spent || 0);
-  const currency = project.currency || 'USD';
+  // Fetch optimized financial data from project_financial_summary view
+  const { data: projectData, isLoading, error } = useConsolidatedProjectData(project.id);
+  
+  
+  // Extract financial metrics from optimized data
+  const allocated = Math.max(0, projectData?.budget || 0);
+  const projectCurrency = projectData?.currency || 'USD';
+  
+  // Calculate spent amount by summing individual expenses in their base currency
+  const spent = React.useMemo(() => {
+    if (!projectData?.expenses) return 0;
+    
+    // Sum all expenses, using base_amount if available (for currency conversion)
+    const totalSpent = projectData.expenses.reduce((sum, expense) => {
+      // Use base_amount if available (converted to project currency), otherwise use amount
+      const expenseAmount = expense.base_amount || expense.amount || 0;
+      return sum + expenseAmount;
+    }, 0);
+    
+    return Math.max(0, totalSpent);
+  }, [projectData?.expenses]);
+  
+  // Calculate financial metrics - utilization comes pre-calculated from database view
   const remaining = allocated - spent;
-  const utilization = allocated > 0 ? (spent / allocated) * 100 : 0;
-
-  // Smooth progress animation
+  const utilization = React.useMemo(() => {
+    // Use pre-calculated spent_percentage from database view (already rounded to 1 decimal)
+    const percentage = projectData?.utilization || 0;
+    // Cap utilization at 150% for display purposes to prevent UI overflow
+    return Math.min(percentage, 150);
+  }, [projectData?.utilization]);
+  
+  // All hooks must be called before any conditional returns
   const [progress, setProgress] = React.useState(0);
+  
   React.useEffect(() => {
-    const timer = setTimeout(() => setProgress(Math.min(utilization, 100)), 200);
+    const timer = setTimeout(() => {
+      // Animate progress up to 100% for visual appeal, even if utilization exceeds 100%
+      setProgress(Math.min(utilization, 100));
+    }, 200);
     return () => clearTimeout(timer);
   }, [utilization]);
 
-  const formatAmount = (amount: number) => formatCurrency(amount, currency);
-
-  const getStatusColor = () => {
+  // Memoize status color calculation for performance
+  const statusColor = React.useMemo(() => {
     if (utilization > 90) return 'text-red-500';
     if (utilization > 75) return 'text-amber-500';
     return 'text-emerald-500';
-  };
+  }, [utilization]);
+
+  // Memoize progress stroke color for consistency
+  const progressStrokeColor = React.useMemo(() => {
+    if (utilization > 90) return '#ef4444';
+    if (utilization > 75) return '#f59e0b';
+    return '#10b981';
+  }, [utilization]);
+
+  const formatAmount = React.useCallback((amount: number | null | undefined) => {
+    return formatCurrency(amount, projectCurrency);
+  }, [projectCurrency]);
+  
+  // Handle loading state
+  if (isLoading) {
+    return (
+      <Card className={cn('border-0 bg-white/60 backdrop-blur-sm', className)}>
+        <div className="p-6">
+          <div className="animate-pulse">
+            <div className="h-6 bg-slate-200 rounded mb-4"></div>
+            <div className="h-8 bg-slate-200 rounded mb-6"></div>
+            <div className="w-32 h-32 bg-slate-200 rounded-full mx-auto mb-6"></div>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="h-4 bg-slate-200 rounded"></div>
+              <div className="h-4 bg-slate-200 rounded"></div>
+            </div>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+  
+  // Handle error state
+  if (error) {
+    return (
+      <Card className={cn('border-0 bg-red-50/30 backdrop-blur-sm', className)}>
+        <div className="p-6 text-center">
+          <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-2" />
+          <p className="text-red-600 text-sm">Failed to load budget data</p>
+        </div>
+      </Card>
+    );
+  }
 
   // Empty state
   if (allocated <= 0) {
@@ -108,19 +176,19 @@ export function BudgetOverviewCard({
               cx="60"
               cy="60"
               r="50"
-              stroke={utilization > 90 ? '#ef4444' : utilization > 75 ? '#f59e0b' : '#10b981'}
+              stroke={progressStrokeColor}
               strokeWidth="8"
               fill="none"
               strokeLinecap="round"
               strokeDasharray={`${2 * Math.PI * 50}`}
-              strokeDashoffset={`${2 * Math.PI * 50 * (1 - progress / 100)}`}
+              strokeDashoffset={`${2 * Math.PI * 50 * (1 - Math.min(progress, 100) / 100)}`}
               className="transition-all duration-1000 ease-out"
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
-              <div className={cn('text-2xl font-bold', getStatusColor())}>
-                {Math.round(utilization)}%
+              <div className={cn('text-2xl font-bold', statusColor)}>
+                {Math.round(Math.min(utilization, 999))}%
               </div>
               <div className="text-xs text-slate-500">Used</div>
             </div>

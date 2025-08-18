@@ -9,13 +9,15 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { ProjectDataProvider } from './components/Providers/ProjectDataProvider';
 import { ProjectLayout } from './components/Layout/ProjectLayout';
 import { ProjectErrorFallback, ProjectDetailsLoading, ProjectNotFound } from './components/Utils';
+import { AutoTransitionProvider } from '@/contexts/AutoTransitionContext';
 import type { ProjectDetailsContentProps } from './types';
 
 // Main Component - Focused only on high-level orchestration
 function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
   return (
-    <ProjectDataProvider projectId={projectId}>
-      {(data) => {
+    <AutoTransitionProvider>
+      <ProjectDataProvider projectId={projectId}>
+        {(data) => {
         // Error handling
         if (data.projectError) {
           return (
@@ -56,8 +58,9 @@ function ProjectDetailsMain({ projectId }: ProjectDetailsContentProps) {
             projectId={projectId}
           />
         );
-      }}
-    </ProjectDataProvider>
+        }}
+      </ProjectDataProvider>
+    </AutoTransitionProvider>
   );
 }
 

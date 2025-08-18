@@ -106,9 +106,26 @@ export function useConsolidatedProjectData(projectId: string) {
   return useQuery({
     queryKey: ['project-consolidated', projectId],
     queryFn: async (): Promise<ConsolidatedProjectData> => {
-      console.time('ConsolidatedQuery');
       
-      // Query project with financial summary from view
+      // Get project summary from optimized view - includes all pre-calculated metrics
+      const { data: projectSummary, error: summaryError } = await supabase
+        .from('project_summary')
+        .select('*')
+        .eq('id', projectId)
+        .single();
+
+      if (summaryError) throw summaryError;
+
+      // Get financial summary with category totals
+      const { data: financialSummary, error: financialError } = await supabase
+        .from('project_financial_summary')
+        .select('*')
+        .eq('project_id', projectId)
+        .single();
+
+      if (financialError) throw financialError;
+
+      // Get basic project data with owner info
       const { data: projectData, error: projectError } = await supabase
         .from('be_project')
         .select(`
@@ -125,15 +142,6 @@ export function useConsolidatedProjectData(projectId: string) {
         .single();
 
       if (projectError) throw projectError;
-
-      // Get financial summary from view - provides pre-calculated budget data
-      const { data: financialSummary, error: financialError } = await supabase
-        .from('project_financial_summary')
-        .select('*')
-        .eq('project_id', projectId)
-        .single();
-
-      if (financialError) throw financialError;
 
       // Financial transactions query - for detailed expense list
       const { data: expensesData, error: expensesError } = await supabase
@@ -219,13 +227,15 @@ export function useConsolidatedProjectData(projectId: string) {
 
       if (phasesError) throw phasesError;
 
-      console.timeEnd('ConsolidatedQuery');
-
-      // Use financial summary view data - pre-calculated and optimized
-      const projectAllocatedBudget = financialSummary.total_budget || 0;
-      const projectCurrency = financialSummary.currency || 'USD';
+      // Use pre-calculated data from project_summary view - eliminates redundant calculations
+      const projectAllocatedBudget = projectSummary.budget || 0;
+      const spentAmount = projectSummary.spent || 0;
+      const projectCurrency = projectSummary.currency || 'USD';
+      const remainingBudget = projectAllocatedBudget - spentAmount;
+      // Use pre-calculated spent_percentage from database view instead of manual calculation
+      const utilization = projectSummary.spent_percentage || 0;
       
-      // Calculate expense breakdowns from detailed transactions
+      // Calculate expense breakdowns from detailed transactions for UI filtering
       // Use base_amount for consistency, fallback to amount if base_amount is null
       const getTransactionAmount = (expense: {
         base_amount?: number;
@@ -237,7 +247,7 @@ export function useConsolidatedProjectData(projectId: string) {
       const totalExpenses = expensesData?.reduce((sum, expense) => 
         sum + getTransactionAmount(expense), 0) || 0;
       
-      // Calculate different expense categories
+      // Calculate payment status breakdowns for UI components that need filtering
       const paidAmount = expensesData
         ?.filter(expense => expense.payment_status === 'PAID')
         ?.reduce((sum, expense) => sum + getTransactionAmount(expense), 0) || 0;
@@ -253,16 +263,8 @@ export function useConsolidatedProjectData(projectId: string) {
       const plannedAmount = expensesData
         ?.filter(expense => expense.payment_status === 'PLANNED')
         ?.reduce((sum, expense) => sum + getTransactionAmount(expense), 0) || 0;
-        
-      // For budget tracking, "spent" should include all committed expenses (PAID + APPROVED + PENDING)
-      // This matches what users see in the category breakdown
-      const spentAmount = paidAmount + approvedAmount + pendingAmount;
-        
-      // Calculate remaining budget and utilization based on committed expenses
-      const remainingBudget = projectAllocatedBudget - spentAmount;
-      const utilization = projectAllocatedBudget > 0 ? (spentAmount / projectAllocatedBudget) * 100 : 0;
       
-      // Category totals from financial summary view
+      // Category totals from financial summary view - pre-calculated with correct transaction type mapping
       const categoryTotals = {
         material_costs: financialSummary.material_costs || 0,
         labor_costs: financialSummary.labor_costs || 0,
@@ -332,12 +334,20 @@ export function useConsolidatedProjectData(projectId: string) {
         approvedAmount,
         plannedAmount,
         categoryTotals,
-        transactionCount: financialSummary.transaction_count || 0,
+        transactionCount: projectSummary.transactions || 0,
         owner: {
-          id: projectData.owner?.id || '',
-          first_name: projectData.owner?.first_name || '',
-          last_name: projectData.owner?.last_name || '',
-          email: projectData.owner?.email || ''
+          id: Array.isArray(projectData.owner) 
+            ? (projectData.owner[0]?.id || '') 
+            : (projectData.owner?.id || ''),
+          first_name: Array.isArray(projectData.owner) 
+            ? (projectData.owner[0]?.first_name || '') 
+            : (projectData.owner?.first_name || ''),
+          last_name: Array.isArray(projectData.owner) 
+            ? (projectData.owner[0]?.last_name || '') 
+            : (projectData.owner?.last_name || ''),
+          email: Array.isArray(projectData.owner) 
+            ? (projectData.owner[0]?.email || '') 
+            : (projectData.owner?.email || '')
         },
         
         expenses: expensesData?.map(expense => ({

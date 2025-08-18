@@ -8,14 +8,14 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Filter, Plus, Search, X, TrendingUp, BarChart3, Hammer, Users, Truck, FileText, Palette, MoreHorizontal } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ProCard } from '@/components/ui/ProCard';
+import { Filter, Plus, Search, X, TrendingUp, BarChart3, Hammer, Users, Truck, FileText, Palette, MoreHorizontal, Loader2, AlertCircle } from 'lucide-react';
 import { cn } from '@/utils/core/ui';
 import { useConsolidatedProjectData } from '@/hooks/queries/useConsolidatedProjectData';
-// Removed ExpenseFilters import as we're using inline filter state
 import SwipeableExpenseCard from './SwipeableExpenseCard';
 import type { BudgetExpense } from '@/types/projectDetails';
 
@@ -37,20 +37,17 @@ function BudgetExpensesListComponent({
   projectId
 }: BudgetExpensesListProps) {
   // Get consolidated project data for category breakdown
-  const { data: consolidatedData } = useConsolidatedProjectData(projectId || '');
+  const { data: consolidatedData, isLoading, error } = useConsolidatedProjectData(projectId || '');
   
-  // Filtering state with modern minimal approach
+  // Filtering state
   const [filters, setFilters] = React.useState({
     search: '',
-    status: 'all' as 'all' | 'paid' | 'pending' | 'overdue',
-    dateRange: 'all' as 'all' | 'today' | 'this-week' | 'this-month' | 'last-30-days',
-    amountRange: 'all' as 'all' | 'under-100' | '100-500' | '500-1000' | 'over-1000',
+    status: 'all' as 'all' | 'PAID' | 'PENDING' | 'APPROVED' | 'FAILED',
     category: 'all'
   });
   const [showFilters, setShowFilters] = React.useState(false);
   const [showCategoryBreakdown, setShowCategoryBreakdown] = React.useState(true);
   
-  // Use real data from Supabase - no mock data fallback
   const expenses = React.useMemo(() => budgetExpenses || [], [budgetExpenses]);
 
   // Filtered expenses based on current filters
@@ -72,56 +69,21 @@ function BudgetExpensesListComponent({
       filtered = filtered.filter(expense => expense.payment_status === filters.status);
     }
 
-    // Apply date range filter
-    if (filters.dateRange !== 'all') {
-      const now = new Date();
-      const filterDate = (() => {
-        switch (filters.dateRange) {
-          case 'today':
-            return new Date(now.setHours(0, 0, 0, 0));
-          case 'this-week': {
-            const startOfWeek = new Date(now);
-            startOfWeek.setDate(now.getDate() - now.getDay());
-            return startOfWeek;
-          }
-          case 'this-month':
-            return new Date(now.getFullYear(), now.getMonth(), 1);
-          case 'last-30-days':
-            return new Date(now.setDate(now.getDate() - 30));
-          default:
-            return null;
-        }
-      })();
 
-      if (filterDate) {
-        filtered = filtered.filter(expense => 
-          new Date(expense.created_at) >= filterDate
-        );
-      }
-    }
-
-    // Apply amount range filter
-    if (filters.amountRange !== 'all') {
-      filtered = filtered.filter(expense => {
-        const amount = expense.amount;
-        switch (filters.amountRange) {
-          case 'under-100':
-            return amount < 100;
-          case '100-500':
-            return amount >= 100 && amount <= 500;
-          case '500-1000':
-            return amount >= 500 && amount <= 1000;
-          case 'over-1000':
-            return amount > 1000;
-          default:
-            return true;
-        }
-      });
-    }
-
-    // Apply category filter
+    // Apply category filter - map UI category to transaction type
     if (filters.category !== 'all') {
-      filtered = filtered.filter(expense => expense.category === filters.category);
+      const categoryToTransactionType: Record<string, string> = {
+        'materials': 'MATERIAL_PURCHASE',
+        'labor': 'LABOR',
+        'equipment': 'EQUIPMENT_RENTAL', 
+        'permits': 'PERMIT_FEE',
+        'design': 'DESIGN_FEE',
+        'other': 'OTHER'
+      };
+      const transactionType = categoryToTransactionType[filters.category];
+      if (transactionType) {
+        filtered = filtered.filter(expense => expense.transaction_type === transactionType);
+      }
     }
 
     return filtered;
@@ -148,8 +110,6 @@ function BudgetExpensesListComponent({
     }
   }, []);
 
-  // Removed unused _formatDate function
-
   // Category configuration for simplified breakdown with modern styling
   const CATEGORY_CONFIG = React.useMemo(() => ({
     material_costs: { label: 'Materials', icon: Hammer, color: 'bg-blue-500', bgColor: 'bg-white', textColor: 'text-blue-600', borderColor: 'border-blue-100', iconBg: 'bg-blue-50' },
@@ -160,300 +120,430 @@ function BudgetExpensesListComponent({
     other_costs: { label: 'Other', icon: MoreHorizontal, color: 'bg-slate-500', bgColor: 'bg-white', textColor: 'text-slate-600', borderColor: 'border-slate-100', iconBg: 'bg-slate-50' }
   }), []);
 
-  // Removed unused _getCategoryColor function
-
   // Memoized computed values - use base_amount for consistent USD totals
   // Always display totals in USD for consistency across multi-currency projects
   const totalAmountUSD = React.useMemo(() => {
     return filteredExpenses.reduce((sum, expense) => sum + (expense.base_amount || expense.amount), 0);
   }, [filteredExpenses]);
 
-  // Removed unused _totalsByCurrency calculation
-
   // Get active filter count for badge
   const activeFilterCount = React.useMemo(() => {
     let count = 0;
     if (filters.search) count++;
     if (filters.status !== 'all') count++;
-    if (filters.dateRange !== 'all') count++;
-    if (filters.amountRange !== 'all') count++;
     if (filters.category !== 'all') count++;
     return count;
   }, [filters]);
 
-  // Simplified category breakdown data
+  // Enhanced category breakdown data with both database totals and filtered totals
   const categoryBreakdownData = React.useMemo(() => {
     if (!consolidatedData?.categoryTotals) return null;
     
-    const totalAmount = Object.values(consolidatedData.categoryTotals).reduce((sum, amount) => sum + amount, 0);
-    if (totalAmount === 0) return null;
+    // Calculate totals from database (all expenses)
+    const dbTotalAmount = Object.values(consolidatedData.categoryTotals).reduce((sum, amount) => sum + amount, 0);
     
-    return Object.entries(consolidatedData.categoryTotals)
-      .filter(([_, amount]) => amount > 0)
-      .map(([key, amount]) => ({
-        key: key as keyof typeof CATEGORY_CONFIG,
-        amount,
-        percentage: (amount / totalAmount) * 100,
-        config: CATEGORY_CONFIG[key as keyof typeof CATEGORY_CONFIG]
-      }))
-      .sort((a, b) => b.amount - a.amount)
-      .slice(0, 4); // Show top 4 categories only
-  }, [consolidatedData?.categoryTotals, CATEGORY_CONFIG]);
+    // Calculate totals from filtered expenses (current view)
+    // Map database transaction_type to category totals keys (matches SQL view logic)
+    const transactionTypeMapping: Record<string, string> = {
+      'MATERIAL_PURCHASE': 'material_costs',
+      'LABOR': 'labor_costs', 
+      'EQUIPMENT_RENTAL': 'equipment_costs',
+      'PERMIT_FEE': 'permit_costs',
+      'DESIGN_FEE': 'design_costs',
+      'OTHER': 'other_costs'
+    };
+    
+    const filteredCategoryTotals = filteredExpenses.reduce((acc, expense) => {
+      // Use transaction_type to match database view logic exactly
+      const transactionType = expense.transaction_type;
+      const categoryKey = transactionTypeMapping[transactionType || 'OTHER'] || 'other_costs';
+      const amount = expense.base_amount || expense.amount || 0;
+      acc[categoryKey] = (acc[categoryKey] || 0) + amount;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const filteredTotalAmount = Object.values(filteredCategoryTotals).reduce((sum, amount) => sum + amount, 0);
+    
+    if (dbTotalAmount === 0 && filteredTotalAmount === 0) return null;
+    
+    // Combine database totals with filtered totals for comparison
+    const allCategories = new Set([
+      ...Object.keys(consolidatedData.categoryTotals),
+      ...Object.keys(filteredCategoryTotals)
+    ]);
+    
+    return Array.from(allCategories)
+      .map(key => {
+        const dbAmount = (consolidatedData.categoryTotals as Record<string, number>)[key] || 0;
+        const filteredAmount = filteredCategoryTotals[key] || 0;
+        const config = CATEGORY_CONFIG[key as keyof typeof CATEGORY_CONFIG];
+        
+        if (!config || (dbAmount === 0 && filteredAmount === 0)) return null;
+        
+        return {
+          key: key as keyof typeof CATEGORY_CONFIG,
+          dbAmount,
+          filteredAmount,
+          dbPercentage: dbTotalAmount > 0 ? (dbAmount / dbTotalAmount) * 100 : 0,
+          filteredPercentage: filteredTotalAmount > 0 ? (filteredAmount / filteredTotalAmount) * 100 : 0,
+          config,
+          isFiltered: activeFilterCount > 0
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => (b?.dbAmount || 0) - (a?.dbAmount || 0))
+      .slice(0, 6); // Show top 6 categories
+  }, [consolidatedData?.categoryTotals, filteredExpenses, CATEGORY_CONFIG, activeFilterCount]);
+
+  // Loading skeleton component
+  const CategorySkeleton = () => (
+    <ProCard className="p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-8 w-8 rounded-lg" />
+          <div>
+            <Skeleton className="h-5 w-32 mb-2" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+        </div>
+        <Skeleton className="h-8 w-8 rounded-lg" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+            <div className="flex items-start justify-between mb-3">
+              <Skeleton className="h-8 w-8 rounded-lg" />
+              <Skeleton className="h-5 w-10 rounded" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-16 mb-1" />
+              <Skeleton className="h-6 w-20" />
+              <Skeleton className="h-2 w-full rounded-full" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </ProCard>
+  );
+
+  // Error state component
+  const ErrorState = () => (
+    <ProCard className="p-8 text-center">
+      <div className="w-12 h-12 mx-auto mb-4 bg-red-100 rounded-lg flex items-center justify-center">
+        <AlertCircle className="h-6 w-6 text-red-600" />
+      </div>
+      <h3 className="text-lg font-semibold text-slate-900 mb-2">Unable to load expenses</h3>
+      <p className="text-slate-600 mb-4 text-sm">
+        There was an error loading your expense data. Please try refreshing the page.
+      </p>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => window.location.reload()}
+      >
+        <Loader2 className="h-4 w-4 mr-2" />
+        Refresh Page
+      </Button>
+    </ProCard>
+  );
 
   return (
     <div className={cn("space-y-6", className)}>
-      {/* Simplified Category Breakdown Section */}
-      {showCategoryBreakdown && categoryBreakdownData && (
-        <Card className="border-slate-200 shadow-sm">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2 text-slate-800">
-                <BarChart3 className="h-5 w-5 text-blue-600" />
-                Category Overview
-              </CardTitle>
+        {/* Show error state if there's an error */}
+        {error && <ErrorState />}
+        
+        {/* Show loading skeleton while loading */}
+        {isLoading && showCategoryBreakdown && <CategorySkeleton />}
+        
+        {/* Category Overview */}
+        {!isLoading && !error && showCategoryBreakdown && categoryBreakdownData && (
+        <ProCard accent="blue">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <BarChart3 className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">Category Breakdown</h3>
+                  <p className="text-sm text-slate-600">Spending distribution by category</p>
+                </div>
+              </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowCategoryBreakdown(false)}
-                className="h-8 w-8 p-0 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full"
+                className="h-8 w-8 p-0 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg"
               >
                 <X className="h-4 w-4" />
               </Button>
             </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="grid grid-cols-2 gap-4">
-              {categoryBreakdownData.map(({ key, amount, percentage, config }) => {
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {categoryBreakdownData.map((item) => {
+                if (!item) return null;
+                const { key, dbAmount, filteredAmount, dbPercentage, filteredPercentage, config, isFiltered } = item;
                 const Icon = config.icon;
+                const displayAmount = isFiltered ? filteredAmount : dbAmount;
+                const displayPercentage = isFiltered ? filteredPercentage : dbPercentage;
+                
                 return (
-                  <div key={key} className={`group p-4 rounded-xl ${config.bgColor} ${config.borderColor} border hover:shadow-sm transition-all duration-200 hover:scale-[1.02]`}>
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className={`p-2 rounded-lg ${config.iconBg} group-hover:scale-110 transition-transform duration-200`}>
-                        <Icon className={`h-4 w-4 ${config.textColor}`} />
+                  <div 
+                    key={key} 
+                    className="p-4 rounded-xl bg-white border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all duration-200"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className={`p-2 rounded-lg ${config.iconBg}`}>
+                        <Icon className={`h-5 w-5 ${config.textColor}`} />
                       </div>
-                      <span className="text-sm font-medium text-slate-700">{config.label}</span>
+                      <Badge 
+                        variant="secondary"
+                        className={`text-xs font-semibold ${config.textColor} bg-slate-50 border-slate-200`}
+                      >
+                        {displayPercentage.toFixed(0)}%
+                      </Badge>
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-lg font-semibold text-slate-900">
-                          {formatCurrency(amount, consolidatedData?.currency || 'USD')}
-                        </span>
-                        <Badge variant="secondary" className={`text-xs ${config.textColor} bg-slate-50 border-slate-200 font-medium`}>
-                          {percentage.toFixed(0)}%
-                        </Badge>
+                    
+                    <div className="space-y-3">
+                      <div>
+                        <h4 className="text-sm font-medium text-slate-700 mb-1">{config.label}</h4>
+                        <p className="text-xl font-bold text-slate-900">
+                          {formatCurrency(displayAmount, consolidatedData?.currency || 'USD')}
+                        </p>
+                        {isFiltered && filteredAmount !== dbAmount && (
+                          <p className="text-xs text-slate-500 mt-1">
+                            of {formatCurrency(dbAmount, consolidatedData?.currency || 'USD')} total
+                          </p>
+                        )}
                       </div>
-                      <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                        <div 
-                          className={`h-full ${config.color} rounded-full transition-all duration-500 ease-out`}
-                          style={{ width: `${Math.min(percentage, 100)}%` }}
-                        />
+                      
+                      <div className="space-y-2">
+                        <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full ${config.color} transition-all duration-500 ease-out`}
+                            style={{ width: `${Math.min(displayPercentage, 100)}%` }}
+                          />
+                        </div>
+                        {isFiltered && filteredAmount !== dbAmount && (
+                          <div className="w-full bg-slate-100 rounded-full h-1 overflow-hidden opacity-50">
+                            <div 
+                              className={`h-full rounded-full ${config.color} opacity-40`}
+                              style={{ width: `${Math.min(dbPercentage, 100)}%` }}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
                 );
               })}
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Main Expenses Card */}
-      <Card className="overflow-hidden">
-        <CardHeader className="pb-4 bg-gradient-to-r from-white to-slate-50/50">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <CardTitle className="text-lg font-semibold">Expenses</CardTitle>
-              {totalAmountUSD > 0 && (
-                <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
-                  {formatCurrency(totalAmountUSD, 'USD')}
-                </Badge>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowFilters(!showFilters)}
-                className={cn(
-                  'h-8 px-3 transition-all duration-200',
-                  showFilters 
-                    ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm' 
-                    : 'hover:bg-slate-50'
-                )}
-              >
-                <Filter className="h-3 w-3 mr-1" />
-                Filters
-                {activeFilterCount > 0 && (
-                  <Badge 
-                    variant="secondary" 
-                    className="ml-2 h-5 w-5 p-0 bg-blue-600 text-white text-xs flex items-center justify-center"
-                  >
-                    {activeFilterCount}
-                  </Badge>
-                )}
-              </Button>
-              {onAddExpense && (
-                <Button
-                  size="sm"
-                  onClick={onAddExpense}
-                  className="h-8 px-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm"
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Add
-                </Button>
-              )}
-            </div>
           </div>
-          
-          {/* Modern Filter Summary */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-slate-600">
-              <TrendingUp className="h-4 w-4" />
-              <span>
-                {filteredExpenses.length} of {expenses.length} expenses
-              </span>
-              {activeFilterCount > 0 && (
+        </ProCard>
+        )}
+
+      {/* Main Expenses Section */}
+      {!isLoading && !error && (
+        <ProCard accent="neutral" className="overflow-hidden">
+          <div className="p-6 border-b border-slate-200">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <TrendingUp className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">Expense Management</h3>
+                  <div className="flex flex-wrap items-center gap-2 mt-1">
+                    <span className="text-sm text-slate-600">
+                      {filteredExpenses.length} of {expenses.length} expenses
+                    </span>
+                    {totalAmountUSD > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        {formatCurrency(totalAmountUSD, 'USD')} total
+                      </Badge>
+                    )}
+                    {activeFilterCount > 0 && (
+                      <Badge variant="default" className="text-xs">
+                        {activeFilterCount} filter{activeFilterCount !== 1 ? 's' : ''} active
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={cn(
+                    'transition-colors',
+                    showFilters && 'bg-blue-50 border-blue-200 text-blue-700'
+                  )}
+                >
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filters
+                  {activeFilterCount > 0 && (
+                    <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 text-xs">
+                      {activeFilterCount}
+                    </Badge>
+                  )}
+                </Button>
+                {onAddExpense && (
+                  <Button
+                    size="sm"
+                    onClick={onAddExpense}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Expense
+                  </Button>
+                )}
+              </div>
+            </div>
+            
+            {activeFilterCount > 0 && (
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200">
+                <span className="text-sm text-slate-600">Active filters applied</span>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setFilters({
                     search: '',
-                    status: 'all',
-                    dateRange: 'all',
-                    amountRange: 'all',
+                    status: 'all' as const,
                     category: 'all'
                   })}
-                  className="h-6 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                  className="text-xs text-blue-600 hover:text-blue-700"
                 >
+                  <X className="h-3 w-3 mr-1" />
                   Clear all
                 </Button>
-              )}
-            </div>
+              </div>
+            )}
+            
             {!showCategoryBreakdown && categoryBreakdownData && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowCategoryBreakdown(true)}
-                className="h-6 px-2 text-xs text-slate-600 hover:text-slate-700 hover:bg-slate-50"
-              >
-                <BarChart3 className="h-3 w-3 mr-1" />
-                Show categories
-              </Button>
+              <div className="mt-4 pt-4 border-t border-slate-200">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowCategoryBreakdown(true)}
+                  className="text-sm text-slate-600 hover:text-slate-700"
+                >
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Show category breakdown
+                </Button>
+              </div>
             )}
           </div>
-        </CardHeader>
 
-        <CardContent className="pt-0">
-          {/* Modern Minimal Filters */}
-          {showFilters && (
-            <div className="mb-6 p-4 bg-slate-50/50 rounded-lg border border-slate-200/60">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Search Filter */}
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-slate-700">Search</label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                      placeholder="Search expenses..."
-                      value={filters.search}
-                      onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                      className="pl-9 h-9 bg-white border-slate-200 focus:border-blue-300 focus:ring-blue-200"
-                    />
+          <div className="p-6">
+            {/* Filters */}
+            {showFilters && (
+              <div className="mb-6 p-4 bg-slate-50 rounded-lg border">
+                <h4 className="text-sm font-medium text-slate-900 mb-3">Filter Expenses</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Search Filter */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-slate-700">Search</label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input
+                        placeholder="Search by description..."
+                        value={filters.search}
+                        onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Status Filter */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-slate-700">Payment Status</label>
+                    <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value as typeof prev.status }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All statuses" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="PAID">Paid</SelectItem>
+                        <SelectItem value="PENDING">Pending</SelectItem>
+                        <SelectItem value="APPROVED">Approved</SelectItem>
+                        <SelectItem value="FAILED">Failed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Category Filter */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-slate-700">Category</label>
+                    <Select value={filters.category} onValueChange={(value) => setFilters(prev => ({ ...prev, category: value }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All categories" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Categories</SelectItem>
+                        <SelectItem value="materials">Materials</SelectItem>
+                        <SelectItem value="labor">Labor</SelectItem>
+                        <SelectItem value="equipment">Equipment</SelectItem>
+                        <SelectItem value="permits">Permits</SelectItem>
+                        <SelectItem value="design">Design</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-
-                {/* Status Filter */}
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-slate-700">Status</label>
-                  <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
-                    <SelectTrigger className="h-9 bg-white border-slate-200 focus:border-blue-300">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="paid">Paid</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="overdue">Overdue</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Category Filter */}
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-slate-700">Category</label>
-                  <Select value={filters.category} onValueChange={(value) => setFilters(prev => ({ ...prev, category: value }))}>
-                    <SelectTrigger className="h-9 bg-white border-slate-200 focus:border-blue-300">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
-                      <SelectItem value="materials">Materials</SelectItem>
-                      <SelectItem value="labor">Labor</SelectItem>
-                      <SelectItem value="equipment">Equipment</SelectItem>
-                      <SelectItem value="permits">Permits</SelectItem>
-                      <SelectItem value="design">Design</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Empty State */}
-          {expenses.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-slate-500">
-                <div className="text-sm">No expenses recorded yet</div>
+            {/* Empty States */}
+            {expenses.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-12 h-12 mx-auto mb-4 bg-slate-100 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6 text-slate-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">No expenses yet</h3>
+                <p className="text-slate-500 mb-4 max-w-sm mx-auto">Start tracking your project expenses to monitor budget utilization and maintain financial oversight.</p>
                 {onAddExpense && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={onAddExpense}
-                    className="mt-3"
-                  >
+                  <Button onClick={onAddExpense} className="bg-blue-600 hover:bg-blue-700">
                     <Plus className="h-4 w-4 mr-2" />
                     Add First Expense
                   </Button>
                 )}
               </div>
-            </div>
-          ) : filteredExpenses.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-slate-500">
-                <div className="text-sm">No expenses match your filters</div>
+            ) : filteredExpenses.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-12 h-12 mx-auto mb-4 bg-amber-100 rounded-lg flex items-center justify-center">
+                  <Search className="h-6 w-6 text-amber-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">No matching expenses</h3>
+                <p className="text-slate-500 mb-4 max-w-sm mx-auto">No expenses match your current filters. Try adjusting your search criteria or clearing filters.</p>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="outline"
                   onClick={() => setFilters({
                     search: '',
-                    status: 'all',
-                    dateRange: 'all',
-                    amountRange: 'all',
+                    status: 'all' as const,
                     category: 'all'
                   })}
-                  className="mt-3 text-blue-600 hover:text-blue-700"
                 >
-                  Clear filters
+                  <X className="h-4 w-4 mr-2" />
+                  Clear all filters
                 </Button>
               </div>
-            </div>
-          ) : (
-            /* Expense List */
-            <div className="space-y-3">
-              {filteredExpenses.map((expense) => (
-                <SwipeableExpenseCard
-                  key={expense.id}
-                  expense={expense}
-                  onEdit={onEditExpense}
-                  onDelete={onDeleteExpense}
-                  formatCurrency={formatCurrency}
-                />
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            ) : (
+              /* Expense List */
+              <div className="space-y-3">
+                {filteredExpenses.map((expense, index) => (
+                  <SwipeableExpenseCard
+                    key={expense.id}
+                    expense={expense}
+                    onEdit={onEditExpense}
+                    onDelete={onDeleteExpense}
+                    formatCurrency={formatCurrency}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </ProCard>
+      )}
     </div>
   );
 }

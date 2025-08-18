@@ -44,6 +44,7 @@ export interface ProjectSummary {
   documents: number;
   members: number;
   transactions: number;
+  open_tasks: number;
   
   // Audit fields
   created_at: string;

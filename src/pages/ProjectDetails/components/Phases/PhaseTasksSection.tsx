@@ -36,6 +36,8 @@ import { ToastContainer } from '@/components/ToastContainer';
 import { TaskListSkeleton, OptimisticTaskCard } from '@/components/LoadingSkeletons';
 import { AssigneeSelect } from '@/components/ui/AssigneeSelect';
 import { useTaskAssignment, useBulkAssignTasks } from '@/hooks/mutations';
+import { useAutoTransitionSafe } from '@/contexts/AutoTransitionContext';
+import { AutoTransitionIndicator } from '@/components/ui/AutoTransitionIndicator';
 import React from 'react';
 
 interface PhaseTasksSectionProps {
@@ -214,7 +216,14 @@ function PhaseTasksSectionContent({
     }
   }, []);
 
-  // Use consolidated phase status manager
+  // Phase notifications
+  const notifications = usePhaseNotifications();
+
+  // Auto-transition visual indicators
+  const autoTransition = useAutoTransitionSafe();
+  const currentTransition = autoTransition.getTransition(phase.id);
+
+  // Use consolidated phase status manager with notifications
   const {
     state: { showCompletePrompt, showReopenPrompt },
     actions: {
@@ -227,10 +236,12 @@ function PhaseTasksSectionContent({
     isUpdating,
     error,
     retryLastOperation
-  } = usePhaseStatusManager(phase, tasks);
-
-  // Phase notifications
-  const notifications = usePhaseNotifications();
+  } = usePhaseStatusManager(phase, tasks, {
+    onPhaseAutoTransition: notifications.onPhaseAutoTransition,
+    onTimelineUpdate: notifications.onTimelineUpdate
+  }, {
+    showTransition: autoTransition.showTransition
+  });
 
   // Trigger notifications on error
   React.useEffect(() => {
@@ -289,6 +300,16 @@ function PhaseTasksSectionContent({
   return (
     <>
       <div className="p-4 space-y-2">
+        {/* Auto-transition Indicator */}
+        {currentTransition && (
+          <AutoTransitionIndicator
+            isVisible={true}
+            transitionType={currentTransition.type}
+            onAnimationComplete={() => autoTransition.hideTransition(phase.id)}
+            className="mb-3"
+          />
+        )}
+
         {/* Error Display */}
         {error && <ErrorDisplay error={error} onRetry={retryLastOperation} />}
         

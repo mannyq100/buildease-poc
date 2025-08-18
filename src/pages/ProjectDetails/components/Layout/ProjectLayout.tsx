@@ -9,6 +9,7 @@ import type { CSSProperties } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BudgetOverviewCard, BudgetExpensesList } from '../Budget';
 import { PhaseTimelineCard } from '../Phases';
+import { TimelineSection } from '../Timeline/TimelineSection';
 import {
   ProjectDocumentsSection,
   ProjectSettingsSection,
@@ -24,6 +25,7 @@ import { useProjectDetailsState } from '../../hooks/useProjectDetailsState';
 import type { TaskItem, ProjectUpdateFormData } from '../../types';
 import type { Project } from '@/types/project';
 import type { BudgetExpense, ProjectPhase, TeamMember } from '@/types/projectDetails';
+import type { ProjectSummary } from '@/types/projectSummary';
 import type { UseMutationResult } from '@tanstack/react-query';
 
 // Helper interfaces for type safety
@@ -42,7 +44,7 @@ interface TaskModal {
 interface ProjectLayoutProps {
   // Data
   project: Project;
-  projectData: Record<string, unknown>;
+  projectData: ProjectSummary | Record<string, unknown>;
   budgetExpenses?: BudgetExpense[];
   teamMembers: TeamMember[];
   phases: ProjectPhase[];
@@ -256,7 +258,10 @@ export function ProjectLayout({
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <BudgetOverviewCard 
-                project={project}
+                project={{
+                  id: project.id,
+                  name: project.name
+                }}
                 onAddExpense={() => modalManagement.openCreateModal('budget')}
               />
               <PhaseTimelineCard 
@@ -278,7 +283,10 @@ export function ProjectLayout({
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-1">
                 <BudgetOverviewCard 
-                  project={project}
+                  project={{
+                    id: project.id,
+                    name: project.name
+                  }}
                   onAddExpense={() => modalManagement.openCreateModal('budget')}
                 />
               </div>
@@ -296,7 +304,7 @@ export function ProjectLayout({
 
           {/* Timeline Tab */}
           <TabsContent value="timeline" className="space-y-6 mt-6" id="section-timeline">
-            <PhaseTimelineCard 
+            <TimelineSection 
               phases={phases}
               teamMembers={teamMembers}
               projectId={project.id}

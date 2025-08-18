@@ -86,32 +86,93 @@ export function usePhaseNotifications() {
     phaseName: string,
     reason: string
   ) => {
-    const messages = {
-      'PLANNING_to_IN_PROGRESS': `Started automatically because ${reason}`,
-      'IN_PROGRESS_to_COMPLETED': `Completed automatically because ${reason}`,
-      'COMPLETED_to_IN_PROGRESS': `Reopened because ${reason}`
+    const statusEmojis = {
+      'PLANNING': '📋',
+      'IN_PROGRESS': '🔨',
+      'COMPLETED': '✅',
+      'PAUSED': '⏸️'
     };
 
-    const key = `${fromStatus}_to_${toStatus}` as keyof typeof messages;
-    const description = messages[key] || reason;
+    const transitionMessages = {
+      'PLANNING_to_IN_PROGRESS': {
+        title: '🚀 Phase Started Automatically',
+        description: `"${phaseName}" is now in progress because ${reason}`,
+        type: 'info' as const
+      },
+      'IN_PROGRESS_to_COMPLETED': {
+        title: '🎉 Phase Completed Automatically',
+        description: `"${phaseName}" was marked complete because ${reason}`,
+        type: 'success' as const
+      },
+      'COMPLETED_to_IN_PROGRESS': {
+        title: '🔄 Phase Reopened Automatically',
+        description: `"${phaseName}" was reopened because ${reason}`,
+        type: 'warning' as const
+      }
+    };
 
-    toast.info(
-      `Phase Auto-Updated`,
-      `"${phaseName}": ${description}`,
-      { duration: 4000 }
-    );
+    const key = `${fromStatus}_to_${toStatus}` as keyof typeof transitionMessages;
+    const message = transitionMessages[key];
+
+    if (message) {
+      toast[message.type](message.title, message.description, { 
+        duration: 5000,
+        action: {
+          label: 'View Timeline',
+          onClick: () => {
+            // Scroll to timeline section
+            const timelineTab = document.querySelector('[data-value="timeline"]') as HTMLElement;
+            if (timelineTab) {
+              timelineTab.click();
+            }
+          }
+        }
+      });
+    } else {
+      // Fallback for unknown transitions
+      const fromEmoji = statusEmojis[fromStatus as keyof typeof statusEmojis] || '🔄';
+      const toEmoji = statusEmojis[toStatus as keyof typeof statusEmojis] || '📄';
+      
+      toast.info(
+        `${fromEmoji} → ${toEmoji} Phase Auto-Updated`,
+        `"${phaseName}": ${reason}`,
+        { duration: 4000 }
+      );
+    }
   }, [toast]);
 
   const onTimelineUpdate = useCallback((phaseName: string, updateType: 'started' | 'completed') => {
     const messages = {
-      started: 'Start date recorded',
-      completed: 'Completion date recorded'
+      started: {
+        title: '📅 Timeline Updated',
+        description: `"${phaseName}" actual start date recorded`,
+        emoji: '🏁'
+      },
+      completed: {
+        title: '📅 Timeline Updated', 
+        description: `"${phaseName}" actual completion date recorded`,
+        emoji: '🎯'
+      }
     };
 
+    const message = messages[updateType];
+    
     toast.info(
-      'Timeline Updated',
-      `${phaseName}: ${messages[updateType]}`,
-      { duration: 3000 }
+      `${message.emoji} ${message.title}`,
+      message.description,
+      { 
+        duration: 3000,
+        action: {
+          label: 'View Timeline',
+          onClick: () => {
+            // Navigate to timeline tab
+            const timelineTab = document.querySelector('[data-value="timeline"]') as HTMLElement;
+            if (timelineTab) {
+              timelineTab.click();
+            }
+          }
+        }
+      }
     );
   }, [toast]);
 

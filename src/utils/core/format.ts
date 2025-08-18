@@ -10,16 +10,35 @@
  * @returns Formatted currency string
  */
 export function formatCurrency(
-  value: number, 
+  value: number | null | undefined, 
   currency: string = 'USD',
   locale: string = 'en-US'
 ): string {
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
+  // Handle null, undefined, or invalid values
+  const numValue = typeof value === 'number' && !isNaN(value) ? value : 0;
+  
+  // Validate currency code
+  const validCurrency = currency && typeof currency === 'string' && currency.length === 3 
+    ? currency.toUpperCase() 
+    : 'USD';
+
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: validCurrency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(numValue);
+  } catch {
+    // Fallback to USD if currency is invalid
+    console.warn(`Invalid currency code: ${validCurrency}, falling back to USD`);
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(numValue);
+  }
 }
 
 /**

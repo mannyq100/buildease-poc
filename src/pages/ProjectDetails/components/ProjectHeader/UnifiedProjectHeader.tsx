@@ -17,7 +17,6 @@ import type { Project, ProjectStatus } from '@/types/project';
 import type { ProjectPhase } from '@/types/projectDetails';
 import type { TeamMember } from '@/types/project';
 import { useProjectSummary } from '@/hooks/queries/useProjectSummary';
-import { useProjectTasks } from '@/hooks/queries/useTask';
 import { ProCard } from '@/components/ui/ProCard';
 import type { ProjectSummary } from '@/types/projectSummary';
 
@@ -75,33 +74,29 @@ export function UnifiedProjectHeader({
   onUpdateProject,
 }: UnifiedProjectHeaderProps) {
   const { data: summary } = useProjectSummary(project.id);
-  const { data: tasks = [] } = useProjectTasks(project.id);
 
-  // Process data once with useMemo
+  // Process data once with useMemo - optimized to use view data directly
   const metrics = useMemo(() => {
     type SummaryLike = Partial<ProjectSummary> | null;
     const s = summary as SummaryLike;
+    
+    // Use view calculations directly instead of recalculating
     const progress = s?.progress ?? project.progress ?? 0;
     const budget = s?.budget ?? project.budget ?? 0;
     const spent = s?.spent ?? 0;
     const currency = s?.currency ?? project.currency ?? 'USD';
-    const remaining = s?.remaining ?? (budget - spent);
-    const spentPercentage = budget > 0 ? Math.round((spent / budget) * 100) : 0;
+    const remaining = s?.remaining ?? Math.max(0, budget - spent);
+    const spentPercentage = s?.spent_percentage ?? (budget > 0 ? Math.round((spent / budget) * 100) : 0);
 
     // Calculate timeline
     const endDate = s?.end_date || project.end_date;
     const daysRemaining = endDate ? 
       Math.ceil((new Date(endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null;
 
-    // Phase calculations
+    // Use view data for counts - more efficient
     const phaseCount = s?.phases ?? phases.length;
     const completedPhases = phases.filter(p => 
       String(p.status || '').toUpperCase() === 'COMPLETED'
-    ).length;
-
-    // Task calculations
-    const openTasks = (tasks as { status?: string | null }[]).filter(
-      t => !t.status || t.status === 'PENDING' || t.status === 'IN_PROGRESS'
     ).length;
 
     return {
@@ -114,7 +109,7 @@ export function UnifiedProjectHeader({
       daysRemaining,
       phaseCount,
       completedPhases,
-      openTasks,
+      openTasks: s?.open_tasks ?? 0,
       materialCount: s?.materials ?? 0,
       health: s?.health ?? 'good',
       memberCount: s?.members ?? activeTeamMembers.length,
@@ -124,7 +119,7 @@ export function UnifiedProjectHeader({
       location: project.location,
       projectType: s?.project_type ?? 'Construction'
     };
-  }, [summary, project, phases, activeTeamMembers, tasks]);
+  }, [summary, project, phases, activeTeamMembers]);
 
   // Action handlers
   const handleUpdateProject = useCallback(() => {

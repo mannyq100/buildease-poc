@@ -45,9 +45,20 @@ interface UsePhaseStatusManagerReturn {
   retryLastOperation: () => void;
 }
 
+interface PhaseNotifications {
+  onPhaseAutoTransition?: (fromStatus: string, toStatus: string, phaseName: string, reason: string) => void;
+  onTimelineUpdate?: (phaseName: string, updateType: 'started' | 'completed') => void;
+}
+
+interface AutoTransitionCallbacks {
+  showTransition?: (phaseId: string, type: 'started' | 'completed' | 'reopened') => void;
+}
+
 export function usePhaseStatusManager(
   phase: ProjectPhase,
-  tasks: EnhancedTask[]
+  tasks: EnhancedTask[],
+  notifications?: PhaseNotifications,
+  autoTransition?: AutoTransitionCallbacks
 ): UsePhaseStatusManagerReturn {
   // Local state for UI prompts
   const [state, setState] = useState<PhaseStatusState>({
@@ -197,6 +208,32 @@ export function usePhaseStatusManager(
     phaseIdRef.current = phase.id;
   }, [phase.status, phase.timeline, phase.id]);
 
+  // Auto-transition notification callbacks
+  const notifyAutoTransition = useCallback((
+    fromStatus: string,
+    toStatus: string,
+    reason: string,
+    timelineUpdates: Partial<ProjectPhase['timeline']>
+  ) => {
+    // Call notification function if available
+    if (notifications?.onPhaseAutoTransition) {
+      notifications.onPhaseAutoTransition(fromStatus, toStatus, phase.name, reason);
+    }
+
+    // Notify about timeline updates
+    if (notifications?.onTimelineUpdate) {
+      if (timelineUpdates.actual_start && !phaseTimelineRef.current?.actual_start) {
+        notifications.onTimelineUpdate(phase.name, 'started');
+      }
+      if (timelineUpdates.actual_end && !phaseTimelineRef.current?.actual_end) {
+        notifications.onTimelineUpdate(phase.name, 'completed');
+      }
+    }
+
+    // Log for debugging (can be removed in production)
+    console.log(`🔄 Phase "${phase.name}" transitioned: ${fromStatus} → ${toStatus} (${reason})`);
+  }, [phase.name, notifications]);
+
   // Unified effect for all phase status transitions (with optimized dependencies)
   useEffect(() => {
     const prev = prevMetricsRef.current;
@@ -250,6 +287,32 @@ export function usePhaseStatusManager(
       if (suggestedStatus === 'COMPLETED' && !phaseTimelineRef.current?.actual_end) {
         timelineUpdates.actual_end = nowIso;
       }
+
+      // Generate context-aware reason for the transition
+      const getTransitionReason = () => {
+        if (phaseStatus === 'PLANNING' && suggestedStatus === 'IN_PROGRESS') {
+          return currentMetrics.inProgress > 0 
+            ? `${currentMetrics.inProgress} task${currentMetrics.inProgress > 1 ? 's' : ''} started`
+            : 'first task was started';
+        }
+        if (phaseStatus === 'IN_PROGRESS' && suggestedStatus === 'COMPLETED') {
+          return `all ${currentMetrics.total} task${currentMetrics.total > 1 ? 's' : ''} completed`;
+        }
+        if (phaseStatus === 'COMPLETED' && suggestedStatus === 'IN_PROGRESS') {
+          return 'a completed task was reopened';
+        }
+        return 'task status changed';
+      };
+
+      // Notify about automatic transition
+      notifyAutoTransition(phaseStatus, suggestedStatus, getTransitionReason(), timelineUpdates);
+
+      // Show visual transition indicator
+      if (autoTransition?.showTransition) {
+        const transitionType = suggestedStatus === 'IN_PROGRESS' ? 'started' :
+                             suggestedStatus === 'COMPLETED' ? 'completed' : 'reopened';
+        autoTransition.showTransition(phase.id, transitionType);
+      }
       
       updatePhase.mutate({
         id: phaseIdRef.current,
@@ -267,7 +330,7 @@ export function usePhaseStatusManager(
 
     // Update previous metrics
     prevMetricsRef.current = currentMetrics;
-  }, [taskMetrics, tasks, state.hasPrompted, state.showReopenPrompt, updatePhase]);
+  }, [taskMetrics, tasks, state.hasPrompted, state.showReopenPrompt, updatePhase, notifyAutoTransition]);
 
   // Retry function for failed operations
   const retryLastOperation = useCallback(async () => {
