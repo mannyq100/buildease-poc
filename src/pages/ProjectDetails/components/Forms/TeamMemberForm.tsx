@@ -76,7 +76,7 @@ const validateForm = (data: TeamMemberFormData): FormErrors => {
   return errors;
 };
 
-export function TeamMemberForm({
+const TeamMemberFormComponent = function TeamMemberForm({
   mode,
   initialData,
   onSubmit,
@@ -313,4 +313,7 @@ export function TeamMemberForm({
       </div>
     </form>
   );
-}
+};
+
+// Memoize component to prevent unnecessary re-renders
+export const TeamMemberForm = React.memo(TeamMemberFormComponent);

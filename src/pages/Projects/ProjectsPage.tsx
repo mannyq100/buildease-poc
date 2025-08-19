@@ -9,7 +9,6 @@ import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { ProjectsPageSkeleton } from '@/components/ui/projects-skeletons';
 import { ProjectsContent } from './ProjectsContent';
-import { FloatingActionButton } from '@/components/ui/TouchOptimizedButton';
 import { useOnlineStatus, useAdaptiveLoading } from '@/hooks/useOnlineStatus';
 import type { ProjectsFilters, ProjectsViewSettings } from '@/types/enhanced-projects';
 
@@ -80,17 +79,6 @@ export function ProjectsPage() {
           />
         </Suspense>
         
-        {/* Enhanced Mobile Floating Action Button */}
-        <div className="sm:hidden">
-          <FloatingActionButton
-            position="bottom-right"
-            onClick={handleCreateProject}
-            hapticFeedback
-            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-2xl hover:shadow-blue-500/25 border-0 w-14 h-14 transition-all duration-300 hover:scale-105"
-          >
-            <Plus className="h-6 w-6 text-white" />
-          </FloatingActionButton>
-        </div>
       </div>
     </div>
   );

@@ -85,12 +85,10 @@ export function ProjectDocumentsSection({
   }, [actions]);
 
   const handleDelete = useCallback(async (item: MediaItem) => {
-    console.log('🗑️ Deleting item:', item);
     
     try {
       if (item.category === 'progress') {
         // Delete progress image from Supabase storage
-        console.log('💾 Deleting progress image from storage...');
         
         const fileName = item.name;
         const { error: deleteError } = await supabase.storage
@@ -120,7 +118,6 @@ export function ProjectDocumentsSection({
         
       } else if (item.category === 'inspiration') {
         // Delete inspiration image from project array and storage
-        console.log('💾 Deleting inspiration image from project and storage...');
         
         // Delete from storage first
         const fileName = item.name;
@@ -129,7 +126,6 @@ export function ProjectDocumentsSection({
           .remove([`${project.id}/${fileName}`]);
         
         if (storageError) {
-          console.warn('⚠️ Storage deletion failed:', storageError.message);
           // Continue with database deletion even if storage fails
         }
         
@@ -152,7 +148,6 @@ export function ProjectDocumentsSection({
         
       } else if (item.category === 'profile') {
         // Delete profile image from project and storage
-        console.log('💾 Deleting profile image from project and storage...');
         
         // Delete from storage first
         const fileName = item.name;
@@ -161,7 +156,6 @@ export function ProjectDocumentsSection({
           .remove([`${project.id}/${fileName}`]);
         
         if (storageError) {
-          console.warn('⚠️ Storage deletion failed:', storageError.message);
           // Continue with database deletion even if storage fails
         }
         
@@ -183,7 +177,6 @@ export function ProjectDocumentsSection({
         // Validate that this is a document category
         
         // Delete document from both storage and database
-        console.log('💾 Deleting document from storage and database...');
         
         // First, delete from Supabase storage
         const fileName = item.name;
@@ -192,7 +185,6 @@ export function ProjectDocumentsSection({
           .remove([`${project.id}/${fileName}`]);
         
         if (storageError) {
-          console.warn('⚠️ Storage deletion failed:', storageError.message);
           // Continue with database deletion even if storage fails
         }
         
@@ -218,7 +210,6 @@ export function ProjectDocumentsSection({
         
       } else {
         // Handle unknown item types
-        console.log('💾 Unknown item type for deletion:', item.category);
         toast({
           title: "Delete Error",
           description: "Cannot delete this type of item.",
@@ -226,10 +217,8 @@ export function ProjectDocumentsSection({
         });
       }
       
-      console.log('✅ Delete operation completed successfully');
       
     } catch (error) {
-      console.error('❌ Failed to delete item:', error);
       toast({
         title: "Delete Failed",
         description: error instanceof Error ? error.message : "Failed to delete item. Please try again.",
@@ -254,7 +243,6 @@ export function ProjectDocumentsSection({
         try {
           await onUpdateProject({ profile_image: imageUrl });
         } catch (updateError) {
-          console.warn('Local state update failed, but DB update succeeded:', updateError);
           // Don't throw here since the DB update succeeded
         }
         
@@ -266,7 +254,6 @@ export function ProjectDocumentsSection({
         throw new Error(result.error || 'Failed to update profile image');
       }
     } catch (error) {
-      console.error('Error setting profile image:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to set profile image. Please try again.",
@@ -293,15 +280,12 @@ export function ProjectDocumentsSection({
 
   // Upload handlers using unified state management
   const handleInspirationUpload = useCallback(async (results: UploadResult[]) => {
-    console.log('🔄 Inspiration upload results:', results);
-    console.log('📊 Current project inspiration_images:', project.inspiration_images);
     
     try {
       // Update project state with new inspiration images
       const newInspirationImages = results.map(result => result.url);
       const updatedInspirationImages = [...(project.inspiration_images || []), ...newInspirationImages];
       
-      console.log('💾 Updating project with inspiration_images:', updatedInspirationImages);
       
       // Call the database update
       await onUpdateProject({
@@ -309,7 +293,6 @@ export function ProjectDocumentsSection({
         inspiration_images: updatedInspirationImages
       });
       
-      console.log('✅ Database update completed successfully');
       
       actions.closeUploadModal();
       toast({
@@ -317,7 +300,6 @@ export function ProjectDocumentsSection({
         description: `${results.length} inspiration image(s) uploaded and saved to database.`,
       });
     } catch (error) {
-      console.error('❌ Failed to update database:', error);
       toast({
         title: "Upload Error",
         description: "Images uploaded but failed to save to database. Please try again.",
@@ -327,14 +309,11 @@ export function ProjectDocumentsSection({
   }, [actions, toast, onUpdateProject, project.inspiration_images, project.id]);
 
   const handleProgressUpload = useCallback(async (results: UploadResult[]) => {
-    console.log('🔄 Progress upload results:', results);
-    console.log('📊 Current project progress_images:', project.progress_images);
     
     try {
       // Progress images need to be stored in BOTH Supabase storage AND database
       // This ensures consistency with inspiration images and proper data persistence
       
-      console.log('💾 Updating project with new progress images...');
       
       // Update project state with new progress images (database persistence)
       const newProgressImages = results.map(result => result.url);
@@ -345,12 +324,10 @@ export function ProjectDocumentsSection({
         progress_images: updatedProgressImages
       });
       
-      console.log('✅ Database update completed successfully');
       
       // Also trigger storage refetch for consistency
       await refetchProgressImages();
       
-      console.log('✅ Storage refetch completed successfully');
       
       actions.closeUploadModal();
       toast({
@@ -358,7 +335,6 @@ export function ProjectDocumentsSection({
         description: `${results.length} progress image(s) uploaded and saved to database.`,
       });
     } catch (error) {
-      console.error('❌ Failed to update progress images:', error);
       toast({
         title: "Upload Error",
         description: "Images uploaded but failed to save to database. Please try again.",
@@ -368,7 +344,6 @@ export function ProjectDocumentsSection({
   }, [actions, toast, refetchProgressImages, onUpdateProject, project.progress_images, project.id]);
 
   const handleDocumentUpload = useCallback((results: UploadResult[]) => {
-    console.log('Document upload results:', results);
     
     // Documents are stored in the database via useProjectDocuments hook
     // The upload process should have already created database entries

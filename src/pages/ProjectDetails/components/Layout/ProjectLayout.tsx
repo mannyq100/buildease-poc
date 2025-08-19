@@ -19,7 +19,6 @@ import {
 import { TodaysFocusCard } from '../TodaysFocusCard';
 import { RecentUpdatesCard } from '../Updates/RecentUpdatesCard';
 import { UnifiedProjectHeader } from '../ProjectHeader/UnifiedProjectHeader';
-import { FloatingActionBar } from '../FloatingActionBar';
 import { ModalManager } from '../Modals/ModalManager';
 import { useProjectDetailsState } from '../../hooks/useProjectDetailsState';
 import type { TaskItem, ProjectUpdateFormData } from '../../types';
@@ -363,9 +362,7 @@ export function ProjectLayout({
                     id: project.id,
                     ...updates
                   });
-                  console.log('✅ Project updated successfully:', updates);
                 } catch (error) {
-                  console.error('❌ Failed to update project:', error);
                   throw error; // Re-throw so calling code can handle the error
                 }
               }}
@@ -453,15 +450,6 @@ export function ProjectLayout({
           projectPhases={phases?.map(phase => ({ id: phase.id, name: phase.name })) || []}
         />
 
-        {/* Floating quick actions for mobile productivity */}
-        <FloatingActionBar
-          projectId={projectId}
-          onUpdateProgress={() => setShowUpdateModal(true)}
-          onContactTeam={() => console.log('Contact Team')}
-          onTakePhoto={() => console.log('Take Photo')}
-          onAddNote={() => console.log('Add Note')}
-          onReportIssue={() => console.log('Report Issue')}
-        />
       </div>
     </div>
   );

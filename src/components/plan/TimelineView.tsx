@@ -6,7 +6,6 @@ import { TimelineViewProps } from '@/types/plan/views';
 import { SortableTimelinePhase } from './SortableTimelinePhase';
 import { VirtualizedTimelineView } from './VirtualizedTimelineView';
 import { MobileStickyActionBar } from './MobileStickyActionBar';
-import { MobileFloatingActionButton } from './MobileFloatingActionButton';
 import {
   DndContext,
   closestCenter,
@@ -216,40 +215,6 @@ export const TimelineView = React.memo(function TimelineView({
         visible={true}
       />
 
-      <MobileFloatingActionButton
-        primaryAction={{
-          label: 'Timeline Actions',
-          icon: Plus,
-          onClick: () => {}, // Handled by speed dial
-          color: 'blue'
-        }}
-        secondaryActions={[
-          {
-            label: 'Add Task',
-            icon: CheckSquare,
-            onClick: () => {
-              if (sortedPhases.length > 0) {
-                onAddTask?.(sortedPhases[0].id.toString());
-              }
-            },
-            disabled: !onAddTask || sortedPhases.length === 0,
-            color: 'green'
-          },
-          {
-            label: 'Edit Dates',
-            icon: Calendar,
-            onClick: () => {
-              if (sortedPhases.length > 0) {
-                onEditDates?.(sortedPhases[0].id.toString());
-              }
-            },
-            disabled: !onEditDates || sortedPhases.length === 0,
-            color: 'orange'
-          }
-        ]}
-        visible={true}
-        offset={{ bottom: 100, right: 16 }}
-      />
 
       {/* Modals are now handled by centralized PlanModalManager */}
     </div>

@@ -66,53 +66,6 @@ export const TouchOptimizedButton = React.forwardRef<
 
 TouchOptimizedButton.displayName = "TouchOptimizedButton";
 
-/**
- * Floating Action Button optimized for mobile
- */
-interface FloatingActionButtonProps extends TouchOptimizedButtonProps {
-  position?: 'bottom-right' | 'bottom-left' | 'bottom-center';
-  icon?: React.ComponentType<{ className?: string }>;
-  ariaLabel?: string;
-}
-
-export const FloatingActionButton = React.forwardRef<
-  HTMLButtonElement,
-  FloatingActionButtonProps
->(({ 
-  position = 'bottom-right',
-  className,
-  children,
-  icon: Icon,
-  ariaLabel,
-  ...props 
-}, ref) => {
-  const positionClasses = {
-    'bottom-right': 'fixed bottom-6 right-6',
-    'bottom-left': 'fixed bottom-6 left-6',
-    'bottom-center': 'fixed bottom-6 left-1/2 transform -translate-x-1/2'
-  };
-  
-  return (
-    <TouchOptimizedButton
-      ref={ref}
-      touchSize="lg"
-      hapticFeedback
-      aria-label={ariaLabel}
-      className={cn(
-        positionClasses[position],
-        "rounded-full shadow-lg hover:shadow-xl z-50",
-        "bg-buildease-blue-600 hover:bg-buildease-blue-700 text-white",
-        className
-      )}
-      {...props}
-    >
-      {Icon && <Icon className="h-6 w-6" />}
-      {children}
-    </TouchOptimizedButton>
-  );
-});
-
-FloatingActionButton.displayName = "FloatingActionButton";
 
 /**
  * Quick Action Button for bottom sheets and action panels

@@ -96,9 +96,6 @@ export const LazyMobileStickyActionBar = lazyWithRetry(
   () => import('@/components/plan/MobileStickyActionBar')
 );
 
-export const LazyMobileFloatingActionButton = lazyWithRetry(
-  () => import('@/components/plan/MobileFloatingActionButton')
-);
 
 // Advanced features - Load on demand
 export const LazyDragAndDropProvider = lazyWithRetry(
@@ -164,7 +161,7 @@ export const getBundleInfo = () => {
       components: {
         core: ['OverviewView', 'TimelineView', 'MaterialsView'],
         performance: ['VirtualizedMaterialsTable', 'VirtualizedTimelineView', 'LazyPhaseList'],
-        mobile: ['MobileStickyActionBar', 'MobileFloatingActionButton'],
+        mobile: ['MobileStickyActionBar'],
         modals: ['PhaseFormModal', 'TaskFormModal', 'MaterialModal'],
         advanced: ['ProgressChart', 'ReportGenerator', 'MapView'],
         integrations: ['CalendarIntegration', 'PDFExporter']
@@ -189,7 +186,6 @@ export const preloadCriticalComponents = () => {
     LazyTaskFormModal,
     LazyMaterialModal,
     LazyMobileStickyActionBar,
-    LazyMobileFloatingActionButton
   ];
 
   // Use requestIdleCallback if available, otherwise setTimeout
@@ -244,7 +240,6 @@ export default {
   
   // Mobile components
   MobileStickyActionBar: LazyMobileStickyActionBar,
-  MobileFloatingActionButton: LazyMobileFloatingActionButton,
   
   // Advanced features
   ProjectPhotoGallery: LazyProjectPhotoGallery,

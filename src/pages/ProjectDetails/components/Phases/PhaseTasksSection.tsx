@@ -616,12 +616,10 @@ function TaskCard({
     
     // Validate member exists and is active
     if (!member) {
-      console.warn(`Assigned member ${task.assigned_to} not found in team members`);
       return null;
     }
     
     if (member.status !== 'active') {
-      console.warn(`Assigned member ${member.name} is not active (status: ${member.status})`);
       // Still return the member but with warning - UI will handle inactive state
     }
     

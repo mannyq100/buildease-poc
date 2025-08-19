@@ -14,7 +14,8 @@ export { BudgetView } from './BudgetView';
 export { DistributeModal } from './DistributeModal';
 export { DocumentsView } from './DocumentsView';
 export { MaterialsView } from './MaterialsView';
-export { OverviewView } from './OverviewView';
+// Remove static exports that conflict with dynamic imports
+// OverviewView and TimelineView are now only available via LazyViews
 export { PhaseCard } from './PhaseCard';
 export { PlanActionBar } from './PlanActionBar';
 export { PlanTabNavigation } from './PlanTabNavigation';
@@ -23,8 +24,7 @@ export { default as ProgressHeader } from './ProgressHeader';
 export { default as ProjectOverview } from './ProjectOverview';
 export { default as ProjectPhases } from './ProjectPhases';
 export { default as RecommendationItem } from './RecommendationItem';
-export { TeamView } from './TeamView';
-export { TimelineView } from './TimelineView';
+// TeamView static export removed for proper code splitting
 export { VirtualizedMaterialsTable } from './VirtualizedMaterialsTable';
 export { VirtualizedTeamGrid } from './VirtualizedTeamGrid';
 

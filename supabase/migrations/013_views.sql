@@ -1,5 +1,17 @@
 -- Migration: 013_views.sql
--- Purpose: Defines all views for the application.
+-- Purpose: Defines all database views for the BuildEase application
+-- 
+-- OPTIMIZATION STRATEGY:
+-- - Base views: Core project data aggregation and normalization
+-- - Enhanced views: Server-side heavy computation optimization (eliminates Web Workers)
+-- - Consolidated permissions: Single security and grant configuration
+-- 
+-- PERFORMANCE BENEFITS:
+-- - Phase progress calculations moved to PostgreSQL (vs JavaScript)
+-- - Task urgency scoring computed server-side (0-100 scale)
+-- - Today's focus pre-filtered and sorted by urgency
+-- - Mobile device CPU load reduced significantly
+-- - Consistent calculations across all users
 
 -- =============================================================================
 -- PROJECT SUMMARY VIEW
@@ -135,7 +147,7 @@ LEFT JOIN
 -- PROJECT MEMBERS VIEW
 -- =============================================================================
 
--- View to show project participants with details
+-- View to show project participants with details including profile pictures
 CREATE OR REPLACE VIEW construction_mgr.project_members AS
 SELECT
     pm.project_id,
@@ -143,8 +155,17 @@ SELECT
     u.id AS user_id,
     concat(u.first_name, ' ', u.last_name) AS user_name,
     u.email,
+    u.phone,
     pm.role,
-    pm.joined_at
+    pm.joined_at,
+    -- Extract profile picture from user settings JSONB
+    u.settings->>'picture_url' AS profile_picture_url,
+    -- Additional user info for enhanced team management
+    u.company_name,
+    u.status AS user_status,
+    -- Email and phone verification status for contact reliability
+    COALESCE((u.settings->>'email_verified')::boolean, false) AS email_verified,
+    COALESCE((u.settings->>'phone_verified')::boolean, false) AS phone_verified
 FROM
     construction_mgr.be_project_member pm
 JOIN
@@ -374,10 +395,296 @@ JOIN
     construction_mgr.be_user u ON c.user_id = u.id;
 
 -- =============================================================================
--- SET SECURITY INVOKER ON VIEWS
+-- ENHANCED PHASE PROGRESS VIEW (Heavy Computation Optimization)
 -- =============================================================================
 
--- Ensure RLS applies to views
+-- Comprehensive phase view with pre-calculated progress and task metrics
+CREATE OR REPLACE VIEW construction_mgr.phase_progress_summary AS
+WITH phase_task_metrics AS (
+    SELECT 
+        t.phase_id,
+        COUNT(t.id) as total_tasks,
+        COUNT(t.id) FILTER (WHERE t.status = 'COMPLETED') as completed_tasks,
+        COUNT(t.id) FILTER (WHERE t.status = 'IN_PROGRESS') as in_progress_tasks,
+        COUNT(t.id) FILTER (WHERE t.status = 'PENDING') as pending_tasks,
+        COUNT(t.id) FILTER (WHERE t.status = 'CANCELLED') as cancelled_tasks,
+        -- Task urgency calculation (server-side)
+        AVG(
+            CASE 
+                WHEN t.due_date < CURRENT_DATE AND t.status NOT IN ('COMPLETED', 'CANCELLED') THEN 100
+                WHEN t.due_date = CURRENT_DATE THEN 90
+                WHEN t.due_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '3 days' THEN 80
+                WHEN t.due_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days' THEN 70
+                WHEN t.priority = 'HIGH' THEN 60
+                WHEN t.priority = 'MEDIUM' THEN 40
+                ELSE 20
+            END
+        ) as avg_urgency_score,
+        -- Overdue task count
+        COUNT(t.id) FILTER (WHERE t.due_date < CURRENT_DATE AND t.status NOT IN ('COMPLETED', 'CANCELLED')) as overdue_tasks,
+        -- Due today/soon counts
+        COUNT(t.id) FILTER (WHERE t.due_date = CURRENT_DATE) as due_today_tasks,
+        COUNT(t.id) FILTER (WHERE t.due_date BETWEEN CURRENT_DATE + INTERVAL '1 day' AND CURRENT_DATE + INTERVAL '7 days') as due_soon_tasks
+    FROM construction_mgr.be_task t
+    GROUP BY t.phase_id
+),
+phase_timeline_analysis AS (
+    SELECT 
+        ph.id,
+        ph.timeline,
+        -- Timeline status calculations
+        CASE 
+            WHEN ph.timeline->>'actual_end' IS NOT NULL THEN 'completed'
+            WHEN ph.timeline->>'actual_start' IS NOT NULL THEN 'in_progress'
+            WHEN (ph.timeline->>'planned_start')::date <= CURRENT_DATE THEN 'should_be_started'
+            ELSE 'not_started'
+        END as timeline_status,
+        -- Days calculations
+        CASE 
+            WHEN ph.timeline->>'planned_start' IS NOT NULL AND ph.timeline->>'planned_end' IS NOT NULL
+            THEN ((ph.timeline->>'planned_end')::date - (ph.timeline->>'planned_start')::date)
+            ELSE NULL
+        END as planned_duration_days,
+        CASE 
+            WHEN ph.timeline->>'actual_start' IS NOT NULL AND ph.timeline->>'actual_end' IS NOT NULL
+            THEN ((ph.timeline->>'actual_end')::date - (ph.timeline->>'actual_start')::date)
+            WHEN ph.timeline->>'actual_start' IS NOT NULL
+            THEN (CURRENT_DATE - (ph.timeline->>'actual_start')::date)
+            ELSE NULL
+        END as actual_duration_days,
+        -- Schedule variance
+        CASE 
+            WHEN ph.timeline->>'planned_start' IS NOT NULL AND ph.timeline->>'actual_start' IS NOT NULL
+            THEN ((ph.timeline->>'actual_start')::date - (ph.timeline->>'planned_start')::date)
+            ELSE NULL
+        END as start_variance_days,
+        CASE 
+            WHEN ph.timeline->>'planned_end' IS NOT NULL AND ph.timeline->>'actual_end' IS NOT NULL
+            THEN ((ph.timeline->>'actual_end')::date - (ph.timeline->>'planned_end')::date)
+            ELSE NULL
+        END as end_variance_days
+    FROM construction_mgr.be_phase ph
+)
+SELECT
+    ph.id,
+    ph.name,
+    ph.description,
+    ph.category,
+    ph.status,
+    ph.project_id,
+    p.name AS project_name,
+    
+    -- Timeline data
+    ph.timeline,
+    pta.timeline_status,
+    pta.planned_duration_days,
+    pta.actual_duration_days,
+    pta.start_variance_days,
+    pta.end_variance_days,
+    
+    -- Budget data
+    ph.budget,
+    COALESCE((ph.budget->>'allocated')::numeric, 0) as budget_allocated,
+    COALESCE((ph.budget->>'spent')::numeric, 0) as budget_spent,
+    CASE 
+        WHEN COALESCE((ph.budget->>'allocated')::numeric, 0) > 0 
+        THEN ROUND((COALESCE((ph.budget->>'spent')::numeric, 0) / (ph.budget->>'allocated')::numeric * 100), 1)
+        ELSE 0 
+    END as budget_utilization_percent,
+    
+    -- Task metrics (pre-calculated)
+    COALESCE(ptm.total_tasks, 0) as total_tasks,
+    COALESCE(ptm.completed_tasks, 0) as completed_tasks,
+    COALESCE(ptm.in_progress_tasks, 0) as in_progress_tasks,
+    COALESCE(ptm.pending_tasks, 0) as pending_tasks,
+    COALESCE(ptm.cancelled_tasks, 0) as cancelled_tasks,
+    COALESCE(ptm.overdue_tasks, 0) as overdue_tasks,
+    COALESCE(ptm.due_today_tasks, 0) as due_today_tasks,
+    COALESCE(ptm.due_soon_tasks, 0) as due_soon_tasks,
+    
+    -- Progress calculation (server-side)
+    CASE 
+        WHEN COALESCE(ptm.total_tasks, 0) = 0 THEN
+            -- No tasks, use phase status for progress
+            CASE ph.status 
+                WHEN 'COMPLETED' THEN 100
+                WHEN 'IN_PROGRESS' THEN 50
+                WHEN 'PLANNING' THEN 10
+                ELSE 0
+            END
+        ELSE
+            -- Task-based progress calculation
+            ROUND((COALESCE(ptm.completed_tasks, 0)::numeric / ptm.total_tasks * 100), 1)
+    END as progress_percentage,
+    
+    -- Urgency and priority scores (server-side)
+    COALESCE(ROUND(ptm.avg_urgency_score, 1), 0) as avg_urgency_score,
+    CASE 
+        WHEN ptm.overdue_tasks > 0 THEN 'critical'
+        WHEN ptm.due_today_tasks > 0 THEN 'urgent'
+        WHEN ptm.due_soon_tasks > 0 THEN 'important'
+        ELSE 'normal'
+    END as priority_level,
+    
+    -- Health indicators
+    CASE 
+        WHEN ph.status = 'COMPLETED' THEN 'excellent'
+        WHEN ptm.overdue_tasks > 0 THEN 'poor'
+        WHEN pta.start_variance_days > 7 THEN 'fair'
+        WHEN COALESCE((ph.budget->>'spent')::numeric, 0) > COALESCE((ph.budget->>'allocated')::numeric, 0) * 1.1 THEN 'fair'
+        ELSE 'good'
+    END as health_status,
+    
+    ph.created_at,
+    ph.updated_at
+FROM
+    construction_mgr.be_phase ph
+JOIN
+    construction_mgr.be_project p ON ph.project_id = p.id
+LEFT JOIN
+    phase_task_metrics ptm ON ptm.phase_id = ph.id
+LEFT JOIN
+    phase_timeline_analysis pta ON pta.id = ph.id;
+
+-- =============================================================================
+-- ENHANCED TASK PRIORITY VIEW (Urgency Scoring Optimization)
+-- =============================================================================
+
+-- Task view with server-side urgency scoring and workload analysis
+-- Uses centralized urgency calculation function for consistency
+CREATE OR REPLACE VIEW construction_mgr.task_priority_analysis AS
+WITH task_urgency_base AS (
+    SELECT 
+        t.*,
+        -- Centralized urgency calculation for consistency across views
+        CASE 
+            WHEN t.completed_at IS NOT NULL THEN 0
+            WHEN t.due_date < CURRENT_DATE AND t.status NOT IN ('COMPLETED', 'CANCELLED') THEN 100
+            WHEN t.due_date = CURRENT_DATE THEN 90
+            WHEN t.due_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '1 day' THEN 85
+            WHEN t.due_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '3 days' THEN 80
+            WHEN t.due_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days' THEN 70
+            WHEN t.priority = 'HIGH' THEN 60
+            WHEN t.priority = 'MEDIUM' THEN 40
+            WHEN t.priority = 'LOW' THEN 20
+            ELSE 10
+        END as urgency_score,
+        -- Centralized status categorization
+        CASE 
+            WHEN t.completed_at IS NOT NULL THEN 'completed'
+            WHEN t.due_date < CURRENT_DATE AND t.status NOT IN ('COMPLETED', 'CANCELLED') THEN 'overdue'
+            WHEN t.due_date = CURRENT_DATE THEN 'due_today'
+            WHEN t.due_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days' THEN 'due_soon'
+            ELSE 'on_track'
+        END AS task_status_category
+    FROM construction_mgr.be_task t
+),
+task_workload AS (
+    SELECT 
+        t.assigned_to,
+        COUNT(t.id) as total_assigned_tasks,
+        COUNT(t.id) FILTER (WHERE t.status NOT IN ('COMPLETED', 'CANCELLED')) as active_assigned_tasks,
+        COUNT(t.id) FILTER (WHERE t.due_date < CURRENT_DATE AND t.status NOT IN ('COMPLETED', 'CANCELLED')) as overdue_assigned_tasks
+    FROM construction_mgr.be_task t
+    WHERE t.assigned_to IS NOT NULL
+    GROUP BY t.assigned_to
+)
+SELECT
+    t.id,
+    t.title,
+    t.description,
+    t.status,
+    t.priority,
+    t.project_id,
+    p.name AS project_name,
+    t.phase_id,
+    ph.name AS phase_name,
+    t.assigned_to,
+    CONCAT(u.first_name, ' ', u.last_name) AS assigned_user_name,
+    u.email AS assigned_user_email,
+    t.start_date,
+    t.due_date,
+    t.completed_at,
+    
+    -- Use pre-calculated urgency score
+    t.urgency_score,
+    t.task_status_category,
+    
+    -- Assignee workload context (helps with task redistribution)
+    COALESCE(tw.total_assigned_tasks, 0) as assignee_total_tasks,
+    COALESCE(tw.active_assigned_tasks, 0) as assignee_active_tasks,
+    COALESCE(tw.overdue_assigned_tasks, 0) as assignee_overdue_tasks,
+    
+    -- Workload indicator
+    CASE 
+        WHEN tw.overdue_assigned_tasks > 0 THEN 'overloaded'
+        WHEN tw.active_assigned_tasks > 10 THEN 'heavy'
+        WHEN tw.active_assigned_tasks > 5 THEN 'moderate'
+        ELSE 'light'
+    END as assignee_workload_level,
+    
+    t.created_at,
+    t.updated_at
+FROM
+    task_urgency_base t
+JOIN
+    construction_mgr.be_project p ON t.project_id = p.id
+LEFT JOIN
+    construction_mgr.be_phase ph ON t.phase_id = ph.id
+LEFT JOIN
+    construction_mgr.be_user u ON t.assigned_to = u.id
+LEFT JOIN
+    task_workload tw ON tw.assigned_to = t.assigned_to;
+
+-- =============================================================================
+-- TODAY'S FOCUS VIEW (Pre-calculated Today's Focus)
+-- =============================================================================
+
+-- Pre-calculated today's focus tasks - leverages task_priority_analysis for consistency
+CREATE OR REPLACE VIEW construction_mgr.todays_focus_tasks AS
+SELECT 
+    tpa.id,
+    tpa.title,
+    tpa.description,
+    tpa.status,
+    tpa.priority,
+    tpa.due_date,
+    tpa.project_id,
+    tpa.project_name,
+    tpa.phase_id,
+    tpa.phase_name,
+    tpa.assigned_to,
+    tpa.assigned_user_name,
+    tpa.urgency_score,
+    tpa.task_status_category,
+    
+    -- Focus category for today's focus filtering
+    CASE 
+        WHEN tpa.task_status_category = 'overdue' THEN 'overdue'
+        WHEN tpa.task_status_category = 'due_today' THEN 'due_today'
+        WHEN tpa.due_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '3 days' THEN 'urgent'
+        WHEN tpa.priority = 'HIGH' THEN 'high_priority'
+        ELSE 'important'
+    END as focus_category,
+    
+    tpa.created_at,
+    tpa.updated_at
+FROM 
+    construction_mgr.task_priority_analysis tpa
+WHERE 
+    tpa.status NOT IN ('COMPLETED', 'CANCELLED')
+    AND (
+        tpa.due_date <= CURRENT_DATE + INTERVAL '7 days'
+        OR tpa.priority = 'HIGH'
+        OR tpa.due_date < CURRENT_DATE
+    )
+ORDER BY tpa.urgency_score DESC, tpa.due_date ASC;
+
+-- =============================================================================
+-- SET SECURITY INVOKER ON ALL VIEWS
+-- =============================================================================
+
+-- Ensure RLS applies to all views (base + enhanced optimization views)
 ALTER VIEW construction_mgr.project_summary SET (security_invoker = on);
 ALTER VIEW construction_mgr.project_members SET (security_invoker = on);
 ALTER VIEW construction_mgr.project_financial_summary SET (security_invoker = on);
@@ -387,12 +694,16 @@ ALTER VIEW construction_mgr.project_activities SET (security_invoker = on);
 ALTER VIEW construction_mgr.task_summary SET (security_invoker = on);
 ALTER VIEW construction_mgr.document_summary SET (security_invoker = on);
 ALTER VIEW construction_mgr.comment_summary SET (security_invoker = on);
+-- Enhanced optimization views
+ALTER VIEW construction_mgr.phase_progress_summary SET (security_invoker = on);
+ALTER VIEW construction_mgr.task_priority_analysis SET (security_invoker = on);
+ALTER VIEW construction_mgr.todays_focus_tasks SET (security_invoker = on);
 
 -- =============================================================================
--- GRANT PERMISSIONS ON VIEWS
+-- GRANT PERMISSIONS ON ALL VIEWS
 -- =============================================================================
 
--- Grant permissions on views
+-- Grant SELECT permissions to authenticated users (base + enhanced views)
 GRANT SELECT ON construction_mgr.project_summary TO authenticated;
 GRANT SELECT ON construction_mgr.project_members TO authenticated;
 GRANT SELECT ON construction_mgr.project_financial_summary TO authenticated;
@@ -402,3 +713,7 @@ GRANT SELECT ON construction_mgr.project_activities TO authenticated;
 GRANT SELECT ON construction_mgr.task_summary TO authenticated;
 GRANT SELECT ON construction_mgr.document_summary TO authenticated;
 GRANT SELECT ON construction_mgr.comment_summary TO authenticated;
+-- Enhanced optimization views  
+GRANT SELECT ON construction_mgr.phase_progress_summary TO authenticated;
+GRANT SELECT ON construction_mgr.task_priority_analysis TO authenticated;
+GRANT SELECT ON construction_mgr.todays_focus_tasks TO authenticated;

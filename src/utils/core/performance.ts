@@ -1,6 +1,19 @@
 /**
  * Performance utility functions for optimizing application performance
+ * Enhanced with baseline measurements for Sprint 2 optimization tracking
  */
+
+interface PerformanceBaseline {
+  component: string;
+  operation: string;
+  baseline: number;
+  current: number;
+  improvement: number;
+  timestamp: number;
+}
+
+// Performance baselines storage
+const performanceBaselines = new Map<string, PerformanceBaseline[]>();
 
 /**
  * Creates a debounced function that delays invoking func until after wait milliseconds
@@ -105,4 +118,101 @@ export function delay<T>(func: () => T, delay: number): Promise<T> {
       resolve(func());
     }, delay);
   });
+}
+
+/**
+ * Records a performance baseline for a component operation
+ * 
+ * @param component - Component name
+ * @param operation - Operation being measured (e.g., 'render', 'query', 'calculation')
+ * @param time - Time in milliseconds
+ */
+export function recordBaseline(component: string, operation: string, time: number): void {
+  const key = `${component}-${operation}`;
+  if (!performanceBaselines.has(key)) {
+    performanceBaselines.set(key, []);
+  }
+  
+  const baselines = performanceBaselines.get(key)!;
+  const isFirstMeasurement = baselines.length === 0;
+  const baseline = isFirstMeasurement ? time : baselines[0].baseline;
+  
+  const improvement = isFirstMeasurement ? 0 : ((baseline - time) / baseline) * 100;
+  
+  baselines.push({
+    component,
+    operation,
+    baseline,
+    current: time,
+    improvement,
+    timestamp: Date.now()
+  });
+  
+  // Keep only last 10 measurements per operation
+  if (baselines.length > 10) {
+    baselines.shift();
+  }
+  
+  // Log significant improvements in development
+  if (process.env.NODE_ENV === 'development' && improvement > 10) {
+    console.log(`🚀 Performance improvement: ${component} ${operation} is ${improvement.toFixed(1)}% faster (${time.toFixed(2)}ms vs ${baseline.toFixed(2)}ms baseline)`);
+  }
+}
+
+/**
+ * Creates a performance measurement function with baseline tracking
+ * 
+ * @param component - Component name
+ * @param operation - Operation name
+ * @returns A function that measures and records performance
+ */
+export function createPerformanceMeasurement(component: string, operation: string) {
+  return function measureWithBaseline<Args extends unknown[], R>(
+    func: (...args: Args) => R
+  ): (...args: Args) => R {
+    return function(...args: Args) {
+      const start = performance.now();
+      const result = func(...args);
+      const end = performance.now();
+      const duration = end - start;
+      
+      recordBaseline(component, operation, duration);
+      
+      return result;
+    };
+  };
+}
+
+/**
+ * Gets performance improvement summary for Sprint 2
+ */
+export function getPerformanceImprovements(): Array<{
+  component: string;
+  operation: string;
+  avgImprovement: number;
+  currentAvg: number;
+  baselineAvg: number;
+  measurements: number;
+}> {
+  const results: ReturnType<typeof getPerformanceImprovements> = [];
+  
+  for (const [key, baselines] of performanceBaselines.entries()) {
+    if (baselines.length < 2) continue; // Need at least 2 measurements
+    
+    const recentMeasurements = baselines.slice(-5); // Last 5 measurements
+    const avgImprovement = recentMeasurements.reduce((sum, b) => sum + b.improvement, 0) / recentMeasurements.length;
+    const currentAvg = recentMeasurements.reduce((sum, b) => sum + b.current, 0) / recentMeasurements.length;
+    const baselineAvg = recentMeasurements[0].baseline;
+    
+    results.push({
+      component: baselines[0].component,
+      operation: baselines[0].operation,
+      avgImprovement: Math.round(avgImprovement * 10) / 10,
+      currentAvg: Math.round(currentAvg * 100) / 100,
+      baselineAvg: Math.round(baselineAvg * 100) / 100,
+      measurements: baselines.length
+    });
+  }
+  
+  return results.sort((a, b) => b.avgImprovement - a.avgImprovement);
 }

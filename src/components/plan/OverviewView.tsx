@@ -5,7 +5,6 @@ import { CalendarDays, Clock, Package, CheckSquare, Layers, FileText, Plus, Cale
 import { PhaseCard } from './PhaseCard';
 import { LazyPhaseList } from './LazyPhaseList';
 import { MobileStickyActionBar } from './MobileStickyActionBar';
-import { MobileFloatingActionButton } from './MobileFloatingActionButton';
 import { motion } from 'framer-motion';
 import { formatDate, containerVariants, itemVariants } from '@/utils/plan-helpers';
 import { OverviewViewProps } from '@/types/plan/views';
@@ -425,32 +424,6 @@ export const OverviewView = React.memo(function OverviewView({
         visible={true}
       />
 
-      <MobileFloatingActionButton
-        primaryAction={{
-          label: 'Quick Actions',
-          icon: Plus,
-          onClick: () => {}, // Handled by speed dial
-          color: 'orange'
-        }}
-        secondaryActions={[
-          {
-            label: 'Add Phase',
-            icon: Layers,
-            onClick: handleAddPhase,
-            disabled: !onAddPhase,
-            color: 'blue'
-          },
-          {
-            label: 'Edit Project',
-            icon: Calendar,
-            onClick: handleEditProjectDates,
-            disabled: !onEditProjectDates,
-            color: 'green'
-          }
-        ]}
-        visible={true}
-        offset={{ bottom: 100, right: 16 }} // Account for sticky action bar
-      />
     </motion.div>
   );
 });

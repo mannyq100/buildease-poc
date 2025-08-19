@@ -98,7 +98,7 @@ const validateForm = (data: BudgetFormData): FormErrors => {
   return errors;
 };
 
-export function BudgetExpenseForm({
+const BudgetExpenseFormComponent = function BudgetExpenseForm({
   mode,
   initialData,
   onSubmit,
@@ -143,7 +143,6 @@ export function BudgetExpenseForm({
     try {
       await onSubmit(formData);
     } catch (error) {
-      console.error('Form submission error:', error);
     }
   };
 
@@ -381,4 +380,7 @@ export function BudgetExpenseForm({
       </div>
     </form>
   );
-}
+};
+
+// Memoize component to prevent unnecessary re-renders
+export const BudgetExpenseForm = React.memo(BudgetExpenseFormComponent);

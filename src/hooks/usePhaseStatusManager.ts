@@ -278,7 +278,11 @@ export function usePhaseStatusManager(
         timelineUpdates.actual_start = nowIso;
       }
       if (nextStatus === 'COMPLETED' && !phaseTimelineRef.current?.actual_end) {
-        timelineUpdates.actual_end = nowIso;
+        // If both start and end are being set to the same time (instant completion),
+        // add 1ms to end time to ensure end > start for timeline consistency
+        const endTime = timelineUpdates.actual_start ? 
+          new Date(Date.now() + 1).toISOString() : nowIso;
+        timelineUpdates.actual_end = endTime;
       }
 
       try {
@@ -396,7 +400,11 @@ export function usePhaseStatusManager(
       
       // Set actual_end when completing
       if (suggestedStatus === 'COMPLETED' && !phaseTimelineRef.current?.actual_end) {
-        timelineUpdates.actual_end = nowIso;
+        // If both start and end are being set to the same time (instant completion),
+        // add 1ms to end time to ensure end > start for better timeline visualization
+        const endTime = timelineUpdates.actual_start ? 
+          new Date(Date.now() + 1).toISOString() : nowIso;
+        timelineUpdates.actual_end = endTime;
       }
 
       // Generate context-aware reason for the transition

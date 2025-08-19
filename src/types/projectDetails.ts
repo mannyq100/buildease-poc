@@ -129,6 +129,14 @@ export interface TeamMember {
     email?: string;
   };
   avatar?: string;
+  // NEW: Enhanced profile fields from project_members view
+  profile_picture_url?: string;
+  company_name?: string;
+  user_status?: string;
+  email_verified?: boolean;
+  phone_verified?: boolean;
+  joined_at?: string;
+  // UI state fields
   isOnline?: boolean;
   availability?: 'available' | 'busy' | 'offline';
 }
@@ -192,6 +200,28 @@ export interface ProjectPhase {
   };
   created_at: string;
   updated_at: string;
+  // Tasks associated with this phase (from consolidated query)
+  tasks?: EnhancedTask[];
+  
+  // Server-calculated optimization fields (from enhanced database views)
+  // These fields are optional for backward compatibility
+  timeline_status?: 'completed' | 'in_progress' | 'should_be_started' | 'not_started';
+  planned_duration_days?: number;
+  actual_duration_days?: number;
+  start_variance_days?: number;
+  end_variance_days?: number;
+  budget_utilization_percent?: number;
+  total_tasks?: number;
+  completed_tasks?: number;
+  in_progress_tasks?: number;
+  pending_tasks?: number;
+  overdue_tasks?: number;
+  due_today_tasks?: number;
+  due_soon_tasks?: number;
+  progress_percentage?: number;
+  avg_urgency_score?: number;
+  priority_level?: 'critical' | 'urgent' | 'important' | 'normal';
+  health_status?: 'excellent' | 'good' | 'fair' | 'poor';
 }
 
 // Enhanced Task interface (aligned with database schema)
@@ -215,6 +245,16 @@ export interface EnhancedTask {
   comments: Record<string, unknown>[];
   created_at: string;
   updated_at: string;
+  
+  // Server-calculated optimization fields (from enhanced database views)
+  // These fields are optional for backward compatibility
+  assigned_user_name?: string;
+  urgency_score?: number; // 0-100 scale calculated server-side
+  task_status_category?: 'completed' | 'overdue' | 'due_today' | 'due_soon' | 'on_track';
+  assignee_total_tasks?: number;
+  assignee_active_tasks?: number;
+  assignee_workload_level?: 'overloaded' | 'heavy' | 'moderate' | 'light';
+  focus_category?: 'overdue' | 'due_today' | 'urgent' | 'high_priority' | 'important';
 }
 
 // Priority and Status option types

@@ -8,7 +8,8 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/shared';
-import { Edit3, X, Phone, Mail } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Edit3, X, Phone, Mail, Building2, Shield, ShieldCheck } from 'lucide-react';
 import { TeamMemberCardProps } from '@/types/projectDetails';
 
 function TeamMemberCardComponent({ 
@@ -69,9 +70,17 @@ function TeamMemberCardComponent({
     return (
       <div className="flex items-center gap-2 bg-slate-50/50 rounded-lg p-2 min-w-0 hover:bg-slate-100/50 transition-colors">
         <div className="relative w-8 h-8 bg-buildease-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-          <span className="text-xs font-semibold text-buildease-blue-700">
-            {memberInitials}
-          </span>
+          {(member.profile_picture_url || member.avatar) ? (
+            <img 
+              src={member.profile_picture_url || member.avatar} 
+              alt={member.name} 
+              className="w-full h-full rounded-full object-cover"
+            />
+          ) : (
+            <span className="text-xs font-semibold text-buildease-blue-700">
+              {memberInitials}
+            </span>
+          )}
           {availabilityIndicator}
         </div>
         <div className="min-w-0 flex-1">
@@ -86,9 +95,9 @@ function TeamMemberCardComponent({
     <div className="flex items-center gap-4 p-4 bg-slate-50/50 rounded-xl hover:bg-slate-100/50 transition-colors group min-h-[80px]">
       {/* Avatar with Status Indicator */}
       <div className="relative w-12 h-12 bg-buildease-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-        {member.avatar ? (
+        {(member.profile_picture_url || member.avatar) ? (
           <img 
-            src={member.avatar} 
+            src={member.profile_picture_url || member.avatar} 
             alt={member.name} 
             className="w-full h-full rounded-full object-cover"
           />
@@ -104,8 +113,24 @@ function TeamMemberCardComponent({
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between mb-1">
           <div className="min-w-0 flex-1">
-            <h4 className="font-semibold text-slate-900 truncate">{member.name}</h4>
-            <p className="text-sm text-slate-600">{member.role}</p>
+            <div className="flex items-center gap-2 mb-1">
+              <h4 className="font-semibold text-slate-900 truncate">{member.name}</h4>
+              {member.email_verified && (
+                <ShieldCheck className="h-3 w-3 text-emerald-600" title="Email verified" />
+              )}
+              {member.phone_verified && (
+                <Shield className="h-3 w-3 text-blue-600" title="Phone verified" />
+              )}
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-sm text-slate-600">{member.role}</p>
+              {member.company_name && (
+                <div className="flex items-center gap-1 text-xs text-slate-500">
+                  <Building2 className="h-3 w-3" />
+                  <span className="truncate max-w-[120px]">{member.company_name}</span>
+                </div>
+              )}
+            </div>
           </div>
           
           {/* Action Buttons - Mobile optimized */}
@@ -138,28 +163,30 @@ function TeamMemberCardComponent({
             size="sm" 
           />
           
-          {/* Contact Info */}
+          {/* Contact Info with Verification Status */}
           <div className="flex items-center gap-2 text-xs text-slate-500">
             {(member.phone || member.contactInfo?.phone) && (
               <div className="flex items-center gap-1">
-                <Phone className="h-3 w-3" />
+                <Phone className={`h-3 w-3 ${member.phone_verified ? 'text-blue-600' : ''}`} />
                 <span>{member.phone || member.contactInfo?.phone}</span>
+                {member.phone_verified && <span className="text-blue-600">✓</span>}
               </div>
             )}
             {(member.email || member.contactInfo?.email) && (
               <div className="flex items-center gap-1">
-                <Mail className="h-3 w-3" />
+                <Mail className={`h-3 w-3 ${member.email_verified ? 'text-emerald-600' : ''}`} />
                 <span className="truncate max-w-[120px]">
                   {member.email || member.contactInfo?.email}
                 </span>
+                {member.email_verified && <span className="text-emerald-600">✓</span>}
               </div>
             )}
           </div>
         </div>
 
-        {/* Availability Status */}
-        {member.availability && (
-          <div className="mt-2">
+        {/* Availability Status and Join Date */}
+        <div className="flex items-center justify-between mt-2">
+          {member.availability && (
             <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusColorClass}`}>
               <div className={`w-2 h-2 rounded-full ${
                 member.availability === 'available' ? 'bg-emerald-500' :
@@ -167,8 +194,13 @@ function TeamMemberCardComponent({
               }`} />
               {member.availability.charAt(0).toUpperCase() + member.availability.slice(1)}
             </span>
-          </div>
-        )}
+          )}
+          {member.joined_at && (
+            <span className="text-xs text-slate-400">
+              Joined {new Date(member.joined_at).toLocaleDateString()}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -184,6 +216,12 @@ export const TeamMemberCard = React.memo(TeamMemberCardComponent, (prevProps, ne
     prevProps.member.status === nextProps.member.status &&
     prevProps.member.availability === nextProps.member.availability &&
     prevProps.member.isOnline === nextProps.member.isOnline &&
+    prevProps.member.profile_picture_url === nextProps.member.profile_picture_url &&
+    prevProps.member.avatar === nextProps.member.avatar &&
+    prevProps.member.email_verified === nextProps.member.email_verified &&
+    prevProps.member.phone_verified === nextProps.member.phone_verified &&
+    prevProps.member.company_name === nextProps.member.company_name &&
+    prevProps.member.joined_at === nextProps.member.joined_at &&
     prevProps.variant === nextProps.variant &&
     prevProps.showActions === nextProps.showActions &&
     prevProps.onEdit === nextProps.onEdit &&

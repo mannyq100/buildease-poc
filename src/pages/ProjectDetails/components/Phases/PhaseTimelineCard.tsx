@@ -8,7 +8,6 @@ import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProCard } from '@/components/ui/ProCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { usePhaseTasks } from '@/hooks/queries/useTask';
 import { PhaseTasksSection } from './PhaseTasksSection';
 import { 
   Calendar,
@@ -23,6 +22,7 @@ import { ProjectPhase, EnhancedTask, TeamMember } from '@/types/projectDetails';
 import { formatTaskCount } from '@/utils/core/taskColors';
 import { getPhaseBadgeColor, getPhaseDotColor, formatPhaseStatusLabel } from '@/utils/core/phaseStatus';
 import { phaseHasActualDates, getEffectivePhaseDate } from '@/utils/timeline/timelineUtils';
+import { useMemoizedTaskMetrics } from '@/hooks/useMemoizedCalculations';
 
 interface PhaseTimelineCardProps {
   phases: ProjectPhase[];
@@ -169,11 +169,32 @@ function PhaseCard({
   onEditTask,
   onDeleteTask
 }: PhaseCardProps) {
-  const { data: tasks = [], isLoading: tasksLoading } = usePhaseTasks(phase.id);
+  // Use tasks from phase data (already loaded by consolidated query)
+  const tasks = phase.tasks || [];
+  const tasksLoading = false; // No separate loading since tasks are already in phase data
   
-  const completedTasks = tasks.filter(t => t.status?.toUpperCase() === 'COMPLETED').length;
-  const totalTasks = tasks.length;
-  const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  // OPTIMIZED: Use server-calculated metrics when available, fallback to client-side calculation
+  const taskMetrics = useMemoizedTaskMetrics(tasks);
+  const { 
+    total: totalTasks, 
+    completed: completedTasks, 
+    progressPercentage 
+  } = React.useMemo(() => {
+    // Use server-calculated data if available (from enhanced database views)
+    if (phase.total_tasks !== undefined && phase.completed_tasks !== undefined && phase.progress_percentage !== undefined) {
+      return {
+        total: phase.total_tasks,
+        completed: phase.completed_tasks,
+        inProgress: phase.in_progress_tasks || 0,
+        pending: phase.pending_tasks || 0,
+        blocked: 0, // Not calculated server-side yet
+        overdue: phase.overdue_tasks || 0,
+        progressPercentage: phase.progress_percentage
+      };
+    }
+    // Fallback to client-side memoized calculation
+    return taskMetrics;
+  }, [phase.total_tasks, phase.completed_tasks, phase.progress_percentage, phase.in_progress_tasks, phase.pending_tasks, phase.overdue_tasks, taskMetrics]);
   // Animate progress bar on expand and data changes
   const [animatedWidth, setAnimatedWidth] = React.useState(0);
   React.useEffect(() => {

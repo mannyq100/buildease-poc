@@ -116,10 +116,18 @@ function transformUIToDatabase(data: CreatePhaseUIData | UpdatePhaseUIData): Par
   // Transform flat dates to timeline object
   if ('start_date' in data || 'end_date' in data || 'actual_start' in data || 'actual_end' in data) {
     result.timeline = {};
-    if ('start_date' in data && data.start_date !== undefined) result.timeline.planned_start = data.start_date;
-    if ('end_date' in data && data.end_date !== undefined) result.timeline.planned_end = data.end_date;
-    if ('actual_start' in data && data.actual_start !== undefined) result.timeline.actual_start = data.actual_start;
-    if ('actual_end' in data && data.actual_end !== undefined) result.timeline.actual_end = data.actual_end;
+    if ('start_date' in data && data.start_date !== undefined) {
+      result.timeline.planned_start = data.start_date === '' ? null : data.start_date;
+    }
+    if ('end_date' in data && data.end_date !== undefined) {
+      result.timeline.planned_end = data.end_date === '' ? null : data.end_date;
+    }
+    if ('actual_start' in data && data.actual_start !== undefined) {
+      result.timeline.actual_start = data.actual_start === '' ? null : data.actual_start;
+    }
+    if ('actual_end' in data && data.actual_end !== undefined) {
+      result.timeline.actual_end = data.actual_end === '' ? null : data.actual_end;
+    }
   }
   
   return result;
@@ -306,10 +314,10 @@ export function useUpdatePhase(options?: {
         const timeline: PhaseTimeline = { ...currentTimeline };
         
         const uiData = data as UpdatePhaseUIData;
-        if (uiData.start_date !== undefined) timeline.planned_start = uiData.start_date;
-        if (uiData.end_date !== undefined) timeline.planned_end = uiData.end_date;
-        if (uiData.actual_start !== undefined) timeline.actual_start = uiData.actual_start;
-        if (uiData.actual_end !== undefined) timeline.actual_end = uiData.actual_end;
+        if (uiData.start_date !== undefined) timeline.planned_start = uiData.start_date === '' ? null : uiData.start_date;
+        if (uiData.end_date !== undefined) timeline.planned_end = uiData.end_date === '' ? null : uiData.end_date;
+        if (uiData.actual_start !== undefined) timeline.actual_start = uiData.actual_start === '' ? null : uiData.actual_start;
+        if (uiData.actual_end !== undefined) timeline.actual_end = uiData.actual_end === '' ? null : uiData.actual_end;
         
         updateData.timeline = timeline;
       }

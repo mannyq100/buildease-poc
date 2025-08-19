@@ -2,7 +2,6 @@
  * ProjectDetails components exports
  */
 
-export { FloatingActionBar } from './FloatingActionBar';
 export { TodaysFocusCard } from './TodaysFocusCard';
 
 // Team components

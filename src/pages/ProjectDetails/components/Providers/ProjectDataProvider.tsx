@@ -13,7 +13,7 @@ import { useTaskCRUD, useCRUDOperations, useModalManagement } from '../../hooks'
 import { useTodaysFocus } from '../../hooks/useTodaysFocus';
 import type { TaskItem, ProjectUpdateFormData } from '../../types';
 import type { Project } from '@/types/project';
-import type { BudgetExpense, TeamMember, ProjectPhase } from '@/types/projectDetails';
+import type { BudgetExpense, TeamMember, ProjectPhase, EnhancedTask } from '@/types/projectDetails';
 import { toDbPhaseStatus } from '@/utils/core/phaseStatus';
 import type { ProjectDetailsPhase } from '@/hooks/mutations/usePhase';
 
@@ -98,8 +98,9 @@ function validateTimelineChronology(
     const startDate = new Date(result.actual_start);
     const endDate = new Date(result.actual_end);
     
-    if (startDate >= endDate) {
-      console.error(`Invalid timeline for phase "${phaseName}": actual_start (${result.actual_start}) must be before actual_end (${result.actual_end})`);
+    // Allow equal timestamps (instantaneous completion) but not start after end
+    if (startDate > endDate) {
+      console.error(`Invalid timeline for phase "${phaseName}": actual_start (${result.actual_start}) must be before or equal to actual_end (${result.actual_end})`);
       // Keep the dates but log the error - UI should handle this gracefully
     }
   }
@@ -245,6 +246,8 @@ export function ProjectDataProvider({ projectId, children }: ProjectDataProvider
         },
         created_at: p.created_at || new Date().toISOString(),
         updated_at: p.updated_at || new Date().toISOString(),
+        // CRITICAL: Preserve tasks from consolidated query
+        tasks: Array.isArray((p as any).tasks) ? (p as any).tasks as EnhancedTask[] : [],
       };
     });
   }, [rawPhases, projectData]);
@@ -268,7 +271,11 @@ export function ProjectDataProvider({ projectId, children }: ProjectDataProvider
   }, [projectData]);
 
   // Use reusable hook for urgency scoring and today's focus selection
-  const { todaysFocus, getUrgencyScore } = useTodaysFocus(allProjectTasks, { limit: 5 });
+  // OPTIMIZED: Now uses server-side urgency calculations when projectId is available
+  const { todaysFocus, getUrgencyScore } = useTodaysFocus(allProjectTasks, { 
+    limit: 5, 
+    projectId // Pass projectId to enable server-side optimizations
+  });
 
   // Handle project update
   const handleUpdateProject = React.useCallback(async (data: ProjectUpdateFormData) => {

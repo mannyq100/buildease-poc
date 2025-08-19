@@ -8,6 +8,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { createPerformanceMeasurement } from '@/utils/core/performance';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -120,11 +121,18 @@ function BudgetExpensesListComponent({
     other_costs: { label: 'Other', icon: MoreHorizontal, color: 'bg-slate-500', bgColor: 'bg-white', textColor: 'text-slate-600', borderColor: 'border-slate-100', iconBg: 'bg-slate-50' }
   }), []);
 
+  // Performance measurement for expensive calculations
+  const measureCalculation = React.useMemo(() => 
+    createPerformanceMeasurement('BudgetExpensesList', 'totalCalculation'), []
+  );
+  
   // Memoized computed values - use base_amount for consistent USD totals
   // Always display totals in USD for consistency across multi-currency projects
   const totalAmountUSD = React.useMemo(() => {
-    return filteredExpenses.reduce((sum, expense) => sum + (expense.base_amount || expense.amount), 0);
-  }, [filteredExpenses]);
+    return measureCalculation(() => {
+      return filteredExpenses.reduce((sum, expense) => sum + (expense.base_amount || expense.amount), 0);
+    });
+  }, [filteredExpenses, measureCalculation]);
 
   // Get active filter count for badge
   const activeFilterCount = React.useMemo(() => {
@@ -135,9 +143,17 @@ function BudgetExpensesListComponent({
     return count;
   }, [filters]);
 
+  // Performance measurement for category breakdown
+  const measureBreakdown = React.useMemo(() => 
+    createPerformanceMeasurement('BudgetExpensesList', 'categoryBreakdown'), []
+  );
+  
   // Enhanced category breakdown data with both database totals and filtered totals
   const categoryBreakdownData = React.useMemo(() => {
     if (!consolidatedData?.categoryTotals) return null;
+    
+    try {
+      return measureBreakdown(() => {
     
     // Calculate totals from database (all expenses)
     const dbTotalAmount = Object.values(consolidatedData.categoryTotals).reduce((sum, amount) => sum + amount, 0);
@@ -193,7 +209,12 @@ function BudgetExpensesListComponent({
       .filter(Boolean)
       .sort((a, b) => (b?.dbAmount || 0) - (a?.dbAmount || 0))
       .slice(0, 6); // Show top 6 categories
-  }, [consolidatedData?.categoryTotals, filteredExpenses, CATEGORY_CONFIG, activeFilterCount]);
+    }); // Close measureBreakdown
+    } catch (error) {
+      console.error('Error calculating category breakdown:', error);
+      return null;
+    }
+  }, [consolidatedData?.categoryTotals, filteredExpenses, CATEGORY_CONFIG, activeFilterCount, measureBreakdown]);
 
   // Loading skeleton component
   const CategorySkeleton = () => (
@@ -256,7 +277,7 @@ function BudgetExpensesListComponent({
         {isLoading && showCategoryBreakdown && <CategorySkeleton />}
         
         {/* Category Overview */}
-        {!isLoading && !error && showCategoryBreakdown && categoryBreakdownData && (
+        {!isLoading && !error && showCategoryBreakdown && Array.isArray(categoryBreakdownData) && categoryBreakdownData.length > 0 && (
         <ProCard accent="blue">
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
@@ -279,7 +300,7 @@ function BudgetExpensesListComponent({
               </Button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {categoryBreakdownData.map((item) => {
+              {categoryBreakdownData?.map((item) => {
                 if (!item) return null;
                 const { key, dbAmount, filteredAmount, dbPercentage, filteredPercentage, config, isFiltered } = item;
                 const Icon = config.icon;
@@ -419,7 +440,7 @@ function BudgetExpensesListComponent({
               </div>
             )}
             
-            {!showCategoryBreakdown && categoryBreakdownData && (
+            {!showCategoryBreakdown && Array.isArray(categoryBreakdownData) && categoryBreakdownData.length > 0 && (
               <div className="mt-4 pt-4 border-t border-slate-200">
                 <Button
                   variant="ghost"
