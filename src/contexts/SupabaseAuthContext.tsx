@@ -257,22 +257,20 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     // Listen for custom profile refresh events
     window.addEventListener('refreshUserProfile', handleProfileRefresh as unknown as EventListener);
     
-    // Setup security event listeners
-    const handleSecurityEvents = () => {
-      window.addEventListener('securityLockoutTriggered', () => {
-        secureError('Security lockout triggered - signing out user');
-        signOut();
-      });
-      
-      // Simplified security event handling
-      window.addEventListener('authTokenRefreshFailed', (event: any) => {
-        secureError('Token refresh failed', event.detail);
-        // Clear session and sign out user
-        signOut();
-      });
+    // Setup security event listeners with proper cleanup
+    const handleSecurityLockout = () => {
+      secureError('Security lockout triggered - signing out user');
+      signOut();
     };
     
-    handleSecurityEvents();
+    const handleAuthTokenRefreshFailed = (event: any) => {
+      secureError('Token refresh failed', event.detail);
+      // Clear session and sign out user
+      signOut();
+    };
+    
+    window.addEventListener('securityLockoutTriggered', handleSecurityLockout);
+    window.addEventListener('authTokenRefreshFailed', handleAuthTokenRefreshFailed);
     
     const initAuth = async () => {
       // Set loading state while we initialize
@@ -401,8 +399,10 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       if (authListener?.subscription) {
         authListener.subscription.unsubscribe();
       }
-      // Remove event listener
+      // Remove all event listeners
       window.removeEventListener('refreshUserProfile', handleProfileRefresh as unknown as EventListener);
+      window.removeEventListener('securityLockoutTriggered', handleSecurityLockout);
+      window.removeEventListener('authTokenRefreshFailed', handleAuthTokenRefreshFailed);
     };
   }, []);
 

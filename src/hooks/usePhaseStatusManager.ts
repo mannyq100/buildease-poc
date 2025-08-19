@@ -75,8 +75,27 @@ export function usePhaseStatusManager(
   const prevMetricsRef = useRef<TaskMetrics>();
   const updatePhase = useUpdatePhase();
   
-  // Prevent multiple rapid updates
+  // CRITICAL: Prevent multiple rapid updates and concurrent mutations
   const lastUpdateTimeRef = useRef<number>(0);
+  const mutationInProgressRef = useRef<boolean>(false);
+  const pendingMutationRef = useRef<Promise<void> | null>(null);
+  
+  // Debouncing for rapid status changes (500ms)
+  const DEBOUNCE_DELAY = 500;
+
+  // Helper function to prepare mutation state (DRY principle)
+  const prepareMutationState = useCallback((debounceMultiplier: number = 1) => {
+    const now = Date.now();
+    const requiredDelay = DEBOUNCE_DELAY * debounceMultiplier;
+    
+    if (now - lastUpdateTimeRef.current < requiredDelay) {
+      return { canProceed: false };
+    }
+    
+    mutationInProgressRef.current = true;
+    lastUpdateTimeRef.current = now;
+    return { canProceed: true };
+  }, []);
 
   // Memoized task metrics calculation with stable comparison
   const taskMetrics = useMemo((): TaskMetrics => {
@@ -103,61 +122,138 @@ export function usePhaseStatusManager(
     };
   }, [tasks]);
 
-  // Error handling wrapper
+  // ENHANCED: Error handling wrapper with concurrency protection
   const withErrorHandling = useCallback(
     (operation: () => Promise<void>) => async () => {
       try {
+        // CRITICAL: Check if mutation is already in progress
+        if (updatePhase.isPending || mutationInProgressRef.current) {
+          console.warn('Phase mutation already in progress, skipping duplicate request');
+          return;
+        }
+        
+        // Use helper to prepare mutation state
+        const { canProceed } = prepareMutationState();
+        if (!canProceed) {
+          console.warn('Phase mutation debounced, too rapid updates');
+          return;
+        }
+        
         setError(null); // Clear previous errors
-        await operation();
+        
+        const mutationPromise = operation();
+        pendingMutationRef.current = mutationPromise;
+        
+        await mutationPromise;
+        
       } catch (err) {
         const error = err instanceof Error ? err : new Error('An unexpected error occurred');
         setError(error);
         setLastFailedOperation(() => operation);
         console.error('Phase operation failed:', error);
+      } finally {
+        mutationInProgressRef.current = false;
+        pendingMutationRef.current = null;
       }
     },
-    []
+    [updatePhase.isPending, prepareMutationState]
   );
 
-  // Action handlers with error handling
+  // ENHANCED: Action handlers with optimistic updates and rollback
   const handleConfirmComplete = useCallback(
     withErrorHandling(async () => {
-      const nowIso = new Date().toISOString();
+      // Store previous state for potential rollback
+      const previousState = { ...state };
+      const previousPhaseData = {
+        status: phaseStatusRef.current,
+        timeline: { ...phaseTimelineRef.current }
+      };
+      
+      const nowIso = new Date().toISOString().split('T')[0]; // Use date only for consistency
       const timelineUpdates: Partial<ProjectPhase['timeline']> = {};
       
       if (!phaseTimelineRef.current?.actual_end) {
         timelineUpdates.actual_end = nowIso;
       }
 
-      await updatePhase.mutateAsync({
-        id: phaseIdRef.current,
-        status: 'COMPLETED',
-        timeline: Object.keys(timelineUpdates).length
-          ? { ...(phaseTimelineRef.current || {}), ...timelineUpdates }
-          : undefined,
-      });
-
-      setState(prev => ({ ...prev, showCompletePrompt: false }));
+      try {
+        // Optimistically update local state
+        setState(prev => ({ ...prev, showCompletePrompt: false }));
+        
+        await updatePhase.mutateAsync({
+          id: phaseIdRef.current,
+          status: 'COMPLETED',
+          timeline: Object.keys(timelineUpdates).length
+            ? { ...(phaseTimelineRef.current || {}), ...timelineUpdates }
+            : undefined,
+        });
+        
+        // Notify about successful completion
+        if (notifications?.onPhaseAutoTransition) {
+          notifications.onPhaseAutoTransition(
+            previousPhaseData.status,
+            'COMPLETED',
+            phase.name,
+            'Manual completion confirmation'
+          );
+        }
+        
+      } catch (error) {
+        // ROLLBACK: Restore previous state on failure
+        setState(previousState);
+        throw error; // Re-throw to be handled by withErrorHandling
+      }
     }),
-    [updatePhase, withErrorHandling]
+    [updatePhase, withErrorHandling, state, phase.name, notifications]
   );
 
   const handleConfirmReopen = useCallback(
     withErrorHandling(async () => {
-      await updatePhase.mutateAsync({
-        id: phaseIdRef.current,
-        status: 'IN_PROGRESS',
-        // Clear actual_end; keep actual_start intact
-        timeline: { ...(phaseTimelineRef.current || {}), actual_end: null },
-      });
-
-      setState(prev => ({ ...prev, showReopenPrompt: false }));
+      // Store previous state for potential rollback
+      const previousState = { ...state };
+      const previousPhaseData = {
+        status: phaseStatusRef.current,
+        timeline: { ...phaseTimelineRef.current }
+      };
+      
+      try {
+        // Optimistically update local state
+        setState(prev => ({ ...prev, showReopenPrompt: false }));
+        
+        await updatePhase.mutateAsync({
+          id: phaseIdRef.current,
+          status: 'IN_PROGRESS',
+          // Clear actual_end; keep actual_start intact
+          timeline: { ...(phaseTimelineRef.current || {}), actual_end: null },
+        });
+        
+        // Notify about successful reopening
+        if (notifications?.onPhaseAutoTransition) {
+          notifications.onPhaseAutoTransition(
+            previousPhaseData.status,
+            'IN_PROGRESS',
+            phase.name,
+            'Manual reopen confirmation'
+          );
+        }
+        
+      } catch (error) {
+        // ROLLBACK: Restore previous state on failure
+        setState(previousState);
+        throw error; // Re-throw to be handled by withErrorHandling
+      }
     }),
-    [updatePhase, withErrorHandling]
+    [updatePhase, withErrorHandling, state, phase.name, notifications]
   );
 
   const handleUpdateProgress = useCallback(
     withErrorHandling(async () => {
+      // Store previous state for potential rollback
+      const previousPhaseData = {
+        status: phaseStatusRef.current,
+        timeline: { ...phaseTimelineRef.current }
+      };
+      
       // Calculate next status based on task data using centralized logic
       const nextStatus = calculatePhaseStatusFromTasks(tasks);
       const currentStatus = toDbPhaseStatus(phaseStatusRef.current);
@@ -185,15 +281,31 @@ export function usePhaseStatusManager(
         timelineUpdates.actual_end = nowIso;
       }
 
-      await updatePhase.mutateAsync({
-        id: phaseIdRef.current,
-        status: nextStatus,
-        timeline: Object.keys(timelineUpdates).length
-          ? { ...(phaseTimelineRef.current || {}), ...timelineUpdates }
-          : undefined,
-      });
+      try {
+        await updatePhase.mutateAsync({
+          id: phaseIdRef.current,
+          status: nextStatus,
+          timeline: Object.keys(timelineUpdates).length
+            ? { ...(phaseTimelineRef.current || {}), ...timelineUpdates }
+            : undefined,
+        });
+        
+        // Notify about successful automatic update
+        if (notifications?.onPhaseAutoTransition) {
+          notifications.onPhaseAutoTransition(
+            previousPhaseData.status,
+            nextStatus,
+            phase.name,
+            'Automatic status update based on task progress'
+          );
+        }
+        
+      } catch (error) {
+        // This error will be handled by withErrorHandling wrapper
+        throw error;
+      }
     }),
-    [tasks, updatePhase, withErrorHandling]
+    [tasks, updatePhase, withErrorHandling, phase.name, notifications]
   );
 
   // Stable phase status and timeline refs to prevent unnecessary re-renders
@@ -259,7 +371,7 @@ export function usePhaseStatusManager(
 
     // 2. Handle automatic status transitions based on task data
     const suggestedStatus = calculatePhaseStatusFromTasks(tasks);
-    if (suggestedStatus !== phaseStatus && !updatePhase.isPending) {
+    if (suggestedStatus !== phaseStatus && !updatePhase.isPending && !mutationInProgressRef.current) {
       
       // Validate the transition is allowed
       const transition = normalizePhaseStatusTransition(phaseStatus, suggestedStatus);
@@ -267,12 +379,11 @@ export function usePhaseStatusManager(
         return;
       }
       
-      // Prevent rapid fire updates - minimum 1 second between updates
-      const now = Date.now();
-      if (now - lastUpdateTimeRef.current < 1000) {
+      // Use helper to prepare mutation state for auto-transitions (2x debounce multiplier)
+      const { canProceed } = prepareMutationState(2);
+      if (!canProceed) {
         return;
       }
-      lastUpdateTimeRef.current = now;
       
       const nowIso = new Date().toISOString();
       const timelineUpdates: Partial<ProjectPhase['timeline']> = {};
@@ -314,12 +425,18 @@ export function usePhaseStatusManager(
         autoTransition.showTransition(phase.id, transitionType);
       }
       
-      updatePhase.mutate({
+      // Use async mutation with proper error handling
+      updatePhase.mutateAsync({
         id: phaseIdRef.current,
         status: suggestedStatus,
         timeline: Object.keys(timelineUpdates).length
           ? { ...(phaseTimelineRef.current || {}), ...timelineUpdates }
           : undefined,
+      }).catch((error) => {
+        console.error('Auto-transition failed:', error);
+        setError(error instanceof Error ? error : new Error('Auto-transition failed'));
+      }).finally(() => {
+        mutationInProgressRef.current = false;
       });
     }
 
@@ -330,7 +447,19 @@ export function usePhaseStatusManager(
 
     // Update previous metrics
     prevMetricsRef.current = currentMetrics;
-  }, [taskMetrics, tasks, state.hasPrompted, state.showReopenPrompt, updatePhase, notifyAutoTransition]);
+  }, [taskMetrics, tasks, state.hasPrompted, state.showReopenPrompt, updatePhase, notifyAutoTransition, autoTransition, phase.id]);
+
+  // Cleanup effect to handle component unmount during mutations
+  useEffect(() => {
+    return () => {
+      // Cancel any pending mutations on unmount
+      if (pendingMutationRef.current) {
+        console.warn('Component unmounting with pending mutation, cancelling...');
+        mutationInProgressRef.current = false;
+        pendingMutationRef.current = null;
+      }
+    };
+  }, []);
 
   // Retry function for failed operations
   const retryLastOperation = useCallback(async () => {

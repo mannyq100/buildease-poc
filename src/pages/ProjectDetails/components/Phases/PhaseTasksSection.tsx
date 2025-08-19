@@ -735,11 +735,18 @@ function TaskCard({
                             target.style.display = 'none';
                             const parent = target.parentElement;
                             if (parent) {
-                              parent.innerHTML = `
-                                <div class="w-full h-full bg-buildease-blue-500 text-white text-xs font-medium flex items-center justify-center">
-                                  ${assignedMember.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                                </div>
-                              `;
+                              // SECURITY FIX: Use safe DOM manipulation instead of innerHTML
+                              const fallbackDiv = document.createElement('div');
+                              fallbackDiv.className = 'w-full h-full bg-buildease-blue-500 text-white text-xs font-medium flex items-center justify-center';
+                              // Safely extract initials and escape any potential XSS
+                              const safeName = assignedMember.name?.toString() || '';
+                              const initials = safeName.split(' ')
+                                .map(n => n.charAt(0))
+                                .join('')
+                                .toUpperCase()
+                                .slice(0, 2);
+                              fallbackDiv.textContent = initials; // textContent is XSS-safe
+                              parent.replaceChildren(fallbackDiv);
                             }
                           }}
                         />

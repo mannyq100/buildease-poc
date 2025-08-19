@@ -4,7 +4,7 @@
  * Expandable with quick action shortcuts
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   Plus, 
@@ -72,6 +72,8 @@ export function FloatingActionButton({
   disabled = false
 }: FloatingActionButtonProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const touchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const cleanupFunctionsRef = useRef<(() => void)[]>([]);
 
   const handleMainAction = () => {
     if (isExpanded) {
@@ -89,6 +91,29 @@ export function FloatingActionButton({
   const toggleExpanded = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsExpanded(!isExpanded);
+  };
+
+  // Cleanup effect to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      // Clear any pending timeouts
+      if (touchTimeoutRef.current) {
+        clearTimeout(touchTimeoutRef.current);
+      }
+      // Clean up any remaining event listeners
+      cleanupFunctionsRef.current.forEach(cleanup => cleanup());
+      cleanupFunctionsRef.current = [];
+    };
+  }, []);
+
+  // Clear timeout and cleanup functions when component re-renders
+  const clearAllTimersAndListeners = () => {
+    if (touchTimeoutRef.current) {
+      clearTimeout(touchTimeoutRef.current);
+      touchTimeoutRef.current = null;
+    }
+    cleanupFunctionsRef.current.forEach(cleanup => cleanup());
+    cleanupFunctionsRef.current = [];
   };
 
   return (
@@ -161,19 +186,32 @@ export function FloatingActionButton({
             onTouchStart={(e) => {
               if (!onQuickAction) return;
               
+              // Clear any existing timers and listeners
+              clearAllTimersAndListeners();
+              
               // Long press detection for mobile
-              const longPressTimer = setTimeout(() => {
+              touchTimeoutRef.current = setTimeout(() => {
                 setIsExpanded(true);
+                clearAllTimersAndListeners(); // Clean up after successful long press
               }, 500);
               
               const cleanup = () => {
-                clearTimeout(longPressTimer);
+                if (touchTimeoutRef.current) {
+                  clearTimeout(touchTimeoutRef.current);
+                  touchTimeoutRef.current = null;
+                }
                 document.removeEventListener('touchend', cleanup);
                 document.removeEventListener('touchcancel', cleanup);
+                // Remove this cleanup from our tracking array
+                cleanupFunctionsRef.current = cleanupFunctionsRef.current.filter(fn => fn !== cleanup);
               };
               
+              // Add event listeners
               document.addEventListener('touchend', cleanup);
               document.addEventListener('touchcancel', cleanup);
+              
+              // Track cleanup function for component unmount
+              cleanupFunctionsRef.current.push(cleanup);
             }}
             disabled={disabled}
             className={cn(

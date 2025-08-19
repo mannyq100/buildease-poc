@@ -4,7 +4,7 @@
  * Follows BuildEase standards for mobile-first responsive design
  */
 
-import { useState } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { CSSProperties } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BudgetOverviewCard, BudgetExpensesList } from '../Budget';
@@ -146,8 +146,20 @@ export function ProjectLayout({
     todaysFocus: true
   };
 
+  // Track animation frame for cleanup
+  const animationFrameRef = useRef<number | null>(null);
+
+  // Cleanup effect to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []);
+
   // Smooth scroll helper to section anchors and ensure correct tab is active
-  const scrollToSection = (section: string) => {
+  const scrollToSection = useCallback((section: string) => {
     const sectionMap: Record<string, typeof activeTab> = {
       overview: 'overview',
       todaysFocus: 'overview',
@@ -162,12 +174,19 @@ export function ProjectLayout({
     };
     const targetTab = sectionMap[section] || 'overview';
     setActiveTab(targetTab);
+    
+    // Cancel any existing animation frame
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    
     // Defer scroll slightly to allow tab content to mount
-    requestAnimationFrame(() => {
+    animationFrameRef.current = requestAnimationFrame(() => {
       const el = document.getElementById(`section-${targetTab}`);
       el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      animationFrameRef.current = null; // Clear the ref after execution
     });
-  };
+  }, []);
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">

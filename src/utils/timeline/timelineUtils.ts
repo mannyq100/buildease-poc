@@ -489,7 +489,7 @@ export function calculateDependencyArrows(
   phasePositions: Map<string, TimelinePosition>,
   phaseRows: Map<string, number>,
   rowHeight: number,
-  phaseBarHeight: number
+  _phaseBarHeight: number
 ): DependencyArrow[] {
   const arrows: DependencyArrow[] = [];
   
@@ -551,7 +551,6 @@ export function calculateCriticalPath(phases: TimelinePhase[]): string[] {
   // Simple critical path calculation based on longest duration path
   const phaseMap = new Map(phases.map(p => [p.id, p]));
   const visited = new Set<string>();
-  const criticalPath: string[] = [];
   
   // Find phases with no dependencies (start points)
   const startPhases = phases.filter(p => !p.dependencies || p.dependencies.length === 0);
