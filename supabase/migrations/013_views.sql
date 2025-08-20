@@ -31,44 +31,57 @@ WITH task_progress AS (
     FROM construction_mgr.be_task t
     GROUP BY t.project_id, t.phase_id
 ),
-project_aggregates AS (
+transactions_agg AS (
     SELECT 
-        p.id,
-        -- Financial aggregation (single query)
-        COALESCE(SUM(ft.amount) FILTER (WHERE ft.payment_status IN ('PAID', 'APPROVED', 'PENDING')), 0) as spent_amount,
-        COUNT(ft.id) as transaction_count,
-        -- Phase aggregation
-        COUNT(ph.id) as phase_count,
-        -- Task aggregation with progress calculation
-        COUNT(t.id) FILTER (WHERE t.status IN ('PENDING', 'IN_PROGRESS')) as open_task_count,
-        COALESCE(
-            ROUND(
-                CASE 
-                    WHEN COUNT(ph.id) = 0 THEN 0
-                    ELSE AVG(
-                        CASE ph.status 
-                            WHEN 'COMPLETED' THEN 100
-                            WHEN 'IN_PROGRESS' THEN COALESCE(tp.phase_task_progress, 50)
-                            WHEN 'PLANNING' THEN 10
-                            ELSE 0
-                        END
-                    )
-                END
-            ), 0
-        ) as progress_percentage,
-        -- Other counts
-        COUNT(DISTINCT m.id) as material_count,
-        COUNT(DISTINCT d.id) as document_count,
-        COUNT(DISTINCT pm.user_id) as member_count
-    FROM construction_mgr.be_project p
-    LEFT JOIN construction_mgr.financial_transaction ft ON ft.project_id = p.id
-    LEFT JOIN construction_mgr.be_phase ph ON ph.project_id = p.id
-    LEFT JOIN construction_mgr.be_task t ON t.project_id = p.id
-    LEFT JOIN task_progress tp ON tp.project_id = p.id AND tp.phase_id = ph.id
-    LEFT JOIN construction_mgr.be_material m ON m.project_id = p.id
-    LEFT JOIN construction_mgr.be_document d ON d.project_id = p.id
-    LEFT JOIN construction_mgr.be_project_member pm ON pm.project_id = p.id
-    GROUP BY p.id
+        ft.project_id,
+        COUNT(ft.id) AS transaction_count,
+        COALESCE(SUM(ft.amount) FILTER (WHERE ft.payment_status IN ('PAID', 'APPROVED', 'PENDING')), 0) AS spent_amount
+    FROM construction_mgr.financial_transaction ft
+    GROUP BY ft.project_id
+),
+phases_agg AS (
+    SELECT 
+        ph.project_id,
+        COUNT(ph.id) AS phase_count
+    FROM construction_mgr.be_phase ph
+    GROUP BY ph.project_id
+),
+tasks_agg AS (
+    SELECT 
+        t.project_id,
+        COUNT(t.id) FILTER (WHERE t.status IN ('PENDING', 'IN_PROGRESS')) AS open_task_count
+    FROM construction_mgr.be_task t
+    GROUP BY t.project_id
+),
+progress_agg AS (
+    SELECT 
+        ph.project_id,
+        COALESCE(ROUND(AVG(
+            CASE ph.status 
+                WHEN 'COMPLETED' THEN 100
+                WHEN 'IN_PROGRESS' THEN COALESCE(tp.phase_task_progress, 50)
+                WHEN 'PLANNING' THEN 10
+                ELSE 0
+            END
+        ), 0), 0) AS progress_percentage
+    FROM construction_mgr.be_phase ph
+    LEFT JOIN task_progress tp ON tp.project_id = ph.project_id AND tp.phase_id = ph.id
+    GROUP BY ph.project_id
+),
+materials_agg AS (
+    SELECT m.project_id, COUNT(m.id) AS material_count
+    FROM construction_mgr.be_material m
+    GROUP BY m.project_id
+),
+documents_agg AS (
+    SELECT d.project_id, COUNT(d.id) AS document_count
+    FROM construction_mgr.be_document d
+    GROUP BY d.project_id
+),
+members_agg AS (
+    SELECT pm.project_id, COUNT(DISTINCT pm.user_id) AS member_count
+    FROM construction_mgr.be_project_member pm
+    GROUP BY pm.project_id
 )
 SELECT
     p.id,
@@ -96,25 +109,25 @@ SELECT
     p.timeline->>'planned_start' AS start_date,
     p.timeline->>'planned_end' AS end_date,
     
-    -- Financial data (optimized with single calculation)
+    -- Financial data (uses aggregated transactions)
     COALESCE((p.budget->>'allocated')::numeric, 0) as budget,
-    agg.spent_amount as spent,
+    COALESCE(ta.spent_amount, 0) as spent,
     COALESCE(p.budget->>'currency', 'USD') as currency,
     CASE 
         WHEN COALESCE((p.budget->>'allocated')::numeric, 0) > 0 
-        THEN ROUND((agg.spent_amount / (p.budget->>'allocated')::numeric * 100), 1)
+        THEN ROUND((COALESCE(ta.spent_amount, 0) / (p.budget->>'allocated')::numeric * 100), 1)
         ELSE 0 
     END as spent_percentage,
-    COALESCE((p.budget->>'allocated')::numeric, 0) - agg.spent_amount as remaining,
+    COALESCE((p.budget->>'allocated')::numeric, 0) - COALESCE(ta.spent_amount, 0) as remaining,
     
     -- Progress (from aggregated calculation)
-    agg.progress_percentage as progress,
+    COALESCE(pa.progress_percentage, 0) as progress,
     
     -- Health status (using pre-calculated spent)
     CASE 
         WHEN p.status = 'COMPLETED' THEN 'excellent'
-        WHEN agg.spent_amount > COALESCE((p.budget->>'allocated')::numeric, 0) * 1.2 THEN 'poor'
-        WHEN agg.spent_amount > COALESCE((p.budget->>'allocated')::numeric, 0) * 1.1 THEN 'fair'
+        WHEN COALESCE(ta.spent_amount, 0) > COALESCE((p.budget->>'allocated')::numeric, 0) * 1.2 THEN 'poor'
+        WHEN COALESCE(ta.spent_amount, 0) > COALESCE((p.budget->>'allocated')::numeric, 0) * 1.1 THEN 'fair'
         ELSE 'good'
     END as health,
     
@@ -126,22 +139,26 @@ SELECT
     END as owner_name,
     
     -- Counts (from aggregated data)
-    agg.phase_count AS phases,
-    agg.material_count AS materials,
-    agg.document_count AS documents,
-    agg.member_count AS members,
-    agg.transaction_count AS transactions,
-    agg.open_task_count AS open_tasks,
+    COALESCE(ph_a.phase_count, 0) AS phases,
+    COALESCE(m_a.material_count, 0) AS materials,
+    COALESCE(d_a.document_count, 0) AS documents,
+    COALESCE(mem_a.member_count, 0) AS members,
+    COALESCE(ta.transaction_count, 0) AS transactions,
+    COALESCE(t_a.open_task_count, 0) AS open_tasks,
     
     -- Audit fields
     p.created_at,
     p.updated_at
 FROM
     construction_mgr.be_project p
-LEFT JOIN
-    construction_mgr.be_user u ON p.owner_id = u.id
-LEFT JOIN
-    project_aggregates agg ON agg.id = p.id;
+LEFT JOIN construction_mgr.be_user u ON p.owner_id = u.id
+LEFT JOIN transactions_agg ta ON ta.project_id = p.id
+LEFT JOIN phases_agg ph_a ON ph_a.project_id = p.id
+LEFT JOIN tasks_agg t_a ON t_a.project_id = p.id
+LEFT JOIN progress_agg pa ON pa.project_id = p.id
+LEFT JOIN materials_agg m_a ON m_a.project_id = p.id
+LEFT JOIN documents_agg d_a ON d_a.project_id = p.id
+LEFT JOIN members_agg mem_a ON mem_a.project_id = p.id;
 
 -- =============================================================================
 -- PROJECT MEMBERS VIEW

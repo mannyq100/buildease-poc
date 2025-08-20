@@ -14,11 +14,10 @@ import {
   TrendingUp, AlertCircle, CheckCircle, FileText, Package
 } from 'lucide-react';
 import type { Project, ProjectStatus } from '@/types/project';
-import type { ProjectPhase } from '@/types/projectDetails';
 import type { TeamMember } from '@/types/project';
-import { useProjectSummary } from '@/hooks/queries/useProjectSummary';
+import type { ProjectPhase } from '@/types/projectDetails';
+import { useConsolidatedProjectData } from '@/hooks/queries/useConsolidatedProjectData';
 import { ProCard } from '@/components/ui/ProCard';
-import type { ProjectSummary } from '@/types/projectSummary';
 
 export interface UnifiedProjectHeaderProps {
   project: Project;
@@ -64,8 +63,8 @@ const getHealthConfig = (health: string) => {
 
 export function UnifiedProjectHeader({
   project,
-  phases = [],
-  activeTeamMembers = [],
+  phases: _phases = [],
+  activeTeamMembers: _activeTeamMembers = [],
   onOpenCreateBudget,
   onOpenCreatePhase,
   onAddTeamMember,
@@ -73,31 +72,30 @@ export function UnifiedProjectHeader({
   onScrollToSection,
   onUpdateProject,
 }: UnifiedProjectHeaderProps) {
-  const { data: summary } = useProjectSummary(project.id);
+  const { data: consolidated } = useConsolidatedProjectData(project.id);
 
   // Process data once with useMemo - optimized to use view data directly
   const metrics = useMemo(() => {
-    type SummaryLike = Partial<ProjectSummary> | null;
-    const s = summary as SummaryLike;
-    
-    // Use view calculations directly instead of recalculating
-    const progress = s?.progress ?? project.progress ?? 0;
-    const budget = s?.budget ?? project.budget ?? 0;
-    const spent = s?.spent ?? 0;
-    const currency = s?.currency ?? project.currency ?? 'USD';
-    const remaining = s?.remaining ?? Math.max(0, budget - spent);
-    const spentPercentage = s?.spent_percentage ?? (budget > 0 ? Math.round((spent / budget) * 100) : 0);
+    const c = consolidated;
 
-    // Calculate timeline
-    const endDate = s?.end_date || project.end_date;
-    const daysRemaining = endDate ? 
+    // Use consolidated data directly with safe fallbacks
+    const progress = c?.progress ?? project.progress ?? 0;
+    const budget = c?.budget ?? project.budget ?? 0;
+    const spent = c?.spent ?? 0;
+    const currency = c?.currency ?? project.currency ?? 'USD';
+    const remaining = c?.remainingBudget ?? Math.max(0, budget - spent);
+    const spentPercentage = c?.utilization !== undefined
+      ? Math.round(c.utilization)
+      : (budget > 0 ? Math.round((spent / budget) * 100) : 0);
+
+    // Timeline from transformed project data or fallback
+    const endDate = c?.end_date || project.end_date;
+    const daysRemaining = endDate ?
       Math.ceil((new Date(endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null;
 
-    // Use view data for counts - more efficient
-    const phaseCount = s?.phases ?? phases.length;
-    const completedPhases = phases.filter(p => 
-      String(p.status || '').toUpperCase() === 'COMPLETED'
-    ).length;
+    // Server-side aggregates (no client-side counting)
+    const phaseCount = c?.phaseCount ?? 0;
+    const openTasks = c?.openTasks ?? 0;
 
     return {
       progress,
@@ -108,18 +106,17 @@ export function UnifiedProjectHeader({
       currency,
       daysRemaining,
       phaseCount,
-      completedPhases,
-      openTasks: s?.open_tasks ?? 0,
-      materialCount: s?.materials ?? 0,
-      health: s?.health ?? 'good',
-      memberCount: s?.members ?? activeTeamMembers.length,
-      documentCount: s?.documents ?? 0,
-      transactionCount: s?.transactions ?? 0,
-      client: s?.client,
-      location: project.location,
-      projectType: s?.project_type ?? 'Construction'
+      openTasks,
+      materialCount: c?.materialCount ?? 0,
+      health: c?.health ?? project.health ?? 'good',
+      memberCount: c?.memberCount ?? 0,
+      documentCount: c?.documentCount ?? 0,
+      transactionCount: c?.transactionCount ?? 0,
+      client: c?.client ?? project.client,
+      location: c?.location ?? project.location,
+      projectType: c?.project_type ?? project.project_type ?? 'Construction'
     };
-  }, [summary, project, phases, activeTeamMembers]);
+  }, [consolidated, project]);
 
   // Action handlers
   const handleUpdateProject = useCallback(() => {
@@ -268,7 +265,7 @@ export function UnifiedProjectHeader({
               </div>
             </div>
             <div className="mt-1 text-sm font-bold text-slate-900">
-              {metrics.completedPhases}/{metrics.phaseCount} complete
+              {metrics.phaseCount} phases
             </div>
           </div>
 

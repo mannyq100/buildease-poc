@@ -7,96 +7,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { ProjectTransformService } from '@/services/projectTransformService';
-import { normalizeProjectData, normalizePhaseData, toDbPhaseStatus, toDbTaskStatus } from '@/utils/core/dataNormalization';
+import { normalizeProjectData, toDbPhaseStatus, toDbTaskStatus } from '@/utils/core/dataNormalization';
+import type { ConsolidatedProjectData } from '@/types/consolidatedProject';
 
-// Types for the consolidated response
-interface ConsolidatedProjectData {
-  // Project basic info
-  id: string;
-  name: string;
-  description?: string;
-  budget: number;
-  spent: number;
-  currency: string;
-  status: string;
-  remainingBudget: number;
-  utilization: number;
-  totalExpenses: number;
-  paidAmount: number;
-  pendingAmount: number;
-  approvedAmount: number;
-  plannedAmount: number;
-  categoryTotals: {
-    material_costs: number;
-    labor_costs: number;
-    equipment_costs: number;
-    permit_costs: number;
-    design_costs: number;
-    other_costs: number;
-  };
-  transactionCount: number;
-  owner: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-  };
-  
-  // Financial data
-  expenses: Array<{
-    id: string;
-    title: string;
-    description?: string;
-    amount: number;
-    base_amount: number;
-    currency: string;
-    base_currency?: string;
-    exchange_rate?: number;
-    category: string;
-    payment_status: string;
-    payment_date?: string;
-    payment_method?: string;
-    transaction_type: string;
-    reference_number?: string;
-    notes?: string;
-    details: Record<string, unknown>;
-    created_at: string;
-    updated_at: string;
-  }>;
-  
-  // Team data
-  teamMembers: Array<{
-    id: string;
-    name: string;
-    role: string;
-    email?: string;
-    phone?: string;
-    status?: string;
-  }>;
-  
-  // Phase and task data
-  phases: Array<{
-    id: string;
-    name: string;
-    description?: string;
-    status: string;
-    timeline: {
-      planned_start?: string;
-      planned_end?: string;
-      actual_start?: string;
-      actual_end?: string;
-    };
-    tasks: Array<{
-      id: string;
-      title: string;
-      description?: string;
-      status: string;
-      priority: string;
-      due_date?: string;
-      assigned_to?: string;
-    }>;
-  }>;
-}
+// Using shared ConsolidatedProjectData type from '@/types/consolidatedProject'
 
 /**
  * Single comprehensive query for all project data
@@ -389,8 +303,6 @@ export function useConsolidatedProjectData(projectId: string) {
           assigned_user_name: task.assigned_user_name,
           urgency_score: task.urgency_score,
           task_status_category: task.task_status_category,
-          assignee_total_tasks: task.assignee_total_tasks,
-          assignee_active_tasks: task.assignee_active_tasks,
           assignee_workload_level: task.assignee_workload_level
         }));
         
@@ -398,7 +310,7 @@ export function useConsolidatedProjectData(projectId: string) {
           id: phase.id,
           name: phase.name,
           description: phase.description || '',
-          category: phase.category || 'CONSTRUCTION',
+          category: 'CONSTRUCTION',
           status: phase.status,
           project_id: projectId,
           details: {}, // TODO: Add from database if available
@@ -460,6 +372,12 @@ export function useConsolidatedProjectData(projectId: string) {
         plannedAmount,
         categoryTotals,
         transactionCount: projectSummary.transactions || 0,
+        // Server-provided aggregate counts from project_summary
+        phaseCount: projectSummary.phases || 0,
+        openTasks: projectSummary.open_tasks || 0,
+        materialCount: projectSummary.materials || 0,
+        documentCount: projectSummary.documents || 0,
+        memberCount: projectSummary.members || 0,
         owner: {
           id: Array.isArray(projectData.owner) 
             ? (projectData.owner[0]?.id || '') 
@@ -550,7 +468,7 @@ export function useProjectSummaryMetrics(projectId: string) {
     // Team metrics
     team: {
       total: data.teamMembers.length,
-      active: data.teamMembers.filter(m => m.status !== 'inactive').length,
+      active: data.teamMembers.filter(m => m.status === 'active').length,
       roles: data.teamMembers.reduce((acc, member) => {
         acc[member.role] = (acc[member.role] || 0) + 1;
         return acc;
@@ -569,10 +487,11 @@ export function useProjectSummaryMetrics(projectId: string) {
     
     // Task metrics (aggregated across all phases)
     tasks: data.phases.reduce((acc, phase) => {
-      acc.total += phase.tasks.length;
-      acc.completed += phase.tasks.filter(t => toDbTaskStatus(t.status) === 'COMPLETED').length;
-      acc.inProgress += phase.tasks.filter(t => toDbTaskStatus(t.status) === 'IN_PROGRESS').length;
-      acc.pending += phase.tasks.filter(t => toDbTaskStatus(t.status) === 'PENDING').length;
+      const tasks = phase.tasks ?? [];
+      acc.total += tasks.length;
+      acc.completed += tasks.filter(t => toDbTaskStatus(t.status) === 'COMPLETED').length;
+      acc.inProgress += tasks.filter(t => toDbTaskStatus(t.status) === 'IN_PROGRESS').length;
+      acc.pending += tasks.filter(t => toDbTaskStatus(t.status) === 'PENDING').length;
       return acc;
     }, { total: 0, completed: 0, inProgress: 0, pending: 0 })
   } : undefined;
