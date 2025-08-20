@@ -39,17 +39,6 @@ export function useConsolidatedProjectData(projectId: string) {
 
       if (financialError) throw financialError;
 
-      // Debug: Log project_summary data in development
-      if (process.env.NODE_ENV === 'development') {
-        console.debug('useConsolidatedProjectData: project_summary data:', {
-          location: projectSummary.location,
-          client: projectSummary.client,
-          project_type: projectSummary.project_type,
-          open_tasks: projectSummary.open_tasks,
-          spent_percentage: projectSummary.spent_percentage,
-          utilization: projectSummary.spent_percentage
-        });
-      }
 
       // Get basic project data with owner info
       const { data: projectData, error: projectError } = await supabase

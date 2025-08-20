@@ -13,7 +13,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertTriangle, Users, Phone, Mail, Save, Plus } from 'lucide-react';
-import { TeamMemberFormProps, TeamMemberFormData, FormErrors } from '@/types/projectDetails';
+import { TeamMemberFormProps, FormErrors } from '@/types/projectDetails';
+import { teamMemberSchema, type TeamMemberFormData } from '@/utils/security/inputSanitization';
 
 // Team role options
 const TEAM_ROLES = [
@@ -53,27 +54,27 @@ const defaultFormData: TeamMemberFormData = {
   email: ''
 };
 
-// Form validation
+// Enhanced form validation with security
 const validateForm = (data: TeamMemberFormData): FormErrors => {
-  const errors: FormErrors = {};
-
-  if (!data.name.trim()) {
-    errors.name = 'Name is required';
+  try {
+    // Use Zod schema for comprehensive validation and sanitization
+    teamMemberSchema.parse(data);
+    return {}; // No errors
+  } catch (error) {
+    const errors: FormErrors = {};
+    
+    if (error instanceof Error && 'errors' in error) {
+      const zodError = error as any;
+      zodError.errors.forEach((err: any) => {
+        const field = err.path[0];
+        if (field) {
+          errors[field as keyof FormErrors] = err.message;
+        }
+      });
+    }
+    
+    return errors;
   }
-
-  if (!data.role) {
-    errors.role = 'Role is required';
-  }
-
-  if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-    errors.email = 'Please enter a valid email address';
-  }
-
-  if (data.phone && !/^[\+]?[1-9]?[\d\s\-\(\)]{10,}$/.test(data.phone.replace(/\s/g, ''))) {
-    errors.phone = 'Please enter a valid phone number';
-  }
-
-  return errors;
 };
 
 const TeamMemberFormComponent = function TeamMemberForm({

@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ToastContextProvider } from "@/components/ui/toast-context";
 import { HelmetProvider } from "react-helmet-async";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 
 // Libraries
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -127,8 +128,9 @@ function App() {
                   )}
                   <SupabaseAuthProvider>
                     <AuthRedirector />
-                    <Suspense fallback={<PageLoader />}>
-                      <Routes>
+                    <ErrorBoundary>
+                      <Suspense fallback={<PageLoader />}>
+                        <Routes>
                         {/* Public routes - accessible without authentication */}
                         <Route path="/" element={<LandingPage />} />
                         <Route path="/unauthorized" element={<Unauthorized />} />
@@ -177,8 +179,9 @@ function App() {
                         {/* Catch-all route for protected section */}
                         <Route path="*" element={<NotFound />} />
                       </Route>
-                    </Routes>
-                    </Suspense>
+                        </Routes>
+                      </Suspense>
+                    </ErrorBoundary>
                   </SupabaseAuthProvider>
                 </ToastContextProvider>
               </TooltipProvider>

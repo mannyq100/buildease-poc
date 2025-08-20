@@ -140,18 +140,6 @@ function UnifiedProjectHeader({
     console.warn('UnifiedProjectHeader: Failed to load consolidated data, using fallback data:', error);
   }
 
-  // Debug: Log data values to help identify issues
-  if (consolidated && process.env.NODE_ENV === 'development') {
-    console.debug('UnifiedProjectHeader consolidated data:', {
-      location: consolidated.location,
-      openTasks: consolidated.openTasks,
-      utilization: consolidated.utilization,
-      budget: consolidated.budget,
-      spent: consolidated.spent,
-      project_location: project.location,
-      project_client: project.client
-    });
-  }
 
   return (
     <ProCard accent="blue" className="overflow-hidden">

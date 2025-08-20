@@ -99,8 +99,6 @@ export class StorageAdapter {
   
   private getSecureSession(): string | null {
     try {
-      logger.debug('StorageAdapter: Getting secure session');
-      
       // Try primary storage
       const stored = localStorage.getItem(StorageAdapter.STORAGE_KEY);
       if (stored) {
@@ -108,7 +106,6 @@ export class StorageAdapter {
         
         // Validate session format
         if (this.isValidSessionFormat(decoded)) {
-          logger.debug('Successfully retrieved session from primary storage');
           return decoded;
         } else {
           logger.debug('Primary storage contains invalid session format');
