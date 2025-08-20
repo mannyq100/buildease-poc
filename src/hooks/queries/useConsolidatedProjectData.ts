@@ -39,6 +39,18 @@ export function useConsolidatedProjectData(projectId: string) {
 
       if (financialError) throw financialError;
 
+      // Debug: Log project_summary data in development
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('useConsolidatedProjectData: project_summary data:', {
+          location: projectSummary.location,
+          client: projectSummary.client,
+          project_type: projectSummary.project_type,
+          open_tasks: projectSummary.open_tasks,
+          spent_percentage: projectSummary.spent_percentage,
+          utilization: projectSummary.spent_percentage
+        });
+      }
+
       // Get basic project data with owner info
       const { data: projectData, error: projectError } = await supabase
         .from('be_project')
@@ -357,9 +369,12 @@ export function useConsolidatedProjectData(projectId: string) {
       
       const transformedProject = ProjectTransformService.transformProjectSummary(projectDataWithCounts);
 
-      // Return consolidated data structure
+      // Return consolidated data structure - ensure project_summary view data takes precedence
       const consolidatedData: ConsolidatedProjectData = {
+        // Base transformed project data
         ...transformedProject,
+        
+        // Override with server-computed financial data
         budget: projectAllocatedBudget,
         spent: spentAmount,
         currency: projectCurrency,
@@ -372,12 +387,18 @@ export function useConsolidatedProjectData(projectId: string) {
         plannedAmount,
         categoryTotals,
         transactionCount: projectSummary.transactions || 0,
-        // Server-provided aggregate counts from project_summary
+        
+        // Override with server-provided aggregate counts from project_summary view
         phaseCount: projectSummary.phases || 0,
         openTasks: projectSummary.open_tasks || 0,
         materialCount: projectSummary.materials || 0,
         documentCount: projectSummary.documents || 0,
         memberCount: projectSummary.members || 0,
+        
+        // Override with project_summary view data for these critical fields
+        location: projectSummary.location || transformedProject.location,
+        client: projectSummary.client || transformedProject.client,
+        project_type: projectSummary.project_type || transformedProject.project_type,
         owner: {
           id: Array.isArray(projectData.owner) 
             ? (projectData.owner[0]?.id || '') 

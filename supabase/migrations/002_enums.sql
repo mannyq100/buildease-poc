@@ -47,7 +47,7 @@ END $$;
 
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'transaction_type') THEN
-    CREATE TYPE construction_mgr.transaction_type AS ENUM ('MATERIAL_PURCHASE','LABOR','EQUIPMENT_RENTAL','PERMIT_FEE','DESIGN_FEE','OTHER');
+    CREATE TYPE construction_mgr.transaction_type AS ENUM ('MATERIAL_PURCHASE','LABOR','EQUIPMENT_RENTAL','PERMIT_FEE','DESIGN_FEE', 'TRANSPORTATION', 'OTHER');
   END IF;
 END $$;
 
@@ -59,12 +59,7 @@ END $$;
 
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_method') THEN
-    CREATE TYPE construction_mgr.payment_method AS ENUM ('CASH', 'MOBILE_MONEY', 'BANK_TRANSFER', 'CHEQUE');
+    CREATE TYPE construction_mgr.payment_method AS ENUM ('CASH', 'MOBILE_MONEY', 'BANK_TRANSFER', 'CHECK','CREDIT_CARD','OTHER');
   END IF;
 END $$;
 
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'currency') THEN
-    CREATE TYPE construction_mgr.currency AS ENUM ('GHS', 'USD', 'EUR');
-  END IF;
-END $$;

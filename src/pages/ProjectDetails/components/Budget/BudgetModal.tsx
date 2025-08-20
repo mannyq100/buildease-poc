@@ -18,14 +18,17 @@ import {
   Sparkles
 } from 'lucide-react';
 import { cn } from '@/utils/core/ui';
-import type { BudgetExpense, BudgetFormData, TransactionType, PaymentStatus, PaymentMethod, Currency } from '@/types/projectDetails';
+import type { BudgetExpense, BudgetFormData, TransactionType, PaymentStatus, PaymentMethod } from '@/types/projectDetails';
+import { currencyService, type CurrencyOption } from '@/services/currencyService';
+import type { ExchangeRateInfo } from '@/services/currencyService';
+import { validateBudgetExpense, type BudgetValidationResult } from '@/utils/budget/budgetValidation';
 
 interface BudgetModalProps {
   isOpen: boolean;
   onClose: () => void;
   mode: 'create' | 'edit';
   editingExpense?: BudgetExpense | null;
-  onSave: (data: BudgetFormData) => Promise<void>;
+  onSave: (data: BudgetFormData & { base_currency?: string; exchange_rate?: number | null }) => Promise<void>;
   isLoading?: boolean;
   projectPhases?: { id: string; name: string }[];
   project?: { currency?: string; };
@@ -136,9 +139,12 @@ export function BudgetModal({
   projectPhases = [],
   project
 }: BudgetModalProps) {
-  const [selectedTemplate, setSelectedTemplate] = React.useState<ExpenseTemplate | null>(null);
-  const [showTemplates, setShowTemplates] = React.useState(mode === 'create');
-  
+  const [selectedTemplate, setSelectedTemplate] = React.useState<string | null>(null);
+  const [selectedCurrency, setSelectedCurrency] = React.useState<CurrencyOption | null>(null);
+  const [exchangeRateInfo, setExchangeRateInfo] = React.useState<ExchangeRateInfo | null>(null);
+  const [showTemplates, setShowTemplates] = React.useState(false);
+  const [validationResult, setValidationResult] = React.useState<BudgetValidationResult | null>(null);
+
   // Form state for template pre-population
   const [formData, setFormData] = React.useState({
     description: '',
@@ -148,91 +154,79 @@ export function BudgetModal({
     payment_status: 'PENDING' as PaymentStatus,
     payment_method: '' as PaymentMethod | '',
   });
-  // Popular currencies with symbols and names
-  const popularCurrencies = [
-    { code: 'USD', name: 'US Dollar', symbol: '$' },
-    { code: 'EUR', name: 'Euro', symbol: '€' },
-    { code: 'GBP', name: 'British Pound', symbol: '£' },
-    { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$' },
-    { code: 'AUD', name: 'Australian Dollar', symbol: 'A$' },
-    { code: 'JPY', name: 'Japanese Yen', symbol: '¥' },
-    { code: 'CNY', name: 'Chinese Yuan', symbol: '¥' },
-    { code: 'INR', name: 'Indian Rupee', symbol: '₹' },
-    { code: 'BRL', name: 'Brazilian Real', symbol: 'R$' },
-    { code: 'MXN', name: 'Mexican Peso', symbol: '$' },
-    { code: 'ZAR', name: 'South African Rand', symbol: 'R' },
-    { code: 'CHF', name: 'Swiss Franc', symbol: 'CHF' },
-    { code: 'SEK', name: 'Swedish Krona', symbol: 'kr' },
-    { code: 'NOK', name: 'Norwegian Krone', symbol: 'kr' },
-    { code: 'DKK', name: 'Danish Krone', symbol: 'kr' }
-  ];
 
   // Get project's default currency or fallback to USD
   const defaultCurrency = project?.currency?.toUpperCase() || 'USD';
-  
-  // Get currency symbol for display
-  const getCurrencySymbol = (currencyCode: string): string => {
-    const currency = popularCurrencies.find(c => c.code === currencyCode);
-    return currency?.symbol || currencyCode;
-  };
 
-  // Reorder currencies to show project default first
-  const orderedCurrencies = React.useMemo(() => {
-    const defaultCurrencyObj = popularCurrencies.find(c => c.code === defaultCurrency);
-    const otherCurrencies = popularCurrencies.filter(c => c.code !== defaultCurrency);
+  // Smart currency options from centralized service - provides prioritized list with project currency marked as recommended
+  const currencyOptions = React.useMemo<CurrencyOption[]>(() => {
+    // Get smart currency options (no country context in this modal, so it will show major currencies first)
+    const options = currencyService.getSmartCurrencyOptionsSimple();
     
-    if (defaultCurrencyObj) {
-      return [defaultCurrencyObj, ...otherCurrencies];
-    }
-    return popularCurrencies;
+    // Mark the project's default currency as recommended if it's not already marked
+    return options.map(option => ({
+      ...option,
+      isRecommended: option.value === defaultCurrency || option.isRecommended
+    }));
   }, [defaultCurrency]);
-  
+
+  // Keep selectedCurrency in sync when modal opens or project currency changes
+  React.useEffect(() => {
+    setSelectedCurrency(currencyOptions.find(option => option.value === defaultCurrency) || null);
+  }, [isOpen, editingExpense?.currency, defaultCurrency, currencyOptions]);
+
+  // Fetch exchange rate preview when currency differs from base currency
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (!defaultCurrency || selectedCurrency?.value === defaultCurrency) {
+        if (mounted) setExchangeRateInfo(null);
+        return;
+      }
+      try {
+        const info = await currencyService.getExchangeRate(selectedCurrency?.value || 'USD', defaultCurrency);
+        if (mounted) setExchangeRateInfo(info);
+      } catch {
+        if (mounted) setExchangeRateInfo(null);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [selectedCurrency, defaultCurrency]);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
     const formData = new FormData(e.currentTarget);
-    const category = formData.get('category') as string;
     
-    // Map category to appropriate transaction_type
-    const getTransactionType = (category: string): TransactionType => {
-      switch (category.toLowerCase()) {
-        case 'materials': return 'MATERIAL_PURCHASE';
-        case 'labor': return 'LABOR';
-        case 'equipment': return 'EQUIPMENT_RENTAL';
-        case 'permits': return 'PERMIT_FEE';
-        case 'design': return 'DESIGN_FEE';
-        default: return 'OTHER';
-      }
-    };
-
-    const expenseName = formData.get('description') as string;
-    const notes = formData.get('notes') as string;
-    
-    // Combine expense name and notes for the description field
-    const fullDescription = notes ? `${expenseName} - ${notes}` : expenseName;
-
-    const data: BudgetFormData = {
-      transaction_type: getTransactionType(category),
-      amount: Number(formData.get('amount')),
-      currency: formData.get('currency') as Currency,
-      description: fullDescription,
-      category: category,
-      payment_date: formData.get('payment_date') as string,
+    const data: BudgetFormData & { base_currency?: string; exchange_rate?: number | null } = {
+      description: formData.get('description') as string,
+      amount: parseFloat(formData.get('amount') as string),
+      currency: selectedCurrency?.value || project?.currency || 'USD',
+      category: formData.get('category') as string,
+      transaction_type: formData.get('transaction_type') as TransactionType,
       payment_status: formData.get('payment_status') as PaymentStatus,
       payment_method: formData.get('payment_method') as PaymentMethod,
+      payment_date: formData.get('payment_date') as string || undefined,
       phase_id: formData.get('phase_id') as string || undefined,
+      base_currency: defaultCurrency,
+      exchange_rate: exchangeRateInfo?.rate
     };
-
-    try {
-      await onSave(data);
-      onClose();
-    } catch (error) {
-      console.error('Failed to save budget expense:', error);
+    
+    // Validate the expense data before submitting
+    const validation = validateBudgetExpense(data);
+    setValidationResult(validation);
+    
+    if (!validation.canProceed) {
+      return;
     }
+    
+    await onSave(data);
+    onClose();
   };
 
   const handleTemplateSelect = (template: ExpenseTemplate) => {
-    setSelectedTemplate(template);
+    setSelectedTemplate(template.id);
     setShowTemplates(false);
     
     // Pre-fill form state with comprehensive template data
@@ -242,7 +236,7 @@ export function BudgetModal({
       category: template.category,
       notes: template.notes || '',
       payment_status: template.paymentStatus,
-      payment_method: template.paymentMethod || '',
+      payment_method: template.paymentMethod || ''
     });
   };
 
@@ -347,24 +341,20 @@ export function BudgetModal({
                   key={template.id}
                   type="button"
                   variant="ghost"
-                  size="sm"
-                  onClick={() => handleTemplateSelect(template)}
                   className={cn(
-                    'h-16 flex-col gap-1 p-2',
-                    'border border-gray-200 hover:border-gray-300',
-                    'bg-white hover:bg-gray-50',
-                    'transition-all duration-200'
+                    'p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md',
+                    selectedTemplate === template.id ? 
+                      'border-buildease-blue-500 bg-buildease-blue-50 dark:bg-buildease-blue-900/20' : 
+                      'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
                   )}
+                  onClick={() => handleTemplateSelect(template)}
                 >
-                  <div className={cn(
-                    'w-8 h-8 rounded-lg flex items-center justify-center text-white',
-                    template.color
-                  )}>
-                    {template.icon}
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">{template.icon}</div>
+                    <div>
+                      <div className="font-medium text-slate-900 dark:text-slate-100">{template.name}</div>
+                    </div>
                   </div>
-                  <span className="text-xs font-medium leading-tight text-center">
-                    {template.name}
-                  </span>
                 </Button>
               ))}
             </div>
@@ -375,17 +365,14 @@ export function BudgetModal({
           </div>
         )}
 
-        {/* Selected Template Indicator */}
+        {/* Template Selection Indicator */}
         {selectedTemplate && (
           <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className={cn(
-              'w-6 h-6 rounded flex items-center justify-center text-white text-xs',
-              selectedTemplate.color
-            )}>
-              {selectedTemplate.icon}
+            <div className="w-6 h-6 rounded flex items-center justify-center bg-buildease-blue-500 text-white text-xs">
+              🏗️
             </div>
             <span className="text-sm text-blue-900">
-              Using <strong>{selectedTemplate.name}</strong> template
+              Using template: <strong>{CONSTRUCTION_TEMPLATES.find(t => t.id === selectedTemplate)?.name || 'Template'}</strong>
             </span>
             <Button
               type="button"
@@ -404,13 +391,16 @@ export function BudgetModal({
 
         {/* Expense Name */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Expense Name *
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <span className="flex items-center gap-2">
+              📝 Expense Name
+              <span className="text-red-500">*</span>
+            </span>
           </label>
           <input 
             name="description"
             type="text" 
-            className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-buildease-blue-500 focus:border-transparent transition-all duration-200"
+            className="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-buildease-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-slate-300 dark:hover:border-slate-600"
             placeholder="Enter expense name (e.g., Foundation materials, Electrical supplies)"
             value={formData.description}
             onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
@@ -419,78 +409,114 @@ export function BudgetModal({
         </div>
 
         {/* Amount and Currency */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="sm:col-span-2">
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Amount *
-            </label>
-            <input 
-              name="amount"
-              type="number" 
-              min="0"
-              step="0.01"
-              className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-buildease-blue-500 focus:border-transparent transition-all duration-200"
-              placeholder="0.00"
-              value={formData.amount}
-              onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Currency *
-            </label>
-            <select 
-              name="currency"
-              className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-buildease-blue-500 focus:border-transparent transition-all duration-200"
-              defaultValue={editingExpense?.currency || defaultCurrency}
-              required
-            >
-              {orderedCurrencies.map((currency, index) => (
-                <option key={currency.code} value={currency.code}>
-                  {currency.code} ({currency.symbol}) - {currency.name}
-                  {index === 0 && currency.code === defaultCurrency ? ' (Project Default)' : ''}
-                </option>
-              ))}
-            </select>
-            {defaultCurrency !== 'USD' && (
-              <p className="text-xs text-slate-500 mt-1">
-                💡 Project uses {defaultCurrency} by default
+        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+          <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
+            💰 Amount & Currency
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <span className="flex items-center gap-2">
+                  Amount
+                  <span className="text-red-500">*</span>
+                </span>
+              </label>
+              <input 
+                name="amount"
+                type="number" 
+                min="0"
+                step="0.01"
+                className="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-buildease-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-slate-300 dark:hover:border-slate-600"
+                placeholder="0.00"
+                value={formData.amount}
+                onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <span className="flex items-center gap-2">
+                  Currency
+                  <span className="text-red-500">*</span>
+                </span>
+              </label>
+              <select 
+                name="currency"
+                className="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-buildease-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-slate-300 dark:hover:border-slate-600"
+                value={selectedCurrency?.value || ''}
+                onChange={(e) => {
+                  const option = currencyOptions.find(opt => opt.value === e.target.value);
+                  setSelectedCurrency(option || null);
+                }}
+                required
+              >
+                {currencyOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.isRecommended ? `${option.label} (Recommended)` : option.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+                💡 Project uses <span className="font-medium">{defaultCurrency}</span> by default
               </p>
-            )}
+            </div>
           </div>
         </div>
 
         {/* Category */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
             Category *
           </label>
           <select 
             name="category"
-            className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-buildease-blue-500 focus:border-transparent transition-all duration-200"
+            className="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-buildease-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-slate-300 dark:hover:border-slate-600"
             value={formData.category}
             onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
             required
           >
-            <option value="Materials">Materials</option>
-            <option value="Labor">Labor</option>
-            <option value="Equipment">Equipment</option>
-            <option value="Permits">Permits</option>
-            <option value="Utilities">Utilities</option>
-            <option value="Design">Design</option>
-            <option value="Other">Other</option>
+            <option value="Materials">🔨 Materials</option>
+            <option value="Labor">👷 Labor</option>
+            <option value="Equipment">🚜 Equipment</option>
+            <option value="Permits">📋 Permits</option>
+            <option value="Utilities">⚡ Utilities</option>
+            <option value="Design">🏗️ Design</option>
+            <option value='Transportation'>🚚 Transportation</option>
+            <option value="Other">📦 Other</option>
           </select>
         </div>
 
+        {/* Currency Conversion Info */}
+        {selectedCurrency?.value !== defaultCurrency && exchangeRateInfo && (
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+            <div className="text-sm text-amber-700 dark:text-amber-300">
+              <div className="font-medium mb-1">💱 Exchange Rate Preview</div>
+              <div className="text-xs">1 {selectedCurrency?.value} = {exchangeRateInfo.rate.toFixed(4)} {defaultCurrency}</div>
+              <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                Live exchange rate
+              </div>
+              <div className="mt-1">
+                Estimated base amount: <span className="font-medium">{(() => {
+                  const amt = Number(formData.amount || 0);
+                  const est = Math.round((amt * exchangeRateInfo.rate) * 100) / 100;
+                  return est.toLocaleString();
+                })()} {defaultCurrency}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Additional Notes */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Additional Notes
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <span className="flex items-center gap-2">
+              📝 Additional Notes
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-normal">(Optional)</span>
+            </span>
           </label>
           <textarea 
             name="notes"
-            className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-buildease-blue-500 focus:border-transparent transition-all duration-200 resize-none"
+            className="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-buildease-blue-500 focus:border-transparent transition-all duration-200 resize-none shadow-sm hover:border-slate-300 dark:hover:border-slate-600"
             rows={3}
             placeholder="Add additional notes about this expense (optional)"
             value={formData.notes}
@@ -499,57 +525,66 @@ export function BudgetModal({
         </div>
 
         {/* Payment Details */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Payment Status *
-            </label>
-            <select 
-              name="payment_status"
-              className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-buildease-blue-500 focus:border-transparent transition-all duration-200"
-              value={formData.payment_status}
-              onChange={(e) => setFormData(prev => ({ ...prev, payment_status: e.target.value as PaymentStatus }))}
-              required
-            >
-              <option value="PENDING">Pending</option>
-              <option value="APPROVED">Approved</option>
-              <option value="PAID">Paid</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="FAILED">Failed</option>
-              <option value="REFUNDED">Refunded</option>
-              <option value="CANCELLED">Cancelled</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Payment Method
-            </label>
-            <select 
-              name="payment_method"
-              className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-buildease-blue-500 focus:border-transparent transition-all duration-200"
-              value={formData.payment_method}
-              onChange={(e) => setFormData(prev => ({ ...prev, payment_method: e.target.value as PaymentMethod }))}
-            >
-              <option value="">Select payment method</option>
-              <option value="CASH">Cash</option>
-              <option value="CHECK">Check</option>
-              <option value="CREDIT_CARD">Credit Card</option>
-              <option value="BANK_TRANSFER">Bank Transfer</option>
-              <option value="OTHER">Other</option>
-            </select>
+        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+          <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
+            💳 Payment Information
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Payment Status *
+              </label>
+              <select 
+                name="payment_status"
+                className="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-buildease-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-slate-300 dark:hover:border-slate-600"
+                value={formData.payment_status}
+                onChange={(e) => setFormData(prev => ({ ...prev, payment_status: e.target.value as PaymentStatus }))}
+                required
+              >
+                <option value="PENDING">🕐 Pending</option>
+                <option value="APPROVED">✅ Approved</option>
+                <option value="PAID">💰 Paid</option>
+                <option value="COMPLETED">🎉 Completed</option>
+                <option value="FAILED">❌ Failed</option>
+                <option value="REFUNDED">↩️ Refunded</option>
+                <option value="CANCELLED">🚫 Cancelled</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Payment Method
+              </label>
+              <select 
+                name="payment_method"
+                className="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-buildease-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-slate-300 dark:hover:border-slate-600"
+                value={formData.payment_method}
+                onChange={(e) => setFormData(prev => ({ ...prev, payment_method: e.target.value as PaymentMethod }))}
+              >
+                <option value="">Select payment method</option>
+                <option value="CASH">💵 Cash</option>
+                <option value="MOBILE_MONEY">📱 Mobile Money</option>
+                <option value="CREDIT_CARD">💳 Credit Card</option>
+                <option value="BANK_TRANSFER">🏦 Bank Transfer</option>
+                <option value="CHECK">📄 Check</option>
+                <option value="OTHER">📋 Other</option>
+              </select>
+            </div>
           </div>
         </div>
 
 
         {/* Payment Date */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Payment Date
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <span className="flex items-center gap-2">
+              📅 Payment Date
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-normal">(Optional)</span>
+            </span>
           </label>
           <input 
             name="payment_date"
             type="date" 
-            className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-buildease-blue-500 focus:border-transparent transition-all duration-200"
+            className="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-buildease-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-slate-300 dark:hover:border-slate-600"
             defaultValue={editingExpense?.payment_date ? editingExpense.payment_date.split('T')[0] : ''}
           />
         </div>
@@ -557,30 +592,83 @@ export function BudgetModal({
         {/* Phase Assignment (if phases available) */}
         {projectPhases.length > 0 && (
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Assign to Phase (Optional)
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <span className="flex items-center gap-2">
+                🏗️ Assign to Phase
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-normal">(Optional)</span>
+              </span>
             </label>
             <select 
               name="phase_id"
-              className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-buildease-blue-500 focus:border-transparent transition-all duration-200"
+              className="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-buildease-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-slate-300 dark:hover:border-slate-600"
               defaultValue={editingExpense?.phase_id || ''}
             >
-              <option value="">No specific phase</option>
+              <option value="">📋 No specific phase</option>
               {projectPhases.map((phase) => (
                 <option key={phase.id} value={phase.id}>
-                  {phase.name}
+                  🔹 {phase.name}
                 </option>
               ))}
             </select>
           </div>
         )}
 
+        {/* Validation Results */}
+        {validationResult && (validationResult.errors.length > 0 || validationResult.warnings.length > 0) && (
+          <div className="space-y-2">
+            {validationResult.errors.length > 0 && (
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                <div className="text-sm text-red-700 dark:text-red-300">
+                  <div className="font-medium mb-2 flex items-center gap-2">
+                    <span className="text-red-600 dark:text-red-400">⚠️</span>
+                    Validation Errors
+                  </div>
+                  <ul className="text-xs space-y-1 ml-6">
+                    {validationResult.errors.map((error, index) => (
+                      <li key={index} className="list-disc">{error}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+            {validationResult.warnings.length > 0 && (
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                <div className="text-sm text-amber-700 dark:text-amber-300">
+                  <div className="font-medium mb-2 flex items-center gap-2">
+                    <span className="text-amber-600 dark:text-amber-400">⚡</span>
+                    Validation Warnings
+                  </div>
+                  <ul className="text-xs space-y-1 ml-6">
+                    {validationResult.warnings.map((warning, index) => (
+                      <li key={index} className="list-disc">{warning}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Budget Impact Info */}
-        <div className="bg-buildease-blue-50 border border-buildease-blue-200 rounded-lg p-4">
-          <div className="text-sm text-slate-700">
-            <div className="font-medium mb-1">Financial Transaction</div>
-            <div className="text-slate-600 text-xs">
-              This transaction will be recorded in your project's financial ledger and will affect budget calculations. Multi-currency amounts are automatically converted to USD for reporting.
+        <div className="bg-buildease-blue-50 dark:bg-buildease-blue-900/20 border border-buildease-blue-200 dark:border-buildease-blue-800 rounded-lg p-4">
+          <div className="text-sm text-slate-700 dark:text-slate-300">
+            <div className="font-medium mb-2 flex items-center gap-2">
+              <span className="text-buildease-blue-600 dark:text-buildease-blue-400">📊</span>
+              Financial Transaction Impact
+            </div>
+            <div className="text-slate-600 dark:text-slate-400 text-xs space-y-1">
+              <div className="flex items-start gap-2">
+                <span className="text-green-500 mt-0.5">✓</span>
+                <span>Recorded in your project's financial ledger</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-green-500 mt-0.5">✓</span>
+                <span>Affects budget calculations and reporting</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-blue-500 mt-0.5">💱</span>
+                <span>Multi-currency amounts automatically converted for consistency</span>
+              </div>
             </div>
           </div>
         </div>

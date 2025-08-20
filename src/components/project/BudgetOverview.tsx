@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
-import { AddExpenseModal } from './AddExpenseModal';
+import { BudgetModal } from '@/pages/ProjectDetails/components/Budget/BudgetModal';
 import { 
   DollarSign, 
   TrendingDown, 
@@ -17,6 +17,7 @@ import {
 import { getProjectBudget } from '@/data/mock/expenses/budgetData';
 import { initialExpenses, EXPENSE_CATEGORIES } from '@/data/mock/expenses/expensesData';
 import type { BudgetData, Expense } from '@/types/expenses';
+import type { BudgetFormData } from '@/types/projectDetails';
 
 interface BudgetOverviewProps {
   projectName: string;
@@ -68,10 +69,16 @@ export function BudgetOverview({ projectName, className }: BudgetOverviewProps) 
   };
 
 
-  const handleAddExpense = (expenseData: Omit<Expense, 'id' | 'date' | 'receiptUploaded' | 'status'>) => {
+  const handleAddExpense = async (expenseData: BudgetFormData & { base_currency?: string; exchange_rate?: number | null }) => {
+    // Convert BudgetFormData to legacy Expense format for compatibility
     const expense: Expense = {
       id: Math.max(...expenses.map(e => e.id)) + 1,
-      ...expenseData,
+      description: expenseData.description || 'New Expense',
+      category: expenseData.category || 'General',
+      amount: expenseData.amount,
+      project: projectName,
+      phase: 'General',
+      vendor: 'Unknown Vendor', // BudgetFormData doesn't have vendor field
       date: new Date().toISOString().split('T')[0],
       receiptUploaded: false,
       status: 'pending'
@@ -395,11 +402,12 @@ export function BudgetOverview({ projectName, className }: BudgetOverviewProps) 
       </Card>
 
       {/* Add Expense Modal */}
-      <AddExpenseModal
+      <BudgetModal
         isOpen={showAddExpense}
         onClose={() => setShowAddExpense(false)}
-        onAddExpense={handleAddExpense}
-        projectName={projectName}
+        onSave={handleAddExpense}
+        project={{ currency: 'USD' }} // Default project currency
+        mode="create"
       />
     </div>
   );

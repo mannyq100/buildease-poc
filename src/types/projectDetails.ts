@@ -31,13 +31,11 @@ export interface TaskFormModalProps {
 export type PaymentStatus = 'PENDING' | 'PAID' | 'COMPLETED' | 'APPROVED' | 'FAILED' | 'REFUNDED' | 'CANCELLED';
 
 // Transaction Type enum (matches database)
-export type TransactionType = 'MATERIAL_PURCHASE' | 'LABOR' | 'EQUIPMENT_RENTAL' | 'PERMIT_FEE' | 'DESIGN_FEE' | 'OTHER';
+export type TransactionType = 'MATERIAL_PURCHASE' | 'LABOR' | 'EQUIPMENT_RENTAL' | 'PERMIT_FEE' | 'DESIGN_FEE' | 'TRANSPORTATION' | 'OTHER';
 
 // Payment Method enum (matches database)
-export type PaymentMethod = 'CASH' | 'CHECK' | 'CREDIT_CARD' | 'BANK_TRANSFER' | 'OTHER';
+export type PaymentMethod = 'CASH' | 'MOBILE_MONEY' | 'CHECK' | 'CREDIT_CARD' | 'BANK_TRANSFER' | 'OTHER';
 
-// Currency enum (popular currencies)
-export type Currency = 'USD' | 'EUR' | 'GBP' | 'CAD' | 'AUD' | 'JPY' | 'CNY' | 'INR' | 'BRL' | 'MXN' | 'ZAR' | 'CHF' | 'SEK' | 'NOK' | 'DKK';
 
 // Budget-related interfaces (aligned with financial_transaction table)
 export interface BudgetExpense {
@@ -46,8 +44,12 @@ export interface BudgetExpense {
   phase_id?: string;
   transaction_type: TransactionType;
   amount: number;
-  currency: Currency;
+  currency: string;
   base_amount: number; // Amount in USD for consistent calculations
+  // Currency conversion context
+  base_currency?: string; // Server/base currency used to compute base_amount (defaults to 'USD' historically)
+  exchange_rate?: number | null; // Rate from currency -> base_currency at time of entry
+  title?: string; // Short title stored in DB (computed from description/category)
   description?: string;
   category: string;
   payment_date?: string;
@@ -295,7 +297,7 @@ export interface PhaseTasksSectionProps {
 export interface BudgetFormData {
   transaction_type: TransactionType;
   amount: number;
-  currency: Currency;
+  currency: string;
   description?: string;
   category: string;
   payment_date?: string;
@@ -323,12 +325,7 @@ export interface TeamMemberFormData {
 }
 
 // Form Props interfaces
-export interface BudgetExpenseFormProps {
-  mode: 'create' | 'edit';
-  initialData?: Partial<BudgetFormData>;
-  onSubmit: (data: BudgetFormData) => Promise<void>;
-  isLoading?: boolean;
-}
+ 
 
 export interface PhaseFormProps {
   mode: 'create' | 'edit';

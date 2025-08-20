@@ -107,7 +107,7 @@ export function SwipeableExpenseCard({
     setIsDragging(true);
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const _handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
     
     currentX.current = e.clientX;
@@ -124,7 +124,7 @@ export function SwipeableExpenseCard({
     }
   };
 
-  const handleMouseUp = () => {
+  const _handleMouseUp = () => {
     if (!isDragging) return;
     
     const diffX = currentX.current - startX.current;
@@ -270,6 +270,16 @@ export function SwipeableExpenseCard({
             <span className="text-lg font-semibold text-gray-900">
               {formatCurrency(expense.amount, expense.currency)}
             </span>
+            {expense.base_currency && expense.base_currency !== expense.currency && (
+              <span className="mt-0.5 text-[11px] text-gray-500">
+                ≈ {formatCurrency(expense.base_amount || expense.amount, expense.base_currency)}
+                {typeof expense.exchange_rate === 'number' && expense.exchange_rate > 0 && (
+                  <span className="ml-1 text-gray-400">
+                    @ {expense.exchange_rate.toFixed(4)} {expense.base_currency}/{expense.currency}
+                  </span>
+                )}
+              </span>
+            )}
             <Badge 
               variant="outline" 
               className={cn('text-xs', getStatusColor(expense.payment_status))}

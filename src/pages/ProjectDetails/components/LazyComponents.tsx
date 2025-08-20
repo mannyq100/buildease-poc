@@ -14,8 +14,6 @@ type ProjectSettingsSectionComponent = typeof import('./Settings/ProjectSettings
 type ProjectSettingsSectionProps = React.ComponentProps<ProjectSettingsSectionComponent>;
 type PhaseFormComponent = typeof import('./Forms/PhaseForm')['PhaseForm'];
 type PhaseFormProps = React.ComponentProps<PhaseFormComponent>;
-type BudgetExpenseFormComponent = typeof import('./Forms/BudgetExpenseForm')['BudgetExpenseForm'];
-type BudgetExpenseFormProps = React.ComponentProps<BudgetExpenseFormComponent>;
 type TeamMemberFormComponent = typeof import('./Forms/TeamMemberForm')['TeamMemberForm'];
 type TeamMemberFormProps = React.ComponentProps<TeamMemberFormComponent>;
 type TeamMembersListComponent = typeof import('./Team/TeamMembersList')['TeamMembersList'];
@@ -98,11 +96,7 @@ const LazyPhaseFormFooter = React.lazy(() =>
   }))
 );
 
-const LazyBudgetExpenseForm = React.lazy(() => 
-  import('./Forms/BudgetExpenseForm').then(module => ({
-    default: module.BudgetExpenseForm
-  }))
-);
+// Deprecated: BudgetExpenseForm is removed in favor of inline form in BudgetModal
 
 const LazyTeamMemberForm = React.lazy(() => 
   import('./Forms/TeamMemberForm').then(module => ({
@@ -180,13 +174,7 @@ export const PhaseForm = React.memo(function PhaseForm(props: PhaseFormProps) {
   );
 });
 
-export const BudgetExpenseForm = React.memo(function BudgetExpenseForm(props: BudgetExpenseFormProps) {
-  return (
-    <Suspense fallback={<FormLoadingFallback />}>
-      <LazyBudgetExpenseForm {...props} />
-    </Suspense>
-  );
-});
+// Note: BudgetExpenseForm export intentionally removed
 
 export const TeamMemberForm = React.memo(function TeamMemberForm(props: TeamMemberFormProps) {
   return (

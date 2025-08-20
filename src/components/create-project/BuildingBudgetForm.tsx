@@ -25,7 +25,7 @@ import {
   AlertCircle 
 } from 'lucide-react';
 import { cn } from '@/utils/core/ui';
-import { Country } from 'country-state-city';
+import { currencyService, type CurrencyOption } from '@/services/currencyService';
 
 // Size units
 const SIZE_UNITS = [
@@ -33,60 +33,7 @@ const SIZE_UNITS = [
   { value: 'sq-ft', label: 'Square Feet' }
 ];
 
-// Currency handling - Dynamic from country-state-city library
-interface CurrencyOption {
-  value: string;
-  label: string;
-  isRecommended?: boolean;
-  disabled?: boolean;
-}
-
-// Generate all available currencies from country-state-city library
-const generateAllCurrencies = (): CurrencyOption[] => {
-  try {
-    const countries = Country.getAllCountries();
-    const currencyMap = new Map<string, CurrencyOption>();
-    
-    // Extract unique currencies from all countries
-    countries.forEach(country => {
-      if (country.currency && country.currency.trim()) {
-        const currencyCode = country.currency.trim();
-        
-        if (!currencyMap.has(currencyCode)) {
-          // Try to get a readable currency name using Intl.DisplayNames
-          let currencyName = currencyCode;
-          try {
-            const displayNames = new Intl.DisplayNames(['en'], { type: 'currency' });
-            currencyName = displayNames.of(currencyCode) || currencyCode;
-          } catch {
-            // Fallback to currency code if Intl.DisplayNames fails
-            currencyName = currencyCode;
-          }
-          
-          currencyMap.set(currencyCode, {
-            value: currencyCode,
-            label: `${currencyCode} - ${currencyName}`
-          });
-        }
-      }
-    });
-    
-    // Convert map to array and sort alphabetically
-    return Array.from(currencyMap.values()).sort((a, b) => {
-      return a.label.localeCompare(b.label);
-    });
-  } catch (error) {
-    console.error('Error generating currencies from country-state-city:', error);
-    // Minimal fallback - just USD
-    return [{
-      value: 'USD',
-      label: 'USD - US Dollar'
-    }];
-  }
-};
-
-// Generate the currency list
-const ALL_CURRENCIES = generateAllCurrencies();
+// Currency options are now provided by centralized currencyService
 
 // Memoized number options generator
 const generateNumberOptions = (max: number) => {
@@ -172,43 +119,9 @@ function BuildingBudgetForm() {
   const buildingSizeUnit = watch('buildingSizeUnit');
   const country = watch('country');
 
-  // Smart currency selection: prioritize country currency
-  const getSmartCurrencyOptions = useCallback((): CurrencyOption[] => {
-    const prioritizedCurrencies: CurrencyOption[] = [];
-    
-    // Get country's currency using efficient lookup (if country is selected)
-    let suggestedCurrency: string | null = null;
-    if (country) {
-      try {
-        const countries = Country.getAllCountries();
-        const countryData = countries.find(c => c.name === country);
-        if (countryData?.currency) {
-          suggestedCurrency = countryData.currency;
-        }
-      } catch (error) {
-        console.error('Error getting country currency:', error);
-      }
-    }
-    
-    // 1. Add country's currency first if it exists
-    if (suggestedCurrency) {
-      const countryCurrencyOption = ALL_CURRENCIES.find(c => c.value === suggestedCurrency);
-      if (countryCurrencyOption) {
-        prioritizedCurrencies.push({
-          ...countryCurrencyOption,
-          isRecommended: true
-        });
-      }
-    }
-    
-    // 2. Add remaining currencies (excluding the suggested one)
-    const otherCurrencies = ALL_CURRENCIES
-      .filter(c => c.value !== suggestedCurrency)
-      .sort((a, b) => a.label.localeCompare(b.label));
-    
-    prioritizedCurrencies.push(...otherCurrencies);
-    
-    return prioritizedCurrencies;
+  // Smart currency options from service (simple prioritized list)
+  const currencyOptions = useMemo<CurrencyOption[]>(() => {
+    return currencyService.getSmartCurrencyOptionsSimple(country);
   }, [country]);
 
   // Helper function to format currency
@@ -625,7 +538,7 @@ function BuildingBudgetForm() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {getSmartCurrencyOptions().map((currencyOption) => (
+                    {currencyOptions.map((currencyOption) => (
                       <SelectItem 
                         key={currencyOption.value} 
                         value={currencyOption.value}

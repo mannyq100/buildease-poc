@@ -11,7 +11,7 @@ CREATE TABLE construction_mgr.financial_transaction (
     title VARCHAR(100) NOT NULL,
     description TEXT,
     amount NUMERIC(12, 2) NOT NULL,
-    currency construction_mgr.currency NOT NULL DEFAULT 'GHS',
+    currency VARCHAR(3) NOT NULL DEFAULT 'GHS',
     transaction_type construction_mgr.transaction_type NOT NULL DEFAULT 'OTHER',
     category TEXT,
     project_id UUID NOT NULL,
@@ -19,7 +19,7 @@ CREATE TABLE construction_mgr.financial_transaction (
     payment_status construction_mgr.payment_status NOT NULL DEFAULT 'PENDING',
     payment_method construction_mgr.payment_method,
     payment_date TIMESTAMPTZ,
-    base_currency construction_mgr.currency,
+    base_currency VARCHAR(3) NOT NULL DEFAULT 'USD',
     exchange_rate NUMERIC(12, 6),
     base_amount NUMERIC(12, 2) GENERATED ALWAYS AS (
         CASE 

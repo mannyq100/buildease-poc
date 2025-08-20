@@ -3,11 +3,12 @@
  */
 
 /**
- * Format a number as currency
+ * Format a number as currency using the standardized currency utilities
  * @param value - Number to format
  * @param currency - Currency code (default: USD)
  * @param locale - Locale for formatting (default: en-US)
  * @returns Formatted currency string
+ * @deprecated Use formatCurrency from currencyUtils.ts for better type safety and currency support
  */
 export function formatCurrency(
   value: number | null | undefined, 

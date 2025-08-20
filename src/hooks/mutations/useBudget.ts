@@ -2,41 +2,20 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { queryKeys } from '@/lib/queryClient';
 import { toast } from 'sonner';
-import type { BudgetExpense, BudgetFormData, TransactionType, PaymentStatus, PaymentMethod, Currency } from '@/types/projectDetails';
+import type { BudgetExpense, BudgetFormData, TransactionType, PaymentStatus, PaymentMethod } from '@/types/projectDetails';
+import { createBatchedActivity } from '@/services/activityService';
 
-/**
- * Estimates USD conversion for optimistic updates
- * Uses rough conversion rates - server will calculate accurate amounts
- */
-function estimateUSDConversion(amount: number, currency: Currency): number {
-  const roughConversionRates: Record<Currency, number> = {
-    'USD': 1.0,
-    'EUR': 1.1,
-    'GBP': 1.25,
-    'CAD': 0.75,
-    'AUD': 0.65,
-    'JPY': 0.007,
-    'CNY': 0.14,
-    'INR': 0.012,
-    'BRL': 0.18,
-    'MXN': 0.055,
-    'ZAR': 0.055,
-    'CHF': 1.1,
-    'SEK': 0.095,
-    'NOK': 0.092,
-    'DKK': 0.145
-  };
-  
-  const rate = roughConversionRates[currency] || 1.0;
-  return Math.round(amount * rate * 100) / 100; // Round to 2 decimal places
-}
 
 export interface CreateBudgetExpenseData extends BudgetFormData {
   project_id: string;
+  base_currency?: string; // base currency for conversion context (defaults to USD in DB)
+  exchange_rate?: number | null; // rate from currency -> base_currency
 }
 
 export interface UpdateBudgetExpenseData extends Partial<BudgetFormData> {
   id: string;
+  base_currency?: string;
+  exchange_rate?: number | null;
 }
 
 /**
@@ -89,6 +68,8 @@ export function useCreateBudgetExpense() {
           transaction_type: data.transaction_type,
           amount: data.amount,
           currency: data.currency,
+          base_currency: data.base_currency || 'USD',
+          exchange_rate: data.exchange_rate ?? null,
           description: data.description,
           category: data.category,
           title: computedTitle,
@@ -120,11 +101,8 @@ export function useCreateBudgetExpense() {
       const previousExpenses = queryClient.getQueryData<BudgetExpense[]>(queryKey) || [];
       
       // Optimistically update to show new expense
-      // For optimistic updates, use currency-aware conversion estimates
-      // The server will calculate the accurate base_amount
-      const estimatedBaseAmount = variables.currency === 'USD' 
-        ? variables.amount 
-        : estimateUSDConversion(variables.amount, variables.currency);
+      // Database will calculate the accurate base_amount using computed column
+      const baseCurrency = variables.base_currency || 'USD';
       
       const optimisticExpense: BudgetExpense = {
         id: `temp-${Date.now()}`, // Temporary ID
@@ -133,7 +111,9 @@ export function useCreateBudgetExpense() {
         transaction_type: variables.transaction_type,
         amount: variables.amount,
         currency: variables.currency,
-        base_amount: estimatedBaseAmount, // Server will provide accurate conversion
+        base_currency: baseCurrency,
+        exchange_rate: variables.exchange_rate ?? null,
+        base_amount: variables.amount, // Database will calculate accurate conversion via computed column
         description: variables.description,
         category: variables.category,
         payment_date: variables.payment_date,
@@ -141,7 +121,7 @@ export function useCreateBudgetExpense() {
         payment_method: variables.payment_method,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        created_by: 'current-user' // Will be replaced with real data
+        created_by: '' // Will be replaced with real data from server
       };
       
       queryClient.setQueryData<BudgetExpense[]>(queryKey, (old = []) => [
@@ -192,11 +172,14 @@ export function useCreateBudgetExpense() {
             userMetadata: auth?.user?.user_metadata
           });
           
-          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
-              (auth?.user?.user_metadata?.name as string | undefined) ||
-              (auth?.user?.email as string | undefined);
+          const userName = auth?.user?.user_metadata?.full_name || 
+              auth?.user?.user_metadata?.name || 
+              auth?.user?.email || 
+              'Unknown User';
               
-          const displayName = variables.description || variables.transaction_type.replace('_', ' ').toLowerCase();
+          const displayName = variables.description || 
+              variables.category || 
+              variables.transaction_type.replace(/_/g, ' ').toLowerCase();
           
           console.log('[ACTIVITY_DEBUG] [useCreateBudgetExpense] Adding expense creation to activity batch', {
             project_id: variables.project_id,
@@ -208,21 +191,34 @@ export function useCreateBudgetExpense() {
             entity_id: newExpense.id
           });
           
-          // Use batching for expense creation to reduce noise when multiple expenses are added
+          // Format amount for display
           const formattedAmount = new Intl.NumberFormat('en-US', {
             style: 'currency',
-            currency: variables.currency
+            currency: variables.currency || 'USD'
           }).format(variables.amount);
           
-          // TODO: Add activity logging when activityService is available
-          console.log('Expense created:', {
-            project_id: variables.project_id,
-            activity_type: 'expense_create',
-            title: `New ${variables.category.toLowerCase()} expense: ${displayName}`,
-            description: `${variables.transaction_type.replace('_', ' ')} "${displayName}" (${formattedAmount}) was added to ${variables.category}`,
-            entity_type: 'expense',
-            entity_id: newExpense.id
-          });
+          // Log activity using proper activity service
+          try {
+            await createBatchedActivity({
+              project_id: variables.project_id,
+              activity_type: 'expense_create',
+              title: `New ${(variables.category || 'expense').toLowerCase()}: ${displayName}`,
+              description: `${variables.transaction_type.replace(/_/g, ' ')} "${displayName}" (${formattedAmount}) was added to ${variables.category || 'project budget'}`,
+              user_id: auth?.user?.id,
+              user_name: userName,
+              entity_type: 'expense',
+              entity_id: newExpense.id,
+              metadata: {
+                amount: variables.amount,
+                currency: variables.currency,
+                category: variables.category,
+                transaction_type: variables.transaction_type
+              },
+              status: 'success'
+            });
+          } catch (activityError) {
+            console.error('Failed to log expense creation activity:', activityError);
+          }
           
           console.log('[ACTIVITY_DEBUG] [useCreateBudgetExpense] Activity added to batch successfully');
           
@@ -241,13 +237,36 @@ export function useCreateBudgetExpense() {
       
       toast.success('Budget expense added successfully');
     },
-    onError: (error: Error, variables, context) => {
-      // Rollback optimistic update
-      if (context?.previousExpenses) {
-        const queryKey = ['budget', variables.project_id];
-        queryClient.setQueryData(queryKey, context.previousExpenses);
+    onError: (error, variables, context) => {
+      console.error('Failed to create budget expense:', error);
+      
+      // Revert optimistic update
+      const queryKey = ['budget', variables.project_id];
+      queryClient.setQueryData<BudgetExpense[]>(queryKey, context?.previousExpenses || []);
+      
+      // Enhanced error handling with specific error messages
+      let errorMessage = 'Failed to add expense. Please try again.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('network')) {
+          errorMessage = 'Network error. Please check your connection and try again.';
+        } else if (error.message.includes('permission')) {
+          errorMessage = 'You do not have permission to add expenses to this project.';
+        } else if (error.message.includes('validation')) {
+          errorMessage = 'Invalid expense data. Please check your inputs.';
+        } else if (error.message.includes('currency')) {
+          errorMessage = 'Currency conversion failed. Please try again.';
+        }
       }
-      toast.error(`Failed to add budget expense: ${error.message}`);
+      
+      toast.error(errorMessage);
+      
+      // Log error details for debugging
+      console.error('[useBudget] Create expense error details:', {
+        error: error.message,
+        variables,
+        timestamp: new Date().toISOString()
+      });
     },
   });
 }
@@ -267,6 +286,8 @@ export function useUpdateBudgetExpense() {
       if (updateData.transaction_type !== undefined) updatePayload.transaction_type = updateData.transaction_type;
       if (updateData.amount !== undefined) updatePayload.amount = updateData.amount;
       if (updateData.currency !== undefined) updatePayload.currency = updateData.currency;
+      if (updateData.base_currency !== undefined) updatePayload.base_currency = updateData.base_currency;
+      if (updateData.exchange_rate !== undefined) updatePayload.exchange_rate = updateData.exchange_rate;
       if (updateData.description !== undefined) updatePayload.description = updateData.description;
       if (updateData.category !== undefined) updatePayload.category = updateData.category;
       if (updateData.payment_date !== undefined) updatePayload.payment_date = updateData.payment_date;
@@ -365,12 +386,15 @@ export function useUpdateBudgetExpense() {
             userMetadata: auth?.user?.user_metadata
           });
           
-          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
-              (auth?.user?.user_metadata?.name as string | undefined) ||
-              (auth?.user?.email as string | undefined);
+          const userName = auth?.user?.user_metadata?.full_name || 
+              auth?.user?.user_metadata?.name || 
+              auth?.user?.email || 
+              'Unknown User';
               
           // Get display name for the expense
-          const displayName = updatedExpense.description || updatedExpense.transaction_type.replace('_', ' ').toLowerCase();
+          const displayName = updatedExpense.description || 
+              updatedExpense.category || 
+              updatedExpense.transaction_type.replace(/_/g, ' ').toLowerCase();
               
           console.log('[ACTIVITY_DEBUG] [useUpdateBudgetExpense] Calling activityService.createActivity', {
             project_id: updatedExpense.project_id,
@@ -403,28 +427,33 @@ export function useUpdateBudgetExpense() {
             activityDescription = `"${displayName}" was moved to ${updatedExpense.category} category`;
           }
           
-          // TODO: Add activity logging when activityService is available
-          console.log('Expense updated:', {
-            project_id: updatedExpense.project_id,
-            activity_type: 'expense_update',
-            title: activityTitle,
-            description: activityDescription,
-            entity_type: 'expense',
-            entity_id: updatedExpense.id,
-            metadata: {
-              description: updatedExpense.description,
-              transaction_type: updatedExpense.transaction_type,
-              amount: updatedExpense.amount,
-              currency: updatedExpense.currency,
-              category: updatedExpense.category,
-              payment_status: updatedExpense.payment_status,
-              payment_method: updatedExpense.payment_method,
-              updates: variables,
-              updatedFields,
-              formattedAmount
-            },
-            status: 'info'
-          });
+          // Log activity using proper activity service
+          try {
+            await createBatchedActivity({
+              project_id: updatedExpense.project_id,
+              activity_type: 'expense_update',
+              title: activityTitle,
+              description: activityDescription,
+              user_id: auth?.user?.id,
+              user_name: userName,
+              entity_type: 'expense',
+              entity_id: updatedExpense.id,
+              metadata: {
+                amount: updatedExpense.amount,
+                currency: updatedExpense.currency,
+                category: updatedExpense.category,
+                transaction_type: updatedExpense.transaction_type,
+                payment_status: updatedExpense.payment_status,
+                payment_method: updatedExpense.payment_method,
+                updates: variables,
+                updatedFields,
+                formattedAmount
+              },
+              status: 'info'
+            });
+          } catch (activityError) {
+            console.error('Failed to log expense update activity:', activityError);
+          }
           
           console.log('[ACTIVITY_DEBUG] [useUpdateBudgetExpense] Activity logged successfully');
           
@@ -556,9 +585,10 @@ export function useDeleteBudgetExpense() {
             return;
           }
           
-          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
-              (auth?.user?.user_metadata?.name as string | undefined) ||
-              (auth?.user?.email as string | undefined);
+          const userName = auth?.user?.user_metadata?.full_name || 
+              auth?.user?.user_metadata?.name || 
+              auth?.user?.email || 
+              'Unknown User';
               
           console.log('[ACTIVITY_DEBUG] [useDeleteBudgetExpense] Calling activityService.createActivity', {
             project_id: result.projectId,
@@ -570,15 +600,25 @@ export function useDeleteBudgetExpense() {
             entity_id: result.expenseId
           });
           
-          // TODO: Add activity logging when activityService is available
-          console.log('Expense deleted:', {
-            project_id: result.projectId,
-            activity_type: 'expense_delete',
-            title: `Budget expense removed from project`,
-            description: 'An expense item was deleted from the project budget',
-            entity_type: 'expense',
-            entity_id: result.expenseId
-          });
+          // Use generic display name for deleted expense
+          const displayName = 'expense item';
+          
+          // Log activity using proper activity service
+          try {
+            await createBatchedActivity({
+              project_id: result.projectId,
+              activity_type: 'expense_delete',
+              title: `Budget expense removed: ${displayName}`,
+              description: `"${displayName}" was deleted from the project budget`,
+              user_id: auth?.user?.id,
+              user_name: userName,
+              entity_type: 'expense',
+              entity_id: result.expenseId,
+              status: 'warning'
+            });
+          } catch (activityError) {
+            console.error('Failed to log expense deletion activity:', activityError);
+          }
           
           console.log('[ACTIVITY_DEBUG] [useDeleteBudgetExpense] Activity logged successfully');
           
@@ -629,8 +669,11 @@ export function useProjectBudgetExpenses(projectId: string) {
         phase_id: expense.phase_id,
         transaction_type: expense.transaction_type as TransactionType,
         amount: expense.amount,
-        currency: expense.currency as Currency,
-        base_amount: expense.base_amount || expense.amount,
+        currency: expense.currency as string,
+        base_currency: expense.base_currency as string | undefined,
+        exchange_rate: (expense.exchange_rate as number | null) ?? null,
+        base_amount: expense.base_amount ?? expense.amount,
+        title: expense.title,
         description: expense.description,
         category: expense.category,
         payment_date: expense.payment_date,

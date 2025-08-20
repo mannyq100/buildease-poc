@@ -5,7 +5,7 @@
  * Focuses on essential information with clear visual hierarchy and intuitive actions.
  */
 
-import { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { formatCurrency } from '@/utils/core/format';
 import { StatusBadge } from '@/components/shared';
 import { TouchOptimizedButton } from '@/components/ui/TouchOptimizedButton';
@@ -13,8 +13,7 @@ import {
   DollarSign, Clock, Users, MapPin, Edit3, Upload,
   TrendingUp, AlertCircle, CheckCircle, FileText, Package
 } from 'lucide-react';
-import type { Project, ProjectStatus } from '@/types/project';
-import type { TeamMember } from '@/types/project';
+import type { Project, ProjectStatus, TeamMember } from '@/types/project';
 import type { ProjectPhase } from '@/types/projectDetails';
 import { useConsolidatedProjectData } from '@/hooks/queries/useConsolidatedProjectData';
 import { ProCard } from '@/components/ui/ProCard';
@@ -61,7 +60,7 @@ const getHealthConfig = (health: string) => {
 
 
 
-export function UnifiedProjectHeader({
+function UnifiedProjectHeader({
   project,
   phases: _phases = [],
   activeTeamMembers: _activeTeamMembers = [],
@@ -72,7 +71,7 @@ export function UnifiedProjectHeader({
   onScrollToSection,
   onUpdateProject,
 }: UnifiedProjectHeaderProps) {
-  const { data: consolidated } = useConsolidatedProjectData(project.id);
+  const { data: consolidated, error } = useConsolidatedProjectData(project.id);
 
   // Process data once with useMemo - optimized to use view data directly
   const metrics = useMemo(() => {
@@ -136,6 +135,24 @@ export function UnifiedProjectHeader({
   const healthConfig = getHealthConfig(metrics.health);
   const handleAnchor = useCallback((section: string) => () => onScrollToSection?.(section), [onScrollToSection]);
 
+  // Show loading or error state if needed
+  if (error) {
+    console.warn('UnifiedProjectHeader: Failed to load consolidated data, using fallback data:', error);
+  }
+
+  // Debug: Log data values to help identify issues
+  if (consolidated && process.env.NODE_ENV === 'development') {
+    console.debug('UnifiedProjectHeader consolidated data:', {
+      location: consolidated.location,
+      openTasks: consolidated.openTasks,
+      utilization: consolidated.utilization,
+      budget: consolidated.budget,
+      spent: consolidated.spent,
+      project_location: project.location,
+      project_client: project.client
+    });
+  }
+
   return (
     <ProCard accent="blue" className="overflow-hidden">
       {/* Header Section - Light BuildEase Blue Theme */}
@@ -154,7 +171,7 @@ export function UnifiedProjectHeader({
                 {metrics.location && (
                   <div className="flex items-center text-xs text-white/80 px-2 py-1 mt-0.5">
                     <MapPin className="h-3 w-3 mr-1" />
-                    <span className="truncate max-w-30">{metrics.location}</span>
+                    <span className="truncate max-w-[120px]">{metrics.location}</span>
                   </div>
                 )}
               </div>
@@ -293,9 +310,9 @@ export function UnifiedProjectHeader({
         {/* Secondary Info Chips */}
         <div className="flex gap-1.5 overflow-x-auto pb-1.5 mb-3 snap-x snap-mandatory">
           {metrics.client && metrics.client !== 'Unknown Client' && (
-            <div className="shrink-0 snap-start text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded inline-flex items-center gap-1.5">
+            <div className="shrink-0 snap-start text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded inline-flex items-center gap-1.5" title={`Client: ${metrics.client}`}>
               <Users className="h-3 w-3" />
-              <span>Client: {metrics.client}</span>
+              <span className="truncate max-w-[100px]">Client: {metrics.client}</span>
             </div>
           )}
           <div className="shrink-0 snap-start text-xs bg-orange-50 text-orange-700 px-2 py-1 rounded inline-flex items-center gap-1.5">
@@ -380,3 +397,9 @@ export function UnifiedProjectHeader({
     </ProCard>
   );
 }
+
+// Export memoized component for performance optimization
+export default React.memo(UnifiedProjectHeader);
+
+// Named export for compatibility
+export { UnifiedProjectHeader };
