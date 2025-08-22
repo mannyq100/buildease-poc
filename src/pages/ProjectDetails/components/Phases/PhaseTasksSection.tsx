@@ -36,7 +36,7 @@ import { ToastContainer } from '@/components/ToastContainer';
 import { TaskListSkeleton, OptimisticTaskCard } from '@/components/LoadingSkeletons';
 import { AssigneeSelect } from '@/components/ui/AssigneeSelect';
 import { useTaskAssignment, useBulkAssignTasks, useUpdateTaskStatus } from '@/hooks/mutations';
-import { useAutoTransitionSafe } from '@/contexts/AutoTransitionContext';
+import { useUIStore, selectAutoTransition } from '@/stores/uiStore';
 import { AutoTransitionIndicator } from '@/components/ui/AutoTransitionIndicator';
 import React from 'react';
 
@@ -63,33 +63,30 @@ function PhaseTasksSectionContent({
   onEditTask,
   onDeleteTask
 }: PhaseTasksSectionProps) {
-  // Task selection state for bulk operations
-  const [selectedTasks, setSelectedTasks] = React.useState<Set<string>>(new Set());
+  // Task selection state for bulk operations (direct store access)
+  const selectedTasksSet = useUIStore(state => state.selectedTasks);
+  const toggleTaskSelection = useUIStore(state => state.toggleTaskSelection);
+  const selectAllTasks = useUIStore(state => state.selectAllTasks);
+  const clearTaskSelection = useUIStore(state => state.clearTaskSelection);
+  const selectedTasksCount = selectedTasksSet.size;
+  
+  // Convert Set to Array only when needed (memoized)
+  const selectedTasks = React.useMemo(() => Array.from(selectedTasksSet), [selectedTasksSet]);
+  
+  // Task selection mode (local state for this component)
   const [selectionMode, setSelectionMode] = React.useState(false);
+  const isTaskSelected = (taskId: string) => selectedTasksSet.has(taskId);
 
-  // Task selection helpers
-  const toggleTaskSelection = (taskId: string) => {
-    setSelectedTasks(prev => {
-      const newSelection = new Set(prev);
-      if (newSelection.has(taskId)) {
-        newSelection.delete(taskId);
-      } else {
-        newSelection.add(taskId);
-      }
-      return newSelection;
-    });
-  };
-
-  const selectAllTasks = () => {
-    setSelectedTasks(new Set(tasks.map(task => task.id)));
-  };
-
+  // Helper to clear selection and exit selection mode
   const clearSelection = () => {
-    setSelectedTasks(new Set());
+    clearTaskSelection();
     setSelectionMode(false);
   };
 
-  const isTaskSelected = (taskId: string) => selectedTasks.has(taskId);
+  // Helper to select all current tasks
+  const selectAllCurrentTasks = () => {
+    selectAllTasks(tasks.map(task => task.id));
+  };
 
   // Bulk assignment mutation
   const bulkAssignMutation = useBulkAssignTasks();
@@ -101,7 +98,7 @@ function PhaseTasksSectionContent({
   const handleBulkAssign = async (assigneeId: string | null) => {
     try {
       await bulkAssignMutation.mutateAsync({
-        taskIds: Array.from(selectedTasks),
+        taskIds: selectedTasks,
         assignedTo: assigneeId,
         projectId
       });
@@ -113,7 +110,7 @@ function PhaseTasksSectionContent({
         'No one';
       notifications.success(
         'Bulk Assignment Complete',
-        `${selectedTasks.size} task${selectedTasks.size > 1 ? 's' : ''} assigned to ${memberName}`
+        `${selectedTasksCount} task${selectedTasksCount > 1 ? 's' : ''} assigned to ${memberName}`
       );
     } catch (error) {
       console.error('Failed to bulk assign tasks:', error);
@@ -127,7 +124,7 @@ function PhaseTasksSectionContent({
   // Handle bulk task completion
   const handleBulkComplete = async () => {
     try {
-      const selectedTaskIds = Array.from(selectedTasks);
+      const selectedTaskIds = selectedTasks;
       const incompleteTasks = selectedTaskIds.filter(taskId => {
         const task = tasks.find(t => t.id === taskId);
         return task && task.status?.toUpperCase() !== 'COMPLETED';
@@ -271,9 +268,10 @@ function PhaseTasksSectionContent({
   // Phase notifications
   const notifications = usePhaseNotifications();
 
-  // Auto-transition visual indicators
-  const autoTransition = useAutoTransitionSafe();
-  const currentTransition = autoTransition.getTransition(phase.id);
+  // Auto-transition visual indicators (direct store access)
+  const currentTransition = useUIStore(selectAutoTransition(phase.id));
+  const setAutoTransition = useUIStore(state => state.setAutoTransition);
+  const hideTransition = useUIStore(state => state.removeAutoTransition);
 
   // Use consolidated phase status manager with notifications
   const {
@@ -292,7 +290,15 @@ function PhaseTasksSectionContent({
     onPhaseAutoTransition: notifications.onPhaseAutoTransition,
     onTimelineUpdate: notifications.onTimelineUpdate
   }, {
-    showTransition: autoTransition.showTransition
+    showTransition: (phaseId: string, type: 'started' | 'completed' | 'reopened') => {
+      setAutoTransition(phaseId, {
+        phaseId,
+        type,
+        timestamp: Date.now()
+      });
+      // Auto-hide after 4 seconds
+      setTimeout(() => hideTransition(phaseId), 4000);
+    }
   });
 
   // Trigger notifications on error
@@ -357,7 +363,7 @@ function PhaseTasksSectionContent({
           <AutoTransitionIndicator
             isVisible={true}
             transitionType={currentTransition.type}
-            onAnimationComplete={() => autoTransition.hideTransition(phase.id)}
+            onAnimationComplete={() => hideTransition(phase.id)}
             className="mb-3"
           />
         )}
@@ -370,13 +376,13 @@ function PhaseTasksSectionContent({
           <div className="flex items-center justify-between p-3 bg-buildease-blue-50 border border-buildease-blue-200 rounded-lg mb-2">
             <div className="flex items-center gap-3">
               <span className="text-sm font-medium text-buildease-blue-900">
-                {selectedTasks.size} of {tasks.length} selected
+                {selectedTasksCount} of {tasks.length} selected
               </span>
-              {selectedTasks.size < tasks.length && (
+              {selectedTasksCount < tasks.length && (
                 <Button 
                   size="sm" 
                   variant="outline" 
-                  onClick={selectAllTasks}
+                  onClick={selectAllCurrentTasks}
                   className="text-xs text-buildease-blue-700 border-buildease-blue-300"
                 >
                   Select All
@@ -392,7 +398,7 @@ function PhaseTasksSectionContent({
               >
                 Cancel
               </Button>
-              {selectedTasks.size > 0 && (
+              {selectedTasksCount > 0 && (
                 <>
                   {/* Bulk Assignment */}
                   <AssigneeSelect

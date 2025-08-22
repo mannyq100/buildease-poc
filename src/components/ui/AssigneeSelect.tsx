@@ -173,14 +173,20 @@ export function AssigneeSelect({
                       </div>
                     </div>
                     {showClearButton && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0 hover:bg-red-50 hover:text-red-600"
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        className="h-6 w-6 p-0 flex items-center justify-center rounded hover:bg-red-50 hover:text-red-600 cursor-pointer transition-colors"
                         onClick={handleClear}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleClear(e as React.MouseEvent<HTMLDivElement>);
+                          }
+                        }}
                       >
                         <X className="h-3 w-3" />
-                      </Button>
+                      </div>
                     )}
                   </>
                 )

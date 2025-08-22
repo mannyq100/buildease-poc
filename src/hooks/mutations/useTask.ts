@@ -4,6 +4,7 @@ import { queryKeys } from '@/lib/queryClient';
 import { toast } from 'sonner';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import * as activityService from '@/services/activityService';
+import { useProjectStore } from '@/stores/projectStore';
 
 // Types for task mutations
 export interface CreateTaskData {
@@ -39,6 +40,7 @@ export interface UpdateTaskData {
 export function useCreateTask() {
   const queryClient = useQueryClient();
   const { user } = useSupabaseAuth();
+  const addOptimisticUpdate = useProjectStore(state => state.addOptimisticUpdate);
 
   return useMutation({
     mutationFn: async (data: CreateTaskData) => {
@@ -51,17 +53,89 @@ export function useCreateTask() {
       if (error) throw error;
       return task;
     },
-    onSuccess: async (newTask, variables) => {
-      // Invalidate and refetch related queries
-      queryClient.invalidateQueries({ 
-        queryKey: queryKeys.tasks.byProject(variables.project_id) 
+    // Optimistic update - show task immediately
+    onMutate: async (newTask) => {
+      const optimisticId = `temp_task_${Date.now()}`;
+      const optimisticTask = {
+        id: optimisticId,
+        ...newTask,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        status: newTask.status || 'pending'
+      };
+
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ 
+        queryKey: queryKeys.tasks.byProject(newTask.project_id) 
       });
-      
-      queryClient.invalidateQueries({ 
-        queryKey: queryKeys.tasks.byPhase(variables.phase_id) 
+      await queryClient.cancelQueries({ 
+        queryKey: queryKeys.tasks.byPhase(newTask.phase_id) 
       });
+
+      // Snapshot the previous values
+      const previousProjectTasks = queryClient.getQueryData(queryKeys.tasks.byProject(newTask.project_id));
+      const previousPhaseTasks = queryClient.getQueryData(queryKeys.tasks.byPhase(newTask.phase_id));
+
+      // Optimistically update project tasks
+      queryClient.setQueryData(queryKeys.tasks.byProject(newTask.project_id), (old: any) => {
+        if (!old) return [optimisticTask];
+        return [...old, optimisticTask];
+      });
+
+      // Optimistically update phase tasks
+      queryClient.setQueryData(queryKeys.tasks.byPhase(newTask.phase_id), (old: any) => {
+        if (!old) return [optimisticTask];
+        return [...old, optimisticTask];
+      });
+
+      // Track optimistic update
+      addOptimisticUpdate(`create_task_${optimisticId}`, {
+        type: 'create',
+        entity: 'task',
+        data: optimisticTask,
+        timestamp: Date.now()
+      });
+
+      return { 
+        previousProjectTasks, 
+        previousPhaseTasks, 
+        optimisticId,
+        optimisticTask 
+      };
+    },
+    onError: (error, variables, context) => {
+      // Rollback on error
+      if (context?.previousProjectTasks) {
+        queryClient.setQueryData(queryKeys.tasks.byProject(variables.project_id), context.previousProjectTasks);
+      }
+      if (context?.previousPhaseTasks) {
+        queryClient.setQueryData(queryKeys.tasks.byPhase(variables.phase_id), context.previousPhaseTasks);
+      }
       
-      // Invalidate phase query to update task count
+      console.error('Error creating task:', error);
+      toast.error(error.message || 'Failed to create task');
+    },
+    onSuccess: async (newTask, variables, context) => {
+      // Replace optimistic task with real server data
+      queryClient.setQueryData(queryKeys.tasks.byProject(variables.project_id), (old: any) => {
+        if (!old) return [newTask];
+        return old.map((task: any) => 
+          task.id === context?.optimisticId ? newTask : task
+        );
+      });
+
+      queryClient.setQueryData(queryKeys.tasks.byPhase(variables.phase_id), (old: any) => {
+        if (!old) return [newTask];
+        return old.map((task: any) => 
+          task.id === context?.optimisticId ? newTask : task
+        );
+      });
+
+      // Remove optimistic update tracking
+      const removeOptimisticUpdate = useProjectStore.getState().removeOptimisticUpdate;
+      removeOptimisticUpdate(`create_task_${context?.optimisticId}`);
+
+      // Invalidate and refetch related queries for other components
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.phases.detail(variables.phase_id) 
       });
@@ -141,10 +215,6 @@ export function useCreateTask() {
       })();
 
       toast.success('Task created successfully');
-    },
-    onError: (error: any) => {
-      console.error('Error creating task:', error);
-      toast.error(error.message || 'Failed to create task');
     }
   });
 }
@@ -154,6 +224,7 @@ export function useCreateTask() {
  */
 export function useUpdateTask() {
   const queryClient = useQueryClient();
+  const addOptimisticUpdate = useProjectStore(state => state.addOptimisticUpdate);
 
   return useMutation({
     mutationFn: async (data: UpdateTaskData) => {
@@ -169,19 +240,111 @@ export function useUpdateTask() {
       if (error) throw error;
       return task;
     },
-    onSuccess: async (updatedTask, variables) => {
-      // Invalidate and refetch related queries
-      queryClient.invalidateQueries({ 
-        queryKey: queryKeys.tasks.byProject(updatedTask.project_id) 
-      });
+    // Optimistic update - show changes immediately
+    onMutate: async (updateData) => {
+      const taskId = updateData.id;
       
-      queryClient.invalidateQueries({ 
-        queryKey: queryKeys.tasks.byPhase(updatedTask.phase_id) 
-      });
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: queryKeys.tasks.detail(taskId) });
+
+      // Snapshot the previous value
+      const previousTask = queryClient.getQueryData(queryKeys.tasks.detail(taskId));
       
-      queryClient.invalidateQueries({ 
-        queryKey: queryKeys.tasks.detail(updatedTask.id) 
+      // Get current task from any cached queries to determine project/phase
+      let currentTask: any = previousTask;
+      if (!currentTask) {
+        // Try to find task in project or phase queries
+        const projectQueries = queryClient.getQueriesData({ queryKey: ['tasks', 'byProject'] });
+        const phaseQueries = queryClient.getQueriesData({ queryKey: ['tasks', 'byPhase'] });
+        
+        for (const [, data] of [...projectQueries, ...phaseQueries]) {
+          if (Array.isArray(data)) {
+            const found = data.find((task: any) => task.id === taskId);
+            if (found) {
+              currentTask = found;
+              break;
+            }
+          }
+        }
+      }
+
+      if (currentTask) {
+        const optimisticTask = { ...currentTask, ...updateData, updated_at: new Date().toISOString() };
+
+        // Optimistically update task detail
+        queryClient.setQueryData(queryKeys.tasks.detail(taskId), optimisticTask);
+
+        // Update task in project tasks list
+        if (currentTask.project_id) {
+          queryClient.setQueryData(queryKeys.tasks.byProject(currentTask.project_id), (old: any) => {
+            if (!old) return old;
+            return old.map((task: any) => task.id === taskId ? optimisticTask : task);
+          });
+        }
+
+        // Update task in phase tasks list
+        if (currentTask.phase_id) {
+          queryClient.setQueryData(queryKeys.tasks.byPhase(currentTask.phase_id), (old: any) => {
+            if (!old) return old;
+            return old.map((task: any) => task.id === taskId ? optimisticTask : task);
+          });
+        }
+
+        // Track optimistic update
+        addOptimisticUpdate(`update_task_${taskId}`, {
+          type: 'update',
+          entity: 'task',
+          data: optimisticTask,
+          originalData: currentTask,
+          timestamp: Date.now()
+        });
+
+        return { previousTask, currentTask, optimisticTask };
+      }
+
+      return { previousTask };
+    },
+    onError: (error, variables, context) => {
+      // Rollback on error
+      if (context?.previousTask) {
+        queryClient.setQueryData(queryKeys.tasks.detail(variables.id), context.previousTask);
+      }
+      if (context?.currentTask) {
+        // Restore in project/phase lists
+        if (context.currentTask.project_id) {
+          queryClient.setQueryData(queryKeys.tasks.byProject(context.currentTask.project_id), (old: any) => {
+            if (!old) return old;
+            return old.map((task: any) => task.id === variables.id ? context.currentTask : task);
+          });
+        }
+        if (context.currentTask.phase_id) {
+          queryClient.setQueryData(queryKeys.tasks.byPhase(context.currentTask.phase_id), (old: any) => {
+            if (!old) return old;
+            return old.map((task: any) => task.id === variables.id ? context.currentTask : task);
+          });
+        }
+      }
+      
+      console.error('Error updating task:', error);
+      toast.error(error.message || 'Failed to update task');
+    },
+    onSuccess: async (updatedTask, variables, context) => {
+      // Update all cached instances with real server data
+      queryClient.setQueryData(queryKeys.tasks.detail(updatedTask.id), updatedTask);
+      
+      queryClient.setQueryData(queryKeys.tasks.byProject(updatedTask.project_id), (old: any) => {
+        if (!old) return old;
+        return old.map((task: any) => task.id === updatedTask.id ? updatedTask : task);
       });
+
+      queryClient.setQueryData(queryKeys.tasks.byPhase(updatedTask.phase_id), (old: any) => {
+        if (!old) return old;
+        return old.map((task: any) => task.id === updatedTask.id ? updatedTask : task);
+      });
+
+      // Remove optimistic update tracking
+      const removeOptimisticUpdate = useProjectStore.getState().removeOptimisticUpdate;
+      removeOptimisticUpdate(`update_task_${updatedTask.id}`);
 
       // CRITICAL: Invalidate consolidated project query for real-time updates
       queryClient.invalidateQueries({
@@ -296,10 +459,6 @@ export function useUpdateTask() {
       })();
 
       toast.success('Task updated successfully');
-    },
-    onError: (error: any) => {
-      console.error('Error updating task:', error);
-      toast.error(error.message || 'Failed to update task');
     }
   });
 }
@@ -309,13 +468,14 @@ export function useUpdateTask() {
  */
 export function useDeleteTask() {
   const queryClient = useQueryClient();
+  const addOptimisticUpdate = useProjectStore(state => state.addOptimisticUpdate);
 
   return useMutation({
     mutationFn: async (taskId: string) => {
       // First get the task to know which project/phase to invalidate
       const { data: task } = await supabase
         .from('be_task')
-        .select('project_id, phase_id, assigned_to')
+        .select('project_id, phase_id, assigned_to, title')
         .eq('id', taskId)
         .single();
 
@@ -327,17 +487,106 @@ export function useDeleteTask() {
       if (error) throw error;
       return { taskId, task };
     },
-    onSuccess: async ({ taskId, task }) => {      
+    // Optimistic update - remove task immediately
+    onMutate: async (taskId) => {
+      // Find the task in cached queries to get its details
+      let taskToDelete: any = null;
+      const projectQueries = queryClient.getQueriesData({ queryKey: ['tasks', 'byProject'] });
+      const phaseQueries = queryClient.getQueriesData({ queryKey: ['tasks', 'byPhase'] });
+      
+      for (const [, data] of [...projectQueries, ...phaseQueries]) {
+        if (Array.isArray(data)) {
+          const found = data.find((task: any) => task.id === taskId);
+          if (found) {
+            taskToDelete = found;
+            break;
+          }
+        }
+      }
+
+      if (!taskToDelete) {
+        // Try task detail query
+        taskToDelete = queryClient.getQueryData(queryKeys.tasks.detail(taskId));
+      }
+
+      if (taskToDelete) {
+        // Cancel any outgoing refetches
+        await queryClient.cancelQueries({ queryKey: queryKeys.tasks.detail(taskId) });
+        await queryClient.cancelQueries({ queryKey: queryKeys.tasks.byProject(taskToDelete.project_id) });
+        await queryClient.cancelQueries({ queryKey: queryKeys.tasks.byPhase(taskToDelete.phase_id) });
+
+        // Snapshot the previous values
+        const previousProjectTasks = queryClient.getQueryData(queryKeys.tasks.byProject(taskToDelete.project_id));
+        const previousPhaseTasks = queryClient.getQueryData(queryKeys.tasks.byPhase(taskToDelete.phase_id));
+        const previousTaskDetail = queryClient.getQueryData(queryKeys.tasks.detail(taskId));
+
+        // Optimistically remove from all queries
+        queryClient.setQueryData(queryKeys.tasks.byProject(taskToDelete.project_id), (old: any) => {
+          if (!old) return old;
+          return old.filter((task: any) => task.id !== taskId);
+        });
+
+        queryClient.setQueryData(queryKeys.tasks.byPhase(taskToDelete.phase_id), (old: any) => {
+          if (!old) return old;
+          return old.filter((task: any) => task.id !== taskId);
+        });
+
+        // Remove task detail
+        queryClient.removeQueries({ queryKey: queryKeys.tasks.detail(taskId) });
+
+        // Track optimistic update
+        addOptimisticUpdate(`delete_task_${taskId}`, {
+          type: 'delete',
+          entity: 'task',
+          data: taskToDelete,
+          timestamp: Date.now()
+        });
+
+        return { 
+          taskToDelete,
+          previousProjectTasks, 
+          previousPhaseTasks, 
+          previousTaskDetail 
+        };
+      }
+
+      return {};
+    },
+    onError: (error, taskId, context) => {
+      // Rollback on error
+      if (context?.taskToDelete) {
+        if (context.previousProjectTasks) {
+          queryClient.setQueryData(queryKeys.tasks.byProject(context.taskToDelete.project_id), context.previousProjectTasks);
+        }
+        if (context.previousPhaseTasks) {
+          queryClient.setQueryData(queryKeys.tasks.byPhase(context.taskToDelete.phase_id), context.previousPhaseTasks);
+        }
+        if (context.previousTaskDetail) {
+          queryClient.setQueryData(queryKeys.tasks.detail(taskId), context.previousTaskDetail);
+        }
+      }
+      
+      console.error('Error deleting task:', error);
+      toast.error(error.message || 'Failed to delete task');
+    },
+    onSuccess: async ({ taskId, task }, variables, context) => {
+      // Remove optimistic update tracking
+      const removeOptimisticUpdate = useProjectStore.getState().removeOptimisticUpdate;
+      removeOptimisticUpdate(`delete_task_${taskId}`);
+
       if (task) {
-        // Invalidate and refetch related queries
-        queryClient.invalidateQueries({ 
-          queryKey: queryKeys.tasks.byProject(task.project_id) 
+        // Ensure task is removed from all cached queries (should already be done optimistically)
+        queryClient.setQueryData(queryKeys.tasks.byProject(task.project_id), (old: any) => {
+          if (!old) return old;
+          return old.filter((t: any) => t.id !== taskId);
         });
-        
-        queryClient.invalidateQueries({ 
-          queryKey: queryKeys.tasks.byPhase(task.phase_id) 
+
+        queryClient.setQueryData(queryKeys.tasks.byPhase(task.phase_id), (old: any) => {
+          if (!old) return old;
+          return old.filter((t: any) => t.id !== taskId);
         });
-        
+
+        // Invalidate related queries for counts and other components
         queryClient.invalidateQueries({ 
           queryKey: queryKeys.phases.detail(task.phase_id) 
         });
@@ -350,7 +599,7 @@ export function useDeleteTask() {
         }
       }
 
-      // Remove the specific task from cache
+      // Ensure task detail is removed
       queryClient.removeQueries({ 
         queryKey: queryKeys.tasks.detail(taskId) 
       });
@@ -396,10 +645,6 @@ export function useDeleteTask() {
       }
 
       toast.success('Task deleted successfully');
-    },
-    onError: (error: any) => {
-      console.error('Error deleting task:', error);
-      toast.error(error.message || 'Failed to delete task');
     }
   });
 }

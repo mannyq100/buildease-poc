@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Plus, MoreHorizontal, CheckSquare } from 'lucide-react';
+import { Calendar, Plus, MoreHorizontal } from 'lucide-react';
 import { motion as m } from 'framer-motion';
 import { TimelineViewProps } from '@/types/plan/views';
 import { SortableTimelinePhase } from './SortableTimelinePhase';

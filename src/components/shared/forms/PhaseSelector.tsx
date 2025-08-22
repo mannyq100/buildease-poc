@@ -3,16 +3,12 @@
  * Provides a dropdown for selecting phase categories with task preview
  */
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { Search, ChevronDown, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { 
-  Popover, 
-  PopoverContent, 
-  PopoverTrigger 
-} from '@/components/ui/popover';
+// Removed Popover imports - using inline dropdown for modal compatibility
 import { Badge } from '@/components/ui/badge';
 import { 
   getPhaseTemplatesForProjectType, 
@@ -45,6 +41,7 @@ export function PhaseSelector({
   const [isOpen, setIsOpen] = useState(false);
   const [showScrollHint, setShowScrollHint] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Get available phases for the project type
   const availablePhases = useMemo(() => 
@@ -92,12 +89,28 @@ export function PhaseSelector({
     }
   };
   
+  // Close dropdown when clicking outside
+  const handleClickOutside = useCallback((event: MouseEvent) => {
+    if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      setIsOpen(false);
+    }
+  }, []);
+  
+  // Add/remove click outside listener
+  useEffect(() => {
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen, handleClickOutside]);
+  
   return (
     <div className={`space-y-2 ${className}`}>
       <Label htmlFor="phase-selector">Phase Category</Label>
       
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
-        <PopoverTrigger asChild>
+      {/* Use inline dropdown instead of Popover for modal compatibility */}
+      <div className="relative" ref={dropdownRef}>
+        <div onClick={() => setIsOpen(!isOpen)}>
           <Button
             id="phase-selector"
             variant="outline"
@@ -133,16 +146,11 @@ export function PhaseSelector({
               isOpen ? 'rotate-180 text-blue-600' : 'text-gray-400'
             }`} />
           </Button>
-        </PopoverTrigger>
+        </div>
         
-        <PopoverContent
-          className="w-full max-w-lg sm:max-w-xl p-0 shadow-xl border-0 bg-white max-h-[70vh] overflow-y-auto overscroll-contain z-50 touch-pan-y"
-          align="start"
-          sideOffset={4}
-          style={{ WebkitOverflowScrolling: 'touch' }}
-          onWheel={(e) => { e.stopPropagation(); }}
-          onTouchMove={(e) => { e.stopPropagation(); }}
-        >
+        {/* Inline dropdown content instead of Portal-based Popover */}
+        {isOpen && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-[40vh] overflow-hidden">
           {/* Enhanced Search Header */}
           <div className="flex items-center border-b border-gray-100 px-4 py-3 bg-gradient-to-r from-blue-50 to-orange-50 sticky top-0 z-10">
             <Search className="mr-3 h-4 w-4 shrink-0 text-blue-600" />
@@ -168,8 +176,9 @@ export function PhaseSelector({
               ref={scrollContainerRef}
               role="listbox"
               aria-label="Phase options"
-              className="scroll-smooth pr-1 -mr-1"
+              className="overflow-y-auto overscroll-contain max-h-[30vh] scroll-smooth pr-1 -mr-1"
               style={{
+                WebkitOverflowScrolling: 'touch',
                 scrollbarWidth: 'thin',
                 scrollbarColor: '#94A3B8 #F1F5F9',
                 msOverflowStyle: 'auto',
@@ -269,8 +278,9 @@ export function PhaseSelector({
               </div>
             </div>
           )}
-        </PopoverContent>
-      </Popover>
+          </div>
+        )}
+      </div>
       
       {selectedPhase && (
         <div className="text-xs text-muted-foreground">

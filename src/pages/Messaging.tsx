@@ -82,7 +82,7 @@ const Messaging: React.FC = () => {
     
   // Toggle participant selection
   const handleParticipantToggle = (participant: ChatParticipant) => {
-    console.log("Toggling participant:", participant.name);
+    // Toggle participant selection
     if (selectedParticipants.some(p => p.id === participant.id)) {
       setSelectedParticipants(prev => prev.filter(p => p.id !== participant.id));
     } else {
@@ -100,7 +100,7 @@ const Messaging: React.FC = () => {
   
   // Function to create a new conversation directly from the dialog
   const handleCreateConversationFromDialog = () => {
-    console.log("Creating conversation with participants:", selectedParticipants);
+    // Create conversation with selected participants
     
     if (activeTab === "individual" && selectedParticipants.length === 1) {
       handleCreateConversation("individual", selectedParticipants);
@@ -110,11 +110,7 @@ const Messaging: React.FC = () => {
       // Include the group name in the chat creation
       handleCreateConversation(activeTab, participantsWithGroupName, newGroupName);
     } else {
-      console.warn("Cannot create conversation - invalid state", {
-        activeTab,
-        participantCount: selectedParticipants.length,
-        groupName: newGroupName
-      });
+      // Cannot create conversation - invalid state
       return;
     }
     
@@ -166,7 +162,7 @@ const Messaging: React.FC = () => {
   
   // Function to handle message sending
   const handleMessageSent = useCallback((conversationId: string, newMessage: Message) => {
-    console.log("Message sent:", conversationId, newMessage);
+    // Message sent successfully
     
     // Update the messages state
     setMessages(prevMessages => {
@@ -174,7 +170,7 @@ const Messaging: React.FC = () => {
         ...prevMessages,
         [conversationId]: [...(prevMessages[conversationId] || []), newMessage]
       };
-      console.log("Updated messages:", updatedMessages);
+      // Messages updated
       return updatedMessages;
     });
     
@@ -204,7 +200,7 @@ const Messaging: React.FC = () => {
   
   // Function to create a new conversation
   const handleCreateConversation = useCallback((type: ConversationType, participants: ChatParticipant[], groupName?: string) => {
-    console.log("Creating new conversation", { type, participants, groupName });
+    // Creating new conversation
     // Generate a unique conversation ID
     const newConversationId = `new-conv-${Date.now()}`;
     
@@ -233,7 +229,7 @@ const Messaging: React.FC = () => {
       unreadCount: 0
     };
     
-    console.log("New conversation object:", newConversation);
+    // New conversation created
     
     // Add the new conversation to the list
     setConversations(prevConversations => {
@@ -272,7 +268,7 @@ const Messaging: React.FC = () => {
   useEffect(() => {
     // Skip if we've already processed this startChatWith or if conversations aren't loaded yet
     if (location.state?.startChatWith && !processedStartChatRef.current && !isLoading && conversations.length > 0) {
-      console.log("Received startChatWith:", location.state.startChatWith);
+      // Start chat with specific user
       
       // Set the flag to true to prevent reprocessing
       processedStartChatRef.current = true;
@@ -289,7 +285,7 @@ const Messaging: React.FC = () => {
       );
       
       if (existingConversation) {
-        console.log("Found existing conversation:", existingConversation.id);
+        // Found existing conversation
         // If it exists, update its updatedAt timestamp to bring it to the top
         setConversations(prevConversations => {
           const updatedConversations = prevConversations.map(conv => {
@@ -306,7 +302,7 @@ const Messaging: React.FC = () => {
           return sortConversationsByActivity(updatedConversations);
         });
       } else {
-        console.log("Creating new conversation with team member:", teamMember.name);
+        // Creating new conversation with team member
         // Create a new conversation with this team member
         const newParticipant: ChatParticipant = {
           id: teamMember.id,

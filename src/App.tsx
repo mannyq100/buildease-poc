@@ -19,6 +19,9 @@ import { useEffect, Suspense, lazy } from 'react';
 // Environment configuration
 import config, { isDevelopment, isProduction } from '@/lib/env-config';
 
+// Store initialization (includes development tools)
+import '@/stores';
+
 // Security initialization
 
 

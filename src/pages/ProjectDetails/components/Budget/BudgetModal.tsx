@@ -204,7 +204,21 @@ export function BudgetModal({
       amount: parseFloat(formData.get('amount') as string),
       currency: selectedCurrency?.value || project?.currency || 'USD',
       category: formData.get('category') as string,
-      transaction_type: formData.get('transaction_type') as TransactionType,
+      transaction_type: (() => {
+        // Map category to transaction_type for database compatibility
+        const category = formData.get('category') as string;
+        const categoryToTransactionMap: Record<string, TransactionType> = {
+          'Materials': 'MATERIAL_PURCHASE',
+          'Labor': 'LABOR',
+          'Equipment': 'EQUIPMENT_RENTAL',
+          'Permits': 'PERMIT_FEE',
+          'Design': 'DESIGN_FEE',
+          'Transportation': 'TRANSPORTATION',
+          'Utilities': 'OTHER',
+          'Other': 'OTHER'
+        };
+        return categoryToTransactionMap[category] || 'OTHER';
+      })(),
       payment_status: formData.get('payment_status') as PaymentStatus,
       payment_method: formData.get('payment_method') as PaymentMethod,
       payment_date: formData.get('payment_date') as string || undefined,
@@ -238,6 +252,8 @@ export function BudgetModal({
       payment_status: template.paymentStatus,
       payment_method: template.paymentMethod || ''
     });
+    
+    // Transaction type is no longer needed - category provides sufficient categorization
   };
 
   // Initialize form data when modal opens

@@ -205,7 +205,7 @@ export function Materials() {
   // Handles exporting materials data
   function handleExportMaterials() {
     // In a real app, this would generate a CSV or Excel file
-    console.log('Exporting materials', filteredMaterials)
+    // TODO: Implement actual CSV/Excel export functionality
     // Show toast notification
     alert('Materials exported successfully!')
   }

@@ -48,7 +48,7 @@ export function withSecurity<TInput, TOutput>(
 
       // Step 2: Validate and sanitize input using schema
       if (securityConfig.enforceValidation) {
-        const validation = sanitizeFormData(input, schema);
+        const validation = sanitizeFormData(input as Record<string, unknown>, schema);
         
         if (!validation.success) {
           if (securityConfig.enableLogging) {
@@ -61,7 +61,7 @@ export function withSecurity<TInput, TOutput>(
         }
         
         // Use the sanitized data
-        input = validation.data;
+        input = validation.data as TInput;
       }
 
       // Step 3: Execute the original mutation with sanitized input

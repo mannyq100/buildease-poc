@@ -9,7 +9,8 @@ import { useNavigate } from 'react-router-dom';
 import { useProjectDetailsData } from '@/hooks/queries/useProjectDetails';
 import { useProjectTasks } from '@/hooks/queries/useTask';
 import { useUpdateProject } from '@/hooks/mutations/useProject';
-import { useTaskCRUD, useCRUDOperations, useModalManagement } from '../../hooks';
+import { useTaskCRUD, useCRUDOperations } from '../../hooks';
+import { useUIStore } from '@/stores/uiStore';
 import { useTodaysFocus } from '../../hooks/useTodaysFocus';
 import type { TaskItem, ProjectUpdateFormData } from '../../types';
 import type { Project } from '@/types/project';
@@ -148,7 +149,21 @@ interface ProjectDataContextValue {
   setShowUpdateModal: (show: boolean) => void;
   
   // Modal management
-  modalManagement: ReturnType<typeof useModalManagement>;
+  modalManagement: {
+    showBudgetModal: boolean;
+    showPhaseModal: boolean;
+    showTeamModal: boolean;
+    currentPhaseId: string;
+    editingItem: {
+      type: 'budget' | 'phase' | 'team';
+      data: Record<string, unknown>;
+    } | null;
+    modalMode: 'create' | 'edit';
+    openCreateModal: (type: 'budget' | 'phase' | 'team') => void;
+    openEditModal: (type: 'budget' | 'phase' | 'team', data: Record<string, unknown>) => void;
+    closeModals: () => void;
+    setCurrentPhaseId: (id: string) => void;
+  };
   
   // CRUD operations
   crudOperations: ReturnType<typeof useCRUDOperations>;
@@ -190,8 +205,49 @@ export function ProjectDataProvider({ projectId, children }: ProjectDataProvider
   // Project update modal state
   const [showUpdateModal, setShowUpdateModal] = React.useState(false);
   
-  // Modal management
-  const modalManagement = useModalManagement();
+  // Modal management (with migration compatibility)
+  // Modal management using direct store access
+  const closeAllModals = useUIStore(state => state.closeAllModals);
+  const openModal = useUIStore(state => state.openModal);
+  const closeModal = useUIStore(state => state.closeModal);
+  
+  // Modal states using store
+  const showBudgetModal = useUIStore(state => state.modals.budgetModal || false);
+  const showPhaseModal = useUIStore(state => state.modals.phaseModal || false);
+  const showTeamModal = useUIStore(state => state.modals.teamModal || false);
+  
+  // Local modal state for editing
+  const [currentPhaseId, setCurrentPhaseId] = React.useState('');
+  const [editingItem, setEditingItem] = React.useState<{
+    type: 'budget' | 'phase' | 'team';
+    data: Record<string, unknown>;
+  } | null>(null);
+  const [modalMode, setModalMode] = React.useState<'create' | 'edit'>('create');
+  
+  // Modal management functions
+  const modalManagement = {
+    showBudgetModal,
+    showPhaseModal,
+    showTeamModal,
+    currentPhaseId,
+    editingItem,
+    modalMode,
+    openCreateModal: (type: 'budget' | 'phase' | 'team') => {
+      setModalMode('create');
+      setEditingItem(null);
+      openModal(`${type}Modal`);
+    },
+    openEditModal: (type: 'budget' | 'phase' | 'team', data: Record<string, unknown>) => {
+      setModalMode('edit');
+      setEditingItem({ type, data });
+      openModal(`${type}Modal`);
+    },
+    closeModals: () => {
+      closeAllModals();
+      setEditingItem(null);
+    },
+    setCurrentPhaseId
+  };
   
   // Normalize phases from query (UI shape) to full ProjectPhase[] expected by components
   const normalizedPhases: ProjectPhase[] = React.useMemo(() => {

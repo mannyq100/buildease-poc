@@ -8,7 +8,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/shared';
-import { Badge } from '@/components/ui/badge';
 import { Edit3, X, Phone, Mail, Building2, Shield, ShieldCheck } from 'lucide-react';
 import { TeamMemberCardProps } from '@/types/projectDetails';
 

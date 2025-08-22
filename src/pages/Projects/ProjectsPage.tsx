@@ -6,7 +6,6 @@
 import React, { Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
 import { ProjectsPageSkeleton } from '@/components/ui/projects-skeletons';
 import { ProjectsContent } from './ProjectsContent';
 import { useOnlineStatus, useAdaptiveLoading } from '@/hooks/useOnlineStatus';

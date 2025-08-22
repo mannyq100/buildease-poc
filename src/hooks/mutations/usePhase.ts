@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import * as activityService from '@/services/activityService';
 import { PhaseStatusDB, PhaseStatusUI, toDbPhaseStatus, toUiPhaseStatus, type PhaseStatus } from '@/utils/core/phaseStatus';
+import { useProjectStore } from '@/stores/projectStore';
 
 function toErrorMessage(err: unknown): string {
   return err instanceof Error ? err.message : 'An error occurred';
@@ -168,6 +169,7 @@ export function useCreatePhase(options?: {
 }) {
   const queryClient = useQueryClient();
   const { user } = useSupabaseAuth();
+  const addOptimisticUpdate = useProjectStore(state => state.addOptimisticUpdate);
   const currency = options?.currency || 'USD';
   const uiFormat = options?.uiFormat || false;
   const invalidateTimeline = options?.invalidateTimeline || false;
@@ -209,14 +211,120 @@ export function useCreatePhase(options?: {
       // Return in requested format
       return uiFormat ? transformDatabaseToUI(phase) : phase;
     },
-    onSuccess: async (newPhase, variables) => {
-      const projectId = 'project_id' in variables ? variables.project_id : (variables as CreatePhaseData).project_id;
+    // Optimistic update - show phase immediately
+    onMutate: async (newPhaseData) => {
+      const projectId = 'project_id' in newPhaseData ? newPhaseData.project_id : (newPhaseData as CreatePhaseData).project_id;
+      const optimisticId = `temp_phase_${Date.now()}`;
       
-      // Invalidate all relevant queries
-      queryClient.invalidateQueries({ 
+      // Create optimistic phase data
+      const dbData = uiFormat ? transformUIToDatabase(newPhaseData as CreatePhaseUIData) : newPhaseData as CreatePhaseData;
+      const optimisticPhase = {
+        id: optimisticId,
+        name: dbData.name!,
+        description: dbData.description || '',
+        category: dbData.category!,
+        project_id: projectId,
+        status: dbData.status || PhaseStatusDB.PLANNING,
+        timeline: dbData.timeline || {
+          planned_start: null,
+          planned_end: null,
+          actual_start: null,
+          actual_end: null
+        },
+        budget: dbData.budget || {
+          allocated: 0,
+          spent: 0,
+          currency
+        },
+        details: dbData.details || {},
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ 
         queryKey: queryKeys.phases.byProject(projectId) 
       });
+
+      if (invalidateTimeline) {
+        await queryClient.cancelQueries({ 
+          queryKey: ['timeline', projectId] 
+        });
+      }
+
+      // Snapshot the previous values
+      const previousPhases = queryClient.getQueryData(queryKeys.phases.byProject(projectId));
+      const previousTimeline = invalidateTimeline ? queryClient.getQueryData(['timeline', projectId]) : undefined;
+
+      // Optimistically update phases list
+      queryClient.setQueryData(queryKeys.phases.byProject(projectId), (old: any) => {
+        if (!old) return [uiFormat ? transformDatabaseToUI(optimisticPhase) : optimisticPhase];
+        return [...old, uiFormat ? transformDatabaseToUI(optimisticPhase) : optimisticPhase];
+      });
+
+      // Optimistically update timeline if needed
+      if (invalidateTimeline) {
+        queryClient.setQueryData(['timeline', projectId], (old: any) => {
+          if (!old) return [uiFormat ? transformDatabaseToUI(optimisticPhase) : optimisticPhase];
+          return [...old, uiFormat ? transformDatabaseToUI(optimisticPhase) : optimisticPhase];
+        });
+      }
+
+      // Track optimistic update
+      addOptimisticUpdate(`create_phase_${optimisticId}`, {
+        type: 'create',
+        entity: 'phase',
+        data: optimisticPhase,
+        timestamp: Date.now()
+      });
+
+      return { 
+        previousPhases, 
+        previousTimeline, 
+        optimisticId,
+        optimisticPhase,
+        projectId
+      };
+    },
+    onError: (error, variables, context) => {
+      // Rollback on error
+      const projectId = 'project_id' in variables ? variables.project_id : (variables as CreatePhaseData).project_id;
       
+      if (context?.previousPhases) {
+        queryClient.setQueryData(queryKeys.phases.byProject(projectId), context.previousPhases);
+      }
+      if (context?.previousTimeline && invalidateTimeline) {
+        queryClient.setQueryData(['timeline', projectId], context.previousTimeline);
+      }
+      
+      console.error('Error creating phase:', error);
+      toast.error(toErrorMessage(error) || 'Failed to create phase');
+    },
+    onSuccess: async (newPhase, variables, context) => {
+      const projectId = 'project_id' in variables ? variables.project_id : (variables as CreatePhaseData).project_id;
+      
+      // Replace optimistic phase with real server data
+      queryClient.setQueryData(queryKeys.phases.byProject(projectId), (old: any) => {
+        if (!old) return [newPhase];
+        return old.map((phase: any) => 
+          phase.id === context?.optimisticId ? newPhase : phase
+        );
+      });
+
+      if (invalidateTimeline) {
+        queryClient.setQueryData(['timeline', projectId], (old: any) => {
+          if (!old) return [newPhase];
+          return old.map((phase: any) => 
+            phase.id === context?.optimisticId ? newPhase : phase
+          );
+        });
+      }
+
+      // Remove optimistic update tracking
+      const removeOptimisticUpdate = useProjectStore.getState().removeOptimisticUpdate;
+      removeOptimisticUpdate(`create_phase_${context?.optimisticId}`);
+
+      // Invalidate related queries for other components
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.projects.detail(projectId) 
       });
@@ -225,13 +333,6 @@ export function useCreatePhase(options?: {
       queryClient.invalidateQueries({
         queryKey: ['project-consolidated', projectId]
       });
-
-      // Invalidate timeline query if requested (for ProjectDetails)
-      if (invalidateTimeline) {
-        queryClient.invalidateQueries({ 
-          queryKey: ['timeline', projectId] 
-        });
-      }
 
       toast.success('Phase created successfully');
 
@@ -267,10 +368,6 @@ export function useCreatePhase(options?: {
       } catch (err) {
         console.error('Failed to create activity for phase creation:', err);
       }
-    },
-    onError: (error: unknown) => {
-      console.error('Error creating phase:', error);
-      toast.error(toErrorMessage(error) || 'Failed to create phase');
     }
   });
 }

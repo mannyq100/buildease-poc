@@ -32,13 +32,7 @@ export default function TaskFormModal({
   teamMembers = [],
   phaseId
 }: TaskFormModalProps) {
-  // Track renders for debugging
-  const renderCounter = React.useRef<number>(0);
-  const renderCount = ++renderCounter.current;
-  // Use a more controlled debugging approach
-  if (renderCount % 10 === 0) {
-    console.log(`TaskFormModal: Render #${renderCount}`);
-  }
+  // Removed render counting for production performance
 
   // State for saving status
   const [saving, setSaving] = useState(false);
@@ -47,7 +41,7 @@ export default function TaskFormModal({
   const memoizedStatuses = useMemo(() => statuses, [statuses]);
   const memoizedTeamMembers = useMemo(() => teamMembers, [teamMembers]);
 
-  // Generate default values function 
+  // Generate default values function with proper dependencies
   const getDefaultValues = useCallback(() => {
     const defaultDate = new Date().toISOString().split('T')[0];
     const defaultStatus = (statuses && statuses.length > 0) ? statuses[0] : 'not-started';
@@ -81,7 +75,7 @@ export default function TaskFormModal({
       progress: 0,
       phaseId: phaseId || '',
     };
-  }, []);
+  }, [task, statuses, phaseId]);
 
   // Initialize React Hook Form
   const { 

@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { queryKeys } from '@/lib/queryClient';
 import { toast } from 'sonner';
 import type { BudgetExpense, BudgetFormData, TransactionType, PaymentStatus, PaymentMethod } from '@/types/projectDetails';
-import { createBatchedActivity } from '@/services/activityService';
+import { useProjectStore } from '@/stores/projectStore';
 
 
 export interface CreateBudgetExpenseData extends BudgetFormData {
@@ -23,6 +23,7 @@ export interface UpdateBudgetExpenseData extends Partial<BudgetFormData> {
  */
 export function useCreateBudgetExpense() {
   const queryClient = useQueryClient();
+  const addOptimisticUpdate = useProjectStore(state => state.addOptimisticUpdate);
 
   return useMutation({
     mutationFn: async (data: CreateBudgetExpenseData) => {
@@ -93,6 +94,7 @@ export function useCreateBudgetExpense() {
     onMutate: async (variables) => {
       // Optimistic update: Add new expense to cache immediately
       const queryKey = ['budget', variables.project_id];
+      const optimisticId = `temp_expense_${Date.now()}`;
       
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey });
@@ -105,7 +107,7 @@ export function useCreateBudgetExpense() {
       const baseCurrency = variables.base_currency || 'USD';
       
       const optimisticExpense: BudgetExpense = {
-        id: `temp-${Date.now()}`, // Temporary ID
+        id: optimisticId,
         project_id: variables.project_id,
         phase_id: variables.phase_id,
         transaction_type: variables.transaction_type,
@@ -128,14 +130,19 @@ export function useCreateBudgetExpense() {
         optimisticExpense,
         ...old
       ]);
-      
-      // Show optimistic toast
-      toast.success('Adding expense...', { duration: 1000 });
+
+      // Track optimistic update
+      addOptimisticUpdate(`create_expense_${optimisticId}`, {
+        type: 'create',
+        entity: 'expense',
+        data: optimisticExpense,
+        timestamp: Date.now()
+      });
       
       // Return context object with the previous expenses
-      return { previousExpenses, optimisticExpense };
+      return { previousExpenses, optimisticExpense, optimisticId };
     },
-    onSuccess: async (newExpense, variables) => {
+    onSuccess: async (newExpense, variables, context) => {
       console.log('[ACTIVITY_DEBUG] [useCreateBudgetExpense] onSuccess called', {
         expenseId: newExpense.id,
         expenseDescription: variables.description,
@@ -144,13 +151,25 @@ export function useCreateBudgetExpense() {
         projectId: variables.project_id,
         timestamp: new Date().toISOString()
       });
+
+      // Replace optimistic expense with real server data
+      const queryKey = ['budget', variables.project_id];
+      queryClient.setQueryData<BudgetExpense[]>(queryKey, (old = []) => 
+        old.map(expense => expense.id === context?.optimisticId ? newExpense : expense)
+      );
+
+      // Remove optimistic update tracking
+      const removeOptimisticUpdate = useProjectStore.getState().removeOptimisticUpdate;
+      removeOptimisticUpdate(`create_expense_${context?.optimisticId}`);
       
-      // Invalidate project budget queries
+      // Invalidate project budget queries for other components
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.projects.detail(variables.project_id) 
       });
-      queryClient.invalidateQueries({ 
-        queryKey: ['budget', variables.project_id] 
+
+      // CRITICAL: Invalidate consolidated project query for real-time updates
+      queryClient.invalidateQueries({
+        queryKey: ['project-consolidated', variables.project_id]
       });
       
       // Fire-and-forget activity logging with comprehensive debug logging
@@ -197,9 +216,10 @@ export function useCreateBudgetExpense() {
             currency: variables.currency || 'USD'
           }).format(variables.amount);
           
-          // Log activity using proper activity service
+          // Log activity using direct service for important budget operations
           try {
-            await createBatchedActivity({
+            const activityService = await import('@/services/activityService');
+            await activityService.createActivity({
               project_id: variables.project_id,
               activity_type: 'expense_create',
               title: `New ${(variables.category || 'expense').toLowerCase()}: ${displayName}`,
@@ -276,6 +296,7 @@ export function useCreateBudgetExpense() {
  */
 export function useUpdateBudgetExpense() {
   const queryClient = useQueryClient();
+  const addOptimisticUpdate = useProjectStore(state => state.addOptimisticUpdate);
 
   return useMutation({
     mutationFn: async (data: UpdateBudgetExpenseData) => {
@@ -333,38 +354,60 @@ export function useUpdateBudgetExpense() {
         
         // Cancel any outgoing refetches
         await queryClient.cancelQueries({ queryKey });
-        
-        // Optimistically update the expense
-        queryClient.setQueryData<BudgetExpense[]>(queryKey, (old = []) => 
-          old.map(expense => 
-            expense.id === id 
-              ? { ...expense, ...updateData, updated_at: new Date().toISOString() }
-              : expense
-          )
-        );
-        
-        // Show optimistic toast
-        toast.success('Updating expense...', { duration: 1000 });
+
+        // Create optimistic updated expense
+        const optimisticExpense = previousExpenses.find(exp => exp.id === id);
+        if (optimisticExpense) {
+          const updatedExpense = { ...optimisticExpense, ...updateData, updated_at: new Date().toISOString() };
+          
+          // Optimistically update the expense
+          queryClient.setQueryData<BudgetExpense[]>(queryKey, (old = []) => 
+            old.map(expense => expense.id === id ? updatedExpense : expense)
+          );
+
+          // Track optimistic update
+          addOptimisticUpdate(`update_expense_${id}`, {
+            type: 'update',
+            entity: 'expense',
+            data: updatedExpense,
+            originalData: optimisticExpense,
+            timestamp: Date.now()
+          });
+        }
         
         return { previousExpenses, projectId, expenseId: id };
       }
       
       return { previousExpenses: undefined, projectId: null, expenseId: id };
     },
-    onSuccess: async (updatedExpense, variables) => {
+    onSuccess: async (updatedExpense, variables, context) => {
       console.log('[ACTIVITY_DEBUG] [useUpdateBudgetExpense] onSuccess called', {
         expenseId: updatedExpense.id,
         projectId: updatedExpense.project_id,
         updates: variables,
         timestamp: new Date().toISOString()
       });
+
+      // Update cached expense with real server data
+      if (context?.projectId) {
+        const queryKey = ['budget', context.projectId];
+        queryClient.setQueryData<BudgetExpense[]>(queryKey, (old = []) => 
+          old.map(expense => expense.id === updatedExpense.id ? updatedExpense : expense)
+        );
+      }
+
+      // Remove optimistic update tracking
+      const removeOptimisticUpdate = useProjectStore.getState().removeOptimisticUpdate;
+      removeOptimisticUpdate(`update_expense_${updatedExpense.id}`);
       
-      // Invalidate project budget queries
+      // Invalidate project budget queries for other components
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.projects.detail(updatedExpense.project_id) 
       });
-      queryClient.invalidateQueries({ 
-        queryKey: ['budget', updatedExpense.project_id] 
+
+      // CRITICAL: Invalidate consolidated project query for real-time updates
+      queryClient.invalidateQueries({
+        queryKey: ['project-consolidated', updatedExpense.project_id]
       });
       
       // Fire-and-forget activity logging with comprehensive debug logging
@@ -427,9 +470,10 @@ export function useUpdateBudgetExpense() {
             activityDescription = `"${displayName}" was moved to ${updatedExpense.category} category`;
           }
           
-          // Log activity using proper activity service
+          // Log activity using direct service for important budget operations
           try {
-            await createBatchedActivity({
+            const activityService = await import('@/services/activityService');
+            await activityService.createActivity({
               project_id: updatedExpense.project_id,
               activity_type: 'expense_update',
               title: activityTitle,
@@ -487,6 +531,7 @@ export function useUpdateBudgetExpense() {
  */
 export function useDeleteBudgetExpense() {
   const queryClient = useQueryClient();
+  const addOptimisticUpdate = useProjectStore(state => state.addOptimisticUpdate);
 
   return useMutation({
     mutationFn: async (expenseId: string) => {
@@ -535,29 +580,48 @@ export function useDeleteBudgetExpense() {
         queryClient.setQueryData<BudgetExpense[]>(queryKey, (old = []) => 
           old.filter(expense => expense.id !== expenseId)
         );
-        
-        // Show optimistic toast
-        toast.success('Removing expense...', { duration: 1000 });
+
+        // Track optimistic update
+        if (deletedExpense) {
+          addOptimisticUpdate(`delete_expense_${expenseId}`, {
+            type: 'delete',
+            entity: 'expense',
+            data: deletedExpense,
+            timestamp: Date.now()
+          });
+        }
         
         return { previousExpenses, projectId, expenseId, deletedExpense };
       }
       
       return { previousExpenses: undefined, projectId: null, expenseId, deletedExpense: undefined };
     },
-    onSuccess: async (result, _variables) => {
+    onSuccess: async (result, _variables, context) => {
       console.log('[ACTIVITY_DEBUG] [useDeleteBudgetExpense] onSuccess called', {
         expenseId: result.expenseId,
         projectId: result.projectId,
         timestamp: new Date().toISOString()
       });
+
+      // Remove optimistic update tracking
+      const removeOptimisticUpdate = useProjectStore.getState().removeOptimisticUpdate;
+      removeOptimisticUpdate(`delete_expense_${result.expenseId}`);
       
       if (result.projectId) {
-        // Invalidate project budget queries
+        // Ensure expense is removed from cache (should already be done optimistically)
+        const queryKey = ['budget', result.projectId];
+        queryClient.setQueryData<BudgetExpense[]>(queryKey, (old = []) => 
+          old.filter(expense => expense.id !== result.expenseId)
+        );
+
+        // Invalidate project budget queries for other components
         queryClient.invalidateQueries({ 
           queryKey: queryKeys.projects.detail(result.projectId) 
         });
-        queryClient.invalidateQueries({ 
-          queryKey: ['budget', result.projectId] 
+
+        // CRITICAL: Invalidate consolidated project query for real-time updates
+        queryClient.invalidateQueries({
+          queryKey: ['project-consolidated', result.projectId]
         });
       }
       
@@ -603,9 +667,10 @@ export function useDeleteBudgetExpense() {
           // Use generic display name for deleted expense
           const displayName = 'expense item';
           
-          // Log activity using proper activity service
+          // Log activity using direct service for important budget operations
           try {
-            await createBatchedActivity({
+            const activityService = await import('@/services/activityService');
+            await activityService.createActivity({
               project_id: result.projectId,
               activity_type: 'expense_delete',
               title: `Budget expense removed: ${displayName}`,

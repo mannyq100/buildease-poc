@@ -29,8 +29,7 @@ export function validateBudgetAllocation(
 ): BudgetValidationResult {
   const {
     allowZeroBudget = false,
-    requireCurrency = true,
-    maxUtilization = 120
+    requireCurrency = true
   } = options;
 
   const errors: string[] = [];
@@ -148,9 +147,7 @@ export function validateBudgetExpense(
     errors.push('Expense currency is required');
   }
 
-  if (!expense.transaction_type) {
-    errors.push('Transaction type is required');
-  }
+  // Transaction type validation removed - handled by select field default value
 
   if (!expense.category || expense.category.trim() === '') {
     errors.push('Expense category is required');

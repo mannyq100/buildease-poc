@@ -113,7 +113,6 @@ export function PhaseFormModal({
       description={modalDescription}
       footer={modalFooter}
       size="3xl"
-      className="max-h-[95vh]"
     >
       <form id="phase-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         {/* Phase Category Selection Section */}

@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { TABLE_NAMES } from '@/types/database';
 import * as activityService from '@/services/activityService';
 import { toast } from 'sonner';
+import { useProjectStore } from '@/stores/projectStore';
 import type { 
   Document, 
   DocumentInsert, 
@@ -42,6 +43,7 @@ interface BulkUpdateParams {
  */
 export function useUpdateDocumentMetadata() {
   const queryClient = useQueryClient();
+  const addOptimisticUpdate = useProjectStore(state => state.addOptimisticUpdate);
 
   return useMutation({
     mutationFn: async ({ documentId, metadata }: UpdateDocumentMetadataParams): Promise<Document> => {
@@ -78,7 +80,72 @@ export function useUpdateDocumentMetadata() {
 
       return data;
     },
-    onSuccess: (updatedDocument, variables) => {
+    // Optimistic update - show metadata changes immediately
+    onMutate: async ({ documentId, metadata }) => {
+      // Find the document in cached queries
+      const queryCache = queryClient.getQueryCache();
+      let documentToUpdate: Document | null = null;
+      let projectId: string | null = null;
+
+      // Search through project-documents queries to find the document
+      for (const query of queryCache.getAll()) {
+        if (query.queryKey[0] === 'project-documents' && Array.isArray(query.state.data)) {
+          const documents = query.state.data as Document[];
+          const found = documents.find(doc => doc.id === documentId);
+          if (found) {
+            documentToUpdate = found;
+            projectId = found.project_id;
+            break;
+          }
+        }
+      }
+
+      if (documentToUpdate && projectId) {
+        const queryKey = ['project-documents', projectId];
+        
+        // Cancel any outgoing refetches
+        await queryClient.cancelQueries({ queryKey });
+        
+        // Snapshot the previous value
+        const previousDocuments = queryClient.getQueryData<Document[]>(queryKey) || [];
+        
+        // Create optimistically updated document
+        const updatedDocument = { 
+          ...documentToUpdate, 
+          ...metadata, 
+          updated_at: new Date().toISOString() 
+        };
+
+        // Optimistically update the document
+        queryClient.setQueryData<Document[]>(queryKey, (old = []) => 
+          old.map(doc => doc.id === documentId ? updatedDocument : doc)
+        );
+
+        // Track optimistic update
+        addOptimisticUpdate(`update_document_${documentId}`, {
+          type: 'update',
+          entity: 'document',
+          data: updatedDocument,
+          originalData: documentToUpdate,
+          timestamp: Date.now()
+        });
+
+        return { previousDocuments, documentToUpdate, projectId };
+      }
+
+      return { previousDocuments: undefined, documentToUpdate: null, projectId: null };
+    },
+    onError: (error, variables, context) => {
+      // Rollback on error
+      if (context?.previousDocuments && context?.projectId) {
+        const queryKey = ['project-documents', context.projectId];
+        queryClient.setQueryData(queryKey, context.previousDocuments);
+      }
+      
+      console.error('Error updating document metadata:', error);
+      toast.error('Failed to update document metadata');
+    },
+    onSuccess: (updatedDocument, variables, context) => {
       console.log('[ACTIVITY_DEBUG] Document metadata update successful - now adding activity logging', {
         documentId: updatedDocument.id,
         documentName: updatedDocument.name,
@@ -86,12 +153,28 @@ export function useUpdateDocumentMetadata() {
         changes: variables.metadata,
         timestamp: new Date().toISOString()
       });
+
+      // Update cached document with real server data
+      if (context?.projectId) {
+        const queryKey = ['project-documents', context.projectId];
+        queryClient.setQueryData<Document[]>(queryKey, (old = []) => 
+          old.map(doc => doc.id === updatedDocument.id ? updatedDocument : doc)
+        );
+      }
+
+      // Remove optimistic update tracking
+      const removeOptimisticUpdate = useProjectStore.getState().removeOptimisticUpdate;
+      removeOptimisticUpdate(`update_document_${updatedDocument.id}`);
       
-      // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: ['project-documents', updatedDocument.project_id] });
+      // Invalidate related queries for other components
       queryClient.invalidateQueries({ queryKey: ['advanced-media-search'] });
       queryClient.invalidateQueries({ queryKey: ['document-tags', updatedDocument.project_id] });
       queryClient.invalidateQueries({ queryKey: ['media-stats', updatedDocument.project_id] });
+
+      // CRITICAL: Invalidate consolidated project query for real-time updates
+      queryClient.invalidateQueries({
+        queryKey: ['project-consolidated', updatedDocument.project_id]
+      });
       
       // Fire-and-forget activity log for metadata update with comprehensive debug logging
       console.log('[ACTIVITY_DEBUG] Starting metadata update activity logging', {
@@ -161,7 +244,7 @@ export function useUpdateDocumentMetadata() {
           
           const result = await activityService.createActivity({
             project_id: updatedDocument.project_id,
-            activity_type: 'document_update',
+            activity_type: 'document_upload', // Using existing type for document operations
             title: `Document details updated: ${updatedDocument.name}`,
             description: `"${updatedDocument.name}" ${changesDescription}`,
             user_id: auth?.user?.id,
@@ -209,6 +292,7 @@ export function useUpdateDocumentMetadata() {
  */
 export function useDeleteDocument() {
   const queryClient = useQueryClient();
+  const addOptimisticUpdate = useProjectStore(state => state.addOptimisticUpdate);
 
   return useMutation({
     mutationFn: async (documentId: string): Promise<void> => {
@@ -249,18 +333,87 @@ export function useDeleteDocument() {
         })();
       }
     },
-    onSuccess: (_, _documentId) => {
-      // Invalidate all document-related queries
-      queryClient.invalidateQueries({ queryKey: ['project-documents'] });
+    // Optimistic update - remove document immediately
+    onMutate: async (documentId) => {
+      // Find the document in cached queries
+      const queryCache = queryClient.getQueryCache();
+      let documentToDelete: Document | null = null;
+      let projectId: string | null = null;
+
+      // Search through project-documents queries to find the document
+      for (const query of queryCache.getAll()) {
+        if (query.queryKey[0] === 'project-documents' && Array.isArray(query.state.data)) {
+          const documents = query.state.data as Document[];
+          const found = documents.find(doc => doc.id === documentId);
+          if (found) {
+            documentToDelete = found;
+            projectId = found.project_id;
+            break;
+          }
+        }
+      }
+
+      if (documentToDelete && projectId) {
+        const queryKey = ['project-documents', projectId];
+        
+        // Cancel any outgoing refetches
+        await queryClient.cancelQueries({ queryKey });
+        
+        // Snapshot the previous value
+        const previousDocuments = queryClient.getQueryData<Document[]>(queryKey) || [];
+        
+        // Optimistically remove the document
+        queryClient.setQueryData<Document[]>(queryKey, (old = []) => 
+          old.filter(doc => doc.id !== documentId)
+        );
+
+        // Track optimistic update
+        addOptimisticUpdate(`delete_document_${documentId}`, {
+          type: 'delete',
+          entity: 'document',
+          data: documentToDelete,
+          timestamp: Date.now()
+        });
+
+        return { previousDocuments, documentToDelete, projectId };
+      }
+
+      return { previousDocuments: undefined, documentToDelete: null, projectId: null };
+    },
+    onError: (error, variables, context) => {
+      // Rollback on error
+      if (context?.previousDocuments && context?.projectId) {
+        const queryKey = ['project-documents', context.projectId];
+        queryClient.setQueryData(queryKey, context.previousDocuments);
+      }
+      
+      console.error('Document deletion failed:', error);
+      toast.error('Failed to delete document');
+    },
+    onSuccess: (_, documentId, context) => {
+      // Remove optimistic update tracking
+      const removeOptimisticUpdate = useProjectStore.getState().removeOptimisticUpdate;
+      removeOptimisticUpdate(`delete_document_${documentId}`);
+
+      // Ensure document is removed from cache (should already be done optimistically)
+      if (context?.projectId) {
+        const queryKey = ['project-documents', context.projectId];
+        queryClient.setQueryData<Document[]>(queryKey, (old = []) => 
+          old.filter(doc => doc.id !== documentId)
+        );
+
+        // CRITICAL: Invalidate consolidated project query for real-time updates
+        queryClient.invalidateQueries({
+          queryKey: ['project-consolidated', context.projectId]
+        });
+      }
+
+      // Invalidate other document-related queries for search and stats
       queryClient.invalidateQueries({ queryKey: ['advanced-media-search'] });
       queryClient.invalidateQueries({ queryKey: ['media-stats'] });
       queryClient.invalidateQueries({ queryKey: ['media-collections'] });
       
       toast.success('Document deleted successfully');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to delete document');
-      console.error('Document deletion failed:', error);
     }
   });
 }
@@ -270,6 +423,7 @@ export function useDeleteDocument() {
  */
 export function useBulkDeleteDocuments() {
   const queryClient = useQueryClient();
+  const addOptimisticUpdate = useProjectStore(state => state.addOptimisticUpdate);
 
   return useMutation({
     mutationFn: async ({ documentIds, projectId }: BulkDeleteParams): Promise<BulkOperationResult> => {
@@ -338,12 +492,67 @@ export function useBulkDeleteDocuments() {
 
       return results;
     },
-    onSuccess: (result, { projectId }) => {
+    // Optimistic update - remove documents immediately
+    onMutate: async ({ documentIds, projectId }) => {
+      const queryKey = ['project-documents', projectId];
+      
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey });
+      
+      // Snapshot the previous value
+      const previousDocuments = queryClient.getQueryData<Document[]>(queryKey) || [];
+      
+      // Get documents that will be deleted (for rollback)
+      const documentsToDelete = previousDocuments.filter(doc => documentIds.includes(doc.id));
+      
+      // Optimistically remove the documents
+      queryClient.setQueryData<Document[]>(queryKey, (old = []) => 
+        old.filter(doc => !documentIds.includes(doc.id))
+      );
+
+      // Track optimistic update
+      addOptimisticUpdate(`bulk_delete_documents_${Date.now()}`, {
+        type: 'delete',
+        entity: 'document',
+        data: documentsToDelete,
+        timestamp: Date.now()
+      });
+
+      return { previousDocuments, documentsToDelete };
+    },
+    onError: (error, variables, context) => {
+      // Rollback on error
+      if (context?.previousDocuments) {
+        const queryKey = ['project-documents', variables.projectId];
+        queryClient.setQueryData(queryKey, context.previousDocuments);
+      }
+      
+      console.error('Bulk document deletion failed:', error);
+      toast.error('Failed to delete documents');
+    },
+    onSuccess: (result, { projectId }, context) => {
+      // Remove optimistic update tracking
+      const removeOptimisticUpdate = useProjectStore.getState().removeOptimisticUpdate;
+      // Find the optimistic update by searching for bulk_delete entries
+      const optimisticUpdates = useProjectStore.getState().optimisticUpdates;
+      Object.keys(optimisticUpdates).forEach(key => {
+        if (key.startsWith('bulk_delete_documents_')) {
+          removeOptimisticUpdate(key);
+        }
+      });
+
+      // CRITICAL: Invalidate consolidated project query for real-time updates
+      queryClient.invalidateQueries({
+        queryKey: ['project-consolidated', projectId]
+      });
+      
       // Invalidate all document-related queries
       queryClient.invalidateQueries({ queryKey: ['project-documents', projectId] });
       queryClient.invalidateQueries({ queryKey: ['advanced-media-search'] });
       queryClient.invalidateQueries({ queryKey: ['media-stats', projectId] });
       queryClient.invalidateQueries({ queryKey: ['media-collections', projectId] });
+      
+      toast.success(`Successfully deleted ${result.success} documents`);
     },
     onError: (error: Error) => {
       toast.error('Bulk delete operation failed');
@@ -357,6 +566,7 @@ export function useBulkDeleteDocuments() {
  */
 export function useBulkUpdateDocuments() {
   const queryClient = useQueryClient();
+  const addOptimisticUpdate = useProjectStore(state => state.addOptimisticUpdate);
 
   return useMutation({
     mutationFn: async ({ documentIds, updates, operation }: BulkUpdateParams): Promise<BulkOperationResult> => {
@@ -480,7 +690,113 @@ export function useBulkUpdateDocuments() {
 
       return results;
     },
-    onSuccess: (result, args) => {
+    // Optimistic update - show changes immediately
+    onMutate: async ({ documentIds, updates, operation }) => {
+      // Find all documents in cached queries that need updating
+      const queryCache = queryClient.getQueryCache();
+      const affectedQueries = new Map<string, { query: any, documents: Document[], projectId: string }>();
+      
+      // Search through all project-documents queries to find affected documents
+      for (const query of queryCache.getAll()) {
+        if (query.queryKey[0] === 'project-documents' && Array.isArray(query.state.data)) {
+          const documents = query.state.data as Document[];
+          const affectedDocs = documents.filter(doc => documentIds.includes(doc.id));
+          
+          if (affectedDocs.length > 0 && query.queryKey[1]) {
+            affectedQueries.set(query.queryKey[1] as string, {
+              query,
+              documents: documents,
+              projectId: query.queryKey[1] as string
+            });
+          }
+        }
+      }
+      
+      const previousStates = new Map<string, Document[]>();
+      const optimisticDocuments: Document[] = [];
+      
+      // Apply optimistic updates to each affected query
+      for (const [projectId, { documents }] of affectedQueries) {
+        const queryKey = ['project-documents', projectId];
+        
+        // Cancel any outgoing refetches
+        await queryClient.cancelQueries({ queryKey });
+        
+        // Snapshot the previous value
+        previousStates.set(projectId, [...documents]);
+        
+        // Create optimistically updated documents
+        const updatedDocuments = documents.map(doc => {
+          if (!documentIds.includes(doc.id)) return doc;
+          
+          let updatedDoc = { ...doc };
+          
+          switch (operation) {
+            case 'add_tags':
+              const newTags = Array.isArray((updates as { tags?: string[] }).tags)
+                ? (updates as { tags: string[] }).tags
+                : [];
+              const currentTags = doc.tags || [];
+              updatedDoc.tags = [...new Set([...currentTags, ...newTags])];
+              break;
+              
+            case 'update_type':
+              updatedDoc.document_type = (updates as { document_type?: DocumentType }).document_type || doc.document_type;
+              break;
+              
+            case 'move_to_collection':
+              updatedDoc.metadata = {
+                ...doc.metadata,
+                collection_id: (updates as { collection_id?: string }).collection_id
+              };
+              break;
+              
+            default:
+              updatedDoc = { ...doc, ...updates };
+          }
+          
+          updatedDoc.updated_at = new Date().toISOString();
+          optimisticDocuments.push(updatedDoc);
+          return updatedDoc;
+        });
+        
+        // Apply optimistic updates
+        queryClient.setQueryData<Document[]>(queryKey, updatedDocuments);
+      }
+      
+      // Track optimistic update
+      const updateId = `bulk_update_documents_${Date.now()}`;
+      addOptimisticUpdate(updateId, {
+        type: 'update',
+        entity: 'document',
+        data: optimisticDocuments,
+        timestamp: Date.now()
+      });
+
+      return { previousStates, affectedQueries: Array.from(affectedQueries.keys()), updateId };
+    },
+    onError: (error, variables, context) => {
+      // Rollback on error
+      if (context?.previousStates && context?.affectedQueries) {
+        for (const projectId of context.affectedQueries) {
+          const previousDocs = context.previousStates.get(projectId);
+          if (previousDocs) {
+            const queryKey = ['project-documents', projectId];
+            queryClient.setQueryData(queryKey, previousDocs);
+          }
+        }
+      }
+      
+      console.error('Bulk document update failed:', error);
+      toast.error('Failed to update documents');
+    },
+    onSuccess: (result, args, context) => {
+      // Remove optimistic update tracking
+      if (context?.updateId) {
+        const removeOptimisticUpdate = useProjectStore.getState().removeOptimisticUpdate;
+        removeOptimisticUpdate(context.updateId);
+      }
+      
       console.log('[ACTIVITY_DEBUG] Bulk document update successful - now adding activity logging', {
         operation: args.operation,
         documentsAffected: result.success,
@@ -489,6 +805,15 @@ export function useBulkUpdateDocuments() {
         updates: args.updates,
         timestamp: new Date().toISOString()
       });
+
+      // Invalidate consolidated project queries for all affected projects
+      if (context?.affectedQueries) {
+        for (const projectId of context.affectedQueries) {
+          queryClient.invalidateQueries({
+            queryKey: ['project-consolidated', projectId]
+          });
+        }
+      }
       
       // Invalidate queries for all affected projects
       // We need to get project IDs from the documents, but for now invalidate all
@@ -497,6 +822,8 @@ export function useBulkUpdateDocuments() {
       queryClient.invalidateQueries({ queryKey: ['media-stats'] });
       queryClient.invalidateQueries({ queryKey: ['media-collections'] });
       queryClient.invalidateQueries({ queryKey: ['document-tags'] });
+      
+      toast.success(`Successfully updated ${result.success} documents`);
       
       // Fire-and-forget activity log for bulk update with comprehensive debug logging
       console.log('[ACTIVITY_DEBUG] Starting bulk document update activity logging', {
@@ -538,14 +865,44 @@ export function useBulkUpdateDocuments() {
           // Import activityService inline to avoid circular imports
           const activityService = await import('@/services/activityService');
           
-          // We need to get the project_id - since we don't have it directly, we'll need to fetch it
-          // from one of the documents. For now, we'll skip this specific activity logging
-          // and note it in the debug logs
-          console.warn('[ACTIVITY_DEBUG] Bulk update activity logging skipped - no project_id available', {
-            operation: args.operation,
-            documentsAffected: result.success,
-            note: 'Need to modify bulk update to include project_id parameter'
-          });
+          // Get project_id from the first affected project in context
+          let projectId: string | null = null;
+          if (context?.affectedQueries && context.affectedQueries.length > 0) {
+            projectId = context.affectedQueries[0];
+          }
+          
+          if (projectId) {
+            const activityResult = await activityService.createActivity({
+              project_id: projectId,
+              activity_type: 'document_upload', // Using existing type for document operations
+              title: `Bulk document update: ${result.success} documents updated`,
+              description: `Applied ${args.operation.replace('_', ' ')} operation to ${result.success} documents`,
+              user_id: auth?.user?.id,
+              user_name: userName,
+              entity_type: 'document',
+              metadata: {
+                operation: args.operation,
+                documentsAffected: result.success,
+                documentsFailed: result.failed,
+                documentCount: args.documentIds.length,
+                updates: args.updates
+              },
+              status: result.failed > 0 ? 'warning' : 'success'
+            });
+            
+            console.log('[ACTIVITY_DEBUG] Bulk update activity result:', {
+              success: !!activityResult,
+              activityId: activityResult?.id,
+              projectId,
+              operation: args.operation
+            });
+          } else {
+            console.warn('[ACTIVITY_DEBUG] Bulk update activity logging skipped - no project_id available', {
+              operation: args.operation,
+              documentsAffected: result.success,
+              contextKeys: Object.keys(context || {})
+            });
+          }
           
         } catch (e) {
           console.error('[ACTIVITY_DEBUG] Activity log (bulk_update) failed with full error:', {
@@ -627,6 +984,7 @@ export function useCreateDocument() {
  */
 export function useUploadDocument() {
   const queryClient = useQueryClient();
+  const addOptimisticUpdate = useProjectStore(state => state.addOptimisticUpdate);
 
   return useMutation({
     mutationFn: async ({ 
@@ -690,9 +1048,80 @@ export function useUploadDocument() {
 
       return data;
     },
-    onSuccess: (newDocument) => {
+    // Optimistic update - show upload progress immediately
+    onMutate: async ({ file, projectId, phaseId, documentType, metadata = {} }) => {
+      const queryKey = ['project-documents', projectId];
+      const optimisticId = `temp_upload_${Date.now()}`;
+      
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey });
+      
+      // Snapshot the previous value
+      const previousDocuments = queryClient.getQueryData<Document[]>(queryKey) || [];
+      
+      // Create optimistic document
+      const optimisticDocument: Partial<Document> = {
+        id: optimisticId,
+        name: file.name,
+        document_type: documentType,
+        project_id: projectId,
+        phase_id: phaseId,
+        file_size: file.size,
+        file_size_bytes: file.size,
+        mime_type: file.type,
+        processing_status: 'uploading' as any, // Show as uploading
+        metadata: {
+          original_filename: file.name,
+          upload_timestamp: new Date().toISOString(),
+          ...metadata
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      // Optimistically add the document
+      queryClient.setQueryData<Document[]>(queryKey, (old = []) => [
+        optimisticDocument as Document,
+        ...old
+      ]);
+
+      // Track optimistic update
+      addOptimisticUpdate(`upload_document_${optimisticId}`, {
+        type: 'create',
+        entity: 'document',
+        data: optimisticDocument,
+        timestamp: Date.now()
+      });
+      
+      return { previousDocuments, optimisticDocument, optimisticId };
+    },
+    onError: (error, variables, context) => {
+      // Rollback on error
+      if (context?.previousDocuments) {
+        const queryKey = ['project-documents', variables.projectId];
+        queryClient.setQueryData(queryKey, context.previousDocuments);
+      }
+      
+      console.error('File upload failed:', error);
+      toast.error('Failed to upload file');
+    },
+    onSuccess: (newDocument, variables, context) => {
+      // Replace optimistic document with real server data
+      const queryKey = ['project-documents', newDocument.project_id];
+      queryClient.setQueryData<Document[]>(queryKey, (old = []) => 
+        old.map(doc => doc.id === context?.optimisticId ? newDocument : doc)
+      );
+
+      // Remove optimistic update tracking
+      const removeOptimisticUpdate = useProjectStore.getState().removeOptimisticUpdate;
+      removeOptimisticUpdate(`upload_document_${context?.optimisticId}`);
+
+      // CRITICAL: Invalidate consolidated project query for real-time updates
+      queryClient.invalidateQueries({
+        queryKey: ['project-consolidated', newDocument.project_id]
+      });
+      
       // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: ['project-documents', newDocument.project_id] });
       queryClient.invalidateQueries({ queryKey: ['advanced-media-search'] });
       queryClient.invalidateQueries({ queryKey: ['media-stats', newDocument.project_id] });
       
