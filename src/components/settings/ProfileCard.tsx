@@ -11,7 +11,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Progress } from '../ui/progress';
 import { Camera, Mail, User } from 'lucide-react';
-import { createPreviewUrl, revokePreviewUrl, uploadProfilePicture } from '@/services/unifiedStorageService';
+import { createPreviewUrl, revokePreviewUrl, uploadProfilePicture } from '@/services/storageService';
 import { useToast } from '@/hooks/use-toast';
 import type { SettingsFormData, ProfileUploadState } from '@/types/settings';
 import type { UserProfile } from '@/types/user';

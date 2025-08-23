@@ -4,6 +4,7 @@ import { queryKeys } from '@/lib/queryClient';
 import { toast } from 'sonner';
 import type { BudgetExpense, BudgetFormData, TransactionType, PaymentStatus, PaymentMethod } from '@/types/projectDetails';
 import { useProjectStore } from '@/stores/projectStore';
+import { logBudgetActivity } from '@/utils/activityLogging';
 
 
 export interface CreateBudgetExpenseData extends BudgetFormData {
@@ -172,86 +173,27 @@ export function useCreateBudgetExpense() {
         queryKey: ['project-consolidated', variables.project_id]
       });
       
-      // Fire-and-forget activity logging with comprehensive debug logging
-      console.log('[ACTIVITY_DEBUG] [useCreateBudgetExpense] Starting activity logging for budget expense creation');
-      
+      // Fire-and-forget activity logging with standardized utilities
       (async () => {
         try {
-          console.log('[ACTIVITY_DEBUG] [useCreateBudgetExpense] Fetching auth user');
-          const { data: auth, error: authError } = await supabase.auth.getUser();
-          
-          if (authError) {
-            console.error('[ACTIVITY_DEBUG] [useCreateBudgetExpense] Auth error:', authError);
-            return;
-          }
-          
-          console.log('[ACTIVITY_DEBUG] [useCreateBudgetExpense] Auth user fetched successfully', {
-            userId: auth?.user?.id,
-            hasUser: !!auth?.user,
-            userMetadata: auth?.user?.user_metadata
-          });
-          
-          const userName = auth?.user?.user_metadata?.full_name || 
-              auth?.user?.user_metadata?.name || 
-              auth?.user?.email || 
-              'Unknown User';
-              
           const displayName = variables.description || 
               variables.category || 
               variables.transaction_type.replace(/_/g, ' ').toLowerCase();
-          
-          console.log('[ACTIVITY_DEBUG] [useCreateBudgetExpense] Adding expense creation to activity batch', {
-            project_id: variables.project_id,
-            activity_type: 'expense_create',
-            title: `Budget expense added: ${displayName}`,
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'expense',
-            entity_id: newExpense.id
-          });
-          
-          // Format amount for display
-          const formattedAmount = new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: variables.currency || 'USD'
-          }).format(variables.amount);
-          
-          // Log activity using direct service for important budget operations
-          try {
-            const activityService = await import('@/services/activityService');
-            await activityService.createActivity({
-              project_id: variables.project_id,
-              activity_type: 'expense_create',
-              title: `New ${(variables.category || 'expense').toLowerCase()}: ${displayName}`,
-              description: `${variables.transaction_type.replace(/_/g, ' ')} "${displayName}" (${formattedAmount}) was added to ${variables.category || 'project budget'}`,
-              user_id: auth?.user?.id,
-              user_name: userName,
-              entity_type: 'expense',
-              entity_id: newExpense.id,
-              metadata: {
-                amount: variables.amount,
-                currency: variables.currency,
-                category: variables.category,
-                transaction_type: variables.transaction_type
-              },
-              status: 'success'
-            });
-          } catch (activityError) {
-            console.error('Failed to log expense creation activity:', activityError);
-          }
-          
-          console.log('[ACTIVITY_DEBUG] [useCreateBudgetExpense] Activity added to batch successfully');
-          
+              
+          await logBudgetActivity(
+            variables.project_id,
+            'expense_create',
+            newExpense.id,
+            displayName,
+            {
+              amount: variables.amount,
+              currency: variables.currency,
+              category: variables.category,
+              transaction_type: variables.transaction_type
+            }
+          );
         } catch (e) {
-          console.error('[ACTIVITY_DEBUG] [useCreateBudgetExpense] Activity logging failed:', {
-            error: e,
-            errorMessage: e instanceof Error ? e.message : String(e),
-            errorStack: e instanceof Error ? e.stack : undefined,
-            expenseId: newExpense.id,
-            expenseDescription: variables.description,
-            projectId: variables.project_id,
-            timestamp: new Date().toISOString()
-          });
+          console.error('Failed to create activity for expense creation:', e);
         }
       })();
       
@@ -410,106 +352,31 @@ export function useUpdateBudgetExpense() {
         queryKey: ['project-consolidated', updatedExpense.project_id]
       });
       
-      // Fire-and-forget activity logging with comprehensive debug logging
-      console.log('[ACTIVITY_DEBUG] [useUpdateBudgetExpense] Starting activity logging for budget expense update');
-      
+      // Fire-and-forget activity logging with standardized utilities
       (async () => {
         try {
-          console.log('[ACTIVITY_DEBUG] [useUpdateBudgetExpense] Fetching auth user');
-          const { data: auth, error: authError } = await supabase.auth.getUser();
-          
-          if (authError) {
-            console.error('[ACTIVITY_DEBUG] [useUpdateBudgetExpense] Auth error:', authError);
-            return;
-          }
-          
-          console.log('[ACTIVITY_DEBUG] [useUpdateBudgetExpense] Auth user fetched successfully', {
-            userId: auth?.user?.id,
-            hasUser: !!auth?.user,
-            userMetadata: auth?.user?.user_metadata
-          });
-          
-          const userName = auth?.user?.user_metadata?.full_name || 
-              auth?.user?.user_metadata?.name || 
-              auth?.user?.email || 
-              'Unknown User';
-              
-          // Get display name for the expense
           const displayName = updatedExpense.description || 
               updatedExpense.category || 
               updatedExpense.transaction_type.replace(/_/g, ' ').toLowerCase();
               
-          console.log('[ACTIVITY_DEBUG] [useUpdateBudgetExpense] Calling activityService.createActivity', {
-            project_id: updatedExpense.project_id,
-            activity_type: 'expense_update',
-            title: `Budget expense updated: ${displayName}`,
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'expense',
-            entity_id: updatedExpense.id
-          });
-          
-          // Determine what was updated for more specific messaging
-          const updatedFields = Object.keys(variables).filter(key => key !== 'id');
-          const formattedAmount = new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: updatedExpense.currency || 'USD'
-          }).format(updatedExpense.amount);
-          
-          let activityTitle = `Budget expense modified: ${displayName}`;
-          let activityDescription = `Expense "${displayName}" was updated`;
-          
-          if (updatedFields.includes('payment_status')) {
-            activityTitle = `Expense status changed: ${displayName}`;
-            activityDescription = `"${displayName}" status changed to ${updatedExpense.payment_status}`;
-          } else if (updatedFields.includes('amount')) {
-            activityTitle = `Expense amount updated: ${displayName}`;
-            activityDescription = `"${displayName}" amount updated to ${formattedAmount}`;
-          } else if (updatedFields.includes('category')) {
-            activityTitle = `Expense moved to ${updatedExpense.category}: ${displayName}`;
-            activityDescription = `"${displayName}" was moved to ${updatedExpense.category} category`;
-          }
-          
-          // Log activity using direct service for important budget operations
-          try {
-            const activityService = await import('@/services/activityService');
-            await activityService.createActivity({
-              project_id: updatedExpense.project_id,
-              activity_type: 'expense_update',
-              title: activityTitle,
-              description: activityDescription,
-              user_id: auth?.user?.id,
-              user_name: userName,
-              entity_type: 'expense',
-              entity_id: updatedExpense.id,
-              metadata: {
-                amount: updatedExpense.amount,
-                currency: updatedExpense.currency,
-                category: updatedExpense.category,
-                transaction_type: updatedExpense.transaction_type,
-                payment_status: updatedExpense.payment_status,
-                payment_method: updatedExpense.payment_method,
-                updates: variables,
-                updatedFields,
-                formattedAmount
-              },
-              status: 'info'
-            });
-          } catch (activityError) {
-            console.error('Failed to log expense update activity:', activityError);
-          }
-          
-          console.log('[ACTIVITY_DEBUG] [useUpdateBudgetExpense] Activity logged successfully');
-          
+          await logBudgetActivity(
+            updatedExpense.project_id,
+            'expense_update',
+            updatedExpense.id,
+            displayName,
+            {
+              amount: updatedExpense.amount,
+              currency: updatedExpense.currency,
+              category: updatedExpense.category,
+              transaction_type: updatedExpense.transaction_type,
+              payment_status: updatedExpense.payment_status,
+              payment_method: updatedExpense.payment_method,
+              updates: variables,
+              updatedFields: Object.keys(variables).filter(key => key !== 'id')
+            }
+          );
         } catch (e) {
-          console.error('[ACTIVITY_DEBUG] [useUpdateBudgetExpense] Activity logging failed:', {
-            error: e,
-            errorMessage: e instanceof Error ? e.message : String(e),
-            errorStack: e instanceof Error ? e.stack : undefined,
-            expenseId: updatedExpense.id,
-            projectId: updatedExpense.project_id,
-            timestamp: new Date().toISOString()
-          });
+          console.error('Failed to create activity for expense update:', e);
         }
       })();
       
@@ -625,77 +492,23 @@ export function useDeleteBudgetExpense() {
         });
       }
       
-      // Fire-and-forget activity logging with comprehensive debug logging
-      console.log('[ACTIVITY_DEBUG] [useDeleteBudgetExpense] Starting activity logging for budget expense deletion');
-      
+      // Fire-and-forget activity logging with standardized utilities
       (async () => {
         try {
-          console.log('[ACTIVITY_DEBUG] [useDeleteBudgetExpense] Fetching auth user');
-          const { data: auth, error: authError } = await supabase.auth.getUser();
-          
-          if (authError) {
-            console.error('[ACTIVITY_DEBUG] [useDeleteBudgetExpense] Auth error:', authError);
-            return;
-          }
-          
-          console.log('[ACTIVITY_DEBUG] [useDeleteBudgetExpense] Auth user fetched successfully', {
-            userId: auth?.user?.id,
-            hasUser: !!auth?.user,
-            userMetadata: auth?.user?.user_metadata
-          });
-          
           if (!result.projectId) {
-            console.warn('[ACTIVITY_DEBUG] [useDeleteBudgetExpense] No projectId available for activity logging');
+            console.warn('No projectId available for activity logging');
             return;
           }
           
-          const userName = auth?.user?.user_metadata?.full_name || 
-              auth?.user?.user_metadata?.name || 
-              auth?.user?.email || 
-              'Unknown User';
-              
-          console.log('[ACTIVITY_DEBUG] [useDeleteBudgetExpense] Calling activityService.createActivity', {
-            project_id: result.projectId,
-            activity_type: 'expense_delete',
-            title: `Budget expense removed: ${result.expenseId}`,
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'expense',
-            entity_id: result.expenseId
-          });
-          
-          // Use generic display name for deleted expense
-          const displayName = 'expense item';
-          
-          // Log activity using direct service for important budget operations
-          try {
-            const activityService = await import('@/services/activityService');
-            await activityService.createActivity({
-              project_id: result.projectId,
-              activity_type: 'expense_delete',
-              title: `Budget expense removed: ${displayName}`,
-              description: `"${displayName}" was deleted from the project budget`,
-              user_id: auth?.user?.id,
-              user_name: userName,
-              entity_type: 'expense',
-              entity_id: result.expenseId,
-              status: 'warning'
-            });
-          } catch (activityError) {
-            console.error('Failed to log expense deletion activity:', activityError);
-          }
-          
-          console.log('[ACTIVITY_DEBUG] [useDeleteBudgetExpense] Activity logged successfully');
-          
+          await logBudgetActivity(
+            result.projectId,
+            'expense_delete',
+            result.expenseId,
+            'Expense Item',
+            {}
+          );
         } catch (e) {
-          console.error('[ACTIVITY_DEBUG] [useDeleteBudgetExpense] Activity logging failed:', {
-            error: e,
-            errorMessage: e instanceof Error ? e.message : String(e),
-            errorStack: e instanceof Error ? e.stack : undefined,
-            expenseId: result.expenseId,
-            projectId: result.projectId,
-            timestamp: new Date().toISOString()
-          });
+          console.error('Failed to create activity for expense deletion:', e);
         }
       })();
       

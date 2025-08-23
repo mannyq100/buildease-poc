@@ -17,6 +17,7 @@ import {
 } from '@/constants/collaborationConstants';
 import { truncateCommentContent } from '@/utils/collaborationUtils';
 import * as activityService from '@/services/activityService';
+import { logActivityAsync } from '@/utils/activityLogging';
 
 /**
  * Comment mutation defaults and configuration
@@ -151,83 +152,28 @@ export function useCreateComment() {
           queryKey: ['comment-counts']
         });
 
-        // Fire-and-forget activity logging with comprehensive debug logging
+        // Fire-and-forget activity logging with standardized utilities
         if (variables.entityType === 'project') {
-          console.log('[ACTIVITY_DEBUG] [useCreateComment] Starting activity logging for comment creation');
+          const preview = newComment.content.substring(0, COMMENT_MUTATION_DEFAULTS.PREVIEW_LENGTH);
+          const truncated = newComment.content.length > COMMENT_MUTATION_DEFAULTS.PREVIEW_LENGTH;
+          const isReply = !!variables.parentCommentId;
           
-          (async () => {
-            try {
-              console.log('[ACTIVITY_DEBUG] [useCreateComment] Fetching auth user');
-              const { data: auth, error: authError } = await supabase.auth.getUser();
-              
-              if (authError) {
-                console.error('[ACTIVITY_DEBUG] [useCreateComment] Auth error:', authError);
-                return;
-              }
-              
-              console.log('[ACTIVITY_DEBUG] [useCreateComment] Auth user fetched successfully', {
-                userId: auth?.user?.id,
-                hasUser: !!auth?.user,
-                userMetadata: auth?.user?.user_metadata
-              });
-              
-              const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
-                  (auth?.user?.user_metadata?.name as string | undefined) ||
-                  (auth?.user?.email as string | undefined);
-                  
-              const preview = newComment.content.substring(0, COMMENT_MUTATION_DEFAULTS.PREVIEW_LENGTH);
-              const truncated = newComment.content.length > COMMENT_MUTATION_DEFAULTS.PREVIEW_LENGTH;
-              const isReply = !!variables.parentCommentId;
-              
-              const activityType = isReply ? 'comment_reply' : 'comment_create';
-              const activityTitle = isReply ? 'Reply added to discussion' : 'New comment on project';
-              const activityDescription = `${isReply ? 'Reply' : 'Comment'}: "${preview}${truncated ? '...' : ''}"`;     
-                  
-              console.log('[ACTIVITY_DEBUG] [useCreateComment] Adding comment creation to activity batch', {
-                project_id: variables.entityId,
-                activity_type: activityType,
-                title: activityTitle,
-                description: activityDescription,
-                user_id: auth?.user?.id,
-                user_name: userName,
-                entity_type: 'comment',
-                entity_id: newComment.id
-              });
-              
-              // Use batching for comments to reduce noise from rapid commenting
-              await activityService.createBatchedActivity({
-                project_id: variables.entityId,
-                activity_type: activityType,
-                title: activityTitle,
-                description: activityDescription,
-                user_id: auth?.user?.id,
-                user_name: userName,
-                entity_type: 'comment',
-                entity_id: newComment.id,
-                metadata: {
-                  commentContent: newComment.content,
-                  contentPreview: preview,
-                  commentLength: newComment.content.length,
-                  isReply,
-                  parentCommentId: variables.parentCommentId,
-                  entityType: variables.entityType
-                },
-                status: 'info'
-              });
-              
-              console.log('[ACTIVITY_DEBUG] [useCreateComment] Activity added to batch successfully');
-              
-            } catch (e) {
-              console.error('[ACTIVITY_DEBUG] [useCreateComment] Activity logging failed:', {
-                error: e,
-                errorMessage: e instanceof Error ? e.message : String(e),
-                errorStack: e instanceof Error ? e.stack : undefined,
-                commentId: newComment.id,
-                projectId: variables.entityId,
-                timestamp: new Date().toISOString()
-              });
+          logActivityAsync({
+            projectId: variables.entityId,
+            activityType: isReply ? 'comment_reply' : 'comment_create',
+            entityType: 'comment',
+            entityId: newComment.id,
+            metadata: {
+              commentContent: newComment.content,
+              contentPreview: preview,
+              truncated,
+              commentLength: newComment.content.length,
+              isReply,
+              parentCommentId: variables.parentCommentId,
+              entityType: variables.entityType,
+              preview
             }
-          })();
+          });
         }
 
         // Show success toast
@@ -314,83 +260,26 @@ export function useUpdateComment() {
         });
       }
 
-      // Fire-and-forget activity logging with comprehensive debug logging  
+      // Fire-and-forget activity logging with standardized utilities
       if (updatedComment.entity_type === 'project') {
-        console.log('[ACTIVITY_DEBUG] [useUpdateComment] Starting activity logging for comment update');
+        const preview = updatedComment.content.substring(0, COMMENT_MUTATION_DEFAULTS.PREVIEW_LENGTH);
+        const truncated = updatedComment.content.length > COMMENT_MUTATION_DEFAULTS.PREVIEW_LENGTH;
         
-        (async () => {
-          try {
-            console.log('[ACTIVITY_DEBUG] [useUpdateComment] Fetching auth user');
-            const { data: auth, error: authError } = await supabase.auth.getUser();
-            
-            if (authError) {
-              console.error('[ACTIVITY_DEBUG] [useUpdateComment] Auth error:', authError);
-              return;
-            }
-            
-            console.log('[ACTIVITY_DEBUG] [useUpdateComment] Auth user fetched successfully', {
-              userId: auth?.user?.id,
-              hasUser: !!auth?.user,
-              userMetadata: auth?.user?.user_metadata
-            });
-            
-            const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
-                (auth?.user?.user_metadata?.name as string | undefined) ||
-                (auth?.user?.email as string | undefined);
-                
-            const preview = updatedComment.content.substring(0, COMMENT_MUTATION_DEFAULTS.PREVIEW_LENGTH);
-            const truncated = updatedComment.content.length > COMMENT_MUTATION_DEFAULTS.PREVIEW_LENGTH;
-            
-            const activityTitle = 'Comment edited in discussion';
-            const activityDescription = `Updated comment: "${preview}${truncated ? '...' : ''}"`;     
-                
-            console.log('[ACTIVITY_DEBUG] [useUpdateComment] Calling activityService.createActivity', {
-              project_id: updatedComment.entity_id,
-              activity_type: 'comment_update',
-              title: activityTitle,
-              description: activityDescription,
-              user_id: auth?.user?.id,
-              user_name: userName,
-              entity_type: 'comment',
-              entity_id: updatedComment.id
-            });
-            
-            const result = await activityService.createActivity({
-              project_id: updatedComment.entity_id,
-              activity_type: 'comment_update',
-              title: activityTitle,
-              description: activityDescription,
-              user_id: auth?.user?.id,
-              user_name: userName,
-              entity_type: 'comment',
-              entity_id: updatedComment.id,
-              metadata: {
-                updatedContent: updatedComment.content,
-                contentPreview: preview,
-                commentLength: updatedComment.content.length,
-                isReply: !!updatedComment.parent_comment_id,
-                parentCommentId: updatedComment.parent_comment_id
-              },
-              status: 'info'
-            });
-            
-            console.log('[ACTIVITY_DEBUG] [useUpdateComment] Activity created successfully', {
-              success: !!result,
-              activityId: result?.id,
-              result
-            });
-            
-          } catch (e) {
-            console.error('[ACTIVITY_DEBUG] [useUpdateComment] Activity logging failed:', {
-              error: e,
-              errorMessage: e instanceof Error ? e.message : String(e),
-              errorStack: e instanceof Error ? e.stack : undefined,
-              commentId: updatedComment.id,
-              entityId: updatedComment.entity_id,
-              timestamp: new Date().toISOString()
-            });
+        logActivityAsync({
+          projectId: updatedComment.entity_id,
+          activityType: 'comment_update',
+          entityType: 'comment',
+          entityId: updatedComment.id,
+          metadata: {
+            updatedContent: updatedComment.content,
+            contentPreview: preview,
+            truncated,
+            commentLength: updatedComment.content.length,
+            isReply: !!updatedComment.parent_comment_id,
+            parentCommentId: updatedComment.parent_comment_id,
+            preview
           }
-        })();
+        });
       }
 
       toast.success(COLLABORATION_SUCCESS.COMMENT_UPDATED, {
@@ -451,77 +340,18 @@ export function useDeleteComment() {
         queryKey: ['recent-project-comments']
       });
 
-      // Fire-and-forget activity logging with comprehensive debug logging
+      // Fire-and-forget activity logging with standardized utilities
       if (variables.entityType === 'project') {
-        console.log('[ACTIVITY_DEBUG] [useDeleteComment] Starting activity logging for comment deletion');
-        
-        (async () => {
-          try {
-            console.log('[ACTIVITY_DEBUG] [useDeleteComment] Fetching auth user');
-            const { data: auth, error: authError } = await supabase.auth.getUser();
-            
-            if (authError) {
-              console.error('[ACTIVITY_DEBUG] [useDeleteComment] Auth error:', authError);
-              return;
-            }
-            
-            console.log('[ACTIVITY_DEBUG] [useDeleteComment] Auth user fetched successfully', {
-              userId: auth?.user?.id,
-              hasUser: !!auth?.user,
-              userMetadata: auth?.user?.user_metadata
-            });
-            
-            const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
-                (auth?.user?.user_metadata?.name as string | undefined) ||
-                (auth?.user?.email as string | undefined);
-            
-            const activityTitle = 'Comment removed from discussion';
-            const activityDescription = 'A comment was deleted from the project discussion';
-                
-            console.log('[ACTIVITY_DEBUG] [useDeleteComment] Calling activityService.createActivity', {
-              project_id: variables.entityId,
-              activity_type: 'comment_delete',
-              title: activityTitle,
-              description: activityDescription,
-              user_id: auth?.user?.id,
-              user_name: userName,
-              entity_type: 'comment',
-              entity_id: variables.commentId
-            });
-            
-            const result = await activityService.createActivity({
-              project_id: variables.entityId,
-              activity_type: 'comment_delete',
-              title: activityTitle,
-              description: activityDescription,
-              user_id: auth?.user?.id,
-              user_name: userName,
-              entity_type: 'comment',
-              entity_id: variables.commentId,
-              metadata: {
-                commentId: variables.commentId,
-                entityType: variables.entityType
-              },
-              status: 'warning'
-            });
-            
-            console.log('[ACTIVITY_DEBUG] [useDeleteComment] Activity created successfully', {
-              success: !!result,
-              activityId: result?.id,
-              result
-            });
-            
-          } catch (e) {
-            console.error('[ACTIVITY_DEBUG] [useDeleteComment] Activity logging failed:', {
-              error: e,
-              errorMessage: e instanceof Error ? e.message : String(e),
-              errorStack: e instanceof Error ? e.stack : undefined,
-              commentId: variables.commentId,
-              entityId: variables.entityId,
-              timestamp: new Date().toISOString()
-            });
+        logActivityAsync({
+          projectId: variables.entityId,
+          activityType: 'comment_delete',
+          entityType: 'comment',
+          entityId: variables.commentId,
+          metadata: {
+            commentId: variables.commentId,
+            entityType: variables.entityType
           }
-        })();
+        });
       }
 
       toast.success(COLLABORATION_SUCCESS.COMMENT_DELETED, {

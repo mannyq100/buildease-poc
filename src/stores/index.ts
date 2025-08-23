@@ -270,5 +270,4 @@ if (process.env.NODE_ENV === 'development') {
   enableStorePerformanceMonitoring();
   
   console.log('🚀 BuildEase Store System initialized');
-  console.log('💡 Use __storeUtils__ in console for debugging utilities');
 }

@@ -16,7 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ProCard } from '@/components/ui/ProCard';
 import { Filter, Plus, Search, X, TrendingUp, BarChart3, Hammer, Users, Truck, FileText, Palette, MoreHorizontal, Loader2, AlertCircle } from 'lucide-react';
 import { cn } from '@/utils/core/ui';
-import { useConsolidatedProjectData } from '@/hooks/queries/useConsolidatedProjectData';
+import { useProjectData } from '@/hooks/queries/useProjectData';
 import SwipeableExpenseCard from './SwipeableExpenseCard';
 import type { BudgetExpense } from '@/types/projectDetails';
 
@@ -38,7 +38,7 @@ function BudgetExpensesListComponent({
   projectId
 }: BudgetExpensesListProps) {
   // Get consolidated project data for category breakdown
-  const { data: consolidatedData, isLoading, error } = useConsolidatedProjectData(projectId || '');
+  const { data: consolidatedData, isLoading, error } = useProjectData(projectId || '');
   
   // Filtering state
   const [filters, setFilters] = React.useState({

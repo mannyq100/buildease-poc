@@ -1,5 +1,5 @@
 /**
- * Consolidated Project Data Hook
+ * Project Data Hook
  * Replaces multiple separate queries with a single comprehensive query
  * Addresses Sprint 2.1: Query Consolidation performance optimization
  */
@@ -7,16 +7,16 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { ProjectTransformService } from '@/services/projectTransformService';
-import { normalizeProjectData, toDbPhaseStatus, toDbTaskStatus } from '@/utils/core/dataNormalization';
-import type { ConsolidatedProjectData } from '@/types/consolidatedProject';
+import { normalizeProjectData } from '@/utils/core/dataNormalization';
+import type { ConsolidatedProjectData } from '@/types/projectData';
 
-// Using shared ConsolidatedProjectData type from '@/types/consolidatedProject'
+// Using shared ConsolidatedProjectData type from '@/types/projectData'
 
 /**
  * Single comprehensive query for all project data
  * Eliminates N+1 queries and improves performance significantly
  */
-export function useConsolidatedProjectData(projectId: string) {
+export function useProjectData(projectId: string) {
   return useQuery({
     queryKey: ['project-consolidated', projectId],
     queryFn: async (): Promise<ConsolidatedProjectData> => {
@@ -449,7 +449,7 @@ export function useConsolidatedProjectData(projectId: string) {
  * Pre-computed from consolidated data for optimal performance
  */
 export function useProjectSummaryMetrics(projectId: string) {
-  const { data, ...rest } = useConsolidatedProjectData(projectId);
+  const { data, ...rest } = useProjectData(projectId);
   
   const derivedData = data ? {
     // Budget metrics
@@ -478,8 +478,8 @@ export function useProjectSummaryMetrics(projectId: string) {
     // Team metrics
     team: {
       total: data.teamMembers.length,
-      active: data.teamMembers.filter(m => m.status === 'active').length,
-      roles: data.teamMembers.reduce((acc, member) => {
+      active: data.teamMembers.filter((m: any) => m.status === 'active').length,
+      roles: data.teamMembers.reduce((acc: Record<string, number>, member: any) => {
         acc[member.role] = (acc[member.role] || 0) + 1;
         return acc;
       }, {} as Record<string, number>)
@@ -488,22 +488,21 @@ export function useProjectSummaryMetrics(projectId: string) {
     // Phase metrics
     phases: {
       total: data.phases.length,
-      completed: data.phases.filter(p => toDbPhaseStatus(p.status) === 'COMPLETED').length,
-      inProgress: data.phases.filter(p => toDbPhaseStatus(p.status) === 'IN_PROGRESS').length,
-      pending: data.phases.filter(p => toDbPhaseStatus(p.status) === 'PLANNING').length,
-      overallProgress: data.phases.length > 0 ? 
-        (data.phases.filter(p => toDbPhaseStatus(p.status) === 'COMPLETED').length / data.phases.length) * 100 : 0
+      completed: data.phases.filter((p: any) => p.status === 'COMPLETED').length,
+      inProgress: data.phases.filter((p: any) => p.status === 'IN_PROGRESS').length,
+      pending: data.phases.filter((p: any) => p.status === 'PENDING').length,
+      overallProgress: data.phases.filter((p: any) => p.status === 'COMPLETED').length / Math.max(data.phases.length, 1) * 100
     },
     
     // Task metrics (aggregated across all phases)
-    tasks: data.phases.reduce((acc, phase) => {
-      const tasks = phase.tasks ?? [];
-      acc.total += tasks.length;
-      acc.completed += tasks.filter(t => toDbTaskStatus(t.status) === 'COMPLETED').length;
-      acc.inProgress += tasks.filter(t => toDbTaskStatus(t.status) === 'IN_PROGRESS').length;
-      acc.pending += tasks.filter(t => toDbTaskStatus(t.status) === 'PENDING').length;
+    tasksByPhase: data.phases.reduce((acc: Record<string, any>, phase: any) => {
+      const tasks = phase.tasks || [];
+      const completed = tasks.filter((t: any) => t.status === 'COMPLETED').length;
+      const inProgress = tasks.filter((t: any) => t.status === 'IN_PROGRESS').length;
+      const pending = tasks.filter((t: any) => t.status === 'PENDING').length;
+      acc[phase.name] = { completed, inProgress, pending };
       return acc;
-    }, { total: 0, completed: 0, inProgress: 0, pending: 0 })
+    }, {})
   } : undefined;
   
   return {

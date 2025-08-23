@@ -6,7 +6,7 @@
 import { useMemo } from 'react';
 import { MediaItem, MediaCategory } from '../types';
 import { Project } from '@/types/project';
-import { getDocumentTypeDisplayName, type DocumentType } from '@/services/unifiedStorageService';
+import { getDocumentTypeDisplayName, type DocumentType } from '@/services/storageService';
 
 // Type definitions for external data
 interface DocumentItem {

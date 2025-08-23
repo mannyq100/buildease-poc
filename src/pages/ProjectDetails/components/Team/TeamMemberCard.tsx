@@ -44,102 +44,147 @@ function TeamMemberCardComponent({
     };
   }, []);
 
-  const getAvailabilityIndicator = React.useCallback((availability?: string, isOnline?: boolean) => {
-    if (!availability && isOnline === undefined) return null;
-    
-    const color = isOnline 
-      ? availability === 'available' ? 'bg-emerald-500' : 
-        availability === 'busy' ? 'bg-amber-500' : 'bg-slate-400'
-      : 'bg-slate-400';
-    
-    return (
-      <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${color}`} />
-    );
-  }, []);
-
   // Memoized computed values
   const memberInitials = React.useMemo(() => getInitials(member.name), [member.name, getInitials]);
   const statusColorClass = React.useMemo(() => getStatusColor(member.availability || ''), [member.availability, getStatusColor]);
-  const availabilityIndicator = React.useMemo(() => 
-    getAvailabilityIndicator(member.availability, member.isOnline), 
-    [member.availability, member.isOnline, getAvailabilityIndicator]
-  );
 
   if (variant === 'compact') {
     return (
-      <div className="flex items-center gap-2 bg-slate-50/50 rounded-lg p-2 min-w-0 hover:bg-slate-100/50 transition-colors">
-        <div className="relative w-8 h-8 bg-buildease-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-          {(member.profile_picture_url || member.avatar) ? (
-            <img 
-              src={member.profile_picture_url || member.avatar} 
-              alt={member.name} 
-              className="w-full h-full rounded-full object-cover"
-            />
-          ) : (
-            <span className="text-xs font-semibold text-buildease-blue-700">
-              {memberInitials}
-            </span>
-          )}
-          {availabilityIndicator}
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="text-sm font-medium text-slate-900 truncate">{member.name}</div>
-          <div className="text-xs text-slate-600">{member.role}</div>
+      <div className="relative bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200/60 hover:border-slate-300/80 transition-all duration-200 group hover:shadow-md overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-slate-50/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+        
+        <div className="relative p-4">
+          <div className="flex items-center gap-3">
+            {/* Compact Avatar */}
+            <div className="relative">
+              <div className="w-10 h-10 bg-gradient-to-br from-buildease-blue-100 to-buildease-blue-200 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md ring-1 ring-white/30">
+                {(member.profile_picture_url || member.avatar) ? (
+                  <img 
+                    src={member.profile_picture_url || member.avatar} 
+                    alt={member.name} 
+                    className="w-full h-full rounded-xl object-cover"
+                  />
+                ) : (
+                  <span className="text-sm font-bold text-buildease-blue-700">
+                    {memberInitials}
+                  </span>
+                )}
+              </div>
+              {/* Compact availability indicator */}
+              <div className={`absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white shadow-sm ${
+                member.isOnline 
+                  ? member.availability === 'available' ? 'bg-emerald-500' : 
+                    member.availability === 'busy' ? 'bg-amber-500' : 'bg-slate-400'
+                  : 'bg-slate-400'
+              }`} />
+            </div>
+            
+            {/* Compact Member Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <h4 className="text-sm font-semibold text-slate-900 truncate">{member.name}</h4>
+                {member.email_verified && (
+                  <div className="flex items-center justify-center w-4 h-4 bg-emerald-100 rounded-full">
+                    <ShieldCheck className="h-2.5 w-2.5 text-emerald-600" />
+                  </div>
+                )}
+              </div>
+              <p className="text-xs font-medium text-slate-600 truncate">{member.role}</p>
+            </div>
+            
+            {/* Compact Actions */}
+            {showActions && (
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onEdit(member)}
+                  className="h-7 w-7 p-0 hover:bg-emerald-50 hover:text-emerald-700 rounded-lg transition-colors"
+                >
+                  <Edit3 className="h-3 w-3" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onDelete(member.id)}
+                  className="h-7 w-7 p-0 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-4 p-4 bg-slate-50/50 rounded-xl hover:bg-slate-100/50 transition-colors group min-h-[80px]">
-      {/* Avatar with Status Indicator */}
-      <div className="relative w-12 h-12 bg-buildease-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-        {(member.profile_picture_url || member.avatar) ? (
-          <img 
-            src={member.profile_picture_url || member.avatar} 
-            alt={member.name} 
-            className="w-full h-full rounded-full object-cover"
-          />
-        ) : (
-          <span className="text-sm font-semibold text-buildease-blue-700">
-            {memberInitials}
-          </span>
-        )}
-        {availabilityIndicator}
-      </div>
-
-      {/* Member Info */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between mb-1">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h4 className="font-semibold text-slate-900 truncate">{member.name}</h4>
-              {member.email_verified && (
-                <ShieldCheck className="h-3 w-3 text-emerald-600" title="Email verified" />
-              )}
-              {member.phone_verified && (
-                <Shield className="h-3 w-3 text-blue-600" title="Phone verified" />
-              )}
+    <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200/60 hover:border-slate-300/80 transition-all duration-300 group hover:shadow-lg hover:shadow-slate-200/50 overflow-hidden">
+      {/* Modern gradient background overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-slate-50/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      
+      <div className="relative p-6">
+        {/* Header with Avatar and Actions */}
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-4">
+            {/* Enhanced Avatar */}
+            <div className="relative">
+              <div className="w-14 h-14 bg-gradient-to-br from-buildease-blue-100 via-buildease-blue-200 to-buildease-blue-300 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg ring-2 ring-white/50">
+                {(member.profile_picture_url || member.avatar) ? (
+                  <img 
+                    src={member.profile_picture_url || member.avatar} 
+                    alt={member.name} 
+                    className="w-full h-full rounded-2xl object-cover"
+                  />
+                ) : (
+                  <span className="text-lg font-bold text-buildease-blue-700">
+                    {memberInitials}
+                  </span>
+                )}
+              </div>
+              {/* Enhanced availability indicator */}
+              <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-3 border-white shadow-sm ${
+                member.isOnline 
+                  ? member.availability === 'available' ? 'bg-emerald-500' : 
+                    member.availability === 'busy' ? 'bg-amber-500' : 'bg-slate-400'
+                  : 'bg-slate-400'
+              }`} />
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-sm text-slate-600">{member.role}</p>
+            
+            {/* Member Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <h4 className="font-semibold text-slate-900 truncate">{member.name}</h4>
+                {member.email_verified && (
+                  <div className="flex items-center justify-center w-5 h-5 bg-emerald-100 rounded-full" title="Email verified">
+                    <ShieldCheck className="h-3 w-3 text-emerald-600" />
+                  </div>
+                )}
+                {member.phone_verified && (
+                  <div className="flex items-center justify-center w-5 h-5 bg-blue-100 rounded-full" title="Phone verified">
+                    <Shield className="h-3 w-3 text-blue-600" />
+                  </div>
+                )}
+              </div>
+              <p className="text-sm font-medium text-slate-600 mb-1">{member.role}</p>
               {member.company_name && (
-                <div className="flex items-center gap-1 text-xs text-slate-500">
-                  <Building2 className="h-3 w-3" />
-                  <span className="truncate max-w-[120px]">{member.company_name}</span>
+                <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                  <Building2 className="h-3.5 w-3.5" />
+                  <span className="truncate max-w-[140px] font-medium">{member.company_name}</span>
                 </div>
               )}
             </div>
           </div>
           
-          {/* Action Buttons - Mobile optimized */}
+          {/* Always visible action buttons for better UX */}
           {showActions && (
-            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity ml-4">
+            <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() => onEdit(member)}
-                className="h-8 w-8 p-0 hover:bg-emerald-100 hover:text-emerald-700 touch-manipulation"
+                className="h-8 w-8 p-0 hover:bg-emerald-50 hover:text-emerald-700 rounded-xl transition-colors"
               >
                 <Edit3 className="h-4 w-4" />
               </Button>
@@ -147,7 +192,7 @@ function TeamMemberCardComponent({
                 size="sm"
                 variant="ghost"
                 onClick={() => onDelete(member.id)}
-                className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-700 touch-manipulation"
+                className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-700 rounded-xl transition-colors"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -155,38 +200,14 @@ function TeamMemberCardComponent({
           )}
         </div>
 
-        {/* Status and Contact Info */}
-        <div className="flex items-center gap-3 flex-wrap">
+        {/* Status Badge */}
+        <div className="flex items-center justify-between mb-3">
           <StatusBadge 
             status={member.status as 'in-progress' | 'pending' | 'cancelled'} 
             size="sm" 
           />
-          
-          {/* Contact Info with Verification Status */}
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            {(member.phone || member.contactInfo?.phone) && (
-              <div className="flex items-center gap-1">
-                <Phone className={`h-3 w-3 ${member.phone_verified ? 'text-blue-600' : ''}`} />
-                <span>{member.phone || member.contactInfo?.phone}</span>
-                {member.phone_verified && <span className="text-blue-600">✓</span>}
-              </div>
-            )}
-            {(member.email || member.contactInfo?.email) && (
-              <div className="flex items-center gap-1">
-                <Mail className={`h-3 w-3 ${member.email_verified ? 'text-emerald-600' : ''}`} />
-                <span className="truncate max-w-[120px]">
-                  {member.email || member.contactInfo?.email}
-                </span>
-                {member.email_verified && <span className="text-emerald-600">✓</span>}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Availability Status and Join Date */}
-        <div className="flex items-center justify-between mt-2">
           {member.availability && (
-            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusColorClass}`}>
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${statusColorClass}`}>
               <div className={`w-2 h-2 rounded-full ${
                 member.availability === 'available' ? 'bg-emerald-500' :
                 member.availability === 'busy' ? 'bg-amber-500' : 'bg-slate-400'
@@ -194,12 +215,51 @@ function TeamMemberCardComponent({
               {member.availability.charAt(0).toUpperCase() + member.availability.slice(1)}
             </span>
           )}
-          {member.joined_at && (
-            <span className="text-xs text-slate-400">
-              Joined {new Date(member.joined_at).toLocaleDateString()}
-            </span>
+        </div>
+        
+        {/* Contact Information */}
+        <div className="space-y-2">
+          {(member.phone || member.contactInfo?.phone) && (
+            <div className="flex items-center gap-2.5 text-sm text-slate-600">
+              <div className={`flex items-center justify-center w-7 h-7 rounded-lg ${
+                member.phone_verified ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500'
+              }`}>
+                <Phone className="h-3.5 w-3.5" />
+              </div>
+              <span className="font-medium">{member.phone || member.contactInfo?.phone}</span>
+              {member.phone_verified && (
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">Verified</span>
+              )}
+            </div>
+          )}
+          {(member.email || member.contactInfo?.email) && (
+            <div className="flex items-center gap-2.5 text-sm text-slate-600">
+              <div className={`flex items-center justify-center w-7 h-7 rounded-lg ${
+                member.email_verified ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'
+              }`}>
+                <Mail className="h-3.5 w-3.5" />
+              </div>
+              <span className="truncate max-w-[160px] font-medium">
+                {member.email || member.contactInfo?.email}
+              </span>
+              {member.email_verified && (
+                <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Verified</span>
+              )}
+            </div>
           )}
         </div>
+
+        {/* Join Date */}
+        {member.joined_at && (
+          <div className="mt-4 pt-3 border-t border-slate-200/60">
+            <span className="text-xs text-slate-500 font-medium">
+              Member since {new Date(member.joined_at).toLocaleDateString('en-US', { 
+                month: 'short', 
+                year: 'numeric' 
+              })}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

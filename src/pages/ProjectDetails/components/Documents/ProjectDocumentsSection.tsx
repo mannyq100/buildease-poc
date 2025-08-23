@@ -6,10 +6,7 @@
 import React, { useCallback, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useProjectDocuments } from '@/hooks/queries/useDocuments';
-import { useCreateDocument, useDeleteDocument } from '@/hooks/mutations/useDocumentMutations';
-import { useUploadImages, useDeleteImage, useSetProfileImage } from '@/hooks/mutations/useImageMutations';
-import { useProjectProgressImages } from '@/hooks/useProjectStorageImages';
+import { useMediaOperations } from '@/hooks/useMediaOperations';
 import { supabase } from '@/lib/supabase';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 
@@ -21,7 +18,7 @@ import { isDocumentType } from './utils/mediaUtils';
 // Optimized hooks
 import { useAllMediaItems } from './hooks/useMediaData';
 import { useDownloadManager } from './hooks/useMemoryManagement';
-import { useUnifiedMediaState } from './hooks/useUnifiedMediaState';
+import { useMediaState } from './hooks/useMediaState';
 import { useOptimizedFiltering } from './hooks/useOptimizedFiltering';
 
 // Business logic services
@@ -41,29 +38,25 @@ interface ProjectDocumentsSectionProps {
 
 export function ProjectDocumentsSection({
   project,
-  onUpdateProject,
+  onUpdateProject: _onUpdateProject,
   className
 }: ProjectDocumentsSectionProps) {
   const { toast } = useToast();
   const { user } = useSupabaseAuth();
   
   // Unified state management
-  const { state, actions } = useUnifiedMediaState(false);
+  const { state, actions } = useMediaState(false);
   
   // Removed deletedItems state - optimistic updates handle UI removal automatically
 
-  // Data fetching
-  const { data: documents = [] } = useProjectDocuments(project.id);
+  // Consolidated media operations
+  const mediaOps = useMediaOperations({ 
+    projectId: project.id
+  });
   
-  // Mutations for document operations
-  const createDocumentMutation = useCreateDocument();
-  const deleteDocumentMutation = useDeleteDocument();
-  
-  // Mutations for image operations
-  const uploadImagesMutation = useUploadImages();
-  const deleteImageMutation = useDeleteImage();
-  const setProfileImageMutation = useSetProfileImage();
-  const { images: progressImages = [], refetch: refetchProgressImages } = useProjectProgressImages(project.id);
+  // Extract data from consolidated operations
+  const documents = mediaOps.documents.query.data || [];
+  const progressImages = mediaOps.images.query.images || [];
 
   // Optimized data processing with unified state
   const allMediaItems = useAllMediaItems({ project, documents, progressImages });
@@ -91,8 +84,8 @@ export function ProjectDocumentsSection({
   const handleDelete = useCallback(async (item: MediaItem) => {
     try {
       if (item.category === 'progress' || item.category === 'inspiration' || item.category === 'profile') {
-        // Use dedicated image mutation with proper activity logging
-        await deleteImageMutation.mutateAsync({
+        // Use consolidated media operations
+        await mediaOps.images.delete.mutateAsync({
           projectId: project.id,
           imageUrl: item.url,
           imageName: item.name,
@@ -105,8 +98,8 @@ export function ProjectDocumentsSection({
         // CRITICAL FIX: Use optimistic mutation instead of direct Supabase calls
         
         if (item.id) {
-          // Delete document using optimistic mutation (handles both storage and database)
-          await deleteDocumentMutation.mutateAsync(item.id);
+          // Delete document using consolidated operations
+          await mediaOps.documents.delete.mutateAsync(item.id);
           
           toast({
             title: "Document Deleted",
@@ -137,7 +130,7 @@ export function ProjectDocumentsSection({
         variant: "destructive",
       });
     }
-  }, [toast, project.id, deleteDocumentMutation, deleteImageMutation]);
+  }, [toast, project.id, mediaOps]);
 
   const handleSetAsProfile = useCallback(async (imageUrl: string) => {
     try {
@@ -145,8 +138,8 @@ export function ProjectDocumentsSection({
       const mediaItem = allMediaItems.find(item => item.url === imageUrl);
       const imageName = mediaItem?.name || 'image';
       
-      // Use dedicated profile image mutation with proper activity logging
-      await setProfileImageMutation.mutateAsync({
+      // Use consolidated media operations
+      await mediaOps.images.setProfile.mutateAsync({
         projectId: project.id,
         imageUrl,
         imageName
@@ -161,7 +154,7 @@ export function ProjectDocumentsSection({
         variant: "destructive",
       });
     }
-  }, [project.id, allMediaItems, setProfileImageMutation, toast]);
+  }, [project.id, allMediaItems, mediaOps, toast]);
 
   const handleDownload = useCallback(async (item: MediaItem) => {
     try {
@@ -182,12 +175,8 @@ export function ProjectDocumentsSection({
   // Upload handlers using unified state management and dedicated mutations
   const handleInspirationUpload = useCallback(async (results: UploadResult[]) => {
     try {
-      // Use dedicated image upload mutation with proper activity logging
-      await uploadImagesMutation.mutateAsync({
-        projectId: project.id,
-        results,
-        imageType: 'inspiration'
-      });
+      // Use consolidated media operations
+      await mediaOps.upload.uploadImages(results, 'inspiration');
       
       actions.closeUploadModal();
     } catch (_error) {
@@ -197,19 +186,12 @@ export function ProjectDocumentsSection({
         variant: "destructive",
       });
     }
-  }, [actions, toast, uploadImagesMutation, project.id]);
+  }, [actions, toast, mediaOps, project.id]);
 
   const handleProgressUpload = useCallback(async (results: UploadResult[]) => {
     try {
-      // Use dedicated image upload mutation with proper activity logging
-      await uploadImagesMutation.mutateAsync({
-        projectId: project.id,
-        results,
-        imageType: 'progress'
-      });
-      
-      // Also trigger storage refetch for consistency
-      await refetchProgressImages();
+      // Use consolidated media operations
+      await mediaOps.upload.uploadImages(results, 'progress');
       
       actions.closeUploadModal();
     } catch (_error) {
@@ -219,7 +201,7 @@ export function ProjectDocumentsSection({
         variant: "destructive",
       });
     }
-  }, [actions, toast, refetchProgressImages, uploadImagesMutation, project.id]);
+  }, [actions, toast, mediaOps, project.id]);
 
   const handleDocumentUpload = useCallback(async (results: UploadResult[]) => {
     try {
@@ -227,7 +209,7 @@ export function ProjectDocumentsSection({
       // Instead of sequential for-loop, create all documents in parallel with Promise.allSettled
       
       // Determine document type based on file extension
-      const getDocumentType = (fileName: string) => {
+      const _getDocumentType = (fileName: string) => {
         const ext = fileName.toLowerCase().split('.').pop();
         switch (ext) {
           case 'pdf': return 'REPORT';
@@ -249,55 +231,15 @@ export function ProjectDocumentsSection({
 
       // Create document payloads for batch processing using actual storage URLs
       // Use SimplifiedUpload URLs directly but let the database mutation handle conflicts with retry logic
-      const documentCreationPromises = results.map(result => 
-        createDocumentMutation.mutateAsync({
-          name: result.name,
-          document_type: getDocumentType(result.name),
-          project_id: project.id,
-          file_path: result.url, // Use actual SimplifiedUpload URL - mutation handles conflicts
-          file_size: result.size,
-          file_size_bytes: result.size,
-          mime_type: result.type === 'documents' ? 'application/pdf' : 'image/jpeg', // Best guess based on type
-          metadata: {
-            original_filename: result.name,
-            upload_timestamp: result.uploadedAt?.toISOString() || new Date().toISOString(),
-            upload_type: result.type,
-            storage_bucket: 'project-documents'
-          },
-          processing_status: 'completed'
-        })
-      );
-
-      // Execute all document creations in parallel to avoid race conditions
-      const documentResults = await Promise.allSettled(documentCreationPromises);
-      
-      // Check for any failures
-      const failedCount = documentResults.filter(result => result.status === 'rejected').length;
-      const successCount = documentResults.filter(result => result.status === 'fulfilled').length;
+      // Use consolidated media operations for document upload
+      await mediaOps.upload.uploadDocuments(results);
 
       actions.closeUploadModal();
       
-      if (failedCount > 0) {
-        toast({
-          title: "Partial Upload Success",
-          description: `${successCount} documents uploaded successfully, ${failedCount} failed. Check console for details.`,
-          variant: "destructive",
-        });
-        
-        // Log failed results for debugging
-        documentResults.forEach((result, index) => {
-          if (result.status === 'rejected') {
-            console.error(`Document upload failed for ${results[index].name}:`, result.reason);
-          }
-        });
-      } else {
-        toast({
-          title: "Upload Complete",
-          description: `${successCount} document(s) uploaded and saved successfully.`,
-        });
-      }
-
-      // The useProjectDocuments hook will automatically show the new documents via optimistic updates
+      toast({
+        title: "Upload Complete",
+        description: `${results.length} document(s) uploaded and saved successfully.`,
+      });
       
     } catch (error) {
       console.error('Error creating document database entries:', error);
@@ -307,7 +249,7 @@ export function ProjectDocumentsSection({
         variant: "destructive",
       });
     }
-  }, [actions, toast, createDocumentMutation, project.id]);
+  }, [actions, toast, mediaOps, project.id]);
 
   // Service-based permissions (centralized business logic)
   const permissions = {

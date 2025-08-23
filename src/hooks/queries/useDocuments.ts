@@ -4,7 +4,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
-import { uploadProjectDocuments, deleteFile, type DocumentType } from '@/services/unifiedStorageService';
+import { uploadProjectDocuments, deleteFile, type DocumentType } from '@/services/storageService';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { toast } from 'sonner';

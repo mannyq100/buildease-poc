@@ -7,7 +7,7 @@
 import { create } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 import { devtools } from 'zustand/middleware';
-import { uploadFile } from '@/services/unifiedStorageService';
+import { uploadFile } from '@/services/storageService';
 
 // Local image file interface
 export interface LocalImageFile {

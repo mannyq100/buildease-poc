@@ -38,7 +38,7 @@ export * from './ui';
 // Export all validation utilities
 export * from './validation';
 
-// Storage utilities have been consolidated into /services/unifiedStorageService.ts
+// Storage utilities have been consolidated into /services/storageService.ts
 
 // Export logging utilities
 export * from './logger';

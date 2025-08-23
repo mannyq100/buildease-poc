@@ -26,7 +26,7 @@ const initialState: MediaState = {
  * Unified state management hook for media operations
  * Replaces multiple useState hooks with single, optimized state
  */
-export const useUnifiedMediaState = (initialShowUploadOptions = false) => {
+export const useMediaState = (initialShowUploadOptions = false) => {
   const [state, setState] = useState<MediaState>({
     ...initialState,
     ui: {

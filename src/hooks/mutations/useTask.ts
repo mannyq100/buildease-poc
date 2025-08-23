@@ -4,6 +4,7 @@ import { queryKeys } from '@/lib/queryClient';
 import { toast } from 'sonner';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import * as activityService from '@/services/activityService';
+import { logTaskActivity, logActivityAsync } from '@/utils/activityLogging';
 import { useProjectStore } from '@/stores/projectStore';
 
 // Types for task mutations
@@ -152,20 +153,9 @@ export function useCreateTask() {
         });
       }
 
-      // Fire-and-forget activity logging
+      // Fire-and-forget activity logging using standardized utilities
       (async () => {
         try {
-          const { data: auth, error: authError } = await supabase.auth.getUser();
-          
-          if (authError) {
-            console.error('Failed to get auth user for activity logging:', authError);
-            return;
-          }
-          
-          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
-              (auth?.user?.user_metadata?.name as string | undefined) ||
-              (auth?.user?.email as string | undefined);
-          
           // Get phase name for better context
           let phaseContext = '';
           try {
@@ -179,36 +169,23 @@ export function useCreateTask() {
             console.warn('Could not fetch phase name for activity');
           }
           
-          const priorityText = variables.priority && variables.priority !== 'medium' 
-            ? ` (${variables.priority} priority)` 
-            : '';
-          
-          const phaseText = phaseContext ? ` in ${phaseContext}` : '';
-          
-          // Use batching for task creation to reduce noise when multiple tasks are created
-          await activityService.createBatchedActivity({
-            project_id: variables.project_id,
-            activity_type: 'task_create',
-            title: `New task created${phaseText}: ${variables.title}`,
-            description: `Task "${variables.title}"${priorityText} was added${phaseText}`,
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'task',
-            entity_id: newTask.id,
-            metadata: {
-              taskTitle: variables.title,
+          await logTaskActivity(
+            variables.project_id,
+            'task_create',
+            newTask.id,
+            variables.title,
+            {
               description: variables.description,
               phaseId: variables.phase_id,
-              phaseName: phaseContext,
+              phaseText: phaseContext ? ` in ${phaseContext}` : '',
               priority: variables.priority || 'medium',
               status: variables.status || 'pending',
               assignedTo: variables.assigned_to,
+              assigneeName: variables.assigned_to,
               dueDate: variables.due_date,
               estimatedHours: variables.estimated_hours
-            },
-            status: 'success'
-          });
-          
+            }
+          );
         } catch (e) {
           console.error('Failed to create activity for task creation:', e);
         }
@@ -358,101 +335,33 @@ export function useUpdateTask() {
         });
       }
 
-      // Fire-and-forget activity logging
+      // Fire-and-forget activity logging using standardized utilities
       (async () => {
         try {
-          const { data: auth, error: authError } = await supabase.auth.getUser();
-          
-          if (authError) {
-            console.error('Failed to get auth user for activity logging:', authError);
-            return;
-          }
-          
-          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
-              (auth?.user?.user_metadata?.name as string | undefined) ||
-              (auth?.user?.email as string | undefined);
-              
-          // Get phase name for better context
-          let phaseContext = '';
-          try {
-            const { data: phaseData } = await supabase
-              .from('be_phase')
-              .select('name')
-              .eq('id', updatedTask.phase_id)
-              .single();
-            phaseContext = phaseData?.name || '';
-          } catch (e) {
-            console.warn('Could not fetch phase name for activity');
-          }
-          
           // Determine what changed for more specific messaging
           const updatedFields = Object.keys(variables).filter(key => key !== 'id');
-          
-          // Determine activity type and message based on status changes
           const wasCompleted = variables.status === 'completed';
-          const activityType = wasCompleted ? 'task_complete' : 'task_update';
-          
-          let activityTitle = `Task modified: ${updatedTask.title}`;
-          let activityDescription = `Task "${updatedTask.title}" was updated`;
-          
-          if (wasCompleted) {
-            activityTitle = `Task completed: ${updatedTask.title}`;
-            activityDescription = `Task "${updatedTask.title}" has been marked as completed`;
-          } else if (updatedFields.includes('priority')) {
-            activityTitle = `Task priority changed: ${updatedTask.title}`;
-            activityDescription = `"${updatedTask.title}" priority updated to ${updatedTask.priority}`;
-          } else if (updatedFields.includes('due_date')) {
-            const dueDate = updatedTask.due_date ? new Date(updatedTask.due_date).toLocaleDateString() : 'unset';
-            activityTitle = `Task due date updated: ${updatedTask.title}`;
-            activityDescription = `"${updatedTask.title}" due date set to ${dueDate}`;
-          } else if (updatedFields.includes('assigned_to')) {
-            activityTitle = updatedTask.assigned_to 
-              ? `Task assigned: ${updatedTask.title}`
-              : `Task unassigned: ${updatedTask.title}`;
-            activityDescription = updatedTask.assigned_to
-              ? `"${updatedTask.title}" was assigned to a team member`
-              : `"${updatedTask.title}" was unassigned`;
-          } else if (updatedFields.includes('status') && !wasCompleted) {
-            activityTitle = `Task status changed: ${updatedTask.title}`;
-            activityDescription = `"${updatedTask.title}" status changed to ${updatedTask.status}`;
-          }
-          
-          const activityStatus = wasCompleted ? 'success' : 'info';
-              
-          console.log('[ACTIVITY_DEBUG] [useUpdateTask] Calling activityService.createActivity', {
-            project_id: updatedTask.project_id,
-            activity_type: activityType,
-            title: activityTitle,
-            description: activityDescription,
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'task',
-            entity_id: updatedTask.id
-          });
-          
-          const result = await activityService.createActivity({
-            project_id: updatedTask.project_id,
-            activity_type: activityType,
-            title: activityTitle,
-            description: activityDescription,
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'task',
-            entity_id: updatedTask.id,
-            metadata: {
-              taskTitle: updatedTask.title,
-              phaseId: updatedTask.phase_id,
+          const activityType = wasCompleted ? 'task_complete' : 
+                              updatedFields.includes('assigned_to') ? (updatedTask.assigned_to ? 'task_assign' : 'task_unassign') :
+                              updatedFields.includes('status') ? 'task_status_update' : 'task_update';
+
+          await logTaskActivity(
+            updatedTask.project_id,
+            activityType,
+            updatedTask.id,
+            updatedTask.title,
+            {
               priority: updatedTask.priority,
               status: updatedTask.status,
               assignedTo: updatedTask.assigned_to,
+              assigneeName: updatedTask.assigned_to,
               dueDate: updatedTask.due_date,
               estimatedHours: updatedTask.estimated_hours,
               actualHours: updatedTask.actual_hours,
-              updatedFields: Object.keys(variables).filter(key => key !== 'id')
-            },
-            status: activityStatus
-          });
-          
+              updatedFields,
+              changes: updatedFields
+            }
+          );
         } catch (e) {
           console.error('Failed to create activity for task update:', e);
         }
@@ -604,44 +513,21 @@ export function useDeleteTask() {
         queryKey: queryKeys.tasks.detail(taskId) 
       });
 
-      // Fire-and-forget activity logging
+      // Fire-and-forget activity logging using standardized utilities
       if (task?.project_id) {
-        (async () => {
-          try {
-            const { data: auth, error: authError } = await supabase.auth.getUser();
-            
-            if (authError) {
-              console.error('Failed to get auth user for activity logging:', authError);
-              return;
-            }
-            
-            const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
-                (auth?.user?.user_metadata?.name as string | undefined) ||
-                (auth?.user?.email as string | undefined);
-                
-            const taskTitle = (task as any)?.title || 'Unknown Task';
-            
-            const result = await activityService.createActivity({
-              project_id: task.project_id,
-              activity_type: 'task_delete',
-              title: `Task deleted: ${taskTitle}`,
-              description: `Task "${taskTitle}" was removed from the project`,
-              user_id: auth?.user?.id,
-              user_name: userName,
-              entity_type: 'task',
-              entity_id: taskId,
-              metadata: {
-                taskTitle,
-                phaseId: task.phase_id,
-                wasAssignedTo: task.assigned_to
-              },
-              status: 'warning'
-            });
-            
-          } catch (e) {
-            console.error('Failed to create activity for task deletion:', e);
+        const taskTitle = (task as any)?.title || 'Unknown Task';
+        logActivityAsync({
+          projectId: task.project_id,
+          activityType: 'task_delete',
+          entityType: 'task',
+          entityId: taskId,
+          entityName: taskTitle,
+          metadata: {
+            taskTitle,
+            phaseId: task.phase_id,
+            wasAssignedTo: task.assigned_to
           }
-        })();
+        });
       }
 
       toast.success('Task deleted successfully');
@@ -750,61 +636,22 @@ export function useUpdateTaskStatus() {
         });
       }
       
-      // Fire-and-forget activity logging
+      // Fire-and-forget activity logging using standardized utilities
       (async () => {
         try {
-          const { data: auth, error: authError } = await supabase.auth.getUser();
-          
-          if (authError) {
-            console.error('Failed to get auth user for activity logging:', authError);
-            return;
-          }
-          
-          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
-              (auth?.user?.user_metadata?.name as string | undefined) ||
-              (auth?.user?.email as string | undefined);
-              
-          // Determine activity type and message based on status
           const wasCompleted = variables.status === 'completed';
           const activityType = wasCompleted ? 'task_complete' : 'task_status_update';
           
-          let activityTitle = `Task status changed: ${updatedTask.title}`;
-          let activityDescription = `"${updatedTask.title}" status changed to ${variables.status}`;
-          
-          if (wasCompleted) {
-            activityTitle = `Task completed: ${updatedTask.title}`;
-            activityDescription = `Task "${updatedTask.title}" has been completed`;
-          } else if (variables.status === 'in-progress') {
-            activityTitle = `Task started: ${updatedTask.title}`;
-            activityDescription = `Work began on "${updatedTask.title}"`;
-          } else if (variables.status === 'blocked') {
-            activityTitle = `Task blocked: ${updatedTask.title}`;
-            activityDescription = `"${updatedTask.title}" has been blocked`;
-          } else if (variables.status === 'cancelled') {
-            activityTitle = `Task cancelled: ${updatedTask.title}`;
-            activityDescription = `"${updatedTask.title}" was cancelled`;
-          }
-          
-          const activityStatus = wasCompleted ? 'success' : 
-                               variables.status === 'blocked' || variables.status === 'cancelled' ? 'warning' : 'info';
-          
-          const result = await activityService.createActivity({
-            project_id: updatedTask.project_id,
-            activity_type: activityType,
-            title: activityTitle,
-            description: activityDescription,
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'task',
-            entity_id: updatedTask.id,
-            metadata: {
-              taskTitle: updatedTask.title,
-              phaseId: updatedTask.phase_id,
+          await logTaskActivity(
+            updatedTask.project_id,
+            activityType,
+            updatedTask.id,
+            updatedTask.title,
+            {
+              status: variables.status,
               newStatus: variables.status
-            },
-            status: activityStatus
-          });
-          
+            }
+          );
         } catch (e) {
           console.error('Failed to create activity for task status update:', e);
         }
@@ -935,51 +782,20 @@ export function useAssignTask() {
         });
       }
 
-      // Fire-and-forget activity logging
-      (async () => {
-        try {
-          const { data: auth, error: authError } = await supabase.auth.getUser();
-          
-          if (authError) {
-            console.error('Failed to get auth user for activity logging:', authError);
-            return;
-          }
-          
-          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
-              (auth?.user?.user_metadata?.name as string | undefined) ||
-              (auth?.user?.email as string | undefined);
-              
-          const isAssignment = !!variables.userId;
-          const activityType = isAssignment ? 'task_assign' : 'task_unassign';
-          const activityTitle = isAssignment 
-            ? `Task assigned: ${updatedTask.title}` 
-            : `Task unassigned: ${updatedTask.title}`;
-          const activityDescription = isAssignment
-            ? `Task "${updatedTask.title}" was assigned to a team member`
-            : `Task "${updatedTask.title}" was unassigned`;
-          
-          const result = await activityService.createActivity({
-            project_id: updatedTask.project_id,
-            activity_type: activityType,
-            title: activityTitle,
-            description: activityDescription,
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'task',
-            entity_id: updatedTask.id,
-            metadata: {
-              taskTitle: updatedTask.title,
-              phaseId: updatedTask.phase_id,
-              assignedTo: updatedTask.assigned_to,
-              isAssignment
-            },
-            status: 'info'
-          });
-          
-        } catch (e) {
-          console.error('Failed to create activity for task assignment:', e);
+      // Fire-and-forget activity logging using standardized utilities
+      logActivityAsync({
+        projectId: updatedTask.project_id,
+        activityType: variables.userId ? 'task_assign' : 'task_unassign',
+        entityType: 'task',
+        entityId: updatedTask.id,
+        entityName: updatedTask.title,
+        metadata: {
+          taskTitle: updatedTask.title,
+          phaseId: updatedTask.phase_id,
+          assignedTo: updatedTask.assigned_to,
+          isAssignment: !!variables.userId
         }
-      })();
+      });
 
       toast.success(variables.userId ? 'Task assigned successfully' : 'Task unassigned successfully');
     },

@@ -9,7 +9,7 @@ import { Plus, TrendingUp, AlertCircle } from 'lucide-react';
 import { cn } from '@/utils/core/ui';
 import React from 'react';
 import { formatCurrency } from '@/utils/core/format';
-import { useConsolidatedProjectData } from '@/hooks/queries/useConsolidatedProjectData';
+import { useProjectData } from '@/hooks/queries/useProjectData';
 
 interface BudgetOverviewCardProps {
   project: {
@@ -26,7 +26,7 @@ export function BudgetOverviewCard({
   className
 }: BudgetOverviewCardProps) {
   // Fetch optimized financial data from project_financial_summary view
-  const { data: projectData, isLoading, error } = useConsolidatedProjectData(project.id);
+  const { data: projectData, isLoading, error } = useProjectData(project.id);
   
   
   // Extract financial metrics from optimized data

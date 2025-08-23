@@ -91,7 +91,7 @@ const BUCKET_CONFIGS = {
     allowedTypes: FILE_TYPE_PRESETS.documents,
     maxSizeMB: 50,
     requiresProject: true,
-    pathStructure: '{userId}/{projectId}/{filename}'
+    pathStructure: '{projectId}/documents/{filename}'
   }
 } as const;
 
@@ -153,6 +153,8 @@ export const generateFilePath = (
       return `${userId}/${fileName}`;
     case '{userId}/{projectId}/{filename}':
       return `${userId}/${projectId}/${fileName}`;
+    case '{projectId}/documents/{filename}':
+      return `${projectId}/documents/${fileName}`;
     default:
       return `${userId}/${fileName}`;
   }
@@ -311,7 +313,6 @@ const checkFilePathExists = async (filePath: string): Promise<boolean> => {
  * Generate unique file path that doesn't conflict with database
  */
 const generateUniqueFilePathForDocument = async (
-  userId: string, 
   projectId: string, 
   originalName: string
 ): Promise<string> => {
@@ -320,7 +321,7 @@ const generateUniqueFilePathForDocument = async (
   
   while (attempts < maxAttempts) {
     const fileName = generateUniqueFileName(originalName);
-    const filePath = `${userId}/${projectId}/${fileName}`;
+    const filePath = `${projectId}/documents/${fileName}`;
     
     const exists = await checkFilePathExists(filePath);
     if (!exists) {
@@ -333,7 +334,7 @@ const generateUniqueFilePathForDocument = async (
   
   // Fallback with additional entropy
   const fallbackFileName = generateUniqueFileName(`${originalName}_${crypto.randomUUID().split('-')[0]}`);
-  return `${userId}/${projectId}/${fallbackFileName}`;
+  return `${projectId}/documents/${fallbackFileName}`;
 };
 
 /**

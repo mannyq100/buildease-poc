@@ -42,7 +42,7 @@ export interface ConsolidatedExpense {
   receipt_url?: string;
 }
 
-// Single, comprehensive shape returned by useConsolidatedProjectData
+// Single, comprehensive shape returned by useProjectData
 // Base project fields from Project, but replace conflicting collections
 type BaseProjectForConsolidated = Omit<Project, 'phases' | 'teamMembers' | 'activities'>;
 

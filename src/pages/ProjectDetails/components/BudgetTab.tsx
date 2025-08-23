@@ -9,7 +9,7 @@ import { cn } from '@/utils/core/ui';
 import { formatCurrency } from '@/utils/core/format';
 import type { ProjectBudget } from '@/types/project';
 import { TabHeader } from './TabHeader';
-import { useConsolidatedProjectData } from '@/hooks/queries/useConsolidatedProjectData';
+import { useProjectData } from '@/hooks/queries/useProjectData';
 
 interface BudgetTabProps {
   projectId: string;
@@ -25,7 +25,7 @@ export function BudgetTab({
   className 
 }: BudgetTabProps) {
   // Get consolidated project data including category totals
-  const { data: consolidatedData } = useConsolidatedProjectData(projectId);
+  const { data: consolidatedData } = useProjectData(projectId);
   
   // Normalize budget data to handle both number and ProjectBudget types
   const getBudgetData = () => {

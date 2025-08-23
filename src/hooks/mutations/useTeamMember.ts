@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { queryKeys } from '@/lib/queryClient';
 import { toast } from 'sonner';
 import * as activityService from '@/services/activityService';
+import { logActivity } from '@/utils/activityLogging';
 import { useProjectStore } from '@/stores/projectStore';
 
 // Types for team member mutations
@@ -183,74 +184,25 @@ export function useCreateTeamMember() {
         queryKey: ['project-consolidated', variables.project_id]
       });
       
-      // Fire-and-forget activity logging with comprehensive debug logging
-      console.log('[ACTIVITY_DEBUG] [useCreateTeamMember] Starting activity logging for team member creation');
-      
+      // Fire-and-forget activity logging with standardized utilities
       (async () => {
         try {
-          console.log('[ACTIVITY_DEBUG] [useCreateTeamMember] Fetching auth user');
-          const { data: auth, error: authError } = await supabase.auth.getUser();
-          
-          if (authError) {
-            console.error('[ACTIVITY_DEBUG] [useCreateTeamMember] Auth error:', authError);
-            return;
-          }
-          
-          console.log('[ACTIVITY_DEBUG] [useCreateTeamMember] Auth user fetched successfully', {
-            userId: auth?.user?.id,
-            hasUser: !!auth?.user,
-            userMetadata: auth?.user?.user_metadata
-          });
-          
-          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
-              (auth?.user?.user_metadata?.name as string | undefined) ||
-              (auth?.user?.email as string | undefined);
-              
-          console.log('[ACTIVITY_DEBUG] [useCreateTeamMember] Calling activityService.createActivity', {
-            project_id: variables.project_id,
-            activity_type: 'team_member_add',
-            title: `Team member added: ${variables.name}`,
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'team_member',
-            entity_id: newMember.id
-          });
-          
-          const result = await activityService.createActivity({
-            project_id: variables.project_id,
-            activity_type: 'team_member_add',
-            title: `Team member added: ${variables.name}`,
-            description: `${variables.name} joined as ${variables.role}`,
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'team_member',
-            entity_id: newMember.id,
+          await logActivity({
+            projectId: variables.project_id,
+            activityType: 'team_member_add',
+            entityType: 'team_member',
+            entityId: newMember.id,
+            entityName: variables.name,
             metadata: {
               memberName: variables.name,
               role: variables.role,
               status: variables.status || 'active',
               email: variables.email,
               phone: variables.phone
-            },
-            status: 'success'
+            }
           });
-          
-          console.log('[ACTIVITY_DEBUG] [useCreateTeamMember] Activity created successfully', {
-            success: !!result,
-            activityId: result?.id,
-            result
-          });
-          
         } catch (e) {
-          console.error('[ACTIVITY_DEBUG] [useCreateTeamMember] Activity logging failed:', {
-            error: e,
-            errorMessage: e instanceof Error ? e.message : String(e),
-            errorStack: e instanceof Error ? e.stack : undefined,
-            memberId: newMember.id,
-            memberName: variables.name,
-            projectId: variables.project_id,
-            timestamp: new Date().toISOString()
-          });
+          console.error('Failed to log team member creation activity:', e);
         }
       })();
       
@@ -429,78 +381,29 @@ export function useUpdateTeamMember() {
         });
       }
       
-      // Fire-and-forget activity logging with comprehensive debug logging
-      console.log('[ACTIVITY_DEBUG] [useUpdateTeamMember] Starting activity logging for team member update');
-      
+      // Fire-and-forget activity logging with standardized utilities
       (async () => {
         try {
-          console.log('[ACTIVITY_DEBUG] [useUpdateTeamMember] Fetching auth user');
-          const { data: auth, error: authError } = await supabase.auth.getUser();
-          
-          if (authError) {
-            console.error('[ACTIVITY_DEBUG] [useUpdateTeamMember] Auth error:', authError);
-            return;
-          }
-          
-          console.log('[ACTIVITY_DEBUG] [useUpdateTeamMember] Auth user fetched successfully', {
-            userId: auth?.user?.id,
-            hasUser: !!auth?.user,
-            userMetadata: auth?.user?.user_metadata
-          });
-          
           if (!projectId) {
-            console.warn('[ACTIVITY_DEBUG] [useUpdateTeamMember] No projectId available for activity logging');
+            console.warn('No projectId available for activity logging');
             return;
           }
           
-          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
-              (auth?.user?.user_metadata?.name as string | undefined) ||
-              (auth?.user?.email as string | undefined);
-              
-          console.log('[ACTIVITY_DEBUG] [useUpdateTeamMember] Calling activityService.createActivity', {
-            project_id: projectId,
-            activity_type: 'team_member_update',
-            title: `Team member updated: ${updatedMember.name}`,
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'team_member',
-            entity_id: updatedMember.id
-          });
-          
-          const result = await activityService.createActivity({
-            project_id: projectId,
-            activity_type: 'team_member_update',
-            title: `Team member updated: ${updatedMember.name}`,
-            description: `Team member information was updated`,
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'team_member',
-            entity_id: updatedMember.id,
+          await logActivity({
+            projectId,
+            activityType: 'team_member_update',
+            entityType: 'team_member',
+            entityId: updatedMember.id,
+            entityName: updatedMember.name,
             metadata: {
               memberName: updatedMember.name,
               role: updatedMember.role,
               status: updatedMember.status,
               updates: variables
-            },
-            status: 'info'
+            }
           });
-          
-          console.log('[ACTIVITY_DEBUG] [useUpdateTeamMember] Activity created successfully', {
-            success: !!result,
-            activityId: result?.id,
-            result
-          });
-          
         } catch (e) {
-          console.error('[ACTIVITY_DEBUG] [useUpdateTeamMember] Activity logging failed:', {
-            error: e,
-            errorMessage: e instanceof Error ? e.message : String(e),
-            errorStack: e instanceof Error ? e.stack : undefined,
-            memberId: updatedMember.id,
-            memberName: updatedMember.name,
-            projectId,
-            timestamp: new Date().toISOString()
-          });
+          console.error('Failed to log team member update activity:', e);
         }
       })();
       
@@ -619,67 +522,19 @@ export function useDeleteTeamMember() {
         queryKey: ['project-consolidated', result.projectId]
       });
       
-      // Fire-and-forget activity logging with comprehensive debug logging
-      console.log('[ACTIVITY_DEBUG] [useDeleteTeamMember] Starting activity logging for team member deletion');
-      
+      // Fire-and-forget activity logging with standardized utilities
       (async () => {
         try {
-          console.log('[ACTIVITY_DEBUG] [useDeleteTeamMember] Fetching auth user');
-          const { data: auth, error: authError } = await supabase.auth.getUser();
-          
-          if (authError) {
-            console.error('[ACTIVITY_DEBUG] [useDeleteTeamMember] Auth error:', authError);
-            return;
-          }
-          
-          console.log('[ACTIVITY_DEBUG] [useDeleteTeamMember] Auth user fetched successfully', {
-            userId: auth?.user?.id,
-            hasUser: !!auth?.user,
-            userMetadata: auth?.user?.user_metadata
-          });
-          
-          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
-              (auth?.user?.user_metadata?.name as string | undefined) ||
-              (auth?.user?.email as string | undefined);
-              
-          console.log('[ACTIVITY_DEBUG] [useDeleteTeamMember] Calling activityService.createActivity', {
-            project_id: result.projectId,
-            activity_type: 'team_member_remove',
-            title: `Team member removed: ${result.memberId}`,
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'team_member',
-            entity_id: result.memberId
-          });
-          
-          const activityResult = await activityService.createActivity({
-            project_id: result.projectId,
-            activity_type: 'team_member_remove',
-            title: `Team member removed: ${result.memberId}`,
-            description: 'Team member was removed from the project',
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'team_member',
-            entity_id: result.memberId,
-            metadata: { memberId: result.memberId },
-            status: 'warning'
-          });
-          
-          console.log('[ACTIVITY_DEBUG] [useDeleteTeamMember] Activity created successfully', {
-            success: !!activityResult,
-            activityId: activityResult?.id,
-            result: activityResult
-          });
-          
-        } catch (e) {
-          console.error('[ACTIVITY_DEBUG] [useDeleteTeamMember] Activity logging failed:', {
-            error: e,
-            errorMessage: e instanceof Error ? e.message : String(e),
-            errorStack: e instanceof Error ? e.stack : undefined,
-            memberId: result.memberId,
+          await logActivity({
             projectId: result.projectId,
-            timestamp: new Date().toISOString()
+            activityType: 'team_member_remove',
+            entityType: 'team_member',
+            entityId: result.memberId,
+            entityName: 'Team Member',
+            metadata: { memberId: result.memberId }
           });
+        } catch (e) {
+          console.error('Failed to log team member deletion activity:', e);
         }
       })();
       

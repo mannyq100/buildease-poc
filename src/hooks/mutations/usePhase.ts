@@ -10,6 +10,7 @@ import { queryKeys } from '@/lib/queryClient';
 import { toast } from 'sonner';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import * as activityService from '@/services/activityService';
+import { logActivity } from '@/utils/activityLogging';
 import { PhaseStatusDB, PhaseStatusUI, toDbPhaseStatus, toUiPhaseStatus, type PhaseStatus } from '@/utils/core/phaseStatus';
 import { useProjectStore } from '@/stores/projectStore';
 
@@ -336,35 +337,27 @@ export function useCreatePhase(options?: {
 
       toast.success('Phase created successfully');
 
-      // Track activity
+      // Track activity using standardized logging
       const phaseName = 'name' in newPhase ? newPhase.name : (newPhase as PhaseResponse).name;
       const phaseId = 'id' in newPhase ? newPhase.id : (newPhase as PhaseResponse).id;
       
       try {
-        const userName = user?.user_metadata
-          ? [user.user_metadata.first_name, user.user_metadata.last_name].filter(Boolean).join(' ') || undefined
-          : undefined;
-        
-        const result = await activityService.createActivity({
-          project_id: projectId,
-          activity_type: 'phase_create',
-          title: `New phase created: ${phaseName}`,
-          description: `Project phase "${phaseName}" was added to the project`,
-          user_id: user?.id,
-          user_name: userName,
-          entity_type: 'phase',
-          entity_id: phaseId,
+        await logActivity({
+          projectId,
+          activityType: 'phase_create',
+          entityType: 'phase',
+          entityId: phaseId,
+          entityName: phaseName,
+          userId: user?.id,
+          userName: user?.user_metadata ? [user.user_metadata.first_name, user.user_metadata.last_name].filter(Boolean).join(' ') || undefined : undefined,
           metadata: {
-            phaseName,
             category: 'category' in newPhase ? newPhase.category : (newPhase as PhaseResponse).category,
             status: 'status' in newPhase ? newPhase.status : (newPhase as PhaseResponse).status,
             timeline: uiFormat 
               ? { planned_start: (newPhase as { start_date: string }).start_date, planned_end: (newPhase as { end_date: string }).end_date }
               : (newPhase as PhaseResponse).timeline
-          },
-          status: 'success'
+          }
         });
-        
       } catch (err) {
         console.error('Failed to create activity for phase creation:', err);
       }
@@ -506,46 +499,29 @@ export function useUpdatePhase(options?: {
 
       toast.success('Phase updated successfully');
 
-      // Enhanced activity tracking
+      // Enhanced activity tracking using standardized logging
       const phaseName = 'name' in updatedPhase ? updatedPhase.name : (updatedPhase as PhaseResponse).name;
       const wasCompleted = 'status' in variables ? variables.status === 'COMPLETED' || variables.status === 'completed' : false;
       const hasTimelineChange = 'timeline' in variables ? !!(variables.timeline && Object.keys(variables.timeline).length > 0) : false;
       
       try {
-        const title = wasCompleted
-          ? `Phase completed: ${phaseName}`
-          : hasTimelineChange
-          ? `Phase timeline updated: ${phaseName}`
-          : `Phase updated: ${phaseName}`;
-
-        const description = wasCompleted
-          ? `Project phase "${phaseName}" was marked as completed`
-          : hasTimelineChange
-          ? `Timeline dates were updated for phase "${phaseName}"`
-          : `Project phase "${phaseName}" was modified`;
-          
-        const userName = user?.user_metadata
-          ? [user.user_metadata.first_name, user.user_metadata.last_name].filter(Boolean).join(' ') || undefined
-          : undefined;
-        const activityStatus = wasCompleted ? 'success' : 'info';
-
-        const result = await activityService.createActivity({
-          project_id: projectId,
-          activity_type: 'phase_update',
-          title,
-          description,
-          user_id: user?.id,
-          user_name: userName,
-          entity_type: 'phase',
-          entity_id: phaseId,
-          metadata: {
-            phaseName,
-            status: 'status' in variables ? variables.status : undefined,
-            updates: variables
-          },
-          status: activityStatus
-        });
+        const activityType = wasCompleted ? 'phase_complete' : 'phase_update';
         
+        await logActivity({
+          projectId,
+          activityType,
+          entityType: 'phase',
+          entityId: phaseId,
+          entityName: phaseName,
+          userId: user?.id,
+          userName: user?.user_metadata ? [user.user_metadata.first_name, user.user_metadata.last_name].filter(Boolean).join(' ') || undefined : undefined,
+          metadata: {
+            status: 'status' in variables ? variables.status : undefined,
+            updates: variables,
+            wasCompleted,
+            hasTimelineChange
+          }
+        });
       } catch (err) {
         console.error('Failed to create activity for phase update:', err);
       }
@@ -679,26 +655,19 @@ export function useDeletePhase(options?: { invalidateTimeline?: boolean }) {
 
       toast.success('Phase deleted successfully');
 
-      // Track activity
+      // Track activity using standardized logging
       try {
         if (projectId) {
-          const userName = user?.user_metadata
-            ? [user.user_metadata.first_name, user.user_metadata.last_name].filter(Boolean).join(' ') || undefined
-            : undefined;
-          
-          const result = await activityService.createActivity({
-            project_id: projectId,
-            activity_type: 'phase_delete',
-            title: `Phase removed: ${phaseName || phaseId}`,
-            description: `Project phase "${phaseName || 'Unknown Phase'}" was deleted`,
-            user_id: user?.id,
-            user_name: userName,
-            entity_type: 'phase',
-            entity_id: phaseId,
-            metadata: { phaseId, phaseName: phaseName || null },
-            status: 'warning'
+          await logActivity({
+            projectId,
+            activityType: 'phase_delete',
+            entityType: 'phase',
+            entityId: phaseId,
+            entityName: phaseName || 'Unknown Phase',
+            userId: user?.id,
+            userName: user?.user_metadata ? [user.user_metadata.first_name, user.user_metadata.last_name].filter(Boolean).join(' ') || undefined : undefined,
+            metadata: { phaseId, phaseName: phaseName || null }
           });
-          
         }
       } catch (err) {
         console.error('Failed to create activity for phase deletion:', err);
@@ -756,25 +725,19 @@ export function useReorderPhases() {
 
       toast.success('Phases reordered successfully');
 
-      // Track activity
+      // Track activity using standardized logging
       try {
-        const userName = user?.user_metadata
-          ? [user.user_metadata.first_name, user.user_metadata.last_name].filter(Boolean).join(' ') || undefined
-          : undefined;
-        
-        await activityService.createActivity({
-          project_id: variables.projectId,
-          activity_type: 'phase_update',
-          title: 'Phases reordered',
-          description: 'The order of phases was updated',
-          user_id: user?.id,
-          user_name: userName,
-          entity_type: 'phase',
-          entity_id: undefined,
-          metadata: { orders: variables.phaseOrders },
-          status: 'info'
+        await logActivity({
+          projectId: variables.projectId,
+          activityType: 'phase_update',
+          entityType: 'phase',
+          entityName: 'Phase Order',
+          userId: user?.id,
+          userName: user?.user_metadata ? [user.user_metadata.first_name, user.user_metadata.last_name].filter(Boolean).join(' ') || undefined : undefined,
+          customTitle: 'Phases reordered',
+          customDescription: 'The order of phases was updated',
+          metadata: { orders: variables.phaseOrders }
         });
-        
       } catch (err) {
         console.error('[ACTIVITY_DEBUG] Failed to create activity for phase reorder:', {
           error: err,

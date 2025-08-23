@@ -18,7 +18,7 @@ import {
 } from '../LazyComponents';
 import { TodaysFocusCard } from '../TodaysFocusCard';
 import { RecentUpdatesCard } from '../Updates/RecentUpdatesCard';
-import { UnifiedProjectHeader } from '../ProjectHeader/UnifiedProjectHeader';
+import { ProjectHeader } from '../ProjectHeader';
 import { ModalManager } from '../Modals/ModalManager';
 import { useProjectDetailsState } from '../../hooks/useProjectDetailsState';
 import type { TaskItem, ProjectUpdateFormData } from '../../types';
@@ -213,7 +213,7 @@ export function ProjectLayout({
       <div className="container mx-auto px-4 py-2 md:py-6  md:space-y-6">
         {/* Unified Project Header + Recent Updates */}
         <div className="space-y-3 md:space-y-4">
-          <UnifiedProjectHeader
+          <ProjectHeader
             project={project}
             phases={phases}
             activeTeamMembers={teamMembers || []}

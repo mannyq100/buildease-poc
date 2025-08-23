@@ -5,7 +5,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { uploadFile } from '@/services/unifiedStorageService';
+import { uploadFile } from '@/services/storageService';
 import { 
   UploadFile, 
   UploadType, 
@@ -16,7 +16,7 @@ import {
 import {
   createPreviewUrl,
   revokePreviewUrl as cleanupPreviewUrl
-} from '@/services/unifiedStorageService';
+} from '@/services/storageService';
 import {
   validateFile,
   generateUploadId,

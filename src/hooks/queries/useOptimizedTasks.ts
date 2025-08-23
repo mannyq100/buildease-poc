@@ -8,7 +8,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { queryKeys } from '@/lib/queryClient';
-import { useConsolidatedProjectData } from './useConsolidatedProjectData';
+import { useProjectData } from './useProjectData';
 import { normalizeTaskData } from '@/utils/core/dataNormalization';
 
 /**
@@ -76,7 +76,7 @@ export function useAllProjectTasks(projectId: string) {
  */
 export function useOptimizedPhaseTasks(phaseId: string, projectId?: string) {
   // Try to use consolidated data first
-  const consolidatedQuery = useConsolidatedProjectData(projectId || '');
+  const consolidatedQuery = useProjectData(projectId || '');
   
   // Fallback to individual query if no project ID or consolidated data fails
   const fallbackQuery = useQuery({
@@ -150,7 +150,7 @@ export function useOptimizedPhaseTasks(phaseId: string, projectId?: string) {
  * Pre-computed task metrics to avoid repeated calculations
  */
 export function useProjectTasksByPhase(projectId: string) {
-  const consolidatedQuery = useConsolidatedProjectData(projectId);
+  const consolidatedQuery = useProjectData(projectId);
 
   const groupedTasks = useMemo(() => {
     if (!consolidatedQuery.data) return {};
@@ -246,7 +246,7 @@ export function useFilteredProjectTasks(
     phaseId?: string;
   } = {}
 ) {
-  const consolidatedQuery = useConsolidatedProjectData(projectId);
+  const consolidatedQuery = useProjectData(projectId);
 
   const filteredTasks = useMemo(() => {
     if (!consolidatedQuery.data) return [];

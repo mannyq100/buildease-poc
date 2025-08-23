@@ -1,5 +1,5 @@
 /**
- * UnifiedProjectHeader Component
+ * ProjectHeader Component
  * 
  * A clean, professional project header optimized for construction management.
  * Focuses on essential information with clear visual hierarchy and intuitive actions.
@@ -15,10 +15,10 @@ import {
 } from 'lucide-react';
 import type { Project, ProjectStatus, TeamMember } from '@/types/project';
 import type { ProjectPhase } from '@/types/projectDetails';
-import { useConsolidatedProjectData } from '@/hooks/queries/useConsolidatedProjectData';
+import { useProjectData } from '@/hooks/queries/useProjectData';
 import { ProCard } from '@/components/ui/ProCard';
 
-export interface UnifiedProjectHeaderProps {
+export interface ProjectHeaderProps {
   project: Project;
   phases?: ProjectPhase[];
   activeTeamMembers?: TeamMember[];
@@ -60,7 +60,7 @@ const getHealthConfig = (health: string) => {
 
 
 
-function UnifiedProjectHeader({
+function ProjectHeader({
   project,
   phases: _phases = [],
   activeTeamMembers: _activeTeamMembers = [],
@@ -70,8 +70,8 @@ function UnifiedProjectHeader({
   onNavigateToDocuments,
   onScrollToSection,
   onUpdateProject,
-}: UnifiedProjectHeaderProps) {
-  const { data: consolidated, error } = useConsolidatedProjectData(project.id);
+}: ProjectHeaderProps) {
+  const { data: consolidated, error } = useProjectData(project.id);
 
   // Process data once with useMemo - optimized to use view data directly
   const metrics = useMemo(() => {
@@ -137,7 +137,7 @@ function UnifiedProjectHeader({
 
   // Show loading or error state if needed
   if (error) {
-    console.warn('UnifiedProjectHeader: Failed to load consolidated data, using fallback data:', error);
+    console.warn('ProjectHeader: Failed to load consolidated data, using fallback data:', error);
   }
 
 
@@ -387,7 +387,7 @@ function UnifiedProjectHeader({
 }
 
 // Export memoized component for performance optimization
-export default React.memo(UnifiedProjectHeader);
+export default React.memo(ProjectHeader);
 
 // Named export for compatibility
-export { UnifiedProjectHeader };
+export { ProjectHeader };

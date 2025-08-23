@@ -8,6 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { TABLE_NAMES } from '@/types/database';
 import * as activityService from '@/services/activityService';
+import { logActivityAsync } from '@/utils/activityLogging';
 import { toast } from 'sonner';
 import { useProjectStore } from '@/stores/projectStore';
 import type { Project } from '@/types/project';
@@ -150,35 +151,20 @@ export function useUploadImages() {
       
       toast.success(`${variables.results.length} ${variables.imageType} image(s) uploaded successfully`);
 
-      // Fire-and-forget activity log for image upload
-      (async () => {
-        try {
-          const { data: auth } = await supabase.auth.getUser();
-          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
-            (auth?.user?.user_metadata?.name as string | undefined) ||
-            (auth?.user?.email as string | undefined);
-
-          await activityService.createActivity({
-            project_id: updatedProject.id,
-            activity_type: 'document_upload', // Using existing type for media operations
-            title: `${variables.imageType === 'inspiration' ? 'Inspiration' : 'Progress'} images uploaded`,
-            description: `${variables.results.length} ${variables.imageType} image(s) uploaded: ${variables.results.map(r => r.name).join(', ')}`,
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'project',
-            entity_id: updatedProject.id,
-            metadata: {
-              imageType: variables.imageType,
-              imageCount: variables.results.length,
-              imageNames: variables.results.map(r => r.name),
-              totalSize: variables.results.reduce((sum, r) => sum + r.size, 0)
-            },
-            status: 'success'
-          });
-        } catch (e) {
-          console.error(`Activity log (${variables.imageType}_upload) failed:`, e);
+      // Fire-and-forget activity log for image upload using standardized utilities
+      logActivityAsync({
+        projectId: updatedProject.id,
+        activityType: 'document_upload',
+        entityType: 'document',
+        entityName: `${variables.imageType} images`,
+        metadata: {
+          imageType: variables.imageType,
+          imageCount: variables.results.length,
+          imageNames: variables.results.map(r => r.name),
+          totalSize: variables.results.reduce((sum, r) => sum + r.size, 0),
+          fileTypeText: variables.imageType === 'inspiration' ? 'Inspiration images' : 'Progress images'
         }
-      })();
+      });
     }
   });
 }
@@ -315,34 +301,19 @@ export function useDeleteImage() {
       
       toast.success(`${variables.imageType === 'inspiration' ? 'Inspiration' : variables.imageType === 'progress' ? 'Progress' : 'Profile'} image deleted successfully`);
 
-      // Fire-and-forget activity log for image deletion
-      (async () => {
-        try {
-          const { data: auth } = await supabase.auth.getUser();
-          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
-            (auth?.user?.user_metadata?.name as string | undefined) ||
-            (auth?.user?.email as string | undefined);
-
-          await activityService.createActivity({
-            project_id: updatedProject.id,
-            activity_type: 'document_upload', // Using existing type for media operations
-            title: `${variables.imageType === 'inspiration' ? 'Inspiration' : variables.imageType === 'progress' ? 'Progress' : 'Profile'} image deleted`,
-            description: `Image "${variables.imageName}" was deleted from ${variables.imageType} images`,
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'project',
-            entity_id: updatedProject.id,
-            metadata: {
-              imageType: variables.imageType,
-              imageName: variables.imageName,
-              imageUrl: variables.imageUrl
-            },
-            status: 'info'
-          });
-        } catch (e) {
-          console.error(`Activity log (${variables.imageType}_delete) failed:`, e);
+      // Fire-and-forget activity log for image deletion using standardized utilities
+      logActivityAsync({
+        projectId: updatedProject.id,
+        activityType: 'document_delete',
+        entityType: 'document',
+        entityName: variables.imageName,
+        metadata: {
+          imageType: variables.imageType,
+          imageName: variables.imageName,
+          imageUrl: variables.imageUrl,
+          fileTypeText: variables.imageType === 'inspiration' ? 'Inspiration image' : variables.imageType === 'progress' ? 'Progress image' : 'Profile image'
         }
-      })();
+      });
     }
   });
 }
@@ -432,34 +403,20 @@ export function useSetProfileImage() {
       
       toast.success('Profile image updated successfully');
 
-      // Fire-and-forget activity log for profile image update
-      (async () => {
-        try {
-          const { data: auth } = await supabase.auth.getUser();
-          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
-            (auth?.user?.user_metadata?.name as string | undefined) ||
-            (auth?.user?.email as string | undefined);
-
-          await activityService.createActivity({
-            project_id: updatedProject.id,
-            activity_type: 'document_upload', // Using existing type for media operations
-            title: 'Profile image updated',
-            description: `Project profile image changed to "${variables.imageName}"`,
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'project',
-            entity_id: updatedProject.id,
-            metadata: {
-              imageType: 'profile',
-              imageName: variables.imageName,
-              imageUrl: variables.imageUrl
-            },
-            status: 'success'
-          });
-        } catch (e) {
-          console.error('Activity log (set_profile_image) failed:', e);
+      // Fire-and-forget activity log for profile image update using standardized utilities
+      logActivityAsync({
+        projectId: updatedProject.id,
+        activityType: 'document_update',
+        entityType: 'document',
+        entityName: 'Profile Image',
+        customTitle: 'Profile image updated',
+        customDescription: `Project profile image changed to "${variables.imageName}"`,
+        metadata: {
+          imageType: 'profile',
+          imageName: variables.imageName,
+          imageUrl: variables.imageUrl
         }
-      })();
+      });
     }
   });
 }

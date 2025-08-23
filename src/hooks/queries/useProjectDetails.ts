@@ -1,6 +1,6 @@
 import { 
-  useConsolidatedProjectData 
-} from './useConsolidatedProjectData';
+  useProjectData 
+} from './useProjectData';
 
 /**
  * Hook to get comprehensive project details data for ProjectDetails page
@@ -9,7 +9,7 @@ import {
  */
 export function useProjectDetailsData(projectId: string) {
   // Single consolidated query replaces 4 separate queries
-  const consolidatedQuery = useConsolidatedProjectData(projectId);
+  const consolidatedQuery = useProjectData(projectId);
 
   return {
     // Main project data - return the already transformed project data
@@ -47,5 +47,5 @@ export function useProjectDetailsData(projectId: string) {
 
 
 // Note: Budget, timeline, and team summary functions have been replaced by 
-// the consolidated query approach in useConsolidatedProjectData.ts
+// the consolidated query approach in useProjectData.ts
 // Use useProjectSummaryMetrics() from the consolidated query for similar functionality

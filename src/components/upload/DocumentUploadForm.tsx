@@ -20,7 +20,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { uploadProjectDocuments, uploadFile, type DocumentType, getDocumentTypeDisplayName, getDocumentTypeFromFilename } from '@/services/unifiedStorageService';
+import { uploadProjectDocuments, uploadFile, type DocumentType, getDocumentTypeDisplayName, getDocumentTypeFromFilename } from '@/services/storageService';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 
 interface DocumentUploadFormProps {
