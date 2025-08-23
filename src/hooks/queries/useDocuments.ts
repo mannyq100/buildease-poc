@@ -4,7 +4,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
-import { uploadProjectDocument, deleteProjectDocument, type DocumentType } from '@/services/documentService';
+import { uploadProjectDocuments, deleteFile, type DocumentType } from '@/services/unifiedStorageService';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { toast } from 'sonner';
@@ -135,13 +135,20 @@ export function useUploadDocument(projectId?: string) {
       }
 
       // Upload file to storage
-      const uploadResult = await uploadProjectDocument(
-        file,
-        user.id,
+      const uploadResults = await uploadProjectDocuments(
+        [file],
         projectId,
-        documentType,
-        onProgress
+        {
+          userId: user.id,
+          documentType,
+          createDatabaseRecords: true
+        }
       );
+      
+      const uploadResult = uploadResults[0];
+      if (!uploadResult.success) {
+        throw new Error(uploadResult.error || 'Upload failed');
+      }
 
       // Update document record with custom name and description if provided
       if (name || description || phaseId) {
@@ -153,7 +160,7 @@ export function useUploadDocument(projectId?: string) {
             ...(phaseId && { phase_id: phaseId }),
             ...(documentType && { document_type: documentType })
           })
-          .eq('file_path', uploadResult.path);
+          .eq('id', uploadResult.documentId);
 
         if (updateError) {
           console.error('Error updating document metadata:', updateError);
@@ -178,9 +185,9 @@ export function useUploadDocument(projectId?: string) {
       // Track document upload activity
       if (activityTracker) {
         await activityTracker.trackDocumentUpload(
-          uploadResult.id || 'unknown',
+          uploadResult.documentId || 'unknown',
           variables.name || variables.file.name,
-          variables.documentType || 'DOCUMENT'
+          variables.documentType || 'OTHER'
         );
       }
 
@@ -271,7 +278,7 @@ export function useDeleteDocument(projectId?: string) {
       }
 
       // Delete file from storage
-      await deleteProjectDocument(document.file_path);
+      await deleteFile('documents', document.file_path);
 
       // Delete database record
       const { error: deleteError } = await supabase

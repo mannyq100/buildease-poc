@@ -99,8 +99,11 @@ function validateTimelineChronology(
     const startDate = new Date(result.actual_start);
     const endDate = new Date(result.actual_end);
     
+    // If end date is date-only (no time), set it to end of day for fair comparison
+    const endDateAdjusted = result.actual_end.includes('T') ? endDate : new Date(endDate.getTime() + 24 * 60 * 60 * 1000 - 1);
+    
     // Allow equal timestamps (instantaneous completion) but not start after end
-    if (startDate > endDate) {
+    if (startDate > endDateAdjusted) {
       console.error(`Invalid timeline for phase "${phaseName}": actual_start (${result.actual_start}) must be before or equal to actual_end (${result.actual_end})`);
       // Keep the dates but log the error - UI should handle this gracefully
     }

@@ -39,11 +39,11 @@ export interface ProjectPreferences {
 
 export interface OptimisticUpdate {
   id: string;
-  type: 'task-update' | 'phase-update' | 'budget-update' | 'team-update';
+  type: 'create' | 'update' | 'delete' | 'task-update' | 'phase-update' | 'budget-update' | 'team-update';
+  entity: string;
   timestamp: number;
-  originalData: unknown;
-  pendingData: unknown;
-  mutationId: string;
+  data: unknown;
+  originalData?: unknown;
 }
 
 // =============================================================================

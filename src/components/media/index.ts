@@ -4,7 +4,6 @@
  */
 
 export { MediaGallery } from './MediaGallery';
-export { MediaUpload } from './MediaUpload';
 export { MediaMetadataEditor } from './MediaMetadataEditor';
 export { AdvancedMediaSearch } from './AdvancedMediaSearch';
 export { BulkOperationsToolbar } from './BulkOperationsToolbar';

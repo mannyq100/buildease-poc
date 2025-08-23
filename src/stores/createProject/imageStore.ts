@@ -7,7 +7,7 @@
 import { create } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 import { devtools } from 'zustand/middleware';
-import { uploadFile } from '@/utils/core/storageUtils';
+import { uploadFile } from '@/services/unifiedStorageService';
 
 // Local image file interface
 export interface LocalImageFile {
@@ -205,7 +205,7 @@ async function uploadSingleImage(
   const bucket = 'project-inspiration';
   
   const uploadResult = await uploadFile(file, {
-    bucket,
+    bucket: bucket as any, // StorageBucket type
     userId,
     projectId,
     // Keep allowed types aligned with validation

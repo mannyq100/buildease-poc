@@ -127,12 +127,6 @@ export function ProjectLayout({
   // Controlled Tabs state to allow programmatic switching
   const [activeTab, setActiveTab] = useState<'overview' | 'budget' | 'timeline' | 'team' | 'comments' | 'documents' | 'settings'>('overview');
   
-  // Upload modal state management
-  const [uploadModalState, setUploadModalState] = useState({
-    showImageUpload: false,
-    showDocumentUpload: false,
-    previewImage: null as { url: string; caption: string; index: number } | null
-  });
   
   // Fallback for expandedSections to prevent undefined errors
   const safeExpandedSections = expandedSections || { 
@@ -354,7 +348,6 @@ export function ProjectLayout({
           <TabsContent value="documents" className="space-y-6 mt-6" id="section-documents">
             <ProjectDocumentsSection 
               project={project}
-              uploadModalState={uploadModalState}
               onUpdateProject={async (updates: Record<string, unknown>) => {
                 // Update project using mutation
                 try {
@@ -365,13 +358,6 @@ export function ProjectLayout({
                 } catch (error) {
                   throw error; // Re-throw so calling code can handle the error
                 }
-              }}
-              onSetImageUploadState={(key: string, value: unknown) => {
-                // Handle image upload state changes
-                setUploadModalState(prev => ({
-                  ...prev,
-                  [key]: value
-                }));
               }}
             />
           </TabsContent>

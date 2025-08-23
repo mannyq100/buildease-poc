@@ -225,8 +225,12 @@ async function processBatch(batchKey: string): Promise<void> {
       user_id: batch.firstActivity.user_id,
       user_name: batch.firstActivity.user_name,
       entity_type: 'batch',
-      entity_id: `batch_${batchKey}`,
-      metadata,
+      entity_id: null, // Batches aren't tied to a specific entity, so use null instead of long batch key
+      metadata: {
+        ...metadata,
+        batchKey, // Store batch key in metadata for debugging
+        originalEntityIds: batch.activities.map(a => a.entity_id).filter(Boolean)
+      },
       status
     });
     

@@ -5,7 +5,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { uploadFile } from '@/utils/core/storageUtils';
+import { uploadFile } from '@/services/unifiedStorageService';
 import { 
   UploadFile, 
   UploadType, 
@@ -14,9 +14,11 @@ import {
   UPLOAD_CONFIGS 
 } from '@/types/upload';
 import {
-  validateFile,
   createPreviewUrl,
-  cleanupPreviewUrl,
+  revokePreviewUrl as cleanupPreviewUrl
+} from '@/services/unifiedStorageService';
+import {
+  validateFile,
   generateUploadId,
   getErrorMessage
 } from '@/utils/uploadUtils';
@@ -147,7 +149,7 @@ export function useSimplifiedUpload({
       const result = await uploadFile(
         fileToUpload.file,
         {
-          bucket: fileToUpload.bucket,
+          bucket: fileToUpload.bucket as any, // StorageBucket type
           projectId,
           allowedTypes: config.acceptedTypes,
           maxSizeMB: Math.round(config.maxSizeBytes / (1024 * 1024))

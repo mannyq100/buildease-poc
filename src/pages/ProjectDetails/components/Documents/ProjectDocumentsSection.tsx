@@ -7,6 +7,8 @@ import React, { useCallback, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useProjectDocuments } from '@/hooks/queries/useDocuments';
+import { useCreateDocument, useDeleteDocument } from '@/hooks/mutations/useDocumentMutations';
+import { useUploadImages, useDeleteImage, useSetProfileImage } from '@/hooks/mutations/useImageMutations';
 import { useProjectProgressImages } from '@/hooks/useProjectStorageImages';
 import { supabase } from '@/lib/supabase';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
@@ -21,7 +23,6 @@ import { useAllMediaItems } from './hooks/useMediaData';
 import { useDownloadManager } from './hooks/useMemoryManagement';
 import { useUnifiedMediaState } from './hooks/useUnifiedMediaState';
 import { useOptimizedFiltering } from './hooks/useOptimizedFiltering';
-import { updateProjectImageArray } from '@/services/projectImageService';
 
 // Business logic services
 import { useMediaPermissions } from './services/permissionService';
@@ -35,16 +36,12 @@ import { MediaModals } from './components/MediaModals';
 interface ProjectDocumentsSectionProps {
   project: Project;
   onUpdateProject: (updates: Partial<Project>) => void;
-  uploadModalState?: Record<string, unknown>; // Legacy prop from ProjectLayout
-  onSetImageUploadState?: (key: string, value: unknown) => void; // Legacy prop from ProjectLayout
   className?: string;
 }
 
 export function ProjectDocumentsSection({
   project,
   onUpdateProject,
-  uploadModalState: _uploadModalState, // Legacy prop - not used in refactored version
-  onSetImageUploadState: _onSetImageUploadState, // Legacy prop - not used in refactored version
   className
 }: ProjectDocumentsSectionProps) {
   const { toast } = useToast();
@@ -53,18 +50,25 @@ export function ProjectDocumentsSection({
   // Unified state management
   const { state, actions } = useUnifiedMediaState(false);
   
-  // Local state to track deleted items for immediate UI updates
-  const [deletedItems, setDeletedItems] = useState<Set<string>>(new Set());
+  // Removed deletedItems state - optimistic updates handle UI removal automatically
 
   // Data fetching
-  const { data: documents = [], refetch: refetchDocuments } = useProjectDocuments(project.id);
+  const { data: documents = [] } = useProjectDocuments(project.id);
+  
+  // Mutations for document operations
+  const createDocumentMutation = useCreateDocument();
+  const deleteDocumentMutation = useDeleteDocument();
+  
+  // Mutations for image operations
+  const uploadImagesMutation = useUploadImages();
+  const deleteImageMutation = useDeleteImage();
+  const setProfileImageMutation = useSetProfileImage();
   const { images: progressImages = [], refetch: refetchProgressImages } = useProjectProgressImages(project.id);
 
   // Optimized data processing with unified state
   const allMediaItems = useAllMediaItems({ project, documents, progressImages });
-  // Filter out deleted items for immediate UI feedback
-  const itemsWithoutDeleted = allMediaItems.filter(item => !deletedItems.has(item.id));
-  const filteredItems = useOptimizedFiltering(itemsWithoutDeleted, state.search, state.filters);
+  // Use optimistic updates for automatic UI removal instead of manual filtering
+  const filteredItems = useOptimizedFiltering(allMediaItems, state.search, state.filters);
   
   // Memory management
   const { downloadFile } = useDownloadManager();
@@ -85,128 +89,36 @@ export function ProjectDocumentsSection({
   }, [actions]);
 
   const handleDelete = useCallback(async (item: MediaItem) => {
-    
     try {
-      if (item.category === 'progress') {
-        // Delete progress image from Supabase storage
-        
-        const fileName = item.name;
-        const { error: deleteError } = await supabase.storage
-          .from('progress-images')
-          .remove([`${project.id}/${fileName}`]);
-        
-        if (deleteError) {
-          throw new Error(`Failed to delete progress image: ${deleteError.message}`);
-        }
-        
-        // Also update database to remove from progress_images array
-        const updatedProgressImages = (project.progress_images || [])
-          .filter(url => !url.includes(fileName));
-        
-        await onUpdateProject({
-          id: project.id,
-          progress_images: updatedProgressImages
+      if (item.category === 'progress' || item.category === 'inspiration' || item.category === 'profile') {
+        // Use dedicated image mutation with proper activity logging
+        await deleteImageMutation.mutateAsync({
+          projectId: project.id,
+          imageUrl: item.url,
+          imageName: item.name,
+          imageType: item.category as 'progress' | 'inspiration' | 'profile'
         });
         
-        // Refetch progress images to update UI immediately
-        await refetchProgressImages();
-        
-        toast({
-          title: "Image Deleted",
-          description: "Progress image deleted successfully.",
-        });
-        
-      } else if (item.category === 'inspiration') {
-        // Delete inspiration image from project array and storage
-        
-        // Delete from storage first
-        const fileName = item.name;
-        const { error: storageError } = await supabase.storage
-          .from('project-inspiration')
-          .remove([`${project.id}/${fileName}`]);
-        
-        if (storageError) {
-          // Continue with database deletion even if storage fails
-        }
-        
-        // Update project database
-        const updatedInspirationImages = (project.inspiration_images || [])
-          .filter(url => url !== item.url);
-        
-        await onUpdateProject({
-          id: project.id,
-          inspiration_images: updatedInspirationImages
-        });
-        
-        // Immediately remove from UI by adding to deleted items set
-        setDeletedItems(prev => new Set(prev).add(item.id));
-        
-        toast({
-          title: "Image Deleted",
-          description: "Inspiration image deleted successfully.",
-        });
-        
-      } else if (item.category === 'profile') {
-        // Delete profile image from project and storage
-        
-        // Delete from storage first
-        const fileName = item.name;
-        const { error: storageError } = await supabase.storage
-          .from('profiles')
-          .remove([`${project.id}/${fileName}`]);
-        
-        if (storageError) {
-          // Continue with database deletion even if storage fails
-        }
-        
-        // Update project database
-        await onUpdateProject({
-          id: project.id,
-          profile_image: undefined
-        });
-        
-        // Immediately remove from UI by adding to deleted items set
-        setDeletedItems(prev => new Set(prev).add(item.id));
-        
-        toast({
-          title: "Image Deleted",
-          description: "Profile image deleted successfully.",
-        });
+        // Optimistic update will handle UI removal automatically
         
       } else if (isDocumentType(item.category as string)) {
-        // Validate that this is a document category
+        // CRITICAL FIX: Use optimistic mutation instead of direct Supabase calls
         
-        // Delete document from both storage and database
-        
-        // First, delete from Supabase storage
-        const fileName = item.name;
-        const { error: storageError } = await supabase.storage
-          .from('project-documents')
-          .remove([`${project.id}/${fileName}`]);
-        
-        if (storageError) {
-          // Continue with database deletion even if storage fails
-        }
-        
-        // Then, delete from database using document ID
         if (item.id) {
-          const { error: dbError } = await supabase
-            .from('be_document')
-            .delete()
-            .eq('id', item.id);
+          // Delete document using optimistic mutation (handles both storage and database)
+          await deleteDocumentMutation.mutateAsync(item.id);
           
-          if (dbError) {
-            throw new Error(`Failed to delete document from database: ${dbError.message}`);
-          }
+          toast({
+            title: "Document Deleted",
+            description: "Document deleted successfully.",
+          });
+        } else {
+          toast({
+            title: "Delete Error", 
+            description: "Cannot delete document - no ID found.",
+            variant: "destructive",
+          });
         }
-        
-        // Refetch documents to update UI immediately
-        await refetchDocuments();
-        
-        toast({
-          title: "Document Deleted",
-          description: "Document deleted successfully from storage and database.",
-        });
         
       } else {
         // Handle unknown item types
@@ -225,34 +137,23 @@ export function ProjectDocumentsSection({
         variant: "destructive",
       });
     }
-  }, [toast, project.id, project.inspiration_images, project.progress_images, refetchProgressImages, refetchDocuments, onUpdateProject, setDeletedItems]);
+  }, [toast, project.id, deleteDocumentMutation, deleteImageMutation]);
 
   const handleSetAsProfile = useCallback(async (imageUrl: string) => {
     try {
-      // Update the profile image in the database
-      const result = await updateProjectImageArray(project.id, [imageUrl], 'profile');
+      // Find the image name from the URL
+      const mediaItem = allMediaItems.find(item => item.url === imageUrl);
+      const imageName = mediaItem?.name || 'image';
       
-      if (result.success) {
-        // Add to deleted items for immediate UI feedback (remove from current position)
-        const mediaItem = allMediaItems.find(item => item.url === imageUrl);
-        if (mediaItem) {
-          setDeletedItems(prev => new Set([...prev, mediaItem.id]));
-        }
-        
-        // Update local project state to reflect the change
-        try {
-          await onUpdateProject({ profile_image: imageUrl });
-        } catch (updateError) {
-          // Don't throw here since the DB update succeeded
-        }
-        
-        toast({
-          title: "Profile Image Updated",
-          description: "This image has been set as your project's profile image.",
-        });
-      } else {
-        throw new Error(result.error || 'Failed to update profile image');
-      }
+      // Use dedicated profile image mutation with proper activity logging
+      await setProfileImageMutation.mutateAsync({
+        projectId: project.id,
+        imageUrl,
+        imageName
+      });
+      
+      // Optimistic update will handle UI changes automatically
+      
     } catch (error) {
       toast({
         title: "Error",
@@ -260,7 +161,7 @@ export function ProjectDocumentsSection({
         variant: "destructive",
       });
     }
-  }, [project, onUpdateProject, allMediaItems, setDeletedItems, toast]);
+  }, [project.id, allMediaItems, setProfileImageMutation, toast]);
 
   const handleDownload = useCallback(async (item: MediaItem) => {
     try {
@@ -278,85 +179,135 @@ export function ProjectDocumentsSection({
     }
   }, [downloadFile, toast]);
 
-  // Upload handlers using unified state management
+  // Upload handlers using unified state management and dedicated mutations
   const handleInspirationUpload = useCallback(async (results: UploadResult[]) => {
-    
     try {
-      // Update project state with new inspiration images
-      const newInspirationImages = results.map(result => result.url);
-      const updatedInspirationImages = [...(project.inspiration_images || []), ...newInspirationImages];
-      
-      
-      // Call the database update
-      await onUpdateProject({
-        id: project.id,
-        inspiration_images: updatedInspirationImages
+      // Use dedicated image upload mutation with proper activity logging
+      await uploadImagesMutation.mutateAsync({
+        projectId: project.id,
+        results,
+        imageType: 'inspiration'
       });
-      
       
       actions.closeUploadModal();
-      toast({
-        title: "Upload Complete",
-        description: `${results.length} inspiration image(s) uploaded and saved to database.`,
-      });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Upload Error",
         description: "Images uploaded but failed to save to database. Please try again.",
         variant: "destructive",
       });
     }
-  }, [actions, toast, onUpdateProject, project.inspiration_images, project.id]);
+  }, [actions, toast, uploadImagesMutation, project.id]);
 
   const handleProgressUpload = useCallback(async (results: UploadResult[]) => {
-    
     try {
-      // Progress images need to be stored in BOTH Supabase storage AND database
-      // This ensures consistency with inspiration images and proper data persistence
-      
-      
-      // Update project state with new progress images (database persistence)
-      const newProgressImages = results.map(result => result.url);
-      const updatedProgressImages = [...(project.progress_images || []), ...newProgressImages];
-      
-      await onUpdateProject({
-        id: project.id,
-        progress_images: updatedProgressImages
+      // Use dedicated image upload mutation with proper activity logging
+      await uploadImagesMutation.mutateAsync({
+        projectId: project.id,
+        results,
+        imageType: 'progress'
       });
-      
       
       // Also trigger storage refetch for consistency
       await refetchProgressImages();
       
-      
       actions.closeUploadModal();
-      toast({
-        title: "Upload Complete",
-        description: `${results.length} progress image(s) uploaded and saved to database.`,
-      });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Upload Error",
         description: "Images uploaded but failed to save to database. Please try again.",
         variant: "destructive",
       });
     }
-  }, [actions, toast, refetchProgressImages, onUpdateProject, project.progress_images, project.id]);
+  }, [actions, toast, refetchProgressImages, uploadImagesMutation, project.id]);
 
-  const handleDocumentUpload = useCallback((results: UploadResult[]) => {
-    
-    // Documents are stored in the database via useProjectDocuments hook
-    // The upload process should have already created database entries
-    // No need to update project state as documents are fetched separately
-    
-    actions.closeUploadModal();
-    toast({
-      title: "Upload Complete",
-      description: `${results.length} document(s) uploaded successfully.`,
-    });
-    
-    // The useProjectDocuments hook will automatically refetch and update the UI
-  }, [actions, toast]);
+  const handleDocumentUpload = useCallback(async (results: UploadResult[]) => {
+    try {
+      // CRITICAL FIX: Batch create documents to prevent sequential optimistic update race conditions
+      // Instead of sequential for-loop, create all documents in parallel with Promise.allSettled
+      
+      // Determine document type based on file extension
+      const getDocumentType = (fileName: string) => {
+        const ext = fileName.toLowerCase().split('.').pop();
+        switch (ext) {
+          case 'pdf': return 'REPORT';
+          case 'doc':
+          case 'docx': return 'CONTRACT';
+          case 'xls':
+          case 'xlsx': return 'INVOICE';
+          case 'jpg':
+          case 'jpeg':
+          case 'png':
+          case 'gif':
+          case 'webp': return 'PHOTO';
+          case 'mp4':
+          case 'mov':
+          case 'avi': return 'VIDEO';
+          default: return 'OTHER';
+        }
+      };
+
+      // Create document payloads for batch processing using actual storage URLs
+      // Use SimplifiedUpload URLs directly but let the database mutation handle conflicts with retry logic
+      const documentCreationPromises = results.map(result => 
+        createDocumentMutation.mutateAsync({
+          name: result.name,
+          document_type: getDocumentType(result.name),
+          project_id: project.id,
+          file_path: result.url, // Use actual SimplifiedUpload URL - mutation handles conflicts
+          file_size: result.size,
+          file_size_bytes: result.size,
+          mime_type: result.type === 'documents' ? 'application/pdf' : 'image/jpeg', // Best guess based on type
+          metadata: {
+            original_filename: result.name,
+            upload_timestamp: result.uploadedAt?.toISOString() || new Date().toISOString(),
+            upload_type: result.type,
+            storage_bucket: 'project-documents'
+          },
+          processing_status: 'completed'
+        })
+      );
+
+      // Execute all document creations in parallel to avoid race conditions
+      const documentResults = await Promise.allSettled(documentCreationPromises);
+      
+      // Check for any failures
+      const failedCount = documentResults.filter(result => result.status === 'rejected').length;
+      const successCount = documentResults.filter(result => result.status === 'fulfilled').length;
+
+      actions.closeUploadModal();
+      
+      if (failedCount > 0) {
+        toast({
+          title: "Partial Upload Success",
+          description: `${successCount} documents uploaded successfully, ${failedCount} failed. Check console for details.`,
+          variant: "destructive",
+        });
+        
+        // Log failed results for debugging
+        documentResults.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            console.error(`Document upload failed for ${results[index].name}:`, result.reason);
+          }
+        });
+      } else {
+        toast({
+          title: "Upload Complete",
+          description: `${successCount} document(s) uploaded and saved successfully.`,
+        });
+      }
+
+      // The useProjectDocuments hook will automatically show the new documents via optimistic updates
+      
+    } catch (error) {
+      console.error('Error creating document database entries:', error);
+      toast({
+        title: "Upload Error",
+        description: "Failed to process document uploads. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [actions, toast, createDocumentMutation, project.id]);
 
   // Service-based permissions (centralized business logic)
   const permissions = {

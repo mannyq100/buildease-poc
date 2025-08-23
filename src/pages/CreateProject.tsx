@@ -22,6 +22,7 @@ import {
   ReviewSubmitFormSkeleton
 } from "@/components/ui/form-step-skeleton";
 import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
+import { supabase } from '@/lib/supabase';
 // Removed unused WizardStep type import
 import { StepNavigator } from '@/components/create-project/StepNavigator';
 import { Button } from '@/components/ui/button';
@@ -30,7 +31,7 @@ import { projectFormSchema, type CreateProjectFormValues } from './CreateProject
 import { Card } from '@/components/ui/card';
 import { useSubmissionActions, useProjectSubmission } from '@/stores/createProject/submissionStore';
 import { useImageActions, useImageState } from '@/stores/createProject/imageStore';
-import { updateProjectImageArray } from '@/services/projectImageService';
+import { useUploadImages } from '@/hooks/mutations/useImageMutations';
 import {
   ChevronLeft,
   ChevronRight,
@@ -99,6 +100,9 @@ function CreateProjectContent() {
   // Get image upload actions and state
   const { uploadImages, clearAllImages } = useImageActions();
   const { localFiles: imageFiles, isUploading } = useImageState();
+  
+  // Get image mutation hooks for optimistic updates
+  const uploadImagesMutation = useUploadImages();
   
   // Use refs to track previous values and prevent infinite loops
   const prevIsSuccessRef = useRef(false);
@@ -306,13 +310,38 @@ function CreateProjectContent() {
             
             const { images, profileImage } = await uploadImages(user.id, projectId);
 
-            // Persist URLs to project record
+            // Persist URLs to project record using optimistic mutations
             try {
               if (images.length > 0) {
-                await updateProjectImageArray(projectId, images, 'inspiration');
+                // Convert uploaded images to UploadResult format for the mutation
+                const imageResults = images.map(url => ({
+                  id: `inspiration-${Date.now()}-${Math.random()}`,
+                  url,
+                  name: `inspiration-image-${Date.now()}`,
+                  size: 0, // Size not available here, but not critical for database persistence
+                  type: 'inspiration' as any,
+                  uploadedAt: new Date()
+                }));
+                
+                await uploadImagesMutation.mutateAsync({
+                  projectId,
+                  results: imageResults,
+                  imageType: 'inspiration'
+                });
               }
+              
               if (profileImage) {
-                await updateProjectImageArray(projectId, [profileImage], 'profile');
+                // For profile images, we need to use a different approach since the mutation
+                // is designed for inspiration/progress images. For now, keep the legacy function
+                // for profile images only (this will be handled separately)
+                const { data: _updatedProject, error: profileError } = await supabase
+                  .from('be_project')
+                  .update({ profile_image: profileImage })
+                  .eq('id', projectId);
+                  
+                if (profileError) {
+                  throw new Error(`Failed to set profile image: ${profileError.message}`);
+                }
               }
 
               // Clear local images after successful persistence
@@ -358,7 +387,7 @@ function CreateProjectContent() {
         variant: "destructive",
       });
     }
-  }, [currentStep, totalSteps, methods, user?.id, submitProject, toast, imageFiles.length, uploadImages, clearAllImages, requiredFieldsByStep]);
+  }, [currentStep, totalSteps, methods, user?.id, submitProject, toast, imageFiles.length, uploadImages, clearAllImages, requiredFieldsByStep, uploadImagesMutation]);
 
   // Handle previous step
   const handleBack = useCallback(() => {

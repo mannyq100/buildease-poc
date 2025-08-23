@@ -6,6 +6,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { queryKeys } from '@/lib/queryClient';
 import { TABLE_NAMES } from '@/types/database';
 import * as activityService from '@/services/activityService';
 import { toast } from 'sonner';
@@ -87,9 +88,9 @@ export function useUpdateDocumentMetadata() {
       let documentToUpdate: Document | null = null;
       let projectId: string | null = null;
 
-      // Search through project-documents queries to find the document
+      // Search through document queries to find the document
       for (const query of queryCache.getAll()) {
-        if (query.queryKey[0] === 'project-documents' && Array.isArray(query.state.data)) {
+        if (query.queryKey[0] === 'be_document' && query.queryKey[1] === 'project' && Array.isArray(query.state.data)) {
           const documents = query.state.data as Document[];
           const found = documents.find(doc => doc.id === documentId);
           if (found) {
@@ -101,7 +102,7 @@ export function useUpdateDocumentMetadata() {
       }
 
       if (documentToUpdate && projectId) {
-        const queryKey = ['project-documents', projectId];
+        const queryKey = queryKeys.documents.byProject(projectId);
         
         // Cancel any outgoing refetches
         await queryClient.cancelQueries({ queryKey });
@@ -112,7 +113,10 @@ export function useUpdateDocumentMetadata() {
         // Create optimistically updated document
         const updatedDocument = { 
           ...documentToUpdate, 
-          ...metadata, 
+          caption: metadata.caption ?? documentToUpdate.caption,
+          description: metadata.description ?? documentToUpdate.description,
+          document_type: metadata.document_type ?? documentToUpdate.document_type,
+          tags: metadata.tags ?? documentToUpdate.tags,
           updated_at: new Date().toISOString() 
         };
 
@@ -123,6 +127,7 @@ export function useUpdateDocumentMetadata() {
 
         // Track optimistic update
         addOptimisticUpdate(`update_document_${documentId}`, {
+          id: `update_document_${documentId}`,
           type: 'update',
           entity: 'document',
           data: updatedDocument,
@@ -138,7 +143,7 @@ export function useUpdateDocumentMetadata() {
     onError: (error, variables, context) => {
       // Rollback on error
       if (context?.previousDocuments && context?.projectId) {
-        const queryKey = ['project-documents', context.projectId];
+        const queryKey = queryKeys.documents.byProject(context.projectId);
         queryClient.setQueryData(queryKey, context.previousDocuments);
       }
       
@@ -156,7 +161,7 @@ export function useUpdateDocumentMetadata() {
 
       // Update cached document with real server data
       if (context?.projectId) {
-        const queryKey = ['project-documents', context.projectId];
+        const queryKey = queryKeys.documents.byProject(context.projectId);
         queryClient.setQueryData<Document[]>(queryKey, (old = []) => 
           old.map(doc => doc.id === updatedDocument.id ? updatedDocument : doc)
         );
@@ -279,10 +284,6 @@ export function useUpdateDocumentMetadata() {
           });
         }
       })();
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to update document metadata');
-      console.error('Document metadata update failed:', error);
     }
   });
 }
@@ -313,6 +314,21 @@ export function useDeleteDocument() {
         throw new Error(`Failed to delete document: ${error.message}`);
       }
 
+      // Update be_project table timestamp after successful deletion
+      if (doc && !fetchErr) {
+        const { error: projectUpdateError } = await supabase
+          .from('be_project')
+          .update({ 
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', doc.project_id);
+
+        if (projectUpdateError) {
+          console.warn('Failed to update project timestamp after document deletion:', projectUpdateError);
+          // Don't throw here as the document was deleted successfully
+        }
+      }
+
       // Fire-and-forget activity log (non-blocking)
       if (doc && !fetchErr) {
         (async () => {
@@ -340,9 +356,9 @@ export function useDeleteDocument() {
       let documentToDelete: Document | null = null;
       let projectId: string | null = null;
 
-      // Search through project-documents queries to find the document
+      // Search through document queries to find the document
       for (const query of queryCache.getAll()) {
-        if (query.queryKey[0] === 'project-documents' && Array.isArray(query.state.data)) {
+        if (query.queryKey[0] === 'be_document' && query.queryKey[1] === 'project' && Array.isArray(query.state.data)) {
           const documents = query.state.data as Document[];
           const found = documents.find(doc => doc.id === documentId);
           if (found) {
@@ -354,7 +370,7 @@ export function useDeleteDocument() {
       }
 
       if (documentToDelete && projectId) {
-        const queryKey = ['project-documents', projectId];
+        const queryKey = queryKeys.documents.byProject(projectId);
         
         // Cancel any outgoing refetches
         await queryClient.cancelQueries({ queryKey });
@@ -369,6 +385,7 @@ export function useDeleteDocument() {
 
         // Track optimistic update
         addOptimisticUpdate(`delete_document_${documentId}`, {
+          id: `delete_document_${documentId}`,
           type: 'delete',
           entity: 'document',
           data: documentToDelete,
@@ -383,7 +400,7 @@ export function useDeleteDocument() {
     onError: (error, variables, context) => {
       // Rollback on error
       if (context?.previousDocuments && context?.projectId) {
-        const queryKey = ['project-documents', context.projectId];
+        const queryKey = queryKeys.documents.byProject(context.projectId);
         queryClient.setQueryData(queryKey, context.previousDocuments);
       }
       
@@ -397,12 +414,15 @@ export function useDeleteDocument() {
 
       // Ensure document is removed from cache (should already be done optimistically)
       if (context?.projectId) {
-        const queryKey = ['project-documents', context.projectId];
+        const queryKey = queryKeys.documents.byProject(context.projectId);
         queryClient.setQueryData<Document[]>(queryKey, (old = []) => 
           old.filter(doc => doc.id !== documentId)
         );
 
-        // CRITICAL: Invalidate consolidated project query for real-time updates
+        // CRITICAL: Invalidate project queries for real-time updates
+        queryClient.invalidateQueries({
+          queryKey: ['project', context.projectId]
+        });
         queryClient.invalidateQueries({
           queryKey: ['project-consolidated', context.projectId]
         });
@@ -494,7 +514,7 @@ export function useBulkDeleteDocuments() {
     },
     // Optimistic update - remove documents immediately
     onMutate: async ({ documentIds, projectId }) => {
-      const queryKey = ['project-documents', projectId];
+      const queryKey = queryKeys.documents.byProject(projectId);
       
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey });
@@ -511,7 +531,9 @@ export function useBulkDeleteDocuments() {
       );
 
       // Track optimistic update
-      addOptimisticUpdate(`bulk_delete_documents_${Date.now()}`, {
+      const bulkDeleteId = `bulk_delete_documents_${Date.now()}`;
+      addOptimisticUpdate(bulkDeleteId, {
+        id: bulkDeleteId,
         type: 'delete',
         entity: 'document',
         data: documentsToDelete,
@@ -523,7 +545,7 @@ export function useBulkDeleteDocuments() {
     onError: (error, variables, context) => {
       // Rollback on error
       if (context?.previousDocuments) {
-        const queryKey = ['project-documents', variables.projectId];
+        const queryKey = queryKeys.documents.byProject(variables.projectId);
         queryClient.setQueryData(queryKey, context.previousDocuments);
       }
       
@@ -547,16 +569,12 @@ export function useBulkDeleteDocuments() {
       });
       
       // Invalidate all document-related queries
-      queryClient.invalidateQueries({ queryKey: ['project-documents', projectId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.documents.byProject(projectId) });
       queryClient.invalidateQueries({ queryKey: ['advanced-media-search'] });
       queryClient.invalidateQueries({ queryKey: ['media-stats', projectId] });
       queryClient.invalidateQueries({ queryKey: ['media-collections', projectId] });
       
       toast.success(`Successfully deleted ${result.success} documents`);
-    },
-    onError: (error: Error) => {
-      toast.error('Bulk delete operation failed');
-      console.error('Bulk delete failed:', error);
     }
   });
 }
@@ -696,17 +714,17 @@ export function useBulkUpdateDocuments() {
       const queryCache = queryClient.getQueryCache();
       const affectedQueries = new Map<string, { query: any, documents: Document[], projectId: string }>();
       
-      // Search through all project-documents queries to find affected documents
+      // Search through all document queries to find affected documents
       for (const query of queryCache.getAll()) {
-        if (query.queryKey[0] === 'project-documents' && Array.isArray(query.state.data)) {
+        if (query.queryKey[0] === 'be_document' && query.queryKey[1] === 'project' && Array.isArray(query.state.data)) {
           const documents = query.state.data as Document[];
           const affectedDocs = documents.filter(doc => documentIds.includes(doc.id));
           
-          if (affectedDocs.length > 0 && query.queryKey[1]) {
-            affectedQueries.set(query.queryKey[1] as string, {
+          if (affectedDocs.length > 0 && query.queryKey[2]) {
+            affectedQueries.set(query.queryKey[2] as string, {
               query,
               documents: documents,
-              projectId: query.queryKey[1] as string
+              projectId: query.queryKey[2] as string
             });
           }
         }
@@ -717,7 +735,7 @@ export function useBulkUpdateDocuments() {
       
       // Apply optimistic updates to each affected query
       for (const [projectId, { documents }] of affectedQueries) {
-        const queryKey = ['project-documents', projectId];
+        const queryKey = queryKeys.documents.byProject(projectId);
         
         // Cancel any outgoing refetches
         await queryClient.cancelQueries({ queryKey });
@@ -767,6 +785,7 @@ export function useBulkUpdateDocuments() {
       // Track optimistic update
       const updateId = `bulk_update_documents_${Date.now()}`;
       addOptimisticUpdate(updateId, {
+        id: updateId,
         type: 'update',
         entity: 'document',
         data: optimisticDocuments,
@@ -781,7 +800,7 @@ export function useBulkUpdateDocuments() {
         for (const projectId of context.affectedQueries) {
           const previousDocs = context.previousStates.get(projectId);
           if (previousDocs) {
-            const queryKey = ['project-documents', projectId];
+            const queryKey = queryKeys.documents.byProject(projectId);
             queryClient.setQueryData(queryKey, previousDocs);
           }
         }
@@ -817,7 +836,7 @@ export function useBulkUpdateDocuments() {
       
       // Invalidate queries for all affected projects
       // We need to get project IDs from the documents, but for now invalidate all
-      queryClient.invalidateQueries({ queryKey: ['project-documents'] });
+      queryClient.invalidateQueries({ queryKey: ['be_document'] });
       queryClient.invalidateQueries({ queryKey: ['advanced-media-search'] });
       queryClient.invalidateQueries({ queryKey: ['media-stats'] });
       queryClient.invalidateQueries({ queryKey: ['media-collections'] });
@@ -916,10 +935,6 @@ export function useBulkUpdateDocuments() {
           });
         }
       })();
-    },
-    onError: (error: Error) => {
-      toast.error('Bulk update operation failed');
-      console.error('Bulk update failed:', error);
     }
   });
 }
@@ -929,27 +944,146 @@ export function useBulkUpdateDocuments() {
  */
 export function useCreateDocument() {
   const queryClient = useQueryClient();
+  const addOptimisticUpdate = useProjectStore(state => state.addOptimisticUpdate);
 
   return useMutation({
     mutationFn: async (documentData: DocumentInsert): Promise<Document> => {
-      const { data, error } = await supabase
+      // First attempt to create the document
+      let { data, error } = await supabase
         .from(TABLE_NAMES.DOCUMENTS)
         .insert(documentData)
         .select()
         .single();
+
+      // If we get a duplicate file_path constraint violation, retry with a unique path
+      if (error?.code === '23505' && error.message.includes('be_document_file_path_key')) {
+        console.log('Duplicate file_path detected, retrying with unique path...');
+        
+        // Generate a unique file_path by appending a UUID
+        const originalPath = documentData.file_path;
+        const uuid = crypto.randomUUID();
+        const uniquePath = `${originalPath}?v=${uuid}`;
+        
+        const retryData = {
+          ...documentData,
+          file_path: uniquePath,
+          metadata: {
+            ...(documentData.metadata || {}),
+            original_file_path: originalPath,
+            duplicate_resolution: 'uuid_suffix'
+          }
+        };
+
+        // Retry the insert with unique file_path
+        const retryResult = await supabase
+          .from(TABLE_NAMES.DOCUMENTS)
+          .insert(retryData)
+          .select()
+          .single();
+
+        data = retryResult.data;
+        error = retryResult.error;
+      }
 
       if (error) {
         console.error('Error creating document:', error);
         throw new Error(`Failed to create document: ${error.message}`);
       }
 
+      // Update be_project table to increment document count and update timestamp
+      const { error: projectUpdateError } = await supabase
+        .from('be_project')
+        .update({ 
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', data.project_id);
+
+      if (projectUpdateError) {
+        console.warn('Failed to update project timestamp:', projectUpdateError);
+        // Don't throw here as the document was created successfully
+        // The timestamp will be updated on next project modification
+      }
+
       return data;
     },
-    onSuccess: (newDocument) => {
+    // Optimistic update - show document immediately
+    onMutate: async (documentData: DocumentInsert) => {
+      const queryKey = queryKeys.documents.byProject(documentData.project_id);
+      
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey });
+      
+      // Snapshot the previous value
+      const previousDocuments = queryClient.getQueryData<Document[]>(queryKey);
+      
+      if (previousDocuments) {
+        // Create optimistic document
+        const optimisticDocument: Document = {
+          id: `temp_${Date.now()}_${Math.random()}`, // Temporary ID
+          name: documentData.name,
+          document_type: documentData.document_type,
+          project_id: documentData.project_id,
+          file_path: documentData.file_path || '',
+          file_size: documentData.file_size || 0,
+          file_size_bytes: documentData.file_size_bytes || 0,
+          mime_type: documentData.mime_type || 'application/octet-stream',
+          processing_status: 'processing', // Show as processing
+          metadata: documentData.metadata || {},
+          phase_id: documentData.phase_id || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        // Optimistically update the documents list
+        queryClient.setQueryData<Document[]>(queryKey, [...previousDocuments, optimisticDocument]);
+
+        // Track optimistic update
+        const createId = `create_document_${optimisticDocument.id}`;
+        addOptimisticUpdate(createId, {
+          id: createId,
+          type: 'create',
+          entity: 'document',
+          data: optimisticDocument,
+          originalData: previousDocuments,
+          timestamp: Date.now()
+        });
+
+        return { previousDocuments, createId, optimisticDocument };
+      }
+
+      return { previousDocuments: undefined, createId: undefined, optimisticDocument: undefined };
+    },
+    onError: (error, variables, context) => {
+      // Rollback on error
+      if (context?.previousDocuments) {
+        const queryKey = queryKeys.documents.byProject(variables.project_id);
+        queryClient.setQueryData(queryKey, context.previousDocuments);
+      }
+      
+      console.error('Document creation failed:', error);
+      toast.error('Failed to create document');
+    },
+    onSuccess: (newDocument, variables, context) => {
+      // Remove optimistic update tracking
+      if (context?.createId) {
+        const removeOptimisticUpdate = useProjectStore.getState().removeOptimisticUpdate;
+        removeOptimisticUpdate(context.createId);
+      }
+
+      // Replace optimistic document with real server data
+      const queryKey = queryKeys.documents.byProject(newDocument.project_id);
+      queryClient.setQueryData<Document[]>(queryKey, (old = []) => 
+        old.map(doc => doc.id === context?.optimisticDocument?.id ? newDocument : doc)
+      );
+      
       // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: ['project-documents', newDocument.project_id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.documents.byProject(newDocument.project_id) });
       queryClient.invalidateQueries({ queryKey: ['advanced-media-search'] });
       queryClient.invalidateQueries({ queryKey: ['media-stats', newDocument.project_id] });
+      
+      // Invalidate project data to refresh document count and updated_at timestamp
+      queryClient.invalidateQueries({ queryKey: ['project', newDocument.project_id] });
+      queryClient.invalidateQueries({ queryKey: ['project-consolidated', newDocument.project_id] });
       
       toast.success('Document created successfully');
 
@@ -971,10 +1105,6 @@ export function useCreateDocument() {
           console.error('Activity log (document_upload create) failed:', e);
         }
       })();
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to create document');
-      console.error('Document creation failed:', error);
     }
   });
 }
@@ -1050,7 +1180,7 @@ export function useUploadDocument() {
     },
     // Optimistic update - show upload progress immediately
     onMutate: async ({ file, projectId, phaseId, documentType, metadata = {} }) => {
-      const queryKey = ['project-documents', projectId];
+      const queryKey = queryKeys.documents.byProject(projectId);
       const optimisticId = `temp_upload_${Date.now()}`;
       
       // Cancel any outgoing refetches
@@ -1087,6 +1217,7 @@ export function useUploadDocument() {
 
       // Track optimistic update
       addOptimisticUpdate(`upload_document_${optimisticId}`, {
+        id: `upload_document_${optimisticId}`,
         type: 'create',
         entity: 'document',
         data: optimisticDocument,
@@ -1098,7 +1229,7 @@ export function useUploadDocument() {
     onError: (error, variables, context) => {
       // Rollback on error
       if (context?.previousDocuments) {
-        const queryKey = ['project-documents', variables.projectId];
+        const queryKey = queryKeys.documents.byProject(variables.projectId);
         queryClient.setQueryData(queryKey, context.previousDocuments);
       }
       
@@ -1107,7 +1238,7 @@ export function useUploadDocument() {
     },
     onSuccess: (newDocument, variables, context) => {
       // Replace optimistic document with real server data
-      const queryKey = ['project-documents', newDocument.project_id];
+      const queryKey = queryKeys.documents.byProject(newDocument.project_id);
       queryClient.setQueryData<Document[]>(queryKey, (old = []) => 
         old.map(doc => doc.id === context?.optimisticId ? newDocument : doc)
       );
@@ -1145,10 +1276,6 @@ export function useUploadDocument() {
           console.error('Activity log (document_upload) failed:', e);
         }
       })();
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to upload file');
-      console.error('File upload failed:', error);
     }
   });
 }

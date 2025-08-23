@@ -20,7 +20,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { uploadAndCreateDocument, type DocumentType, getDocumentTypeDisplayName, getDocumentTypeFromFilename } from '@/services/documentService';
+import { uploadProjectDocuments, uploadFile, type DocumentType, getDocumentTypeDisplayName, getDocumentTypeFromFilename } from '@/services/unifiedStorageService';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 
 interface DocumentUploadFormProps {
@@ -114,14 +114,16 @@ export function DocumentUploadForm({
     setError(null);
 
     try {
-      const result = await uploadAndCreateDocument({
-        file: selectedFile,
-        userId: user.id,
+      // Use the core uploadFile function with createDatabaseRecord option for better control
+      const result = await uploadFile(selectedFile, {
+        bucket: 'documents',
         projectId,
         phaseId,
+        userId: user.id,
+        documentType: formData.documentType,
         name: formData.name.trim(),
         description: formData.description.trim() || undefined,
-        documentType: formData.documentType,
+        createDatabaseRecord: true,
         onProgress: setUploadProgress
       });
 

@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useProjectDocuments, useDeleteDocument, type Document } from '@/hooks/queries/useDocuments';
-import { formatFileSize, getDocumentTypeDisplayName, type DocumentType } from '@/services/documentService';
+import { formatFileSize, getDocumentTypeDisplayName, type DocumentType } from '@/services/unifiedStorageService';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 

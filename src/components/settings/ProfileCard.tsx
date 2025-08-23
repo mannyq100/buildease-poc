@@ -11,8 +11,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Progress } from '../ui/progress';
 import { Camera, Mail, User } from 'lucide-react';
-import { createPreviewUrl, revokePreviewUrl } from '@/utils/core/storageUtils';
-import { uploadProfilePicture } from '@/utils/core/storageUtils';
+import { createPreviewUrl, revokePreviewUrl, uploadProfilePicture } from '@/services/unifiedStorageService';
 import { useToast } from '@/hooks/use-toast';
 import type { SettingsFormData, ProfileUploadState } from '@/types/settings';
 import type { UserProfile } from '@/types/user';
@@ -86,9 +85,9 @@ export function ProfileCard({
       clearInterval(progressInterval);
       onUploadStateChange({ uploadProgress: 100 });
 
-      if (result.success && result.url) {
+      if (result.success && result.publicUrl) {
         // Update the form with the new URL
-        onFormDataChange({ pictureUrl: result.url });
+        onFormDataChange({ pictureUrl: result.publicUrl });
         toast({
           title: "Image uploaded",
           description: "Profile picture uploaded successfully!",
