@@ -6,9 +6,10 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { ProjectTransformService } from '@/services/projectTransformService';
 import { normalizeProjectData } from '@/utils/core/dataNormalization';
-import type { ConsolidatedProjectData } from '@/types/projectData';
+import { PhaseStatusDB } from '@/utils/core/phaseStatus';
+import { TaskStatusDB } from '@/utils/core/taskStatus';
+import type { ConsolidatedProjectData, OwnerInfo } from '@/types/projectData';
 
 // Using shared ConsolidatedProjectData type from '@/types/projectData'
 
@@ -179,14 +180,8 @@ export function useProjectData(projectId: string) {
       if (tasksError) throw tasksError;
 
       // Use pre-calculated data from project_summary view - eliminates redundant calculations
-      const projectAllocatedBudget = projectSummary.budget || 0;
-      const spentAmount = projectSummary.spent || 0;
       const projectCurrency = projectSummary.currency || 'USD';
-      const remainingBudget = projectAllocatedBudget - spentAmount;
-      // Use pre-calculated spent_percentage from database view instead of manual calculation
-      const utilization = projectSummary.spent_percentage || 0;
       
-      // Calculate expense breakdowns from detailed transactions for UI filtering
       // Use base_amount for consistency, fallback to amount if base_amount is null
       const getTransactionAmount = (expense: {
         base_amount?: number;
@@ -195,76 +190,37 @@ export function useProjectData(projectId: string) {
         return expense.base_amount || expense.amount || 0;
       };
       
-      const totalExpenses = expensesData?.reduce((sum, expense) => 
-        sum + getTransactionAmount(expense), 0) || 0;
-      
-      // Calculate payment status breakdowns for UI components that need filtering
-      const paidAmount = expensesData
-        ?.filter(expense => expense.payment_status === 'PAID')
-        ?.reduce((sum, expense) => sum + getTransactionAmount(expense), 0) || 0;
-        
-      const pendingAmount = expensesData
-        ?.filter(expense => expense.payment_status === 'PENDING')
-        ?.reduce((sum, expense) => sum + getTransactionAmount(expense), 0) || 0;
-        
-      const approvedAmount = expensesData
-        ?.filter(expense => expense.payment_status === 'APPROVED')
-        ?.reduce((sum, expense) => sum + getTransactionAmount(expense), 0) || 0;
-        
-      const plannedAmount = expensesData
-        ?.filter(expense => expense.payment_status === 'PLANNED')
-        ?.reduce((sum, expense) => sum + getTransactionAmount(expense), 0) || 0;
-      
-      // Category totals from financial summary view - pre-calculated with correct transaction type mapping
-      const categoryTotals = {
-        material_costs: financialSummary.material_costs || 0,
-        labor_costs: financialSummary.labor_costs || 0,
-        equipment_costs: financialSummary.equipment_costs || 0,
-        permit_costs: financialSummary.permit_costs || 0,
-        design_costs: financialSummary.design_costs || 0,
-        other_costs: financialSummary.other_costs || 0
-      };
 
-      // Normalize team members data using enhanced project_members view
-      const detailsMembers = projectMembersData?.details?.team_members || [];
-      const normalizedRegisteredMembers = registeredMembers?.map((member, index) => ({
-        id: member.user_id || `fallback-${index}`, // Use actual user ID for database operations
-        user_id: member.user_id, // Keep user_id for reference
-        name: member.user_name || 'Unknown',
-        role: member.role,
-        email: member.email,
-        phone: member.phone,
-        // NEW: Profile picture from enhanced view
-        avatar: member.profile_picture_url,
-        profile_picture_url: member.profile_picture_url,
-        // Additional fields from enhanced view
-        company_name: member.company_name,
-        user_status: member.user_status,
-        email_verified: member.email_verified,
-        phone_verified: member.phone_verified,
-        joined_at: member.joined_at,
-        status: 'active' as const // Default status for registered members
-      })) || [];
-      
-      const normalizedDetailsMembers = detailsMembers.map((member: Record<string, unknown>, index: number) => {
-        const memberStatus = (member.status as string) || 'active';
+      // Unified team member normalization function
+      const normalizeTeamMember = (member: Record<string, unknown>, index: number, isRegistered: boolean) => {
+        const memberStatus = member.status || 'active';
         const validStatus = ['active', 'on-break', 'off-site'].includes(memberStatus) 
           ? memberStatus as 'active' | 'on-break' | 'off-site'
           : 'active' as const;
-        
+
         return {
-          id: (member.user_id as string) || (member.id as string) || `detail-${index}`,
+          id: (member.user_id as string) || (member.id as string) || `${isRegistered ? 'reg' : 'detail'}-${index}`,
           user_id: member.user_id as string,
-          name: (member.name as string) || 'Unknown',
+          name: (member.user_name as string) || (member.name as string) || 'Unknown',
           role: (member.role as string) || 'Unknown',
-          email: (member.contactInfo as Record<string, unknown>)?.email as string || (member.email as string),
-          phone: (member.contactInfo as Record<string, unknown>)?.phone as string || (member.phone as string),
-          // Profile picture support for details members (legacy format)
-          avatar: (member.avatar as string) || (member.profile_picture_url as string),
+          email: (member.email as string) || ((member.contactInfo as Record<string, unknown>)?.email as string),
+          phone: (member.phone as string) || ((member.contactInfo as Record<string, unknown>)?.phone as string),
           profile_picture_url: (member.profile_picture_url as string) || (member.avatar as string),
+          company_name: member.company_name as string,
+          user_status: member.user_status as string,
+          email_verified: member.email_verified as boolean,
+          phone_verified: member.phone_verified as boolean,
+          joined_at: member.joined_at as string,
           status: validStatus
         };
-      });
+      };
+
+      // Normalize all team members using unified function
+      const detailsMembers = projectMembersData?.details?.team_members || [];
+      const allTeamMembers = [
+        ...(registeredMembers?.map((member: Record<string, unknown>, index: number) => normalizeTeamMember(member, index, true)) || []),
+        ...detailsMembers.map((member: Record<string, unknown>, index: number) => normalizeTeamMember(member, index, false))
+      ];
 
       // Group tasks by phase for normalized structure
       const tasksByPhase = tasksData?.reduce((acc, task) => {
@@ -345,93 +301,87 @@ export function useProjectData(projectId: string) {
         };
       }) || [];
 
-      // Transform and normalize the data
-      // Add count fields that the transform service expects
-      const projectDataWithCounts = {
-        ...projectData,
-        phases: normalizedPhases.length,
-        materials: 0, // TODO: Add materials count when available
-        documents: 0, // TODO: Add documents count when available
-        members: normalizedRegisteredMembers.length + normalizedDetailsMembers.length,
-        transactions: expensesData?.length || 0
+      // Simplified owner extraction
+      const ownerInfo: OwnerInfo = {
+        id: projectData.owner?.id || '',
+        first_name: projectData.owner?.first_name || '',
+        last_name: projectData.owner?.last_name || '',
+        email: projectData.owner?.email || ''
       };
-      
-      const transformedProject = ProjectTransformService.transformProjectSummary(projectDataWithCounts);
 
-      // Return consolidated data structure - ensure project_summary view data takes precedence
+      // Streamlined consolidated data structure - use project_summary as primary source
       const consolidatedData: ConsolidatedProjectData = {
-        // Base transformed project data
-        ...transformedProject,
+        // Core project fields from project_summary view
+        id: projectSummary.id,
+        name: projectSummary.name,
+        description: projectSummary.description,
+        status: projectSummary.status,
+        progress: projectSummary.progress,
+        health: projectSummary.health,
+        start_date: projectSummary.start_date,
+        end_date: projectSummary.end_date,
+        location: projectSummary.location || projectData.location,
+        client: projectSummary.client || projectData.client,
+        project_type: projectSummary.project_type || projectData.project_type,
+        created_at: projectSummary.created_at,
+        updated_at: projectSummary.updated_at,
+        owner_id: projectSummary.owner_id,
         
-        // Override with server-computed financial data
-        budget: projectAllocatedBudget,
-        spent: spentAmount,
+        // Financial data from project_summary (pre-calculated)
+        budget: projectSummary.budget || 0,
+        spent: projectSummary.spent || 0,
         currency: projectCurrency,
-        remainingBudget,
-        utilization,
-        totalExpenses,
-        paidAmount,
-        pendingAmount,
-        approvedAmount,
-        plannedAmount,
-        categoryTotals,
-        transactionCount: projectSummary.transactions || 0,
+        remainingBudget: (projectSummary.budget || 0) - (projectSummary.spent || 0),
+        utilization: projectSummary.spent_percentage || 0,
         
-        // Override with server-provided aggregate counts from project_summary view
+        // Calculate client-side financial breakdowns (only when needed for UI filtering)
+        totalExpenses: expensesData?.reduce((sum, expense) => sum + getTransactionAmount(expense), 0) || 0,
+        paidAmount: expensesData?.filter(e => e.payment_status === 'PAID').reduce((sum, e) => sum + getTransactionAmount(e), 0) || 0,
+        pendingAmount: expensesData?.filter(e => e.payment_status === 'PENDING').reduce((sum, e) => sum + getTransactionAmount(e), 0) || 0,
+        approvedAmount: expensesData?.filter(e => e.payment_status === 'APPROVED').reduce((sum, e) => sum + getTransactionAmount(e), 0) || 0,
+        plannedAmount: expensesData?.filter(e => e.payment_status === 'PLANNED').reduce((sum, e) => sum + getTransactionAmount(e), 0) || 0,
+        
+        // Category totals from financial summary
+        categoryTotals: {
+          material_costs: financialSummary.material_costs || 0,
+          labor_costs: financialSummary.labor_costs || 0,
+          equipment_costs: financialSummary.equipment_costs || 0,
+          permit_costs: financialSummary.permit_costs || 0,
+          design_costs: financialSummary.design_costs || 0,
+          other_costs: financialSummary.other_costs || 0
+        },
+        
+        // Server-provided aggregate counts from project_summary view
+        transactionCount: projectSummary.transactions || 0,
         phaseCount: projectSummary.phases || 0,
         openTasks: projectSummary.open_tasks || 0,
         materialCount: projectSummary.materials || 0,
         documentCount: projectSummary.documents || 0,
         memberCount: projectSummary.members || 0,
         
-        // Override with project_summary view data for these critical fields
-        location: projectSummary.location || transformedProject.location,
-        client: projectSummary.client || transformedProject.client,
-        project_type: projectSummary.project_type || transformedProject.project_type,
-        owner: {
-          id: Array.isArray(projectData.owner) 
-            ? (projectData.owner[0]?.id || '') 
-            : (projectData.owner?.id || ''),
-          first_name: Array.isArray(projectData.owner) 
-            ? (projectData.owner[0]?.first_name || '') 
-            : (projectData.owner?.first_name || ''),
-          last_name: Array.isArray(projectData.owner) 
-            ? (projectData.owner[0]?.last_name || '') 
-            : (projectData.owner?.last_name || ''),
-          email: Array.isArray(projectData.owner) 
-            ? (projectData.owner[0]?.email || '') 
-            : (projectData.owner?.email || '')
-        },
+        // Simplified owner info
+        owner: ownerInfo,
         
+        // Streamlined collections
         expenses: expensesData?.map(expense => ({
-          id: expense.id,
-          title: expense.title,
-          description: expense.description,
-          amount: expense.amount,
-          base_amount: expense.base_amount,
-          currency: expense.currency,
-          base_currency: expense.base_currency,
-          exchange_rate: expense.exchange_rate,
-          category: expense.category,
-          payment_status: expense.payment_status,
-          payment_date: expense.payment_date,
-          payment_method: expense.payment_method,
-          transaction_type: expense.transaction_type,
-          reference_number: expense.reference_number,
-          notes: expense.notes,
-          details: expense.details,
-          project_id: projectId, // Add required field
-          created_by: '', // Add required field (placeholder)
-          created_at: expense.created_at,
-          updated_at: expense.updated_at
+          ...expense,
+          project_id: projectId,
+          created_by: '' // Add required field
         })) || [],
         
-        teamMembers: [
-          ...normalizedRegisteredMembers,
-          ...normalizedDetailsMembers
-        ],
+        teamMembers: allTeamMembers,
+        phases: normalizedPhases,
         
-        phases: normalizedPhases
+        // Add missing required fields for BaseProjectForConsolidated compatibility
+        spent_percentage: projectSummary.spent_percentage || 0,
+        remaining: (projectSummary.budget || 0) - (projectSummary.spent || 0),
+        owner_name: `${ownerInfo.first_name} ${ownerInfo.last_name}`.trim() || 'Unknown',
+        materials: 0, // Count of materials
+        documents: 0, // Count of documents 
+        members: allTeamMembers.length, // Count of members
+        transactions: expensesData?.length || 0, // Count of transactions
+        tags: [], // Project tags array
+        timeline: projectData.timeline || {}
       };
 
       // Apply final normalization
@@ -478,8 +428,8 @@ export function useProjectSummaryMetrics(projectId: string) {
     // Team metrics
     team: {
       total: data.teamMembers.length,
-      active: data.teamMembers.filter((m: any) => m.status === 'active').length,
-      roles: data.teamMembers.reduce((acc: Record<string, number>, member: any) => {
+      active: data.teamMembers.filter(m => m.status === 'active').length,
+      roles: data.teamMembers.reduce((acc: Record<string, number>, member) => {
         acc[member.role] = (acc[member.role] || 0) + 1;
         return acc;
       }, {} as Record<string, number>)
@@ -488,18 +438,18 @@ export function useProjectSummaryMetrics(projectId: string) {
     // Phase metrics
     phases: {
       total: data.phases.length,
-      completed: data.phases.filter((p: any) => p.status === 'COMPLETED').length,
-      inProgress: data.phases.filter((p: any) => p.status === 'IN_PROGRESS').length,
-      pending: data.phases.filter((p: any) => p.status === 'PENDING').length,
-      overallProgress: data.phases.filter((p: any) => p.status === 'COMPLETED').length / Math.max(data.phases.length, 1) * 100
+      completed: data.phases.filter(p => p.status === PhaseStatusDB.COMPLETED).length,
+      inProgress: data.phases.filter(p => p.status === PhaseStatusDB.IN_PROGRESS).length,
+      pending: data.phases.filter(p => p.status === PhaseStatusDB.PLANNING).length,
+      overallProgress: data.phases.filter(p => p.status === PhaseStatusDB.COMPLETED).length / Math.max(data.phases.length, 1) * 100
     },
     
     // Task metrics (aggregated across all phases)
-    tasksByPhase: data.phases.reduce((acc: Record<string, any>, phase: any) => {
+    tasksByPhase: data.phases.reduce((acc: Record<string, { completed: number; inProgress: number; pending: number }>, phase) => {
       const tasks = phase.tasks || [];
-      const completed = tasks.filter((t: any) => t.status === 'COMPLETED').length;
-      const inProgress = tasks.filter((t: any) => t.status === 'IN_PROGRESS').length;
-      const pending = tasks.filter((t: any) => t.status === 'PENDING').length;
+      const completed = tasks.filter(t => t.status === TaskStatusDB.COMPLETED).length;
+      const inProgress = tasks.filter(t => t.status === TaskStatusDB.IN_PROGRESS).length;
+      const pending = tasks.filter(t => t.status === TaskStatusDB.PENDING).length;
       acc[phase.name] = { completed, inProgress, pending };
       return acc;
     }, {})

@@ -34,27 +34,13 @@ export function BudgetOverviewCard({
   const projectCurrency = projectData?.currency || 'USD';
   
   // Calculate spent amount by summing individual expenses in their base currency
-  const spent = React.useMemo(() => {
-    if (!projectData?.expenses) return 0;
+  const spent = projectData?.spent || 0;
     
-    // Sum all expenses, using base_amount if available (for currency conversion)
-    const totalSpent = projectData.expenses.reduce((sum, expense) => {
-      // Use base_amount if available (converted to project currency), otherwise use amount
-      const expenseAmount = expense.base_amount || expense.amount || 0;
-      return sum + expenseAmount;
-    }, 0);
-    
-    return Math.max(0, totalSpent);
-  }, [projectData?.expenses]);
+
   
   // Calculate financial metrics - utilization comes pre-calculated from database view
-  const remaining = allocated - spent;
-  const utilization = React.useMemo(() => {
-    // Use pre-calculated spent_percentage from database view (already rounded to 1 decimal)
-    const percentage = projectData?.utilization || 0;
-    // Cap utilization at 150% for display purposes to prevent UI overflow
-    return Math.min(percentage, 150);
-  }, [projectData?.utilization]);
+  const remaining = projectData?.remainingBudget || 0;
+  const utilization = projectData?.utilization || projectData?.spent_percentage || 0;
   
   // All hooks must be called before any conditional returns
   const [progress, setProgress] = React.useState(0);
@@ -188,7 +174,7 @@ export function BudgetOverviewCard({
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
               <div className={cn('text-2xl font-bold', statusColor)}>
-                {Math.round(Math.min(utilization, 999))}%
+                {Math.min(utilization, 999)}%
               </div>
               <div className="text-xs text-slate-500">Used</div>
             </div>

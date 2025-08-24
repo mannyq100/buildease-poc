@@ -17,17 +17,14 @@ export { toDbPhaseStatus, toUiPhaseStatus, toDbTaskStatus, toUiTaskStatus };
  */
 export function normalizeProjectData(project: any): any {
   if (!project) return project;
-  
+  console.log('project data before normalization ' , project)
   return {
     ...project,
     // Normalize phase data if present
     ...(project.phases && {
       phases: project.phases.map(normalizePhaseData)
-    }),
-    // Normalize any status fields
-    ...(project.status && {
-      status: toUiPhaseStatus(project.status)
     })
+  
   };
 }
 

@@ -73,9 +73,11 @@ function ProjectHeader({
 }: ProjectHeaderProps) {
   const { data: consolidated, error } = useProjectData(project.id);
 
+
   // Process data once with useMemo - optimized to use view data directly
   const metrics = useMemo(() => {
     const c = consolidated;
+    console.log('consolidated data: ', consolidated);
 
     // Use consolidated data directly with safe fallbacks
     const progress = c?.progress ?? project.progress ?? 0;
@@ -83,9 +85,7 @@ function ProjectHeader({
     const spent = c?.spent ?? 0;
     const currency = c?.currency ?? project.currency ?? 'USD';
     const remaining = c?.remainingBudget ?? Math.max(0, budget - spent);
-    const spentPercentage = c?.utilization !== undefined
-      ? Math.round(c.utilization)
-      : (budget > 0 ? Math.round((spent / budget) * 100) : 0);
+    const spentPercentage = c?.utilization || c?.spent_percentage || 0;
 
     // Timeline from transformed project data or fallback
     const endDate = c?.end_date || project.end_date;
@@ -113,7 +113,11 @@ function ProjectHeader({
       transactionCount: c?.transactionCount ?? 0,
       client: c?.client ?? project.client,
       location: c?.location ?? project.location,
-      projectType: c?.project_type ?? project.project_type ?? 'Construction'
+      projectType: c?.project_type ?? project.project_type ?? 'Construction',
+      // Include status, name, and description for optimistic updates
+      status: c?.status ?? project.status,
+      name: c?.name ?? project.name,
+      description: c?.description ?? project.description
     };
   }, [consolidated, project]);
 
@@ -153,13 +157,13 @@ function ProjectHeader({
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <h1 className="text-lg sm:text-xl font-bold truncate">{project.name}</h1>
-                  <StatusBadge status={project.status as ProjectStatus} />
+                  <h1 className="text-lg sm:text-xl font-bold truncate">{metrics.name}</h1>
+                  <StatusBadge status={metrics.status as ProjectStatus} />
                 </div>
                 {metrics.location && (
                   <div className="flex items-center text-xs text-white/80 px-2 py-1 mt-0.5">
                     <MapPin className="h-3 w-3 mr-1" />
-                    <span className="truncate max-w-[120px]">{metrics.location}</span>
+                    <span className="truncate max-w-[300px]">{metrics.location}</span>
                   </div>
                 )}
               </div>
@@ -201,9 +205,9 @@ function ProjectHeader({
       </div>
 
       {/* Project Description - Outside Blue Background */}
-      {project.description && (
+      {metrics.description && (
         <div className="px-4 py-3 sm:px-6 sm:py-4 bg-slate-50 border-b border-slate-200/60">
-          <p className="text-sm text-slate-700 leading-relaxed">{project.description}</p>
+          <p className="text-sm text-slate-700 leading-relaxed">{metrics.description}</p>
         </div>
       )}
 
@@ -330,7 +334,7 @@ function ProjectHeader({
           {metrics.transactionCount > 0 && (
             <div className="shrink-0 snap-start text-xs bg-green-50 text-green-700 px-2 py-1 rounded inline-flex items-center gap-1.5">
               <DollarSign className="h-3 w-3" />
-              <span>{metrics.transactionCount} expenses</span>
+              <span>{metrics.transactionCount} financial transactions</span>
             </div>
           )}
         </div>

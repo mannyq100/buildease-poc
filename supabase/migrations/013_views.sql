@@ -49,7 +49,7 @@ phases_agg AS (
 tasks_agg AS (
     SELECT 
         t.project_id,
-        COUNT(t.id) FILTER (WHERE t.status IN ('PENDING', 'IN_PROGRESS')) AS open_task_count
+        COUNT(t.id) FILTER (WHERE UPPER(t.status) IN ('PENDING', 'IN_PROGRESS')) AS open_task_count
     FROM construction_mgr.be_task t
     GROUP BY t.project_id
 ),

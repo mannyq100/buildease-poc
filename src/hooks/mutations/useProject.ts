@@ -171,7 +171,7 @@ export function useCreateProject() {
 }
 
 /**
- * Hook to update an existing project
+ * Hook to update an existing project with optimistic updates
  */
 export function useUpdateProject() {
   const queryClient = useQueryClient();
@@ -192,7 +192,8 @@ export function useUpdateProject() {
       
       // Structure the update data to match the database schema
       const updateData: any = {
-        ...directFields
+        ...directFields,
+        updated_at: new Date().toISOString()
       };
 
       // Map UI status to database status if status is being updated
@@ -244,21 +245,81 @@ export function useUpdateProject() {
       if (error) throw error;
       return project;
     },
-    onSuccess: async (updatedProject, variables) => {
-      console.log('[ACTIVITY_DEBUG] [useUpdateProject] onSuccess called', {
-        projectId: updatedProject.id,
-        projectName: updatedProject.name,
-        updates: variables,
-        timestamp: new Date().toISOString()
-      });
+    // Optimistic update
+    onMutate: async (variables) => {
+      const projectId = variables.id;
       
-      // Update the project in cache
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: queryKeys.projects.detail(projectId) });
+
+      // Snapshot the previous value
+      const previousProject = queryClient.getQueryData(queryKeys.projects.detail(projectId));
+
+      // Create optimistic update data
+      const optimisticUpdate: any = {
+        ...variables,
+        updated_at: new Date().toISOString()
+      };
+
+      // Handle JSONB fields for optimistic update
+      if (variables.client !== undefined || variables.project_type !== undefined || variables.location !== undefined) {
+        const existingDetails = (previousProject as any)?.details || {};
+        optimisticUpdate.details = {
+          ...existingDetails,
+          ...(variables.client !== undefined && { client: variables.client }),
+          ...(variables.project_type !== undefined && { project_type: variables.project_type }),
+          ...(variables.location !== undefined && { location: variables.location })
+        };
+      }
+
+      if (variables.budget !== undefined || variables.currency !== undefined) {
+        const existingBudget = (previousProject as any)?.budget || {};
+        optimisticUpdate.budget = {
+          ...existingBudget,
+          ...(variables.budget !== undefined && { allocated: variables.budget }),
+          ...(variables.currency !== undefined && { currency: variables.currency })
+        };
+      }
+
+      if (variables.start_date !== undefined || variables.end_date !== undefined) {
+        const existingTimeline = (previousProject as any)?.timeline || {};
+        optimisticUpdate.timeline = {
+          ...existingTimeline,
+          ...(variables.start_date !== undefined && { planned_start: variables.start_date }),
+          ...(variables.end_date !== undefined && { planned_end: variables.end_date })
+        };
+      }
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(queryKeys.projects.detail(projectId), (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          ...optimisticUpdate
+        };
+      });
+
+      return { previousProject, projectId };
+    },
+    onError: (error, variables, context) => {
+      // Rollback optimistic update on error
+      if (context?.previousProject && context?.projectId) {
+        queryClient.setQueryData(
+          queryKeys.projects.detail(context.projectId), 
+          context.previousProject
+        );
+      }
+      console.error('Error updating project:', error);
+      toast.error(error.message || 'Failed to update project');
+    },
+    onSuccess: async (updatedProject, variables) => {
+      // Update the project in cache (optimistic update already applied, this ensures server data)
       queryClient.setQueryData(
         queryKeys.projects.detail(updatedProject.id), 
         updatedProject
       );
       
-      // Invalidate user projects list to reflect changes
+      // Invalidate related queries to reflect changes elsewhere
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.projects.all 
       });
@@ -266,128 +327,46 @@ export function useUpdateProject() {
         queryKey: queryKeys.projects.list({}) 
       });
 
-      // Fire-and-forget activity logging with comprehensive debug logging
-      console.log('[ACTIVITY_DEBUG] [useUpdateProject] Starting activity logging for project update');
+      // Use standardized activity logging
+      const { logProjectActivity } = await import('@/utils/activityLogging');
       
-      (async () => {
-        try {
-          console.log('[ACTIVITY_DEBUG] [useUpdateProject] Fetching auth user');
-          const { data: auth, error: authError } = await supabase.auth.getUser();
-          
-          if (authError) {
-            console.error('[ACTIVITY_DEBUG] [useUpdateProject] Auth error:', authError);
-            return;
-          }
-          
-          console.log('[ACTIVITY_DEBUG] [useUpdateProject] Auth user fetched successfully', {
-            userId: auth?.user?.id,
-            hasUser: !!auth?.user,
-            userMetadata: auth?.user?.user_metadata
-          });
-          
-          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
-              (auth?.user?.user_metadata?.name as string | undefined) ||
-              (auth?.user?.email as string | undefined);
-              
-          // Determine activity type and message based on what was updated
-          const wasStatusUpdate = variables.status !== undefined;
-          const wasProgressUpdate = variables.progress_percentage !== undefined;
-          const wasBudgetUpdate = variables.budget !== undefined;
-          const wasNameUpdate = variables.name !== undefined;
-          
-          const activityType = wasStatusUpdate ? 'project_status_update' : 'project_update';
-          
-          // Create more specific activity titles
-          let activityTitle: string;
-          if (wasStatusUpdate) {
-            activityTitle = `Project status changed to ${variables.status?.toUpperCase()}: ${updatedProject.name}`;
-          } else if (wasNameUpdate) {
-            activityTitle = `Project renamed: ${variables.name}`;
-          } else if (wasBudgetUpdate) {
-            activityTitle = `Project budget updated: ${updatedProject.name}`;
-          } else if (variables.client !== undefined) {
-            activityTitle = `Client information updated: ${updatedProject.name}`;
-          } else if (variables.location !== undefined) {
-            activityTitle = `Location updated: ${updatedProject.name}`;
-          } else {
-            activityTitle = `Project details updated: ${updatedProject.name}`;
-          }
-          
-          // Create more descriptive descriptions
-          let activityDescription: string;
-          if (wasStatusUpdate) {
-            activityDescription = `Project "${updatedProject.name}" status changed from previous state to ${variables.status}`;
-          } else {
-            const updates = [];
-            if (wasNameUpdate) updates.push(`name changed to "${variables.name}"`);
-            if (wasBudgetUpdate) updates.push(`budget set to $${variables.budget?.toLocaleString()}`);
-            if (variables.client !== undefined) updates.push(`client updated to "${variables.client}"`);
-            if (variables.location !== undefined) updates.push(`location updated`);
-            if (variables.description !== undefined) updates.push('description modified');
-            if (variables.project_type !== undefined) updates.push(`type set to "${variables.project_type}"`);
-            
-            activityDescription = updates.length > 0 
-              ? `Project "${updatedProject.name}" updated: ${updates.join(', ')}`
-              : `Project "${updatedProject.name}" details were modified`;
-          }
-          
-          const activityStatus = wasStatusUpdate && variables.status === 'completed' ? 'success' : 'info';
-              
-          console.log('[ACTIVITY_DEBUG] [useUpdateProject] Calling activityService.createActivity', {
-            project_id: updatedProject.id,
-            activity_type: activityType,
-            title: activityTitle,
-            description: activityDescription,
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'project',
-            entity_id: updatedProject.id
-          });
-          
-          const result = await activityService.createActivity({
-            project_id: updatedProject.id,
-            activity_type: activityType,
-            title: activityTitle,
-            description: activityDescription,
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'project',
-            entity_id: updatedProject.id,
-            metadata: {
-              projectName: updatedProject.name,
-              updatedFields: Object.keys(variables).filter(key => key !== 'id'),
-              status: variables.status,
-              progress: variables.progress_percentage,
-              budget: variables.budget,
-              client: variables.client,
-              location: variables.location
-            },
-            status: activityStatus
-          });
-          
-          console.log('[ACTIVITY_DEBUG] [useUpdateProject] Activity created successfully', {
-            success: !!result,
-            activityId: result?.id,
-            result
-          });
-          
-        } catch (e) {
-          console.error('[ACTIVITY_DEBUG] [useUpdateProject] Activity logging failed:', {
-            error: e,
-            errorMessage: e instanceof Error ? e.message : String(e),
-            errorStack: e instanceof Error ? e.stack : undefined,
-            projectId: updatedProject.id,
-            projectName: updatedProject.name,
-            timestamp: new Date().toISOString()
-          });
-        }
-      })();
+      // Determine activity type based on what was updated
+      const wasStatusUpdate = variables.status !== undefined;
+      const activityType = wasStatusUpdate ? 'project_status_update' : 'project_update';
+      
+      // Create metadata for activity logging
+      const updateTypes: string[] = [];
+      if (variables.name !== undefined) updateTypes.push('name');
+      if (variables.budget !== undefined) updateTypes.push('budget');
+      if (variables.description !== undefined) updateTypes.push('description');
+      if (variables.client !== undefined) updateTypes.push('client');
+      if (variables.project_type !== undefined) updateTypes.push('type');
+      if (variables.location !== undefined) updateTypes.push('location');
+      if (variables.start_date !== undefined || variables.end_date !== undefined) updateTypes.push('timeline');
+      if (variables.currency !== undefined) updateTypes.push('currency');
+      
+      const activityMetadata = {
+        updates: updateTypes,
+        status: variables.status,
+        progress: variables.progress_percentage,
+        budget: variables.budget,
+        currency: variables.currency,
+        client: variables.client,
+        project_type: variables.project_type,
+        location: variables.location
+      };
+
+      // Fire-and-forget activity logging
+      logProjectActivity(
+        updatedProject.id,
+        activityType,
+        updatedProject.name,
+        activityMetadata
+      ).catch(error => {
+        console.error('Activity logging failed:', error);
+      });
 
       toast.success('Project updated successfully');
-    },
-    onError: (error: any) => {
-      console.error('Error updating project:', error);
-      toast.error(error.message || 'Failed to update project');
     }
   });
 }
@@ -468,113 +447,25 @@ export function useUpdateProjectStatus() {
       }
     },
     onSuccess: async (updatedProject, variables) => {
-      console.log('[ACTIVITY_DEBUG] [useUpdateProjectStatus] onSuccess called', {
-        projectId: updatedProject.id,
-        projectName: updatedProject.name,
-        newStatus: variables.status,
-        newProgress: variables.progress,
-        timestamp: new Date().toISOString()
+      // Use standardized activity logging
+      const { logProjectActivity } = await import('@/utils/activityLogging');
+      
+      const activityMetadata = {
+        status: variables.status,
+        progress: variables.progress
+      };
+
+      // Fire-and-forget activity logging
+      logProjectActivity(
+        updatedProject.id,
+        'project_status_update',
+        updatedProject.name,
+        activityMetadata
+      ).catch(error => {
+        console.error('Activity logging failed:', error);
       });
-      
-      // Fire-and-forget activity logging with comprehensive debug logging
-      console.log('[ACTIVITY_DEBUG] [useUpdateProjectStatus] Starting activity logging for project status update');
-      
-      (async () => {
-        try {
-          console.log('[ACTIVITY_DEBUG] [useUpdateProjectStatus] Fetching auth user');
-          const { data: auth, error: authError } = await supabase.auth.getUser();
-          
-          if (authError) {
-            console.error('[ACTIVITY_DEBUG] [useUpdateProjectStatus] Auth error:', authError);
-            return;
-          }
-          
-          console.log('[ACTIVITY_DEBUG] [useUpdateProjectStatus] Auth user fetched successfully', {
-            userId: auth?.user?.id,
-            hasUser: !!auth?.user,
-            userMetadata: auth?.user?.user_metadata
-          });
-          
-          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
-              (auth?.user?.user_metadata?.name as string | undefined) ||
-              (auth?.user?.email as string | undefined);
-              
-          // Determine activity type and message based on status
-          const wasCompleted = variables.status === 'completed';
-          const wasStarted = variables.status === 'in_progress';
-          const wasPaused = variables.status === 'on_hold';
-          
-          const activityType = 'project_status_update';
-          
-          let activityTitle: string;
-          if (wasCompleted) {
-            activityTitle = `Project completed: ${updatedProject.name} ✅`;
-          } else if (wasStarted) {
-            activityTitle = `Project started: ${updatedProject.name}`;
-          } else if (wasPaused) {
-            activityTitle = `Project paused: ${updatedProject.name}`;
-          } else {
-            activityTitle = `Status changed to ${variables.status?.toUpperCase()}: ${updatedProject.name}`;
-          }
-          
-          let activityDescription: string;
-          if (wasCompleted) {
-            activityDescription = `Project "${updatedProject.name}" has been marked as completed${variables.progress ? ` with ${variables.progress}% progress` : ''}`;
-          } else if (wasStarted) {
-            activityDescription = `Construction work has begun on project "${updatedProject.name}"${variables.progress ? ` (${variables.progress}% progress)` : ''}`;
-          } else if (wasPaused) {
-            activityDescription = `Project "${updatedProject.name}" has been temporarily paused${variables.progress ? ` at ${variables.progress}% progress` : ''}`;
-          } else {
-            activityDescription = `Project "${updatedProject.name}" status updated to ${variables.status}${variables.progress ? ` (${variables.progress}% complete)` : ''}`;
-          }
-          
-          const activityStatus = wasCompleted ? 'success' : 'info';
-              
-          console.log('[ACTIVITY_DEBUG] [useUpdateProjectStatus] Calling activityService.createActivity', {
-            project_id: updatedProject.id,
-            activity_type: activityType,
-            title: activityTitle,
-            description: activityDescription,
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'project',
-            entity_id: updatedProject.id
-          });
-          
-          const result = await activityService.createActivity({
-            project_id: updatedProject.id,
-            activity_type: activityType,
-            title: activityTitle,
-            description: activityDescription,
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'project',
-            entity_id: updatedProject.id,
-            metadata: {
-              projectName: updatedProject.name,
-              status: variables.status,
-              progress: variables.progress
-            },
-            status: activityStatus
-          });
-          
-          console.log('[ACTIVITY_DEBUG] [useUpdateProjectStatus] Activity created successfully', {
-            success: !!result,
-            activityId: result?.id,
-            result
-          });
-          
-        } catch (e) {
-          console.error('[ACTIVITY_DEBUG] [useUpdateProjectStatus] Activity logging failed:', {
-            error: e,
-            errorMessage: e instanceof Error ? e.message : String(e),
-            errorStack: e instanceof Error ? e.stack : undefined,
-            projectId: updatedProject.id,
-            projectName: updatedProject.name,
-            timestamp: new Date().toISOString()
-          });
-        }
-      })();
+
+      toast.success(`Project status updated to ${variables.status}`);
     }
   });
 }
