@@ -63,3 +63,18 @@ DO $$ BEGIN
   END IF;
 END $$;
 
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'media_category') THEN
+    CREATE TYPE construction_mgr.media_category AS ENUM (
+        'profile_image',
+        'inspiration_image', 
+        'progress_image',
+        'document'
+    );
+  END IF;
+END $$;
+
+-- Add comments for new enum types
+COMMENT ON TYPE construction_mgr.media_category IS 'Media category aligned with storage buckets: profile_image (profiles bucket), inspiration_image (project-inspiration bucket), progress_image (progress-images bucket), document (documents bucket)';
+

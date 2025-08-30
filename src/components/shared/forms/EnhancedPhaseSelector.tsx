@@ -12,7 +12,7 @@ import {
   enhanceTasksForProject,
   getProjectScale,
   getProjectTimelineEstimate
-} from '@/utils/enhancedPhaseUtils';
+} from '@/utils/phaseUtils';
 import { CONSTRUCTION_PHASES_WITH_TASKS } from '@/data/constants/constructionPhasesWithTasks';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';

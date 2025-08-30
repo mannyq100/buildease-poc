@@ -98,60 +98,66 @@ export const LazyMobileStickyActionBar = lazyWithRetry(
 
 
 // Advanced features - Load on demand
-export const LazyDragAndDropProvider = lazyWithRetry(
-  () => import('@/components/shared/DragAndDropProvider').then(module => ({
-    default: module.DragAndDropProvider
-  }))
-);
+// TODO: Create these components when needed
+// export const LazyDragAndDropProvider = lazyWithRetry(
+//   () => import('@/components/shared/DragAndDropProvider').then(module => ({
+//     default: module.DragAndDropProvider
+//   }))
+// );
 
 // Chart and visualization components - Heavy libraries
-export const LazyProgressChart = lazyWithRetry(
-  () => import('@/components/shared/charts/ProgressChart')
-);
+// TODO: Create chart components when needed
+// export const LazyProgressChart = lazyWithRetry(
+//   () => import('@/components/shared/charts/ProgressChart')
+// );
 
-export const LazyCostChart = lazyWithRetry(
-  () => import('@/components/shared/charts/CostChart')
-);
+// export const LazyCostChart = lazyWithRetry(
+//   () => import('@/components/shared/charts/CostChart')
+// );
 
-export const LazyTimelineChart = lazyWithRetry(
-  () => import('@/components/shared/charts/TimelineChart')
-);
+// export const LazyTimelineChart = lazyWithRetry(
+//   () => import('@/components/shared/charts/TimelineChart')
+// );
 
 // Search and filtering - Separate chunk
-export const LazyAdvancedSearch = lazyWithRetry(
-  () => import('@/components/shared/search/AdvancedSearch')
-);
+// TODO: Create search components when needed
+// export const LazyAdvancedSearch = lazyWithRetry(
+//   () => import('@/components/shared/search/AdvancedSearch')
+// );
 
-export const LazySearchFilters = lazyWithRetry(
-  () => import('@/components/shared/search/SearchFilters')
-);
+// export const LazySearchFilters = lazyWithRetry(
+//   () => import('@/components/shared/search/SearchFilters')
+// );
 
 // Report generation - Heavy computation
-export const LazyReportGenerator = lazyWithRetry(
-  () => import('@/components/shared/reports/ReportGenerator')
-);
+// TODO: Create report components when needed
+// export const LazyReportGenerator = lazyWithRetry(
+//   () => import('@/components/shared/reports/ReportGenerator')
+// );
 
-export const LazyPDFExporter = lazyWithRetry(
-  () => import('@/components/shared/export/PDFExporter')
-);
+// export const LazyPDFExporter = lazyWithRetry(
+//   () => import('@/components/shared/export/PDFExporter')
+// );
 
 // Third-party integrations - External dependencies
-export const LazyCalendarIntegration = lazyWithRetry(
-  () => import('@/components/integrations/CalendarIntegration')
-);
+// TODO: Create integration components when needed
+// export const LazyCalendarIntegration = lazyWithRetry(
+//   () => import('@/components/integrations/CalendarIntegration')
+// );
 
-export const LazyMapView = lazyWithRetry(
-  () => import('@/components/shared/maps/MapView')
-);
+// export const LazyMapView = lazyWithRetry(
+//   () => import('@/components/shared/maps/MapView')
+// );
 
 // Settings and configuration
-export const LazySettingsPanel = lazyWithRetry(
-  () => import('@/components/settings/SettingsPanel')
-);
+// TODO: Create settings components when needed
+// export const LazySettingsPanel = lazyWithRetry(
+//   () => import('@/components/settings/SettingsPanel')
+// );
 
-export const LazyUserPreferences = lazyWithRetry(
-  () => import('@/components/settings/UserPreferences')
-);
+// export const LazyUserPreferences = lazyWithRetry(
+//   () => import('@/components/settings/UserPreferences')
+// );
 
 // Bundle analysis helpers for development
 export const getBundleInfo = () => {
@@ -199,8 +205,13 @@ export const preloadCriticalComponents = () => {
 
   componentsToPreload.forEach((LazyComponent) => {
     schedulePreload(() => {
-      // Trigger the lazy import
-      LazyComponent.preload?.();
+      // Trigger the lazy import by accessing the component
+      // Since React.lazy doesn't have preload method, we can trigger loading
+      try {
+        LazyComponent._payload?._result;
+      } catch {
+        // Component will load when needed
+      }
     });
   });
 };

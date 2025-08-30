@@ -7,14 +7,14 @@
 
 -- Material table
 CREATE TABLE construction_mgr.be_material (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) NOT NULL,
     description TEXT,
     category VARCHAR(50),
     unit VARCHAR(20) NOT NULL,
     project_id UUID NOT NULL,
     specs JSONB NOT NULL DEFAULT '{}',
-    currency construction_mgr.currency DEFAULT 'GHS',
+    currency VARCHAR(3) NOT NULL,
     current_quantity NUMERIC(12, 4),
     min_required_quantity NUMERIC(12, 4),
     unit_price NUMERIC(12, 2),
@@ -52,7 +52,7 @@ CREATE INDEX IF NOT EXISTS idx_material_supplier ON construction_mgr.be_material
 
 -- Material Transaction table
 CREATE TABLE construction_mgr.material_transaction (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     material_id UUID NOT NULL,
     project_id UUID,
     quantity NUMERIC(12, 4) NOT NULL,

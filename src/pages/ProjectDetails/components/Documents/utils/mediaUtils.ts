@@ -64,9 +64,16 @@ export const getCategoryBadgeConfig = (category: string) => {
 };
 
 /**
- * Check if media item is an image
+ * Check if media item is an image/video (should show preview)
+ * Uses document_type field from database for accurate detection
  */
 export const isImageType = (item: MediaItem): boolean => {
+  // First check document_type field for PHOTO/VIDEO (most accurate)
+  if (item.documentType === 'PHOTO' || item.documentType === 'VIDEO') {
+    return true;
+  }
+  
+  // Fallback to existing type logic for backward compatibility
   return ['image', 'progress-image'].includes(item.type);
 };
 
@@ -95,4 +102,18 @@ export const DOCUMENT_CATEGORIES = [
  */
 export const isDocumentType = (category: string): boolean => {
   return DOCUMENT_CATEGORIES.includes(category);
+};
+
+/**
+ * Check if media item should be treated as a downloadable document
+ * Uses document_type field from database for accurate detection
+ */
+export const isDownloadableDocument = (item: MediaItem): boolean => {
+  // If we have document_type, use it to determine if it's NOT a photo/video
+  if (item.documentType) {
+    return !['PHOTO', 'VIDEO'].includes(item.documentType);
+  }
+  
+  // Fallback to existing type logic
+  return item.type === 'document';
 };

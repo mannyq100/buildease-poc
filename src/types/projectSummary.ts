@@ -11,9 +11,8 @@ export interface ProjectSummary {
   owner_id: string;
   status: 'active' | 'planning' | 'completed' | 'on-hold';
   
-  // Visual assets
-  profile_image: string | null;
-  inspiration_images: string[] | null;
+  // Visual assets - now stored in be_document table with media categories
+  // Use useProjectMedia hooks to fetch media by category
   
   // Project details
   client: string;

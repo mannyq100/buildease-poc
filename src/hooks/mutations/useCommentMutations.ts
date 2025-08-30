@@ -16,7 +16,6 @@ import {
   COLLABORATION_SUCCESS
 } from '@/constants/collaborationConstants';
 import { truncateCommentContent } from '@/utils/collaborationUtils';
-import * as activityService from '@/services/activityService';
 import { logActivityAsync } from '@/utils/activityLogging';
 
 /**

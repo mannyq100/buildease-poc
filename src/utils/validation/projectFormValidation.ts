@@ -4,7 +4,7 @@
  * Follows BuildEase standards: clean, maintainable, performant validation
  */
 
-import { CreateProjectFormValues } from '../../pages/CreateProject';
+import { CreateProjectFormValues } from '../../pages/CreateProject/schema';
 
 // Validation error type
 export interface ValidationError {

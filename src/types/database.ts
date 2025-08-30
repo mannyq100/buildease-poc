@@ -254,8 +254,9 @@ export interface MaterialTransaction {
   created_at: string;
 }
 
-// Document types
+// Document and Media types
 export type DocumentType = 'PERMIT' | 'DRAWING' | 'CONTRACT' | 'INVOICE' | 'RECEIPT' | 'REPORT' | 'SPECIFICATION' | 'SCHEDULE' | 'PHOTO' | 'VIDEO' | 'MANUAL' | 'CERTIFICATE' | 'OTHER';
+export type MediaCategory = 'profile_image' | 'inspiration_image' | 'progress_image' | 'document';
 export type ProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed';
 export type CollectionType = 'album' | 'progress' | 'inspection' | 'before_after' | 'custom';
 export type MediaProcessingType = 'thumbnail' | 'compress' | 'watermark' | 'ocr' | 'virus_scan';
@@ -265,6 +266,7 @@ export interface Document {
   name: string;
   description?: string;
   document_type: DocumentType;
+  category: MediaCategory;
   project_id: string;
   phase_id?: string;
   file_path: string;
@@ -471,9 +473,7 @@ export interface Project {
   budget: ProjectBudget;
   owner_id: string;
   slug?: string | null;
-  profile_image?: string | null;
-  inspiration_images?: string[];
-  progress_images?: string[];
+  // Media files now stored in be_document table with categories
   created_at: string;
   updated_at: string;
 }

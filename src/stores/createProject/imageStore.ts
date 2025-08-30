@@ -85,9 +85,9 @@ function base64ToFile(base64: string, fileName: string, fileType: string): File 
 }
 
 // Save images to localStorage
-function saveToLocalStorage(images: LocalImageFile[], profileImageId: string | null): void {
+async function saveToLocalStorage(images: LocalImageFile[], profileImageId: string | null): Promise<void> {
   try {
-    Promise.all(
+    const results = await Promise.all(
       images.map(async (img) => {
         try {
           const fileData = await fileToBase64(img.file);
@@ -104,19 +104,17 @@ function saveToLocalStorage(images: LocalImageFile[], profileImageId: string | n
           return null;
         }
       })
-    ).then(results => {
-      const validResults = results.filter(Boolean) as SerializableImageFile[];
-      const storageData = {
-        images: validResults,
-        profileImageId,
-        timestamp: Date.now()
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(storageData));
-    }).catch(error => {
-      console.warn('Failed to save images to localStorage:', error);
-    });
+    );
+
+    const validResults = results.filter(Boolean) as SerializableImageFile[];
+    const storageData = {
+      images: validResults,
+      profileImageId,
+      timestamp: Date.now()
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(storageData));
   } catch (error) {
-    console.warn('Error saving to localStorage:', error);
+    console.warn('Failed to save images to localStorage:', error);
   }
 }
 
@@ -199,10 +197,11 @@ async function uploadSingleImage(
   file: File,
   userId: string,
   projectId: string,
-  _isProfile: boolean = false
+  isProfile: boolean = false
 ): Promise<string> {
-  // Per new flow, all images (including profile) go into the 'project-inspiration' bucket
-  const bucket = 'project-inspiration';
+  // Route to correct bucket based on image type
+  // Profile images go to 'profiles' bucket, inspiration images go to 'project-inspiration' bucket
+  const bucket = isProfile ? 'profiles' : 'project-inspiration';
   
   const uploadResult = await uploadFile(file, {
     bucket: bucket as any, // StorageBucket type
@@ -240,8 +239,10 @@ export const useImageStore = create<ImageStoreState>()(
 
         set((state) => {
           const newFiles = [...state.localFiles, newImage];
-          // Save to localStorage
-          saveToLocalStorage(newFiles, state.localProfileImageId);
+          // Save to localStorage (async, non-blocking)
+          saveToLocalStorage(newFiles, state.localProfileImageId).catch(error => {
+            console.warn('Failed to save to localStorage:', error);
+          });
           
           return {
             localFiles: newFiles,
@@ -260,8 +261,10 @@ export const useImageStore = create<ImageStoreState>()(
           const newFiles = state.localFiles.filter(img => img.id !== id);
           const newProfileImageId = state.localProfileImageId === id ? null : state.localProfileImageId;
           
-          // Save to localStorage
-          saveToLocalStorage(newFiles, newProfileImageId);
+          // Save to localStorage (async, non-blocking)
+          saveToLocalStorage(newFiles, newProfileImageId).catch(error => {
+            console.warn('Failed to save to localStorage:', error);
+          });
 
           return {
             localFiles: newFiles,
@@ -272,8 +275,10 @@ export const useImageStore = create<ImageStoreState>()(
 
       setProfileImage: (id) => {
         set((state) => {
-          // Save to localStorage
-          saveToLocalStorage(state.localFiles, id);
+          // Save to localStorage (async, non-blocking)
+          saveToLocalStorage(state.localFiles, id).catch(error => {
+            console.warn('Failed to save to localStorage:', error);
+          });
           
           return { localProfileImageId: id };
         }, false, 'setProfileImage');

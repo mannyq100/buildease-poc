@@ -44,8 +44,6 @@ export const useProjects = (filters?: ProjectFilters) => {
           description,
           owner_id,
           status,
-          profile_image,
-          inspiration_images,
           details,
           timeline,
           budget,
@@ -234,7 +232,6 @@ export const useProjectSearch = (searchTerm: string, enabled: boolean = true) =>
           name,
           description,
           details,
-          profile_image,
           be_project_member!inner (
             user_id,
             role

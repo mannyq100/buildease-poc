@@ -29,9 +29,7 @@ export interface UpdateProjectWithTrackingData {
   end_date?: string;
   details?: any;
   timeline?: any;
-  profile_image?: string;
-  inspiration_images?: string[];
-  progress_images?: string[];
+  // Removed: profile_image, inspiration_images, progress_images - now handled by be_document table
 }
 
 /**
@@ -246,7 +244,7 @@ export function useUpdateProjectWithTracking(projectId: string) {
         // Track general project updates
         let activityTitle = `Project updated: ${projectName}`;
         let activityDescription = `Project "${projectName}" details were modified`;
-        let activityStatus: 'success' | 'info' | 'warning' | 'error' = 'info';
+        const activityStatus: 'success' | 'info' | 'warning' | 'error' = 'info';
 
         // Provide more specific descriptions for common updates
         if (changedFields.length === 1) {
@@ -268,21 +266,7 @@ export function useUpdateProjectWithTracking(projectId: string) {
               activityTitle = 'Project client updated';
               activityDescription = `Project client information was updated`;
               break;
-            case 'profile_image':
-              activityTitle = 'Profile photo updated';
-              activityDescription = `Project profile photo was changed for "${projectName}"`;
-              activityStatus = 'success';
-              break;
-            case 'inspiration_images':
-              activityTitle = 'Inspiration photos updated';
-              activityDescription = `Project inspiration gallery was updated for "${projectName}"`;
-              activityStatus = 'success';
-              break;
-            case 'progress_images':
-              activityTitle = 'Progress photos updated';
-              activityDescription = `Project progress photos were updated for "${projectName}"`;
-              activityStatus = 'success';
-              break;
+            // Image updates now handled via be_document table - use media mutation hooks
           }
         } else if (changedFields.length > 1) {
           activityDescription = `Multiple project fields were updated: ${changedFields.join(', ')}`;
@@ -302,7 +286,7 @@ export function useUpdateProjectWithTracking(projectId: string) {
               hasDescriptionChange: changedFields.includes('description'),
               hasBudgetChange: changedFields.includes('budget') || changedFields.includes('currency'),
               hasTimelineChange: changedFields.includes('start_date') || changedFields.includes('end_date'),
-              hasImageChange: changedFields.includes('profile_image') || changedFields.includes('inspiration_images'),
+              // Image changes now tracked via media mutation activity logging
               fieldCount: changedFields.length
             },
             status: activityStatus
@@ -376,93 +360,3 @@ export function useDeleteProjectWithTracking(projectId: string) {
   });
 }
 
-/**
- * Hook to add project images with activity tracking
- */
-export function useUpdateProjectImagesWithTracking(projectId: string) {
-  const queryClient = useQueryClient();
-  const activityTracker = useActivityTracker({ projectId });
-
-  return useMutation({
-    mutationFn: async ({
-      imageType,
-      imageUrls,
-      projectName
-    }: {
-      imageType: 'profile' | 'inspiration' | 'progress';
-      imageUrls: string | string[];
-      projectName?: string;
-    }) => {
-      const updateData: any = {};
-      
-      if (imageType === 'profile') {
-        updateData.profile_image = Array.isArray(imageUrls) ? imageUrls[0] : imageUrls;
-      } else if (imageType === 'inspiration') {
-        updateData.inspiration_images = Array.isArray(imageUrls) ? imageUrls : [imageUrls];
-      } else if (imageType === 'progress') {
-        updateData.progress_images = Array.isArray(imageUrls) ? imageUrls : [imageUrls];
-      }
-
-      const { data: project, error } = await supabase
-        .from('be_project')
-        .update(updateData)
-        .eq('id', projectId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return { project, imageType, imageCount: Array.isArray(imageUrls) ? imageUrls.length : 1, projectName };
-    },
-    onSuccess: async ({ project, imageType, imageCount, projectName }) => {
-      // Invalidate related queries
-      queryClient.invalidateQueries({ 
-        queryKey: queryKeys.projects.detail(projectId) 
-      });
-
-      // Track image update activity
-      try {
-        const displayProjectName = projectName || project.name || 'Project';
-        let activityTitle: string;
-        let activityDescription: string;
-
-        if (imageType === 'profile') {
-          activityTitle = 'Profile photo updated';
-          activityDescription = `New project profile photo uploaded for "${displayProjectName}"`;
-        } else if (imageType === 'inspiration') {
-          const imageText = imageCount === 1 ? 'inspiration photo' : `${imageCount} inspiration photos`;
-          activityTitle = `${imageCount} inspiration ${imageCount === 1 ? 'photo' : 'photos'} added`;
-          activityDescription = `${imageText.charAt(0).toUpperCase() + imageText.slice(1)} uploaded to "${displayProjectName}" inspiration gallery`;
-        } else {
-          const imageText = imageCount === 1 ? 'progress photo' : `${imageCount} progress photos`;
-          activityTitle = `${imageCount} progress ${imageCount === 1 ? 'photo' : 'photos'} uploaded`;
-          activityDescription = `${imageText.charAt(0).toUpperCase() + imageText.slice(1)} added to "${displayProjectName}" progress documentation`;
-        }
-
-        await activityTracker.trackActivity(
-          'image_upload',
-          activityTitle,
-          activityDescription,
-          {
-            entityType: 'project',
-            entityId: projectId,
-            metadata: {
-              projectName: displayProjectName,
-              imageType,
-              imageCount,
-              uploadType: 'project_images'
-            },
-            status: 'success'
-          }
-        );
-      } catch (error) {
-        console.error('Failed to track project image update activity:', error);
-      }
-
-      toast.success(`Project ${imageType} image${imageCount > 1 ? 's' : ''} updated successfully`);
-    },
-    onError: (error: any) => {
-      console.error('Error updating project images:', error);
-      toast.error(error.message || 'Failed to update project images');
-    }
-  });
-}

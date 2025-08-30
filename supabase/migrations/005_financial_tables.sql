@@ -7,11 +7,11 @@
 
 -- Financial Transaction table
 CREATE TABLE construction_mgr.financial_transaction (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title VARCHAR(100) NOT NULL,
     description TEXT,
     amount NUMERIC(12, 2) NOT NULL,
-    currency VARCHAR(3) NOT NULL DEFAULT 'GHS',
+    currency VARCHAR(3) NOT NULL,
     transaction_type construction_mgr.transaction_type NOT NULL DEFAULT 'OTHER',
     category TEXT,
     project_id UUID NOT NULL,

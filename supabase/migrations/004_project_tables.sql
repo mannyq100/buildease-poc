@@ -7,7 +7,7 @@
 
 -- Project table
 CREATE TABLE construction_mgr.be_project (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) NOT NULL,
     description TEXT,
     status construction_mgr.project_status NOT NULL DEFAULT 'PLANNING',
@@ -42,9 +42,6 @@ CREATE TABLE construction_mgr.be_project (
       "currency": "USD"
     }',
     owner_id UUID NOT NULL,
-    profile_image TEXT,
-    inspiration_images TEXT[] DEFAULT ARRAY[]::TEXT[],
-    progress_images TEXT[] DEFAULT ARRAY[]::TEXT[],
     slug TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -73,11 +70,12 @@ CREATE INDEX IF NOT EXISTS idx_project_search ON construction_mgr.be_project
 CREATE INDEX IF NOT EXISTS idx_project_active_owner 
     ON construction_mgr.be_project (owner_id) 
     WHERE status IN ('PLANNING', 'IN_PROGRESS');
-CREATE INDEX IF NOT EXISTS idx_project_progress_images 
-    ON construction_mgr.be_project USING gin (progress_images);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_be_project_slug_lower
     ON construction_mgr.be_project (lower(slug))
     WHERE slug IS NOT NULL;
+
+-- Add comment to document the unified media approach
+COMMENT ON TABLE construction_mgr.be_project IS 'Core project information table. Media files are stored in be_document table with appropriate categories.';
 
 -- =============================================================================
 -- PROJECT MEMBERS TABLE
@@ -110,7 +108,7 @@ CREATE INDEX IF NOT EXISTS idx_project_member_covering
 
 -- Project Phase table
 CREATE TABLE construction_mgr.be_phase (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) NOT NULL,
     description TEXT,
     category VARCHAR(50) NOT NULL,
@@ -157,7 +155,7 @@ CREATE INDEX IF NOT EXISTS idx_phase_active_project
 
 -- Task table
 CREATE TABLE construction_mgr.be_task (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id UUID NOT NULL,
     phase_id UUID,
     title VARCHAR(255) NOT NULL,
@@ -216,7 +214,7 @@ CREATE INDEX IF NOT EXISTS idx_task_completed_by ON construction_mgr.be_task (co
 
 -- Comment table
 CREATE TABLE construction_mgr.comment (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     entity_type TEXT NOT NULL, -- 'project', 'task', 'phase', 'material', etc.
     entity_id UUID NOT NULL,
     user_id UUID NOT NULL,
@@ -244,7 +242,7 @@ USING gin (to_tsvector('english', content));
 
 -- Quality Inspection table
 CREATE TABLE construction_mgr.be_quality_inspection (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     phase_id UUID NOT NULL,
     task_id UUID,
     inspector_id UUID NOT NULL,
@@ -282,7 +280,7 @@ CREATE INDEX IF NOT EXISTS idx_inspection_attachments ON construction_mgr.be_qua
 
 -- Project Activities table
 CREATE TABLE construction_mgr.be_project_activity (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id UUID NOT NULL REFERENCES construction_mgr.be_project(id) ON DELETE CASCADE,
     activity_type VARCHAR(100) NOT NULL,
     title VARCHAR(255) NOT NULL,

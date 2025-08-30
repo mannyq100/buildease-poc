@@ -2,7 +2,7 @@
 -- Purpose: User, audit log, project permissions, notifications
 
 CREATE TABLE construction_mgr.be_user (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email VARCHAR(100) NOT NULL UNIQUE,
   first_name VARCHAR(100) NOT NULL,
   last_name VARCHAR(100),
@@ -32,7 +32,7 @@ CREATE INDEX IF NOT EXISTS idx_user_status ON construction_mgr.be_user (status);
 CREATE INDEX IF NOT EXISTS idx_user_settings ON construction_mgr.be_user USING gin (settings);
 
 CREATE TABLE construction_mgr.be_audit_log (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID,
   action VARCHAR(100) NOT NULL,
   entity_type VARCHAR(50) NOT NULL,
@@ -50,7 +50,7 @@ CREATE INDEX IF NOT EXISTS idx_audit_action ON construction_mgr.be_audit_log (ac
 CREATE INDEX IF NOT EXISTS idx_audit_details ON construction_mgr.be_audit_log USING gin (details);
 
 CREATE TABLE construction_mgr.be_project_permission (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID NOT NULL,
   user_id UUID NOT NULL,
   permission construction_mgr.permission_type NOT NULL,
@@ -70,7 +70,7 @@ CREATE INDEX IF NOT EXISTS idx_project_permission_user_project ON construction_m
 CREATE INDEX IF NOT EXISTS idx_permission_financial ON construction_mgr.be_project_permission (project_id, user_id) WHERE permission IN ('VIEW_FINANCIALS', 'VIEW_BUDGET') AND active = TRUE;
 
 CREATE TABLE construction_mgr.be_notification (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL,
   title VARCHAR(200) NOT NULL,
   message TEXT NOT NULL,

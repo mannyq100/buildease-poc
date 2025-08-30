@@ -61,7 +61,6 @@ export const useUserProjects = () => {
           details,
           timeline,
           budget,
-          profile_image,
           created_at,
           updated_at
         `)

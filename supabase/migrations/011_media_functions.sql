@@ -44,24 +44,21 @@ BEGIN
     END IF;
     
     -- For documents: strict project member access only
+    -- Expected path format: {projectId}/documents/{filename}
     IF bucket_name = 'documents' THEN
-        -- Require at least 2 path parts for project buckets
-        IF array_length(path_parts, 1) < 2 THEN
+        -- Require at least 3 path parts: projectId, "documents", filename
+        IF array_length(path_parts, 1) < 3 THEN
             RETURN FALSE;
         END IF;
         
-        -- First part should be user ID for upload permissions
-        IF path_parts[1] != user_id::text THEN
+        -- Second part should be "documents" folder
+        IF path_parts[2] != 'documents' THEN
             RETURN FALSE;
         END IF;
         
-        -- Validate project access for documents
-        IF array_length(path_parts, 1) >= 3 THEN
-            project_id_str := path_parts[2];
-            RETURN private.has_project_access_direct(project_id_str::UUID, user_id);
-        END IF;
-        
-        RETURN FALSE;
+        -- First part should be project ID - validate user has project access
+        project_id_str := path_parts[1];
+        RETURN private.has_project_access_direct(project_id_str::UUID, user_id);
     END IF;
     
     RETURN FALSE;

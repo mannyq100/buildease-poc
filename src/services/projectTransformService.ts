@@ -1,4 +1,4 @@
-import type { Project, ProjectImage, ProjectStatus } from '@/types/project';
+import type { Project, ProjectStatus } from '@/types/project';
 import { supabase } from '@/lib/supabase';
 
 // Custom error classes for better error handling
@@ -60,9 +60,6 @@ export interface ProjectViewData {
   
   // Optional fields
   description?: string | null;
-  profile_image?: string | null;
-  inspiration_images?: string[] | null;
-  progress_images?: string[] | null;
   start_date?: string | null;
   end_date?: string | null;
   
@@ -132,12 +129,8 @@ export class ProjectTransformService {
       owner_id: data.owner_id || 'unknown',
       status: this.mapDBStatusToUIStatus(data.status || 'PLANNING'),
       
-      // Visual assets
-      profile_image: this.validateOptionalString(data.profile_image),
-      inspiration_images: this.validateStringArray(data.inspiration_images),
-      progress_images: this.validateStringArray(data.progress_images),
-      inspirationalImages: this.transformProjectImages(data.inspiration_images, 'inspiration'),
-      progressImages: this.transformProjectImages(data.progress_images, 'progress'),
+      // Visual assets - now handled by be_document table with media categories
+      // Use useProjectMedia hooks to fetch media by category
       
       // Extract from details JSONB
       client: details.client || 'Unknown Client',
@@ -192,12 +185,8 @@ export class ProjectTransformService {
       owner_id: viewData.owner_id || 'unknown',
       status: this.validateStatus(viewData.status),
     
-      // Visual assets
-      profile_image: this.validateOptionalString(viewData.profile_image),
-      inspiration_images: this.validateStringArray(viewData.inspiration_images),
-      progress_images: this.validateStringArray(viewData.progress_images),
-      inspirationalImages: this.transformProjectImages(viewData.inspiration_images, 'inspiration'),
-      progressImages: this.transformProjectImages(viewData.progress_images, 'progress'),
+      // Visual assets - now handled by be_document table with media categories
+      // Use useProjectMedia hooks to fetch media by category
       
       // Project details (already formatted by view)
       client: this.validateString(viewData.client, 'client'),
@@ -281,46 +270,8 @@ export class ProjectTransformService {
     };
   }
 
-  /**
-   * Transform project images from string array to ProjectImage array
-   * Null-safe implementation with proper validation
-   */
-  private static transformProjectImages(images?: string[] | null, imageType: 'inspiration' | 'progress' = 'inspiration'): ProjectImage[] {
-    if (!images || !Array.isArray(images) || images.length === 0) {
-      return [];
-    }
-    
-    return images
-      .filter((url): url is string => {
-        // Filter out null, undefined, empty strings, and invalid URLs
-        if (typeof url !== 'string' || !url.trim()) {
-          return false;
-        }
-        
-        // Basic URL validation (could be enhanced with proper URL validation)
-        try {
-          new URL(url);
-          return true;
-        } catch {
-          // If it's not a valid URL, check if it's a relative path
-          return url.startsWith('/') || url.startsWith('./') || url.startsWith('../');
-        }
-      })
-      .map((url, index) => ({
-        id: `${imageType}-${index}-${Date.now()}`, // More unique IDs
-        url: url.trim(),
-        caption: imageType === 'progress' ? `Progress ${index + 1}` : `Inspiration ${index + 1}`,
-        uploadedAt: new Date(),
-        type: imageType as const,
-      }));
-  }
+  // Legacy image transformation functions removed - now handled by be_document table with media categories
 
-  /**
-   * Legacy method for backward compatibility
-   */
-  private static transformInspirationImages(images?: string[] | null): ProjectImage[] {
-    return this.transformProjectImages(images, 'inspiration');
-  }
 
   /**
    * Combine recent activities from phases and transactions
@@ -538,8 +489,7 @@ export class ProjectTransformService {
         details: project.details,
         timeline: project.timeline,
         budget: project.budget_data,
-        profile_image: project.profile_image,
-        inspiration_images: project.inspiration_images,
+        // Removed: profile_image, inspiration_images - now handled by be_document table
       };
     } catch (error) {
       throw new ProjectTransformError(
@@ -664,19 +614,7 @@ export class ProjectTransformService {
     return value as 'excellent' | 'good' | 'fair' | 'poor';
   }
 
-  private static validateStringArray(value: any): string[] | undefined {
-    if (value === null || value === undefined) {
-      return undefined;
-    }
-    
-    if (!Array.isArray(value)) {
-      return undefined;
-    }
-    
-    // Filter out non-string values and empty strings
-    const validStrings = value.filter(item => typeof item === 'string' && item.trim() !== '');
-    return validStrings.length > 0 ? validStrings : undefined;
-  }
+  // Legacy validateStringArray function removed - no longer needed after media migration
 
   // Additional helper methods for null safety
   private static safeParseNumber(value: any, defaultValue: number = 0): number {

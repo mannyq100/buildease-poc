@@ -3,11 +3,9 @@
  * Handles individual and bulk task assignment operations with activity tracking
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { toast } from 'sonner';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
-import * as activityService from '@/services/activityService';
+import { useProjectMutation } from '@/hooks/useStandardMutation';
 
 export interface AssignTaskData {
   taskId: string;
@@ -26,10 +24,9 @@ export interface BulkAssignTasksData {
  * Hook to assign/unassign a single task
  */
 export function useAssignTask() {
-  const queryClient = useQueryClient();
   const { user } = useSupabaseAuth();
 
-  return useMutation({
+  return useProjectMutation<any, AssignTaskData>({
     mutationFn: async (data: AssignTaskData) => {
       const { data: task, error } = await supabase
         .from('be_task')
@@ -52,16 +49,60 @@ export function useAssignTask() {
       if (error) throw error;
       return task;
     },
-    onSuccess: async (updatedTask, variables) => {
-      console.log('[ACTIVITY_DEBUG] [useAssignTask] onSuccess called', {
-        taskId: updatedTask.id,
-        taskTitle: updatedTask.title,
-        assignedTo: variables.assignedTo,
-        projectId: variables.projectId,
-        timestamp: new Date().toISOString()
-      });
+    
+    queryKeysToInvalidate: [
+      ['project-consolidated', ''], // Will be filled with projectId
+      ['tasks', ''], // Will be filled with projectId
+      ['task', ''] // Will be filled with taskId
+    ],
+    
+    // Dynamic success message based on assignment/unassignment
+    successMessage: '', // Will be set dynamically in callback
+    
+    // Activity logging with dynamic types
+    activityLog: {
+      activityType: 'task_assign', // Will be dynamically determined
+      entityType: 'task',
+      getEntityName: (variables, result?: any) => result?.title || 'Task',
+      getEntityId: (variables, result?: any) => result?.id,
+      getMetadata: async (variables, result?: any) => {
+        console.log('[ACTIVITY_DEBUG] [useAssignTask] Activity logging called', {
+          taskId: result?.id,
+          taskTitle: result?.title,
+          assignedTo: variables.assignedTo,
+          projectId: variables.projectId,
+          timestamp: new Date().toISOString()
+        });
 
-      // Invalidate relevant queries
+        // Get assignee name if assigned
+        let assigneeName = 'Unassigned';
+        if (variables.assignedTo && result?.assigned_user) {
+          const assignee = result.assigned_user;
+          assigneeName = `${assignee.first_name} ${assignee.last_name}`.trim() || assignee.email;
+        }
+
+        const isAssignment = !!variables.assignedTo;
+        
+        return {
+          taskTitle: result?.title,
+          assignedTo: variables.assignedTo,
+          assigneeName,
+          previousAssignee: null, // Could be enhanced to track previous assignee
+          activityType: isAssignment ? 'task_assign' : 'task_unassign'
+        };
+      }
+    },
+    
+    errorContext: {
+      action: 'update task assignment',
+      canRetry: true,
+      showToast: true
+    },
+    
+    onSuccessCallback: async (updatedTask, variables) => {
+      const { queryClient } = require('@tanstack/react-query');
+      
+      // Invalidate specific queries with actual IDs
       queryClient.invalidateQueries({
         queryKey: ['project-consolidated', variables.projectId]
       });
@@ -71,84 +112,15 @@ export function useAssignTask() {
       queryClient.invalidateQueries({
         queryKey: ['task', variables.taskId]
       });
-
-      // Fire-and-forget activity logging
-      (async () => {
-        try {
-          const { data: auth, error: authError } = await supabase.auth.getUser();
-          
-          if (authError) {
-            console.error('[ACTIVITY_DEBUG] [useAssignTask] Auth error:', authError);
-            return;
-          }
-          
-          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
-              (auth?.user?.user_metadata?.name as string | undefined) ||
-              (auth?.user?.email as string | undefined);
-
-          // Get assignee name if assigned
-          let assigneeName = 'Unassigned';
-          if (variables.assignedTo && updatedTask.assigned_user) {
-            const assignee = updatedTask.assigned_user;
-            assigneeName = `${assignee.first_name} ${assignee.last_name}`.trim() || assignee.email;
-          }
-
-          const isAssignment = !!variables.assignedTo;
-          const activityType = isAssignment ? 'task_assign' : 'task_unassign';
-          const title = isAssignment 
-            ? `Task assigned: ${updatedTask.title}`
-            : `Task unassigned: ${updatedTask.title}`;
-          const description = isAssignment
-            ? `Task "${updatedTask.title}" was assigned to ${assigneeName}`
-            : `Task "${updatedTask.title}" was unassigned`;
-
-          const result = await activityService.createActivity({
-            project_id: variables.projectId,
-            activity_type: activityType,
-            title,
-            description,
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'task',
-            entity_id: updatedTask.id,
-            metadata: {
-              taskTitle: updatedTask.title,
-              assignedTo: variables.assignedTo,
-              assigneeName,
-              previousAssignee: null // Could be enhanced to track previous assignee
-            },
-            status: 'info'
-          });
-
-          console.log('[ACTIVITY_DEBUG] [useAssignTask] Activity created successfully', {
-            success: !!result,
-            activityId: result?.id,
-            activityType,
-            taskId: updatedTask.id
-          });
-
-        } catch (e) {
-          console.error('[ACTIVITY_DEBUG] [useAssignTask] Activity logging failed:', {
-            error: e,
-            errorMessage: e instanceof Error ? e.message : String(e),
-            taskId: updatedTask.id,
-            projectId: variables.projectId,
-            timestamp: new Date().toISOString()
-          });
-        }
-      })();
-
-      // Success toast
+      
+      // Show dynamic success message
+      const { ErrorHandlingService } = require('@/services/errorHandlingService');
       const isAssignment = !!variables.assignedTo;
       const message = isAssignment 
         ? `Task assigned successfully`
         : `Task unassigned successfully`;
-      toast.success(message);
-    },
-    onError: (error: any) => {
-      console.error('[useAssignTask] Error:', error);
-      toast.error(`Failed to update task assignment: ${error.message}`);
-    },
+      ErrorHandlingService.showSuccess(message);
+    }
   });
 }
 
@@ -156,10 +128,9 @@ export function useAssignTask() {
  * Hook to assign/unassign multiple tasks in bulk
  */
 export function useBulkAssignTasks() {
-  const queryClient = useQueryClient();
   const { user } = useSupabaseAuth();
 
-  return useMutation({
+  return useProjectMutation<any[], BulkAssignTasksData>({
     mutationFn: async (data: BulkAssignTasksData) => {
       // Update all tasks in bulk
       const { data: tasks, error } = await supabase
@@ -182,15 +153,62 @@ export function useBulkAssignTasks() {
       if (error) throw error;
       return tasks || [];
     },
-    onSuccess: async (updatedTasks, variables) => {
-      console.log('[ACTIVITY_DEBUG] [useBulkAssignTasks] onSuccess called', {
-        taskCount: updatedTasks.length,
-        taskIds: variables.taskIds,
-        assignedTo: variables.assignedTo,
-        projectId: variables.projectId,
-        timestamp: new Date().toISOString()
-      });
+    
+    queryKeysToInvalidate: [
+      ['project-consolidated', ''], // Will be filled with projectId
+      ['tasks', ''] // Will be filled with projectId
+    ],
+    
+    // Dynamic success message based on task count and assignment/unassignment
+    successMessage: '', // Will be set dynamically in callback
+    
+    // Activity logging for bulk operations
+    activityLog: {
+      activityType: 'task_assign', // Will be dynamically determined
+      entityType: 'task',
+      getEntityName: (variables, result?: any[]) => 
+        `${result?.length || variables.taskIds.length} tasks`,
+      getEntityId: (variables, result?: any[]) => variables.taskIds[0], // Use first task as reference
+      getMetadata: async (variables, result?: any[]) => {
+        console.log('[ACTIVITY_DEBUG] [useBulkAssignTasks] Activity logging called', {
+          taskCount: result?.length || variables.taskIds.length,
+          taskIds: variables.taskIds,
+          assignedTo: variables.assignedTo,
+          projectId: variables.projectId,
+          timestamp: new Date().toISOString()
+        });
 
+        // Get assignee name if assigned
+        let assigneeName = 'Unassigned';
+        if (variables.assignedTo && result && result.length > 0 && result[0].assigned_user) {
+          const assignee = result[0].assigned_user;
+          assigneeName = `${assignee.first_name} ${assignee.last_name}`.trim() || assignee.email;
+        }
+
+        const isAssignment = !!variables.assignedTo;
+        const taskCount = result?.length || variables.taskIds.length;
+        
+        return {
+          taskCount,
+          taskIds: variables.taskIds,
+          taskTitles: result?.map(t => t.title) || [],
+          assignedTo: variables.assignedTo,
+          assigneeName,
+          bulkOperation: true,
+          activityType: isAssignment ? 'task_assign' : 'task_unassign'
+        };
+      }
+    },
+    
+    errorContext: {
+      action: 'update task assignments',
+      canRetry: true,
+      showToast: true
+    },
+    
+    onSuccessCallback: async (updatedTasks, variables) => {
+      const { queryClient } = require('@tanstack/react-query');
+      
       // Invalidate relevant queries
       queryClient.invalidateQueries({
         queryKey: ['project-consolidated', variables.projectId]
@@ -205,86 +223,15 @@ export function useBulkAssignTasks() {
           queryKey: ['task', taskId]
         });
       });
-
-      // Fire-and-forget activity logging for bulk operations
-      (async () => {
-        try {
-          const { data: auth, error: authError } = await supabase.auth.getUser();
-          
-          if (authError) {
-            console.error('[ACTIVITY_DEBUG] [useBulkAssignTasks] Auth error:', authError);
-            return;
-          }
-          
-          const userName = (auth?.user?.user_metadata?.full_name as string | undefined) ||
-              (auth?.user?.user_metadata?.name as string | undefined) ||
-              (auth?.user?.email as string | undefined);
-
-          // Get assignee name if assigned
-          let assigneeName = 'Unassigned';
-          if (variables.assignedTo && updatedTasks.length > 0 && updatedTasks[0].assigned_user) {
-            const assignee = updatedTasks[0].assigned_user;
-            assigneeName = `${assignee.first_name} ${assignee.last_name}`.trim() || assignee.email;
-          }
-
-          const isAssignment = !!variables.assignedTo;
-          const activityType = isAssignment ? 'task_assign' : 'task_unassign';
-          const title = isAssignment 
-            ? `Bulk task assignment: ${updatedTasks.length} tasks assigned`
-            : `Bulk task unassignment: ${updatedTasks.length} tasks unassigned`;
-          const description = isAssignment
-            ? `${updatedTasks.length} tasks were assigned to ${assigneeName}`
-            : `${updatedTasks.length} tasks were unassigned`;
-
-          const result = await activityService.createActivity({
-            project_id: variables.projectId,
-            activity_type: activityType,
-            title,
-            description,
-            user_id: auth?.user?.id,
-            user_name: userName,
-            entity_type: 'task',
-            entity_id: variables.taskIds[0], // Use first task as reference
-            metadata: {
-              taskCount: updatedTasks.length,
-              taskIds: variables.taskIds,
-              taskTitles: updatedTasks.map(t => t.title),
-              assignedTo: variables.assignedTo,
-              assigneeName,
-              bulkOperation: true
-            },
-            status: 'info'
-          });
-
-          console.log('[ACTIVITY_DEBUG] [useBulkAssignTasks] Activity created successfully', {
-            success: !!result,
-            activityId: result?.id,
-            activityType,
-            taskCount: updatedTasks.length
-          });
-
-        } catch (e) {
-          console.error('[ACTIVITY_DEBUG] [useBulkAssignTasks] Activity logging failed:', {
-            error: e,
-            errorMessage: e instanceof Error ? e.message : String(e),
-            taskIds: variables.taskIds,
-            projectId: variables.projectId,
-            timestamp: new Date().toISOString()
-          });
-        }
-      })();
-
-      // Success toast
+      
+      // Show dynamic success message
+      const { ErrorHandlingService } = require('@/services/errorHandlingService');
       const isAssignment = !!variables.assignedTo;
       const message = isAssignment 
         ? `${updatedTasks.length} tasks assigned successfully`
         : `${updatedTasks.length} tasks unassigned successfully`;
-      toast.success(message);
-    },
-    onError: (error: any) => {
-      console.error('[useBulkAssignTasks] Error:', error);
-      toast.error(`Failed to update task assignments: ${error.message}`);
-    },
+      ErrorHandlingService.showSuccess(message);
+    }
   });
 }
 

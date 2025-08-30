@@ -1,11 +1,7 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { queryKeys } from '@/lib/queryClient';
-import { toast } from 'sonner';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
-import * as activityService from '@/services/activityService';
-import { logTaskActivity, logActivityAsync } from '@/utils/activityLogging';
-import { useProjectStore } from '@/stores/projectStore';
+import { useStandardMutation, useProjectMutation } from '@/hooks/useStandardMutation';
 
 // Types for task mutations
 export interface CreateTaskData {
@@ -39,11 +35,9 @@ export interface UpdateTaskData {
  * Hook to create a new task with activity tracking
  */
 export function useCreateTask() {
-  const queryClient = useQueryClient();
   const { user } = useSupabaseAuth();
-  const addOptimisticUpdate = useProjectStore(state => state.addOptimisticUpdate);
 
-  return useMutation({
+  return useProjectMutation<any, CreateTaskData>({
     mutationFn: async (data: CreateTaskData) => {
       const { data: task, error } = await supabase
         .from('be_task')
@@ -54,144 +48,89 @@ export function useCreateTask() {
       if (error) throw error;
       return task;
     },
-    // Optimistic update - show task immediately
-    onMutate: async (newTask) => {
-      const optimisticId = `temp_task_${Date.now()}`;
-      const optimisticTask = {
-        id: optimisticId,
-        ...newTask,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        status: newTask.status || 'pending'
-      };
-
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ 
-        queryKey: queryKeys.tasks.byProject(newTask.project_id) 
-      });
-      await queryClient.cancelQueries({ 
-        queryKey: queryKeys.tasks.byPhase(newTask.phase_id) 
-      });
-
-      // Snapshot the previous values
-      const previousProjectTasks = queryClient.getQueryData(queryKeys.tasks.byProject(newTask.project_id));
-      const previousPhaseTasks = queryClient.getQueryData(queryKeys.tasks.byPhase(newTask.phase_id));
-
-      // Optimistically update project tasks
-      queryClient.setQueryData(queryKeys.tasks.byProject(newTask.project_id), (old: any) => {
+    
+    queryKeysToInvalidate: [
+      queryKeys.phases.detail(''), // Will be filled with actual phase_id
+      ['project-consolidated', ''] // Will be filled with actual project_id
+    ],
+    
+    successMessage: 'Task created successfully',
+    
+    // Optimistic update for immediate UI feedback
+    optimisticUpdate: {
+      queryKey: queryKeys.tasks.byProject(''), // Will be dynamically set
+      updateFn: (old: any, variables: CreateTaskData) => {
+        const optimisticTask = {
+          id: `temp_task_${Date.now()}`,
+          ...variables,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          status: variables.status || 'pending'
+        };
+        
         if (!old) return [optimisticTask];
         return [...old, optimisticTask];
-      });
-
-      // Optimistically update phase tasks
-      queryClient.setQueryData(queryKeys.tasks.byPhase(newTask.phase_id), (old: any) => {
-        if (!old) return [optimisticTask];
-        return [...old, optimisticTask];
-      });
-
-      // Track optimistic update
-      addOptimisticUpdate(`create_task_${optimisticId}`, {
-        type: 'create',
-        entity: 'task',
-        data: optimisticTask,
-        timestamp: Date.now()
-      });
-
-      return { 
-        previousProjectTasks, 
-        previousPhaseTasks, 
-        optimisticId,
-        optimisticTask 
-      };
+      }
     },
-    onError: (error, variables, context) => {
-      // Rollback on error
-      if (context?.previousProjectTasks) {
-        queryClient.setQueryData(queryKeys.tasks.byProject(variables.project_id), context.previousProjectTasks);
+    
+    // Activity logging
+    activityLog: {
+      activityType: 'task_create',
+      entityType: 'task',
+      getEntityName: (variables: CreateTaskData) => variables.title,
+      getEntityId: (variables: CreateTaskData, result?: any) => result?.id,
+      getMetadata: async (variables: CreateTaskData) => {
+        // Get phase name for better context
+        let phaseContext = '';
+        try {
+          const { data: phaseData } = await supabase
+            .from('be_phase')
+            .select('name')
+            .eq('id', variables.phase_id)
+            .single();
+          phaseContext = phaseData?.name || '';
+        } catch (e) {
+          console.warn('Could not fetch phase name for activity');
+        }
+        
+        return {
+          description: variables.description,
+          phaseId: variables.phase_id,
+          phaseText: phaseContext ? ` in ${phaseContext}` : '',
+          priority: variables.priority || 'medium',
+          status: variables.status || 'pending',
+          assignedTo: variables.assigned_to,
+          assigneeName: variables.assigned_to,
+          dueDate: variables.due_date,
+          estimatedHours: variables.estimated_hours
+        };
       }
-      if (context?.previousPhaseTasks) {
-        queryClient.setQueryData(queryKeys.tasks.byPhase(variables.phase_id), context.previousPhaseTasks);
-      }
+    },
+    
+    errorContext: {
+      action: 'create task',
+      canRetry: true,
+      showToast: true
+    },
+    
+    onSuccessCallback: async (newTask, variables) => {
+      // Additional invalidations for specific query patterns
+      const { queryClient } = require('@tanstack/react-query');
       
-      console.error('Error creating task:', error);
-      toast.error(error.message || 'Failed to create task');
-    },
-    onSuccess: async (newTask, variables, context) => {
-      // Replace optimistic task with real server data
-      queryClient.setQueryData(queryKeys.tasks.byProject(variables.project_id), (old: any) => {
-        if (!old) return [newTask];
-        return old.map((task: any) => 
-          task.id === context?.optimisticId ? newTask : task
-        );
-      });
-
-      queryClient.setQueryData(queryKeys.tasks.byPhase(variables.phase_id), (old: any) => {
-        if (!old) return [newTask];
-        return old.map((task: any) => 
-          task.id === context?.optimisticId ? newTask : task
-        );
-      });
-
-      // Remove optimistic update tracking
-      const removeOptimisticUpdate = useProjectStore.getState().removeOptimisticUpdate;
-      removeOptimisticUpdate(`create_task_${context?.optimisticId}`);
-
-      // Invalidate and refetch related queries for other components
+      // Update specific query keys with actual IDs
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.phases.detail(variables.phase_id) 
       });
-
-      // CRITICAL: Invalidate consolidated project query for real-time updates
+      
       queryClient.invalidateQueries({
         queryKey: ['project-consolidated', variables.project_id]
       });
-
-      // If assigned to someone, invalidate their tasks
+      
       if (variables.assigned_to) {
         queryClient.invalidateQueries({ 
           queryKey: queryKeys.tasks.byUser(variables.assigned_to) 
         });
       }
-
-      // Fire-and-forget activity logging using standardized utilities
-      (async () => {
-        try {
-          // Get phase name for better context
-          let phaseContext = '';
-          try {
-            const { data: phaseData } = await supabase
-              .from('be_phase')
-              .select('name')
-              .eq('id', variables.phase_id)
-              .single();
-            phaseContext = phaseData?.name || '';
-          } catch (e) {
-            console.warn('Could not fetch phase name for activity');
-          }
-          
-          await logTaskActivity(
-            variables.project_id,
-            'task_create',
-            newTask.id,
-            variables.title,
-            {
-              description: variables.description,
-              phaseId: variables.phase_id,
-              phaseText: phaseContext ? ` in ${phaseContext}` : '',
-              priority: variables.priority || 'medium',
-              status: variables.status || 'pending',
-              assignedTo: variables.assigned_to,
-              assigneeName: variables.assigned_to,
-              dueDate: variables.due_date,
-              estimatedHours: variables.estimated_hours
-            }
-          );
-        } catch (e) {
-          console.error('Failed to create activity for task creation:', e);
-        }
-      })();
-
-      toast.success('Task created successfully');
     }
   });
 }
@@ -200,10 +139,7 @@ export function useCreateTask() {
  * Hook to update an existing task with activity tracking support
  */
 export function useUpdateTask() {
-  const queryClient = useQueryClient();
-  const addOptimisticUpdate = useProjectStore(state => state.addOptimisticUpdate);
-
-  return useMutation({
+  return useStandardMutation<any, UpdateTaskData>({
     mutationFn: async (data: UpdateTaskData) => {
       const { id, ...updateData } = data;
       
@@ -217,96 +153,59 @@ export function useUpdateTask() {
       if (error) throw error;
       return task;
     },
-    // Optimistic update - show changes immediately
-    onMutate: async (updateData) => {
-      const taskId = updateData.id;
-      
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: queryKeys.tasks.detail(taskId) });
-
-      // Snapshot the previous value
-      const previousTask = queryClient.getQueryData(queryKeys.tasks.detail(taskId));
-      
-      // Get current task from any cached queries to determine project/phase
-      let currentTask: any = previousTask;
-      if (!currentTask) {
-        // Try to find task in project or phase queries
-        const projectQueries = queryClient.getQueriesData({ queryKey: ['tasks', 'byProject'] });
-        const phaseQueries = queryClient.getQueriesData({ queryKey: ['tasks', 'byPhase'] });
+    
+    queryKeysToInvalidate: [
+      ['project-consolidated', ''] // Will be filled with actual project_id
+    ],
+    
+    successMessage: 'Task updated successfully',
+    
+    // Optimistic update for immediate UI feedback
+    optimisticUpdate: {
+      queryKey: queryKeys.tasks.detail(''), // Will be dynamically set with task ID
+      updateFn: (old: any, variables: UpdateTaskData) => {
+        if (!old) return old;
+        return { ...old, ...variables, updated_at: new Date().toISOString() };
+      }
+    },
+    
+    // Activity logging with dynamic activity type based on changes
+    activityLog: {
+      activityType: 'task_update', // Will be dynamically determined
+      entityType: 'task',
+      getEntityName: (variables: UpdateTaskData, result?: any) => result?.title || 'Task',
+      getEntityId: (variables: UpdateTaskData, result?: any) => result?.id,
+      getMetadata: (variables: UpdateTaskData, result?: any) => {
+        const updatedFields = Object.keys(variables).filter(key => key !== 'id');
+        const wasCompleted = variables.status === 'completed';
         
-        for (const [, data] of [...projectQueries, ...phaseQueries]) {
-          if (Array.isArray(data)) {
-            const found = data.find((task: any) => task.id === taskId);
-            if (found) {
-              currentTask = found;
-              break;
-            }
-          }
-        }
+        return {
+          priority: result?.priority,
+          status: result?.status,
+          assignedTo: result?.assigned_to,
+          assigneeName: result?.assigned_to,
+          dueDate: result?.due_date,
+          estimatedHours: result?.estimated_hours,
+          actualHours: result?.actual_hours,
+          updatedFields,
+          changes: updatedFields,
+          activityType: wasCompleted ? 'task_complete' : 
+                       updatedFields.includes('assigned_to') ? (result?.assigned_to ? 'task_assign' : 'task_unassign') :
+                       updatedFields.includes('status') ? 'task_status_update' : 'task_update'
+        };
       }
-
-      if (currentTask) {
-        const optimisticTask = { ...currentTask, ...updateData, updated_at: new Date().toISOString() };
-
-        // Optimistically update task detail
-        queryClient.setQueryData(queryKeys.tasks.detail(taskId), optimisticTask);
-
-        // Update task in project tasks list
-        if (currentTask.project_id) {
-          queryClient.setQueryData(queryKeys.tasks.byProject(currentTask.project_id), (old: any) => {
-            if (!old) return old;
-            return old.map((task: any) => task.id === taskId ? optimisticTask : task);
-          });
-        }
-
-        // Update task in phase tasks list
-        if (currentTask.phase_id) {
-          queryClient.setQueryData(queryKeys.tasks.byPhase(currentTask.phase_id), (old: any) => {
-            if (!old) return old;
-            return old.map((task: any) => task.id === taskId ? optimisticTask : task);
-          });
-        }
-
-        // Track optimistic update
-        addOptimisticUpdate(`update_task_${taskId}`, {
-          type: 'update',
-          entity: 'task',
-          data: optimisticTask,
-          originalData: currentTask,
-          timestamp: Date.now()
-        });
-
-        return { previousTask, currentTask, optimisticTask };
-      }
-
-      return { previousTask };
     },
-    onError: (error, variables, context) => {
-      // Rollback on error
-      if (context?.previousTask) {
-        queryClient.setQueryData(queryKeys.tasks.detail(variables.id), context.previousTask);
-      }
-      if (context?.currentTask) {
-        // Restore in project/phase lists
-        if (context.currentTask.project_id) {
-          queryClient.setQueryData(queryKeys.tasks.byProject(context.currentTask.project_id), (old: any) => {
-            if (!old) return old;
-            return old.map((task: any) => task.id === variables.id ? context.currentTask : task);
-          });
-        }
-        if (context.currentTask.phase_id) {
-          queryClient.setQueryData(queryKeys.tasks.byPhase(context.currentTask.phase_id), (old: any) => {
-            if (!old) return old;
-            return old.map((task: any) => task.id === variables.id ? context.currentTask : task);
-          });
-        }
-      }
+    
+    errorContext: {
+      action: 'update task',
+      canRetry: true,
+      showToast: true
+    },
+    
+    onSuccessCallback: async (updatedTask, variables) => {
+      const { queryClient } = require('@tanstack/react-query');
       
-      console.error('Error updating task:', error);
-      toast.error(error.message || 'Failed to update task');
-    },
-    onSuccess: async (updatedTask, variables, context) => {
-      // Update all cached instances with real server data
+      // Update all task-related caches with real server data
       queryClient.setQueryData(queryKeys.tasks.detail(updatedTask.id), updatedTask);
       
       queryClient.setQueryData(queryKeys.tasks.byProject(updatedTask.project_id), (old: any) => {
@@ -319,11 +218,7 @@ export function useUpdateTask() {
         return old.map((task: any) => task.id === updatedTask.id ? updatedTask : task);
       });
 
-      // Remove optimistic update tracking
-      const removeOptimisticUpdate = useProjectStore.getState().removeOptimisticUpdate;
-      removeOptimisticUpdate(`update_task_${updatedTask.id}`);
-
-      // CRITICAL: Invalidate consolidated project query for real-time updates
+      // Invalidate consolidated project query
       queryClient.invalidateQueries({
         queryKey: ['project-consolidated', updatedTask.project_id]
       });
@@ -334,40 +229,6 @@ export function useUpdateTask() {
           queryKey: queryKeys.tasks.byUser(updatedTask.assigned_to) 
         });
       }
-
-      // Fire-and-forget activity logging using standardized utilities
-      (async () => {
-        try {
-          // Determine what changed for more specific messaging
-          const updatedFields = Object.keys(variables).filter(key => key !== 'id');
-          const wasCompleted = variables.status === 'completed';
-          const activityType = wasCompleted ? 'task_complete' : 
-                              updatedFields.includes('assigned_to') ? (updatedTask.assigned_to ? 'task_assign' : 'task_unassign') :
-                              updatedFields.includes('status') ? 'task_status_update' : 'task_update';
-
-          await logTaskActivity(
-            updatedTask.project_id,
-            activityType,
-            updatedTask.id,
-            updatedTask.title,
-            {
-              priority: updatedTask.priority,
-              status: updatedTask.status,
-              assignedTo: updatedTask.assigned_to,
-              assigneeName: updatedTask.assigned_to,
-              dueDate: updatedTask.due_date,
-              estimatedHours: updatedTask.estimated_hours,
-              actualHours: updatedTask.actual_hours,
-              updatedFields,
-              changes: updatedFields
-            }
-          );
-        } catch (e) {
-          console.error('Failed to create activity for task update:', e);
-        }
-      })();
-
-      toast.success('Task updated successfully');
     }
   });
 }
@@ -376,10 +237,7 @@ export function useUpdateTask() {
  * Hook to delete a task
  */
 export function useDeleteTask() {
-  const queryClient = useQueryClient();
-  const addOptimisticUpdate = useProjectStore(state => state.addOptimisticUpdate);
-
-  return useMutation({
+  return useStandardMutation<{ taskId: string; task: any }, string>({
     mutationFn: async (taskId: string) => {
       // First get the task to know which project/phase to invalidate
       const { data: task } = await supabase
@@ -396,95 +254,50 @@ export function useDeleteTask() {
       if (error) throw error;
       return { taskId, task };
     },
-    // Optimistic update - remove task immediately
-    onMutate: async (taskId) => {
-      // Find the task in cached queries to get its details
-      let taskToDelete: any = null;
-      const projectQueries = queryClient.getQueriesData({ queryKey: ['tasks', 'byProject'] });
-      const phaseQueries = queryClient.getQueriesData({ queryKey: ['tasks', 'byPhase'] });
-      
-      for (const [, data] of [...projectQueries, ...phaseQueries]) {
-        if (Array.isArray(data)) {
-          const found = data.find((task: any) => task.id === taskId);
-          if (found) {
-            taskToDelete = found;
-            break;
-          }
-        }
+    
+    queryKeysToRemove: [
+      queryKeys.tasks.detail('') // Will be filled with actual task ID
+    ],
+    
+    successMessage: 'Task deleted successfully',
+    
+    // Optimistic update - remove task immediately from lists
+    optimisticUpdate: {
+      queryKey: queryKeys.tasks.byProject(''), // Will be dynamically set
+      updateFn: (old: any, taskId: string) => {
+        if (!old) return old;
+        return old.filter((task: any) => task.id !== taskId);
       }
-
-      if (!taskToDelete) {
-        // Try task detail query
-        taskToDelete = queryClient.getQueryData(queryKeys.tasks.detail(taskId));
-      }
-
-      if (taskToDelete) {
-        // Cancel any outgoing refetches
-        await queryClient.cancelQueries({ queryKey: queryKeys.tasks.detail(taskId) });
-        await queryClient.cancelQueries({ queryKey: queryKeys.tasks.byProject(taskToDelete.project_id) });
-        await queryClient.cancelQueries({ queryKey: queryKeys.tasks.byPhase(taskToDelete.phase_id) });
-
-        // Snapshot the previous values
-        const previousProjectTasks = queryClient.getQueryData(queryKeys.tasks.byProject(taskToDelete.project_id));
-        const previousPhaseTasks = queryClient.getQueryData(queryKeys.tasks.byPhase(taskToDelete.phase_id));
-        const previousTaskDetail = queryClient.getQueryData(queryKeys.tasks.detail(taskId));
-
-        // Optimistically remove from all queries
-        queryClient.setQueryData(queryKeys.tasks.byProject(taskToDelete.project_id), (old: any) => {
-          if (!old) return old;
-          return old.filter((task: any) => task.id !== taskId);
-        });
-
-        queryClient.setQueryData(queryKeys.tasks.byPhase(taskToDelete.phase_id), (old: any) => {
-          if (!old) return old;
-          return old.filter((task: any) => task.id !== taskId);
-        });
-
-        // Remove task detail
-        queryClient.removeQueries({ queryKey: queryKeys.tasks.detail(taskId) });
-
-        // Track optimistic update
-        addOptimisticUpdate(`delete_task_${taskId}`, {
-          type: 'delete',
-          entity: 'task',
-          data: taskToDelete,
-          timestamp: Date.now()
-        });
-
-        return { 
-          taskToDelete,
-          previousProjectTasks, 
-          previousPhaseTasks, 
-          previousTaskDetail 
+    },
+    
+    // Activity logging for task deletion
+    activityLog: {
+      activityType: 'task_delete',
+      entityType: 'task',
+      getEntityName: (taskId: string, result?: { taskId: string; task: any }) => 
+        result?.task?.title || 'Unknown Task',
+      getEntityId: (taskId: string) => taskId,
+      getMetadata: (taskId: string, result?: { taskId: string; task: any }) => {
+        const task = result?.task;
+        return {
+          taskTitle: task?.title,
+          phaseId: task?.phase_id,
+          wasAssignedTo: task?.assigned_to
         };
       }
-
-      return {};
     },
-    onError: (error, taskId, context) => {
-      // Rollback on error
-      if (context?.taskToDelete) {
-        if (context.previousProjectTasks) {
-          queryClient.setQueryData(queryKeys.tasks.byProject(context.taskToDelete.project_id), context.previousProjectTasks);
-        }
-        if (context.previousPhaseTasks) {
-          queryClient.setQueryData(queryKeys.tasks.byPhase(context.taskToDelete.phase_id), context.previousPhaseTasks);
-        }
-        if (context.previousTaskDetail) {
-          queryClient.setQueryData(queryKeys.tasks.detail(taskId), context.previousTaskDetail);
-        }
-      }
+    
+    errorContext: {
+      action: 'delete task',
+      canRetry: true,
+      showToast: true
+    },
+    
+    onSuccessCallback: async ({ taskId, task }, variables) => {
+      const { queryClient } = require('@tanstack/react-query');
       
-      console.error('Error deleting task:', error);
-      toast.error(error.message || 'Failed to delete task');
-    },
-    onSuccess: async ({ taskId, task }, variables, context) => {
-      // Remove optimistic update tracking
-      const removeOptimisticUpdate = useProjectStore.getState().removeOptimisticUpdate;
-      removeOptimisticUpdate(`delete_task_${taskId}`);
-
       if (task) {
-        // Ensure task is removed from all cached queries (should already be done optimistically)
+        // Ensure task is removed from all cached queries
         queryClient.setQueryData(queryKeys.tasks.byProject(task.project_id), (old: any) => {
           if (!old) return old;
           return old.filter((t: any) => t.id !== taskId);
@@ -512,25 +325,6 @@ export function useDeleteTask() {
       queryClient.removeQueries({ 
         queryKey: queryKeys.tasks.detail(taskId) 
       });
-
-      // Fire-and-forget activity logging using standardized utilities
-      if (task?.project_id) {
-        const taskTitle = (task as any)?.title || 'Unknown Task';
-        logActivityAsync({
-          projectId: task.project_id,
-          activityType: 'task_delete',
-          entityType: 'task',
-          entityId: taskId,
-          entityName: taskTitle,
-          metadata: {
-            taskTitle,
-            phaseId: task.phase_id,
-            wasAssignedTo: task.assigned_to
-          }
-        });
-      }
-
-      toast.success('Task deleted successfully');
     }
   });
 }
@@ -539,18 +333,12 @@ export function useDeleteTask() {
  * Hook to update task status with optimistic updates and phase timeline automation
  */
 export function useUpdateTaskStatus() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ 
-      taskId, 
-      status, 
-      progress 
-    }: { 
-      taskId: string; 
-      status: 'pending' | 'in-progress' | 'completed' | 'blocked' | 'cancelled';
-      progress?: number;
-    }) => {
+  return useStandardMutation<any, { 
+    taskId: string; 
+    status: 'pending' | 'in-progress' | 'completed' | 'blocked' | 'cancelled';
+    progress?: number;
+  }>({
+    mutationFn: async ({ taskId, status, progress }) => {
       // Only update status - progress_percentage field doesn't exist in schema
       const updateData: any = { status };
 
@@ -570,49 +358,48 @@ export function useUpdateTaskStatus() {
 
       return task;
     },
-    // Optimistic update
-    onMutate: async ({ taskId, status, progress }) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: queryKeys.tasks.detail(taskId) });
-
-      // Snapshot the previous value
-      const previousTask = queryClient.getQueryData(queryKeys.tasks.detail(taskId));
-
-      // Optimistically update to the new value - only update status since progress_percentage doesn't exist
-      queryClient.setQueryData(queryKeys.tasks.detail(taskId), (old: any) => {
+    
+    queryKeysToInvalidate: [
+      ['project-consolidated', ''] // Will be filled with actual project_id
+    ],
+    
+    // No success message for status updates (too frequent)
+    
+    // Optimistic update for immediate UI feedback
+    optimisticUpdate: {
+      queryKey: queryKeys.tasks.detail(''), // Will be dynamically set
+      updateFn: (old: any, variables) => {
         if (!old) return old;
+        return { ...old, status: variables.status };
+      }
+    },
+    
+    // Activity logging for status updates
+    activityLog: {
+      activityType: 'task_status_update', // Will be dynamically determined
+      entityType: 'task',
+      getEntityName: (variables, result?: any) => result?.title || 'Task',
+      getEntityId: (variables, result?: any) => result?.id,
+      getMetadata: (variables, result?: any) => {
+        const wasCompleted = variables.status === 'completed';
         return {
-          ...old,
-          status
+          status: variables.status,
+          newStatus: variables.status,
+          activityType: wasCompleted ? 'task_complete' : 'task_status_update'
         };
-      });
-
-      return { previousTask };
-    },
-    onError: (error, variables, context) => {
-      // Rollback on error
-      if (context?.previousTask) {
-        queryClient.setQueryData(queryKeys.tasks.detail(variables.taskId), context.previousTask);
-      }
-      console.error('Error updating task status:', error);
-      toast.error(error.message || 'Failed to update task status');
-    },
-    onSettled: (updatedTask) => {
-      // Always refetch after error or success
-      if (updatedTask) {
-        queryClient.invalidateQueries({ 
-          queryKey: queryKeys.tasks.detail(updatedTask.id) 
-        });
-        queryClient.invalidateQueries({ 
-          queryKey: queryKeys.tasks.byProject(updatedTask.project_id) 
-        });
-        queryClient.invalidateQueries({ 
-          queryKey: queryKeys.tasks.byPhase(updatedTask.phase_id) 
-        });
       }
     },
-    onSuccess: async (updatedTask, variables) => {
-      // CRITICAL: Invalidate cache for real-time UI updates
+    
+    errorContext: {
+      action: 'update task status',
+      canRetry: true,
+      showToast: true
+    },
+    
+    onSuccessCallback: async (updatedTask, variables) => {
+      const { queryClient } = require('@tanstack/react-query');
+      
+      // Invalidate all task-related caches
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.tasks.byProject(updatedTask.project_id) 
       });
@@ -625,7 +412,6 @@ export function useUpdateTaskStatus() {
         queryKey: queryKeys.tasks.detail(updatedTask.id) 
       });
 
-      // CRITICAL: Invalidate consolidated project query for real-time updates
       queryClient.invalidateQueries({
         queryKey: ['project-consolidated', updatedTask.project_id]
       });
@@ -635,27 +421,6 @@ export function useUpdateTaskStatus() {
           queryKey: queryKeys.tasks.byUser(updatedTask.assigned_to) 
         });
       }
-      
-      // Fire-and-forget activity logging using standardized utilities
-      (async () => {
-        try {
-          const wasCompleted = variables.status === 'completed';
-          const activityType = wasCompleted ? 'task_complete' : 'task_status_update';
-          
-          await logTaskActivity(
-            updatedTask.project_id,
-            activityType,
-            updatedTask.id,
-            updatedTask.title,
-            {
-              status: variables.status,
-              newStatus: variables.status
-            }
-          );
-        } catch (e) {
-          console.error('Failed to create activity for task status update:', e);
-        }
-      })();
     }
   });
 }
@@ -745,16 +510,11 @@ async function handlePhaseTimelineUpdate(
  * Hook to assign task to user
  */
 export function useAssignTask() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ 
-      taskId, 
-      userId 
-    }: { 
-      taskId: string; 
-      userId: string | null;
-    }) => {
+  return useStandardMutation<any, { 
+    taskId: string; 
+    userId: string | null;
+  }>({
+    mutationFn: async ({ taskId, userId }) => {
       const { data: task, error } = await supabase
         .from('be_task')
         .update({ assigned_to: userId })
@@ -765,8 +525,39 @@ export function useAssignTask() {
       if (error) throw error;
       return task;
     },
-    onSuccess: async (updatedTask, variables) => {
-      // Invalidate and refetch related queries
+    
+    queryKeysToInvalidate: [
+      queryKeys.tasks.detail(''), // Will be filled with actual task ID
+      queryKeys.tasks.byProject('') // Will be filled with actual project_id
+    ],
+    
+    successMessage: '', // Dynamic message based on assignment/unassignment
+    
+    // Activity logging for task assignment/unassignment
+    activityLog: {
+      activityType: 'task_assign', // Will be dynamically determined
+      entityType: 'task',
+      getEntityName: (variables, result?: any) => result?.title || 'Task',
+      getEntityId: (variables, result?: any) => result?.id,
+      getMetadata: (variables, result?: any) => ({
+        taskTitle: result?.title,
+        phaseId: result?.phase_id,
+        assignedTo: result?.assigned_to,
+        isAssignment: !!variables.userId,
+        activityType: variables.userId ? 'task_assign' : 'task_unassign'
+      })
+    },
+    
+    errorContext: {
+      action: 'assign task',
+      canRetry: true,
+      showToast: true
+    },
+    
+    onSuccessCallback: async (updatedTask, variables) => {
+      const { queryClient } = require('@tanstack/react-query');
+      
+      // Invalidate related queries
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.tasks.detail(variables.taskId) 
       });
@@ -781,27 +572,12 @@ export function useAssignTask() {
           queryKey: queryKeys.tasks.byUser(variables.userId) 
         });
       }
-
-      // Fire-and-forget activity logging using standardized utilities
-      logActivityAsync({
-        projectId: updatedTask.project_id,
-        activityType: variables.userId ? 'task_assign' : 'task_unassign',
-        entityType: 'task',
-        entityId: updatedTask.id,
-        entityName: updatedTask.title,
-        metadata: {
-          taskTitle: updatedTask.title,
-          phaseId: updatedTask.phase_id,
-          assignedTo: updatedTask.assigned_to,
-          isAssignment: !!variables.userId
-        }
-      });
-
-      toast.success(variables.userId ? 'Task assigned successfully' : 'Task unassigned successfully');
-    },
-    onError: (error: any) => {
-      console.error('Error assigning task:', error);
-      toast.error(error.message || 'Failed to assign task');
+      
+      // Show dynamic success message
+      const { ErrorHandlingService } = require('@/services/errorHandlingService');
+      ErrorHandlingService.showSuccess(
+        variables.userId ? 'Task assigned successfully' : 'Task unassigned successfully'
+      );
     }
   });
 }

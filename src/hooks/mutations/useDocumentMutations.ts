@@ -1029,7 +1029,7 @@ export function useCreateDocument() {
           mime_type: documentData.mime_type || 'application/octet-stream',
           processing_status: 'processing', // Show as processing
           metadata: documentData.metadata || {},
-          phase_id: documentData.phase_id || null,
+          phase_id: documentData.phase_id && documentData.phase_id.trim() !== '' ? documentData.phase_id : null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };

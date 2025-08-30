@@ -28,12 +28,9 @@ export interface Project {
   owner_id: string;
   status: ProjectStatus;
   
-  // Visual assets (matches view)
-  profile_image?: string;
-  inspiration_images?: string[];
-  progress_images?: string[];
-  inspirationalImages?: ProjectImage[]; // Transformed in service
-  progressImages?: ProjectImage[]; // Transformed in service
+  // Visual assets - now handled by be_document table with media categories
+  // Removed: profile_image, inspiration_images, progress_images
+  // Use useProjectMedia hooks to fetch media by category
   
   // Project details (matches view)
   client: string;

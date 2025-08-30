@@ -7,7 +7,7 @@
 
 -- AI Plan Jobs table
 CREATE TABLE construction_mgr.ai_plan_jobs (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id UUID NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'pending',
     job_id VARCHAR(255) UNIQUE,
@@ -39,7 +39,7 @@ CREATE INDEX idx_ai_plan_jobs_job_id ON construction_mgr.ai_plan_jobs(job_id);
 
 -- AI Generated Plans table (supports multiple versions per project)
 CREATE TABLE construction_mgr.ai_generated_plan (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id UUID NOT NULL,
     plan_job_id UUID,
     version_number INTEGER NOT NULL DEFAULT 1,

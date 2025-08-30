@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { FileUploadOptions, FileUploadResult, DeleteFileResult } from '@/types/fileUpload';
+import type { MediaCategory } from '@/types/database';
 
 // ============================================================================
 // TYPES & CONSTANTS
@@ -153,6 +154,8 @@ export const generateFilePath = (
       return `${userId}/${fileName}`;
     case '{userId}/{projectId}/{filename}':
       return `${userId}/${projectId}/${fileName}`;
+    case '{userId}/{projectId}/documents/{filename}':
+      return `${userId}/${projectId}/documents/${fileName}`;
     case '{projectId}/documents/{filename}':
       return `${projectId}/documents/${fileName}`;
     default:
@@ -289,6 +292,63 @@ export const getDocumentTypeDisplayName = (documentType: DocumentType): string =
 };
 
 // ============================================================================
+// MEDIA CATEGORY UTILITIES
+// ============================================================================
+
+/**
+ * Get media category from file type and intended use
+ */
+export const getMediaCategoryFromFile = (
+  file: File, 
+  documentType?: DocumentType,
+  context?: 'profile' | 'inspiration' | 'progress' | 'document'
+): MediaCategory => {
+  const isImage = file.type.startsWith('image/');
+  
+  // If context is provided, use it directly (maps to storage buckets)
+  if (context === 'profile') return 'profile_image';
+  if (context === 'inspiration') return 'inspiration_image';
+  if (context === 'progress') return 'progress_image';
+  if (context === 'document') return 'document';
+  
+  // Default logic based on file type
+  if (isImage) {
+    // Images without context default to progress (most common project images)
+    return 'progress_image';
+  }
+  
+  // All non-images are documents
+  return 'document';
+};
+
+/**
+ * Get media category display name
+ */
+export const getMediaCategoryDisplayName = (category: string): string => {
+  const displayNames: Record<string, string> = {
+    'profile_image': 'Profile Image',
+    'inspiration_image': 'Inspiration Image',
+    'progress_image': 'Progress Image',
+    'document': 'Document'
+  };
+  return displayNames[category] || 'Media';
+};
+
+/**
+ * Check if media category is an image type
+ */
+export const isImageCategory = (category: string): boolean => {
+  return ['profile_image', 'inspiration_image', 'progress_image'].includes(category);
+};
+
+/**
+ * Check if media category is a document type
+ */
+export const isDocumentCategory = (category: string): boolean => {
+  return category === 'document';
+};
+
+// ============================================================================
 // DATABASE OPERATIONS
 // ============================================================================
 
@@ -344,6 +404,7 @@ const createDocumentRecord = async (options: {
   name: string;
   description?: string;
   documentType: DocumentType;
+  mediaCategory: MediaCategory;
   projectId: string;
   phaseId?: string;
   filePath: string;
@@ -374,8 +435,9 @@ const createDocumentRecord = async (options: {
         name: options.name,
         description: options.description || null,
         document_type: options.documentType,
+        category: options.mediaCategory,
         project_id: options.projectId,
-        phase_id: options.phaseId || null,
+        phase_id: options.phaseId && options.phaseId.trim() !== '' ? options.phaseId : null,
         file_path: finalFilePath,
         file_size: options.fileSize,
         mime_type: options.mimeType,
@@ -396,8 +458,9 @@ const createDocumentRecord = async (options: {
             name: options.name,
             description: options.description || null,
             document_type: options.documentType,
+            category: options.mediaCategory,
             project_id: options.projectId,
-            phase_id: options.phaseId || null,
+            phase_id: options.phaseId && options.phaseId.trim() !== '' ? options.phaseId : null,
             file_path: retryPath,
             file_size: options.fileSize,
             mime_type: options.mimeType,
@@ -492,7 +555,7 @@ export const uploadFile = async (
     // Complete progress
     options.onProgress?.(100);
     
-    let result: UnifiedUploadResult = {
+    const result: UnifiedUploadResult = {
       success: true,
       publicUrl,
       filePath
@@ -501,10 +564,12 @@ export const uploadFile = async (
     // Create database record if requested
     if (options.createDatabaseRecord && options.bucket === 'documents') {
       const documentType = options.documentType || getDocumentTypeFromFilename(file.name);
+      const mediaCategory = getMediaCategoryFromFile(file, documentType, 'document');
       const documentResult = await createDocumentRecord({
         name: options.name || file.name,
         description: options.description,
         documentType,
+        mediaCategory,
         projectId: options.projectId!,
         phaseId: options.phaseId,
         filePath: publicUrl,
@@ -755,6 +820,12 @@ export default {
   // Document utilities
   getDocumentTypeFromFilename,
   getDocumentTypeDisplayName,
+  
+  // Media category utilities
+  getMediaCategoryFromFile,
+  getMediaCategoryDisplayName,
+  isImageCategory,
+  isDocumentCategory,
   
   // Hook
   useFileUpload

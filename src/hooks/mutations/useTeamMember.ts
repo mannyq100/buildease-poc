@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { queryKeys } from '@/lib/queryClient';
 import { toast } from 'sonner';
-import * as activityService from '@/services/activityService';
 import { logActivity } from '@/utils/activityLogging';
 import { useProjectStore } from '@/stores/projectStore';
 

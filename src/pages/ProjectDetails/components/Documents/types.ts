@@ -18,6 +18,7 @@ export interface MediaItem {
   readonly size?: number;
   readonly createdAt: string;
   readonly uploadedAt?: Date;
+  readonly documentType?: string; // Add document_type from database for better logic
 }
 
 export interface MediaFilters {

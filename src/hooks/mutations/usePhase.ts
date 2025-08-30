@@ -9,7 +9,6 @@ import { supabase } from '@/lib/supabase';
 import { queryKeys } from '@/lib/queryClient';
 import { toast } from 'sonner';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
-import * as activityService from '@/services/activityService';
 import { logActivity } from '@/utils/activityLogging';
 import { PhaseStatusDB, PhaseStatusUI, toDbPhaseStatus, toUiPhaseStatus, type PhaseStatus } from '@/utils/core/phaseStatus';
 import { useProjectStore } from '@/stores/projectStore';

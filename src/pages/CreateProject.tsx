@@ -22,7 +22,7 @@ import {
   ReviewSubmitFormSkeleton
 } from "@/components/ui/form-step-skeleton";
 import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
-import { supabase } from '@/lib/supabase';
+import { deleteProject } from '@/services/projectService';
 // Removed unused WizardStep type import
 import { StepNavigator } from '@/components/create-project/StepNavigator';
 import { Button } from '@/components/ui/button';
@@ -31,7 +31,8 @@ import { projectFormSchema, type CreateProjectFormValues } from './CreateProject
 import { Card } from '@/components/ui/card';
 import { useSubmissionActions, useProjectSubmission } from '@/stores/createProject/submissionStore';
 import { useImageActions, useImageState } from '@/stores/createProject/imageStore';
-import { useUploadImages } from '@/hooks/mutations/useImageMutations';
+import { useMediaOperations } from '@/hooks/useMediaOperations';
+import type { UploadType } from '@/types/upload';
 import {
   ChevronLeft,
   ChevronRight,
@@ -101,8 +102,8 @@ function CreateProjectContent() {
   const { uploadImages, clearAllImages } = useImageActions();
   const { localFiles: imageFiles, isUploading } = useImageState();
   
-  // Get image mutation hooks for optimistic updates
-  const uploadImagesMutation = useUploadImages();
+  // Get unified media operations for handling uploads
+  const mediaOperations = useMediaOperations({ projectId: createdProjectId || '' });
   
   // Use refs to track previous values and prevent infinite loops
   const prevIsSuccessRef = useRef(false);
@@ -296,74 +297,192 @@ function CreateProjectContent() {
           return;
         }
         
+        let projectId: string | null = null;
+        
         try {
           // Step 1: Create project in database (without images)
           const formData = methods.getValues();
-          const { id: projectId } = await submitProject(formData, user.id);
+          const { id } = await submitProject(formData, user.id);
+          projectId = id;
           
-          // Step 2: Upload images if any exist
+          // Step 2: Upload and persist images atomically if any exist
           if (imageFiles.length > 0) {
+            // Helper function to retry operations with exponential backoff
+            const retryWithBackoff = async (
+              operation: () => Promise<any>,
+              maxRetries: number = 3,
+              baseDelay: number = 1000,
+              operationName: string = 'operation'
+            ): Promise<any> => {
+              for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                  return await operation();
+                } catch (error) {
+                  const isLastAttempt = attempt === maxRetries;
+                  const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                  
+                  // Don't retry validation errors or permanent failures
+                  const isPermanentError = errorMessage.includes('file size') || 
+                                         errorMessage.includes('file type') ||
+                                         errorMessage.includes('validation') ||
+                                         errorMessage.includes('permission');
+                  
+                  if (isLastAttempt || isPermanentError) {
+                    console.error(`${operationName} failed after ${attempt} attempts:`, error);
+                    throw error;
+                  }
+                  
+                  const delay = baseDelay * Math.pow(2, attempt - 1);
+                  console.warn(`${operationName} attempt ${attempt} failed, retrying in ${delay}ms:`, errorMessage);
+                  
+                  toast({
+                    title: `Retrying ${operationName.toLowerCase()}...`,
+                    description: `Attempt ${attempt + 1} of ${maxRetries}`,
+                  });
+                  
+                  await new Promise(resolve => setTimeout(resolve, delay));
+                }
+              }
+              throw new Error(`${operationName} failed after ${maxRetries} attempts`);
+            };
+
             toast({
               title: "Uploading images...",
-              description: "Please wait while we upload your project images.",
+              description: `Please wait while we upload your ${imageFiles.length} project image${imageFiles.length > 1 ? 's' : ''}.`,
             });
             
-            const { images, profileImage } = await uploadImages(user.id, projectId);
-
-            // Persist URLs to project record using optimistic mutations
             try {
+              // Step 2a: Upload images to storage with retry logic
+              const { images, profileImage } = await retryWithBackoff(
+                () => uploadImages(user.id, projectId),
+                3,
+                2000,
+                'Image upload to storage'
+              );
+
+              // Step 2b: Persist URLs to database with retry logic
+              const uploadPromises: Promise<void>[] = [];
+              
               if (images.length > 0) {
                 // Convert uploaded images to UploadResult format for the mutation
-                const imageResults = images.map(url => ({
-                  id: `inspiration-${Date.now()}-${Math.random()}`,
-                  url,
-                  name: `inspiration-image-${Date.now()}`,
-                  size: 0, // Size not available here, but not critical for database persistence
-                  type: 'inspiration' as any,
-                  uploadedAt: new Date()
-                }));
-                
-                await uploadImagesMutation.mutateAsync({
-                  projectId,
-                  results: imageResults,
-                  imageType: 'inspiration'
+                const imageResults = images.map((url, index) => {
+                  const extension = url.split('.').pop()?.toLowerCase() || 'jpg';
+                  return {
+                    id: `inspiration-${Date.now()}-${Math.random()}-${index}`,
+                    url,
+                    name: `inspiration-image-${Date.now()}-${index}.${extension}`,
+                    size: 0, // Size not available here, but not critical for database persistence
+                    type: 'inspiration' as UploadType, // Use category type, MIME type determined by handler
+                    uploadedAt: new Date()
+                  };
                 });
+                
+                uploadPromises.push(
+                  retryWithBackoff(
+                    () => mediaOperations.upload.uploadImages(imageResults, 'inspiration'),
+                    3,
+                    1500,
+                    'Inspiration images database save'
+                  )
+                );
               }
               
               if (profileImage) {
-                // For profile images, we need to use a different approach since the mutation
-                // is designed for inspiration/progress images. For now, keep the legacy function
-                // for profile images only (this will be handled separately)
-                const { data: _updatedProject, error: profileError } = await supabase
-                  .from('be_project')
-                  .update({ profile_image: profileImage })
-                  .eq('id', projectId);
-                  
-                if (profileError) {
-                  throw new Error(`Failed to set profile image: ${profileError.message}`);
-                }
+                // Upload profile image using unified media operations
+                const extension = profileImage.split('.').pop()?.toLowerCase() || 'jpg';
+                const profileImageData = [{
+                  url: profileImage,
+                  name: `profile-image-${Date.now()}.${extension}`,
+                  size: 0,
+                  type: 'profile' as UploadType, // Use category type, MIME type determined by handler
+                  uploadedAt: new Date()
+                }];
+                
+                uploadPromises.push(
+                  retryWithBackoff(
+                    () => mediaOperations.upload.uploadImages(profileImageData, 'profile'),
+                    3,
+                    1500,
+                    'Profile image database save'
+                  )
+                );
               }
+
+              toast({
+                title: "Saving to database...",
+                description: "Almost done! Finalizing your project images.",
+              });
+
+              // Wait for all database persistence operations to complete
+              await Promise.all(uploadPromises);
 
               // Clear local images after successful persistence
               clearAllImages();
 
               toast({
-                title: "Images uploaded successfully",
-                description: "Your project images have been saved.",
+                title: "Project created successfully!",
+                description: `Your project and ${imageFiles.length} image${imageFiles.length > 1 ? 's' : ''} have been saved.`,
               });
-            } catch (persistError) {
-              console.error('Failed to persist image URLs to project:', persistError);
-              toast({
-                title: "Images uploaded, but not saved to project",
-                description: "Please try again from the project page to attach images.",
-                variant: "destructive",
-              });
+            } catch (imageError) {
+              console.error('Failed to upload or persist images:', imageError);
+              const errorMessage = imageError instanceof Error ? imageError.message : 'Unknown error';
+              
+              // Provide specific error messages based on error type
+              let userFriendlyMessage = "Images couldn't be uploaded. Please try again.";
+              let shouldRetryManually = true;
+              
+              if (errorMessage.includes('file size') || errorMessage.includes('too large')) {
+                userFriendlyMessage = "One or more images are too large. Please reduce file sizes and try again.";
+                shouldRetryManually = false;
+              } else if (errorMessage.includes('file type') || errorMessage.includes('format')) {
+                userFriendlyMessage = "One or more images have unsupported formats. Please use JPG, PNG, or WebP files.";
+                shouldRetryManually = false;
+              } else if (errorMessage.includes('quota') || errorMessage.includes('storage')) {
+                userFriendlyMessage = "Storage quota exceeded. Please contact support or try fewer images.";
+                shouldRetryManually = false;
+              } else if (errorMessage.includes('network') || errorMessage.includes('connection')) {
+                userFriendlyMessage = "Network connection issue. Please check your connection and try again.";
+              } else if (errorMessage.includes('database') || errorMessage.includes('persist')) {
+                userFriendlyMessage = "Images uploaded but couldn't be saved to project. Please try again.";
+              }
+              
+              // CRITICAL: Rollback project creation if images fail
+              try {
+                console.log(`Rolling back project ${projectId} due to image upload failure`);
+                await deleteProject(projectId);
+                
+                toast({
+                  title: "Project creation failed",
+                  description: userFriendlyMessage + (shouldRetryManually ? " All changes have been reverted." : ""),
+                  variant: "destructive",
+                });
+                return; // Exit early, don't navigate
+              } catch (rollbackError) {
+                console.error('Failed to rollback project after image failure:', rollbackError);
+                toast({
+                  title: "Critical error occurred",
+                  description: "Project created but images failed and couldn't be cleaned up. Please contact support for assistance.",
+                  variant: "destructive",
+                });
+                return; // Exit early, don't navigate
+              }
             }
           }
           
           // Navigation will be handled by the success effect
         } catch (error) {
           console.error('Error in project creation flow:', error);
+          
+          // If project was created but we hit an error, try to clean up
+          if (projectId) {
+            try {
+              console.log(`Cleaning up failed project ${projectId}`);
+              await deleteProject(projectId);
+            } catch (cleanupError) {
+              console.error('Failed to cleanup project after error:', cleanupError);
+            }
+          }
+          
           toast({
             title: "Error",
             description: error instanceof Error ? error.message : "Failed to create project. Please try again.",
@@ -387,7 +506,7 @@ function CreateProjectContent() {
         variant: "destructive",
       });
     }
-  }, [currentStep, totalSteps, methods, user?.id, submitProject, toast, imageFiles.length, uploadImages, clearAllImages, requiredFieldsByStep, uploadImagesMutation]);
+  }, [currentStep, totalSteps, methods, user?.id, submitProject, toast, imageFiles.length, uploadImages, clearAllImages, requiredFieldsByStep, mediaOperations.upload]);
 
   // Handle previous step
   const handleBack = useCallback(() => {

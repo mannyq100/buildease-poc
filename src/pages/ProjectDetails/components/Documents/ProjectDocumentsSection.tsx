@@ -3,20 +3,18 @@
  * Implements clean separation of concerns and performance optimizations
  */
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useMediaOperations } from '@/hooks/useMediaOperations';
-import { supabase } from '@/lib/supabase';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 
 import { Project } from '@/types/project';
 import { MediaFilters, MediaItem } from './types';
 import { UploadResult } from '@/types/upload';
-import { isDocumentType } from './utils/mediaUtils';
 
 // Optimized hooks
-import { useAllMediaItems } from './hooks/useMediaData';
+import { useProjectMedia } from '@/hooks/useProjectMedia';
 import { useDownloadManager } from './hooks/useMemoryManagement';
 import { useMediaState } from './hooks/useMediaState';
 import { useOptimizedFiltering } from './hooks/useOptimizedFiltering';
@@ -54,12 +52,31 @@ export function ProjectDocumentsSection({
     projectId: project.id
   });
   
-  // Extract data from consolidated operations
-  const documents = mediaOps.documents.query.data || [];
-  const progressImages = mediaOps.images.query.images || [];
-
-  // Optimized data processing with unified state
-  const allMediaItems = useAllMediaItems({ project, documents, progressImages });
+  // Use unified media fetching from be_document table
+  const projectMediaResult = useProjectMedia({ projectId: project.id });
+  const { data: projectMediaItems, isLoading: mediaLoading } = projectMediaResult;
+  
+  // Convert unified media to MediaItem format for compatibility
+  const allMediaItems = useMemo(() => {
+    if (!projectMediaItems) return [];
+    
+    return projectMediaItems.map(item => {
+      // Use document_type to determine if it's an image/video (preview) or document (download)
+      const documentType = item.metadata?.documentType as string;
+      const isImageOrVideo = documentType === 'PHOTO' || documentType === 'VIDEO';
+      
+      return {
+        id: item.id,
+        name: item.fileName,
+        url: item.filePath,
+        type: isImageOrVideo ? 'image' as const : 'document' as const,
+        category: item.category.replace('_image', '') as any, // Convert profile_image -> profile
+        size: item.fileSize,
+        createdAt: item.createdAt,
+        documentType: documentType // Add document_type for better logic
+      };
+    });
+  }, [projectMediaItems]);
   // Use optimistic updates for automatic UI removal instead of manual filtering
   const filteredItems = useOptimizedFiltering(allMediaItems, state.search, state.filters);
   
@@ -83,45 +100,22 @@ export function ProjectDocumentsSection({
 
   const handleDelete = useCallback(async (item: MediaItem) => {
     try {
-      if (item.category === 'progress' || item.category === 'inspiration' || item.category === 'profile') {
-        // Use consolidated media operations
-        await mediaOps.images.delete.mutateAsync({
-          projectId: project.id,
-          imageUrl: item.url,
-          imageName: item.name,
-          imageType: item.category as 'progress' | 'inspiration' | 'profile'
-        });
-        
-        // Optimistic update will handle UI removal automatically
-        
-      } else if (isDocumentType(item.category as string)) {
-        // CRITICAL FIX: Use optimistic mutation instead of direct Supabase calls
-        
-        if (item.id) {
-          // Delete document using consolidated operations
-          await mediaOps.documents.delete.mutateAsync(item.id);
-          
-          toast({
-            title: "Document Deleted",
-            description: "Document deleted successfully.",
-          });
-        } else {
-          toast({
-            title: "Delete Error", 
-            description: "Cannot delete document - no ID found.",
-            variant: "destructive",
-          });
-        }
-        
-      } else {
-        // Handle unknown item types
+      if (!item.id) {
         toast({
-          title: "Delete Error",
-          description: "Cannot delete this type of item.",
+          title: "Delete Error", 
+          description: "Cannot delete item - no ID found.",
           variant: "destructive",
         });
+        return;
       }
+
+      // All media now stored in documents table - unified delete
+      await mediaOps.documents.delete.mutateAsync(item.id);
       
+      toast({
+        title: "Item Deleted",
+        description: "Item deleted successfully.",
+      });
       
     } catch (error) {
       toast({
@@ -130,22 +124,29 @@ export function ProjectDocumentsSection({
         variant: "destructive",
       });
     }
-  }, [toast, project.id, mediaOps]);
+  }, [toast, mediaOps]);
 
   const handleSetAsProfile = useCallback(async (imageUrl: string) => {
     try {
-      // Find the image name from the URL
-      const mediaItem = allMediaItems.find(item => item.url === imageUrl);
-      const imageName = mediaItem?.name || 'image';
+      // Find the media item by URL
+      const imageDoc = projectMediaItems?.find((item: any) => item.filePath === imageUrl);
       
-      // Use consolidated media operations
-      await mediaOps.images.setProfile.mutateAsync({
-        projectId: project.id,
-        imageUrl,
-        imageName
+      if (!imageDoc?.id) {
+        toast({
+          title: "Error",
+          description: "Cannot find image to set as profile.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Use unified media operations
+      await mediaOps.media.setAsProfile(imageDoc.id);
+      
+      toast({
+        title: "Success",
+        description: "Profile image updated successfully.",
       });
-      
-      // Optimistic update will handle UI changes automatically
       
     } catch (error) {
       toast({
@@ -154,7 +155,7 @@ export function ProjectDocumentsSection({
         variant: "destructive",
       });
     }
-  }, [project.id, allMediaItems, mediaOps, toast]);
+  }, [projectMediaItems, mediaOps, toast]);
 
   const handleDownload = useCallback(async (item: MediaItem) => {
     try {
@@ -175,10 +176,14 @@ export function ProjectDocumentsSection({
   // Upload handlers using unified state management and dedicated mutations
   const handleInspirationUpload = useCallback(async (results: UploadResult[]) => {
     try {
-      // Use consolidated media operations
+      // Use unified media operations - images stored as documents
       await mediaOps.upload.uploadImages(results, 'inspiration');
       
       actions.closeUploadModal();
+      toast({
+        title: "Upload Complete",
+        description: `${results.length} inspiration image(s) uploaded successfully.`,
+      });
     } catch (_error) {
       toast({
         title: "Upload Error",
@@ -186,14 +191,18 @@ export function ProjectDocumentsSection({
         variant: "destructive",
       });
     }
-  }, [actions, toast, mediaOps, project.id]);
+  }, [actions, toast, mediaOps]);
 
   const handleProgressUpload = useCallback(async (results: UploadResult[]) => {
     try {
-      // Use consolidated media operations
+      // Use unified media operations - images stored as documents
       await mediaOps.upload.uploadImages(results, 'progress');
       
       actions.closeUploadModal();
+      toast({
+        title: "Upload Complete",
+        description: `${results.length} progress image(s) uploaded successfully.`,
+      });
     } catch (_error) {
       toast({
         title: "Upload Error",
@@ -201,37 +210,11 @@ export function ProjectDocumentsSection({
         variant: "destructive",
       });
     }
-  }, [actions, toast, mediaOps, project.id]);
+  }, [actions, toast, mediaOps]);
 
   const handleDocumentUpload = useCallback(async (results: UploadResult[]) => {
     try {
-      // CRITICAL FIX: Batch create documents to prevent sequential optimistic update race conditions
-      // Instead of sequential for-loop, create all documents in parallel with Promise.allSettled
-      
-      // Determine document type based on file extension
-      const _getDocumentType = (fileName: string) => {
-        const ext = fileName.toLowerCase().split('.').pop();
-        switch (ext) {
-          case 'pdf': return 'REPORT';
-          case 'doc':
-          case 'docx': return 'CONTRACT';
-          case 'xls':
-          case 'xlsx': return 'INVOICE';
-          case 'jpg':
-          case 'jpeg':
-          case 'png':
-          case 'gif':
-          case 'webp': return 'PHOTO';
-          case 'mp4':
-          case 'mov':
-          case 'avi': return 'VIDEO';
-          default: return 'OTHER';
-        }
-      };
-
-      // Create document payloads for batch processing using actual storage URLs
-      // Use SimplifiedUpload URLs directly but let the database mutation handle conflicts with retry logic
-      // Use consolidated media operations for document upload
+      // Use unified media operations for document upload
       await mediaOps.upload.uploadDocuments(results);
 
       actions.closeUploadModal();
@@ -249,7 +232,7 @@ export function ProjectDocumentsSection({
         variant: "destructive",
       });
     }
-  }, [actions, toast, mediaOps, project.id]);
+  }, [actions, toast, mediaOps]);
 
   // Service-based permissions (centralized business logic)
   const permissions = {
@@ -263,6 +246,16 @@ export function ProjectDocumentsSection({
       <Card className={className}>
         <CardContent className="p-6 text-center">
           <p className="text-slate-600">Please log in to view project media.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (mediaLoading) {
+    return (
+      <Card className={className}>
+        <CardContent className="p-6 text-center">
+          <p className="text-slate-600">Loading project media...</p>
         </CardContent>
       </Card>
     );

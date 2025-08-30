@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { MoreVertical, Download, Star, Trash2, FileText, ImageIcon, Calendar, Eye } from 'lucide-react';
 import { MediaItem } from '../types';
 import { useLazyImage } from '../hooks/useMemoryManagement';
-import { formatFileSize, formatMediaDate, getCategoryBadgeConfig, isImageType, getTypeBadgeConfig } from '../utils/mediaUtils';
+import { formatFileSize, formatMediaDate, getCategoryBadgeConfig, isImageType, getTypeBadgeConfig, isDownloadableDocument } from '../utils/mediaUtils';
 
 interface MediaItemCardProps {
   item: MediaItem;
@@ -65,6 +65,7 @@ export const MediaItemCard = memo<MediaItemCardProps>(({
   permissions
 }) => {
   const isImage = isImageType(item);
+  const isDocument = isDownloadableDocument(item);
   const canDelete = permissions.canDelete(item);
   const canSetAsProfile = permissions.canSetAsProfile(item);
   
@@ -83,25 +84,36 @@ export const MediaItemCard = memo<MediaItemCardProps>(({
               alt={item.name}
               className="rounded-t-xl group-hover:scale-105 transition-transform duration-300"
             />
-            {/* Image Overlay on Hover */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
-              <div className="flex items-center space-x-2 text-white text-xs font-medium">
-                <Eye className="h-3 w-3" />
-                <span>View Image</span>
+            {/* Enhanced Image Preview Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
+              <div className="bg-white/95 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                <div className="flex items-center space-x-2 text-slate-800 text-sm font-medium">
+                  <Eye className="h-4 w-4 text-blue-600" />
+                  <span>Preview Image</span>
+                </div>
               </div>
             </div>
           </>
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col items-center justify-center p-6 group-hover:from-slate-100 group-hover:to-slate-200 transition-all duration-300">
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-xl mb-3 group-hover:from-blue-600 group-hover:to-blue-700 transition-all duration-300 shadow-lg">
+          <div 
+            className="w-full h-full bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col items-center justify-center p-6 group-hover:from-blue-50 group-hover:to-blue-100 transition-all duration-300 cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDownload(item);
+            }}
+          >
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-xl mb-3 group-hover:from-blue-600 group-hover:to-blue-700 group-hover:scale-110 transition-all duration-300 shadow-lg">
               <FileText className="h-8 w-8 text-white" />
             </div>
-            <span className="text-sm text-slate-700 text-center font-medium truncate w-full leading-tight">
+            <span className="text-sm text-slate-700 text-center font-medium truncate w-full leading-tight mb-2">
               {item.name}
             </span>
-            <div className="mt-2 text-xs text-slate-500 flex items-center">
-              <Download className="h-3 w-3 mr-1" />
-              <span>Click to download</span>
+            {/* Enhanced download indicator */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-full px-3 py-1 shadow-sm group-hover:bg-blue-500 group-hover:text-white transition-all duration-300">
+              <div className="flex items-center space-x-1 text-xs font-medium">
+                <Download className="h-3 w-3" />
+                <span>Download</span>
+              </div>
             </div>
           </div>
         )}
@@ -139,9 +151,24 @@ export const MediaItemCard = memo<MediaItemCardProps>(({
         </div>
       </div>
 
+      {/* Quick Preview Button for Images */}
+      {isImage && (
+        <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+          <Button
+            variant="default"
+            size="sm"
+            onClick={(e) => onClick(item, e)}
+            className="h-8 px-3 bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl text-xs font-medium"
+          >
+            <Eye className="h-3 w-3 mr-1.5" />
+            Preview
+          </Button>
+        </div>
+      )}
+
       {/* Enhanced Actions */}
       <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0">
-        {(canDelete || canSetAsProfile || item.type === 'document') ? (
+        {(canDelete || canSetAsProfile || isDocument) ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -153,7 +180,7 @@ export const MediaItemCard = memo<MediaItemCardProps>(({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              {item.type === 'document' && (
+              {isDocument && (
                 <DropdownMenuItem onClick={() => onDownload(item)}>
                   <Download className="h-4 w-4 mr-2" />
                   Download
@@ -169,7 +196,7 @@ export const MediaItemCard = memo<MediaItemCardProps>(({
                 </DropdownMenuItem>
               )}
               
-              {(canDelete || canSetAsProfile) && item.type === 'document' && (
+              {(canDelete || canSetAsProfile) && isDocument && (
                 <DropdownMenuSeparator />
               )}
               
@@ -186,7 +213,7 @@ export const MediaItemCard = memo<MediaItemCardProps>(({
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Delete {item.type === 'document' ? 'Document' : 'Image'}</AlertDialogTitle>
+                      <AlertDialogTitle>Delete {isDocument ? 'Document' : 'Image'}</AlertDialogTitle>
                       <AlertDialogDescription>
                         Are you sure you want to delete "{item.name}"? This action cannot be undone.
                       </AlertDialogDescription>
@@ -205,19 +232,7 @@ export const MediaItemCard = memo<MediaItemCardProps>(({
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-        ) : (
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onDownload(item)}
-              className="h-8 px-3 bg-white/95 backdrop-blur-md hover:bg-white shadow-lg hover:shadow-xl border border-white/50 hover:border-slate-200 transition-all duration-200 text-xs font-medium"
-            >
-              <Download className="h-3 w-3 mr-1.5" />
-              Download
-            </Button>
-          </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

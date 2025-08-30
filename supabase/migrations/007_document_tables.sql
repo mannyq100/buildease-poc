@@ -7,7 +7,7 @@
 
 -- Document table with advanced media features
 CREATE TABLE construction_mgr.be_document (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     description TEXT,
     document_type TEXT NOT NULL, -- Simple text field, validation in UI
@@ -23,6 +23,7 @@ CREATE TABLE construction_mgr.be_document (
     file_size_bytes BIGINT,
     thumbnail_url TEXT,
     processing_status VARCHAR(50) DEFAULT 'completed',
+    category construction_mgr.media_category NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     
@@ -51,13 +52,20 @@ CREATE INDEX IF NOT EXISTS idx_document_fulltext_search
 ON construction_mgr.be_document 
 USING gin (to_tsvector('english', COALESCE(caption, '') || ' ' || COALESCE(description_detail, '')));
 
+-- Media category indexes for efficient querying
+CREATE INDEX IF NOT EXISTS idx_document_category ON construction_mgr.be_document (category);
+CREATE INDEX IF NOT EXISTS idx_document_project_category ON construction_mgr.be_document (project_id, category);
+CREATE INDEX IF NOT EXISTS idx_document_phase_category ON construction_mgr.be_document (phase_id, category) WHERE phase_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_be_document_project_created ON construction_mgr.be_document(project_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_be_document_category_created ON construction_mgr.be_document(category, created_at DESC);
+
 -- =============================================================================
 -- MEDIA COLLECTION TABLE
 -- =============================================================================
 
 -- Media collection table for organizing media into albums/collections
 CREATE TABLE construction_mgr.media_collection (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id UUID NOT NULL REFERENCES construction_mgr.be_project(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
     description TEXT,
@@ -95,7 +103,7 @@ CREATE TABLE construction_mgr.collection_document (
 
 -- Media processing queue table for handling uploads and transformations
 CREATE TABLE construction_mgr.media_processing_queue (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     document_id UUID NOT NULL REFERENCES construction_mgr.be_document(id) ON DELETE CASCADE,
     processing_type VARCHAR(50) NOT NULL, -- 'thumbnail', 'compress', 'watermark', 'ocr'
     status VARCHAR(50) NOT NULL DEFAULT 'pending', -- 'pending', 'processing', 'completed', 'failed'
@@ -180,3 +188,90 @@ ON CONFLICT (id) DO UPDATE SET
   public = EXCLUDED.public,
   file_size_limit = EXCLUDED.file_size_limit,
   allowed_mime_types = EXCLUDED.allowed_mime_types;
+
+-- =============================================================================
+-- MEDIA CATEGORY FUNCTIONS AND TRIGGERS
+-- =============================================================================
+
+-- Create function to get media by category
+CREATE OR REPLACE FUNCTION construction_mgr.get_project_media_by_category(
+    p_project_id UUID,
+    p_category construction_mgr.media_category DEFAULT NULL,
+    p_phase_id UUID DEFAULT NULL
+)
+RETURNS TABLE (
+    id UUID,
+    project_id UUID,
+    phase_id UUID,
+    category construction_mgr.media_category,
+    file_name TEXT,
+    file_path TEXT,
+    file_size BIGINT,
+    mime_type TEXT,
+    document_type TEXT,
+    description TEXT,
+    tags TEXT[],
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        d.id,
+        d.project_id,
+        d.phase_id,
+        d.category,
+        d.name as file_name,
+        d.file_path,
+        d.file_size,
+        d.mime_type,
+        d.document_type,
+        d.description,
+        d.tags,
+        d.created_at,
+        d.updated_at
+    FROM construction_mgr.be_document d
+    WHERE d.project_id = p_project_id
+    AND (p_category IS NULL OR d.category = p_category)
+    AND (p_phase_id IS NULL OR d.phase_id = p_phase_id)
+    ORDER BY d.created_at DESC;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Grant execute permission on the function
+GRANT EXECUTE ON FUNCTION construction_mgr.get_project_media_by_category TO authenticated;
+
+-- Add helpful view for media queries
+CREATE OR REPLACE VIEW construction_mgr.project_media AS
+SELECT 
+    d.id,
+    d.project_id,
+    d.phase_id,
+    d.category,
+    d.name as file_name,
+    d.file_path,
+    d.file_size,
+    d.mime_type,
+    d.document_type,
+    d.description,
+    d.tags,
+    d.created_at,
+    d.updated_at,
+    p.name as project_name,
+    ph.name as phase_name
+FROM construction_mgr.be_document d
+LEFT JOIN construction_mgr.be_project p ON d.project_id = p.id
+LEFT JOIN construction_mgr.be_phase ph ON d.phase_id = ph.id
+ORDER BY d.created_at DESC;
+
+-- Grant permissions on the view
+GRANT SELECT ON construction_mgr.project_media TO authenticated;
+
+-- Add RLS policy for the view
+ALTER VIEW construction_mgr.project_media SET (security_invoker = true);
+
+-- Add helpful comments
+COMMENT ON TABLE construction_mgr.be_document IS 'Unified storage for all project media: documents, images, and files';
+COMMENT ON COLUMN construction_mgr.be_document.category IS 'Media category for unified storage: profile_image, inspiration_image, progress_image, or document';
+COMMENT ON VIEW construction_mgr.project_media IS 'Convenient view for querying project media with related information';
+COMMENT ON FUNCTION construction_mgr.get_project_media_by_category IS 'Efficiently retrieve project media filtered by category and/or phase';

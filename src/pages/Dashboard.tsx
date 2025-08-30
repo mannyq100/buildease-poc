@@ -24,7 +24,7 @@ import {
 // UI Components
 import { Button } from '@/components/ui/button'
 
-import { useToast } from '@/components/ui/toast-context'
+import { useToast } from '@/hooks/use-toast'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 

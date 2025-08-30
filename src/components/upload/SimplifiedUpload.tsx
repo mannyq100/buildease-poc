@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSimplifiedUpload } from '@/hooks/useSimplifiedUpload';
+import { useMediaOperations, type MediaCategory } from '@/hooks/useMediaOperations';
 import { UploadType, UploadResult } from '@/types/upload';
 import { getStatusIcon, formatFileSize, hasCamera } from '@/utils/uploadUtils';
 import { DocumentUploadForm } from './DocumentUploadForm';
@@ -32,11 +33,28 @@ interface SimplifiedUploadProps {
   onUploadComplete?: (results: UploadResult[]) => void;
   onUploadError?: (error: string) => void;
   className?: string;
-  compact?: boolean;
-  disabled?: boolean;
-  // Document-specific props
   phaseId?: string;
+  showDocumentForm?: boolean;
+  allowMultiple?: boolean;
+  disabled?: boolean;
+  variant?: 'default' | 'compact' | 'minimal';
 }
+
+// Map UploadType to MediaCategory
+const getMediaCategory = (type: UploadType): MediaCategory => {
+  switch (type) {
+    case 'profile':
+      return 'profile_image';
+    case 'inspiration':
+      return 'inspiration_image';
+    case 'progress':
+      return 'progress_image';
+    case 'document':
+      return 'document';
+    default:
+      return 'document';
+  }
+};
 
 export function SimplifiedUpload({
   projectId,
@@ -44,10 +62,35 @@ export function SimplifiedUpload({
   onUploadComplete,
   onUploadError,
   className,
-  compact = false,
+  phaseId,
+  showDocumentForm = false,
+  allowMultiple = true,
   disabled = false,
-  phaseId
+  variant = 'default'
 }: SimplifiedUploadProps) {
+  const [showCamera, setShowCamera] = useState(false);
+  const [showDocForm, setShowDocForm] = useState(false);
+
+  const mediaOperations = useMediaOperations({ projectId });
+  const mediaCategory = getMediaCategory(type);
+
+  const upload = useSimplifiedUpload({
+    projectId,
+    type,
+    onSuccess: async (results) => {
+      try {
+        // Create document records for uploaded files using unified operations
+        await mediaOperations.upload.uploadMedia(results, mediaCategory, phaseId);
+        onUploadComplete?.(results);
+        upload.clearCompleted();
+      } catch (error) {
+        console.error('Failed to create document records:', error);
+        onUploadError?.('Upload completed but failed to save to database');
+      }
+    },
+    onError: onUploadError
+  });
+
   const [isDragOver, setIsDragOver] = useState(false);
   const [cameraAvailable, setCameraAvailable] = useState(false);
   
@@ -148,7 +191,7 @@ export function SimplifiedUpload({
     );
   }
 
-  if (compact) {
+  if (variant === 'compact') {
     return (
       <div className={cn("space-y-3", className)}>
         {/* Compact Header */}

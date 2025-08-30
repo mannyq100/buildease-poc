@@ -96,9 +96,8 @@ SELECT
         ELSE 'planning'
     END as status,
     
-    -- Visual assets
-    p.profile_image,
-    p.inspiration_images,
+    -- Visual assets (now stored in be_document table)
+    -- Images are now accessed via be_document table with appropriate categories
     
     -- Project details from JSONB
     COALESCE(p.details->>'client', 'Unknown Client') as client,
