@@ -39,4 +39,4 @@ export {
 // Enhanced hooks
 
 
-// Legacy hooks removed - use SimplifiedUpload and useSimplifiedUpload instead
+// Legacy hooks removed - use MediaUpload component instead

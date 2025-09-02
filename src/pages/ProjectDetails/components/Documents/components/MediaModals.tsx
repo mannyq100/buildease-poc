@@ -6,15 +6,14 @@
 import React, { memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
-import { SimplifiedUpload } from '@/components/upload/SimplifiedUpload';
-import { UploadResult } from '@/types/upload';
+import { MediaUpload } from '@/components/MediaUpload';
 
 interface UploadModalProps {
   isOpen: boolean;
   type: 'inspiration' | 'progress' | 'documents';
   projectId: string;
   onClose: () => void;
-  onUploadComplete: (results: UploadResult[]) => void;
+  onUploadComplete: (results: any[]) => void;
 }
 
 const UploadModal = memo<UploadModalProps>(({
@@ -45,11 +44,10 @@ const UploadModal = memo<UploadModalProps>(({
             <X className="h-4 w-4" />
           </Button>
         </div>
-        <SimplifiedUpload
-          type={type}
+        <MediaUpload
+          type={type === 'documents' ? 'document' : 'project_image'}
           projectId={projectId}
-          onUploadComplete={onUploadComplete}
-          enableMetadata={type === 'documents'}
+          onComplete={onUploadComplete}
         />
       </div>
     </div>
@@ -112,9 +110,9 @@ interface MediaModalsProps {
   onClosePreview: () => void;
   
   // Upload handlers
-  onInspirationUpload: (results: UploadResult[]) => void;
-  onProgressUpload: (results: UploadResult[]) => void;
-  onDocumentUpload: (results: UploadResult[]) => void;
+  onInspirationUpload: (results: any[]) => void;
+  onProgressUpload: (results: any[]) => void;
+  onDocumentUpload: (results: any[]) => void;
 }
 
 export const MediaModals = memo<MediaModalsProps>(({
