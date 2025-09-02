@@ -624,144 +624,31 @@ CREATE POLICY "Project members can create material transactions"
     );
 
 -- =============================================================================
--- DOCUMENT TABLE POLICIES
+-- MEDIA ITEMS TABLE POLICIES
 -- =============================================================================
 
--- Enable RLS on document table
-ALTER TABLE construction_mgr.be_document ENABLE ROW LEVEL SECURITY;
+-- Enable RLS on media items table
+ALTER TABLE construction_mgr.be_media_items ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can view documents for accessible projects"
-    ON construction_mgr.be_document
+CREATE POLICY "Users can view media items for accessible projects"
+    ON construction_mgr.be_media_items
     FOR SELECT
     USING (private.has_project_access_direct(project_id, auth.uid()));
 
-CREATE POLICY "Users can manage documents for owned projects"
-    ON construction_mgr.be_document
+CREATE POLICY "Users can manage media items for owned projects"
+    ON construction_mgr.be_media_items
     FOR ALL
     USING (private.is_project_owner_direct(project_id, auth.uid()));
 
-CREATE POLICY "Project members can create documents"
-    ON construction_mgr.be_document
+CREATE POLICY "Project members can create media items"
+    ON construction_mgr.be_media_items
     FOR INSERT
     WITH CHECK (private.has_project_access_direct(project_id, auth.uid()));
 
 -- =============================================================================
--- MEDIA COLLECTION TABLE POLICIES
+-- REMOVED: Complex collection and processing table policies
+-- These tables were removed in the schema simplification
 -- =============================================================================
-
--- Enable RLS on media collection table
-ALTER TABLE construction_mgr.media_collection ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view collections for accessible projects"
-    ON construction_mgr.media_collection
-    FOR SELECT
-    USING (
-        project_id IN (
-            SELECT p.id 
-            FROM construction_mgr.be_project p 
-            WHERE p.owner_id = auth.uid()
-            OR EXISTS (
-                SELECT 1 
-                FROM construction_mgr.be_project_member pm 
-                WHERE pm.project_id = p.id AND pm.user_id = auth.uid()
-            )
-        )
-    );
-
-CREATE POLICY "Users can create collections for accessible projects"
-    ON construction_mgr.media_collection
-    FOR INSERT
-    WITH CHECK (
-        project_id IN (
-            SELECT p.id 
-            FROM construction_mgr.be_project p 
-            WHERE p.owner_id = auth.uid()
-            OR EXISTS (
-                SELECT 1 
-                FROM construction_mgr.be_project_member pm 
-                WHERE pm.project_id = p.id AND pm.user_id = auth.uid()
-            )
-        )
-        AND created_by = auth.uid()
-    );
-
-CREATE POLICY "Users can update their own collections"
-    ON construction_mgr.media_collection
-    FOR UPDATE
-    USING (created_by = auth.uid())
-    WITH CHECK (created_by = auth.uid());
-
-CREATE POLICY "Users can delete their own collections"
-    ON construction_mgr.media_collection
-    FOR DELETE
-    USING (created_by = auth.uid());
-
--- =============================================================================
--- COLLECTION DOCUMENT TABLE POLICIES
--- =============================================================================
-
--- Enable RLS on collection document table
-ALTER TABLE construction_mgr.collection_document ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view collection documents for accessible collections"
-    ON construction_mgr.collection_document
-    FOR SELECT
-    USING (
-        collection_id IN (
-            SELECT id FROM construction_mgr.media_collection
-            WHERE project_id IN (
-                SELECT p.id 
-                FROM construction_mgr.be_project p 
-                WHERE p.owner_id = auth.uid()
-                OR EXISTS (
-                    SELECT 1 
-                    FROM construction_mgr.be_project_member pm 
-                    WHERE pm.project_id = p.id AND pm.user_id = auth.uid()
-                )
-            )
-        )
-    );
-
-CREATE POLICY "Users can manage collection documents for their collections"
-    ON construction_mgr.collection_document
-    FOR ALL
-    USING (
-        collection_id IN (
-            SELECT id FROM construction_mgr.media_collection
-            WHERE created_by = auth.uid()
-        )
-    )
-    WITH CHECK (
-        collection_id IN (
-            SELECT id FROM construction_mgr.media_collection
-            WHERE created_by = auth.uid()
-        )
-        AND added_by = auth.uid()
-    );
-
--- =============================================================================
--- MEDIA PROCESSING QUEUE TABLE POLICIES
--- =============================================================================
-
--- Enable RLS on media processing queue table
-ALTER TABLE construction_mgr.media_processing_queue ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view processing for their documents"
-    ON construction_mgr.media_processing_queue
-    FOR SELECT
-    USING (
-        document_id IN (
-            SELECT d.id 
-            FROM construction_mgr.be_document d
-            JOIN construction_mgr.be_project p ON d.project_id = p.id
-            WHERE p.owner_id = auth.uid()
-            OR EXISTS (
-                SELECT 1 
-                FROM construction_mgr.be_project_member pm 
-                WHERE pm.project_id = p.id AND pm.user_id = auth.uid()
-            )
-        )
-    );
 
 -- =============================================================================
 -- AI PLAN JOBS TABLE POLICIES
@@ -800,80 +687,88 @@ ALTER TABLE construction_mgr.ai_generated_plan ENABLE ROW LEVEL SECURITY;
 -- We can add more granular policies here if needed.
 
 -- =============================================================================
--- STORAGE BUCKET POLICIES
+-- STORAGE BUCKET POLICIES - Updated for Unified Media Schema
 -- =============================================================================
 
 -- RLS is already enabled on storage.objects by Supabase
 -- ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
 
--- 1. PROFILES BUCKET (public read, user manages own files)
-CREATE POLICY "Public read access for profiles"
+-- 1. USER_PROFILES BUCKET (public read, user manages own files)
+CREATE POLICY "Public read access for user profiles"
 ON storage.objects FOR SELECT
-USING (bucket_id = 'profiles');
+USING (bucket_id = 'user_profiles');
 
 CREATE POLICY "Users can manage their own profile pictures"
 ON storage.objects FOR ALL
 TO authenticated
 USING (
-    bucket_id = 'profiles' 
-    AND private.has_storage_access('profiles', name, auth.uid())
+    bucket_id = 'user_profiles' 
+    AND private.has_storage_access('user_profiles', name, auth.uid())
 )
 WITH CHECK (
-    bucket_id = 'profiles' 
-    AND private.has_storage_access('profiles', name, auth.uid())
+    bucket_id = 'user_profiles' 
+    AND private.has_storage_access('user_profiles', name, auth.uid())
 );
 
--- 2. PROJECT INSPIRATION BUCKET (public read, all authenticated users can contribute)  
-CREATE POLICY "Public read access for inspiration images"
-ON storage.objects FOR SELECT
-USING (bucket_id = 'project-inspiration');
-
-CREATE POLICY "Authenticated users can manage inspiration images"
-ON storage.objects FOR ALL
-TO authenticated
-USING (
-    bucket_id = 'project-inspiration'
-    AND auth.uid() IS NOT NULL
-)
-WITH CHECK (
-    bucket_id = 'project-inspiration'
-    AND auth.uid() IS NOT NULL
-);
-
--- 3. PROGRESS IMAGES BUCKET (public read, all authenticated users can contribute)
-CREATE POLICY "Public read access for progress images"
-ON storage.objects FOR SELECT
-USING (bucket_id = 'progress-images');
-
-CREATE POLICY "Authenticated users can manage progress images"
-ON storage.objects FOR ALL
-TO authenticated
-USING (
-    bucket_id = 'progress-images'
-    AND auth.uid() IS NOT NULL
-)
-WITH CHECK (
-    bucket_id = 'progress-images'
-    AND auth.uid() IS NOT NULL
-);
-
--- 4. DOCUMENTS BUCKET (private, project member access)
-CREATE POLICY "Project members can view documents"
+-- 2. PHOTO BUCKET (project-based access)  
+CREATE POLICY "Project members can view PHOTO bucket"
 ON storage.objects FOR SELECT
 TO authenticated
 USING (
-    bucket_id = 'documents'
-    AND private.has_storage_access('documents', name, auth.uid())
+    bucket_id = 'PHOTO'
+    AND private.has_storage_access('PHOTO', name, auth.uid())
 );
 
-CREATE POLICY "Project members can manage documents"
+CREATE POLICY "Project members can manage PHOTO bucket"
 ON storage.objects FOR ALL
 TO authenticated
 USING (
-    bucket_id = 'documents'
-    AND private.has_storage_access('documents', name, auth.uid())
+    bucket_id = 'PHOTO'
+    AND private.has_storage_access('PHOTO', name, auth.uid())
 )
 WITH CHECK (
-    bucket_id = 'documents'
-    AND private.has_storage_access('documents', name, auth.uid())
+    bucket_id = 'PHOTO'
+    AND private.has_storage_access('PHOTO', name, auth.uid())
+);
+
+-- 3. VIDEO BUCKET (project-based access)
+CREATE POLICY "Project members can view VIDEO bucket"
+ON storage.objects FOR SELECT
+TO authenticated
+USING (
+    bucket_id = 'VIDEO'
+    AND private.has_storage_access('VIDEO', name, auth.uid())
+);
+
+CREATE POLICY "Project members can manage VIDEO bucket"
+ON storage.objects FOR ALL
+TO authenticated
+USING (
+    bucket_id = 'VIDEO'
+    AND private.has_storage_access('VIDEO', name, auth.uid())
+)
+WITH CHECK (
+    bucket_id = 'VIDEO'
+    AND private.has_storage_access('VIDEO', name, auth.uid())
+);
+
+-- 4. DOCUMENT BUCKET (project-based access)
+CREATE POLICY "Project members can view DOCUMENT bucket"
+ON storage.objects FOR SELECT
+TO authenticated
+USING (
+    bucket_id = 'DOCUMENT'
+    AND private.has_storage_access('DOCUMENT', name, auth.uid())
+);
+
+CREATE POLICY "Project members can manage DOCUMENT bucket"
+ON storage.objects FOR ALL
+TO authenticated
+USING (
+    bucket_id = 'DOCUMENT'
+    AND private.has_storage_access('DOCUMENT', name, auth.uid())
+)
+WITH CHECK (
+    bucket_id = 'DOCUMENT'
+    AND private.has_storage_access('DOCUMENT', name, auth.uid())
 );

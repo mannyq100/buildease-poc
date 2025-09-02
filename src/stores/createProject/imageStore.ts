@@ -7,7 +7,8 @@
 import { create } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 import { devtools } from 'zustand/middleware';
-import { uploadFile } from '@/services/storageService';
+import { MediaService } from '@/services/MediaService';
+import { memoryManager } from '@/utils/core/memoryManager';
 
 // Local image file interface
 export interface LocalImageFile {
@@ -48,9 +49,9 @@ export interface ImageStoreState extends ImageState {
   resetUploadState: () => void;
 }
 
-// Utility function to create blob URL from file
+// Utility function to create blob URL from file using centralized memory manager
 function createPreviewUrl(file: File): string {
-  return URL.createObjectURL(file);
+  return memoryManager.createPreviewUrl(file);
 }
 
 // Utility function to generate unique ID
@@ -192,32 +193,29 @@ function validateImageFile(file: File): string | null {
   return null;
 }
 
-// Upload a single image file
+// Upload a single image file using unified MediaService
 async function uploadSingleImage(
   file: File,
   userId: string,
   projectId: string,
   isProfile: boolean = false
 ): Promise<string> {
-  // Route to correct bucket based on image type
-  // Profile images go to 'profiles' bucket, inspiration images go to 'project-inspiration' bucket
-  const bucket = isProfile ? 'profiles' : 'project-inspiration';
-  
-  const uploadResult = await uploadFile(file, {
-    bucket: bucket as any, // StorageBucket type
-    userId,
+  const context = {
     projectId,
-    // Keep allowed types aligned with validation
-    allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/gif'],
-    maxSizeMB: 10,
-    onProgress: undefined // Progress handled at higher level
-  });
+    type: isProfile ? 'profile' as const : 'inspiration' as const,
+    userId,
+    name: file.name,
+    description: isProfile ? 'Profile image' : 'Project inspiration image'
+  };
   
-  if (!uploadResult.success || !uploadResult.publicUrl) {
-    throw new Error(uploadResult.error || 'Upload failed');
+  const uploadResults = await MediaService.upload([file], context);
+  
+  if (uploadResults.length === 0) {
+    throw new Error('Upload failed - no results returned');
   }
   
-  return uploadResult.publicUrl;
+  const result = uploadResults[0];
+  return result.file_path;
 }
 
 // Create the image store
@@ -255,7 +253,7 @@ export const useImageStore = create<ImageStoreState>()(
         set((state) => {
           const imageToRemove = state.localFiles.find(img => img.id === id);
           if (imageToRemove) {
-            URL.revokeObjectURL(imageToRemove.previewUrl);
+            memoryManager.revokeBlobUrl(imageToRemove.previewUrl);
           }
 
           const newFiles = state.localFiles.filter(img => img.id !== id);
@@ -286,7 +284,7 @@ export const useImageStore = create<ImageStoreState>()(
 
       clearAllImages: () => {
         const { localFiles } = get();
-        localFiles.forEach(img => URL.revokeObjectURL(img.previewUrl));
+        localFiles.forEach(img => memoryManager.revokeBlobUrl(img.previewUrl));
         
         // Clear localStorage
         clearLocalStorage();

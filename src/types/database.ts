@@ -254,29 +254,31 @@ export interface MaterialTransaction {
   created_at: string;
 }
 
-// Document and Media types
-export type DocumentType = 'PERMIT' | 'DRAWING' | 'CONTRACT' | 'INVOICE' | 'RECEIPT' | 'REPORT' | 'SPECIFICATION' | 'SCHEDULE' | 'PHOTO' | 'VIDEO' | 'MANUAL' | 'CERTIFICATE' | 'OTHER';
-export type MediaCategory = 'profile_image' | 'inspiration_image' | 'progress_image' | 'document';
+// Standardized Media types matching database schema
+export type MediaType = 'PHOTO' | 'VIDEO' | 'DOCUMENT';
+export type MediaCategory = 'profile' | 'inspiration' | 'progress' | 'progress_video' | 'receipt' | 'report' | 'contract' | 'permit' | 'invoice' | 'blueprint' | 'other';
 export type ProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed';
 export type CollectionType = 'album' | 'progress' | 'inspection' | 'before_after' | 'custom';
 export type MediaProcessingType = 'thumbnail' | 'compress' | 'watermark' | 'ocr' | 'virus_scan';
+
+// Legacy type alias for backward compatibility during migration
+export type DocumentType = MediaType;
 
 export interface Document {
   id: string;
   name: string;
   description?: string;
-  document_type: DocumentType;
+  media_type: DocumentType;
   category: MediaCategory;
   project_id: string;
   phase_id?: string;
   file_path: string;
-  file_size?: number;
+  file_size_bytes?: number;
   mime_type?: string;
   metadata: Record<string, unknown>;
   // Enhanced media management fields
   tags?: string[];
   caption?: string;
-  file_size_bytes?: number;
   thumbnail_url?: string;
   processing_status?: ProcessingStatus;
   created_at: string;
@@ -350,7 +352,7 @@ export interface MediaSearchFilters {
 export interface MediaSearchResult {
   id: string;
   name: string;
-  document_type: DocumentType;
+  media_type: DocumentType;
   file_path: string;
   caption?: string;
   description?: string;
@@ -524,7 +526,7 @@ export const TABLE_NAMES = {
   FINANCIAL_TRANSACTIONS: 'financial_transaction',
   MATERIAL_TRANSACTIONS: 'material_transaction',
   COMMENTS: 'comment',
-  DOCUMENTS: 'be_document',
+  DOCUMENTS: 'be_media_items',
   NOTIFICATIONS: 'be_notification',
   AUDIT_LOG: 'be_audit_log',
   PROJECT_ACTIVITIES: 'be_project_activity',

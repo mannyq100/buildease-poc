@@ -1,221 +1,159 @@
 /**
- * Standard Mutation Hook
- * Provides unified mutation handling with optimistic updates, error handling, and activity logging
- * Reduces boilerplate code across all mutation hooks
+ * Standard Mutation Hooks
+ * Provides consistent mutation patterns with activity tracking and error handling
  */
 
-import { useMutation, useQueryClient, type UseMutationOptions } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
-import { useProjectStore } from '@/stores/projectStore';
-import { logActivityAsync } from '@/utils/activityLogging';
-import { ErrorHandlingService, createMutationErrorHandler } from '@/services/errorHandlingService';
-import type { ActivityType } from '@/types/database';
+import { ErrorHandlingService } from '@/services/errorHandlingService';
 
-export interface StandardMutationOptions<TData, TVariables> {
-  // Core mutation function
-  mutationFn: (variables: TVariables) => Promise<TData>;
-  
-  // Query invalidation
-  queryKeysToInvalidate?: any[][];
-  queryKeysToRemove?: any[][];
-  
-  // Messages
-  successMessage?: string;
-  errorMessage?: string;
-  loadingMessage?: string;
-  
-  // Optimistic updates
-  optimisticUpdate?: {
-    queryKey: any[];
-    updateFn: (old: any, variables: TVariables) => any;
-  };
-  
-  // Activity logging
-  activityLog?: {
-    activityType: ActivityType;
-    entityType: string;
-    getEntityName: (variables: TVariables, result?: TData) => string;
-    getEntityId?: (variables: TVariables, result?: TData) => string;
-    getMetadata?: (variables: TVariables, result?: TData) => Record<string, any>;
-  };
-  
-  // Error handling
-  errorContext?: {
-    action: string;
-    canRetry?: boolean;
-    showToast?: boolean;
-  };
-  
-  // Callbacks
-  onSuccessCallback?: (data: TData, variables: TVariables) => void | Promise<void>;
-  onErrorCallback?: (error: any, variables: TVariables) => void | Promise<void>;
-  
-  // Override default behavior
-  customOptions?: Omit<UseMutationOptions<TData, any, TVariables>, 'mutationFn'>;
+// Types for mutation configuration
+interface MutationContext {
+  previousData: unknown;
+  queryKey: readonly unknown[];
 }
 
-export function useStandardMutation<TData, TVariables>({
-  mutationFn,
-  queryKeysToInvalidate = [],
-  queryKeysToRemove = [],
-  successMessage,
-  errorMessage,
-  optimisticUpdate,
-  activityLog,
-  errorContext = { action: 'perform operation', showToast: true },
-  onSuccessCallback,
-  onErrorCallback,
-  customOptions
-}: StandardMutationOptions<TData, TVariables>) {
+export interface OptimisticUpdate<TData = unknown, TVariables = unknown> {
+  queryKey: readonly unknown[];
+  updateFn: (old: TData, variables: TVariables) => TData;
+}
+
+export interface ActivityLogConfig<TVariables = unknown, TData = unknown> {
+  activityType: string;
+  entityType: string;
+  getEntityName: (variables: TVariables, result?: TData) => string;
+  getEntityId: (variables: TVariables, result?: TData) => string;
+  getMetadata?: (variables: TVariables, result?: TData) => Promise<Record<string, unknown>> | Record<string, unknown>;
+}
+
+export interface ErrorContext {
+  action: string;
+  canRetry: boolean;
+  showToast: boolean;
+}
+
+export interface StandardMutationConfig<TData = unknown, TVariables = unknown> {
+  mutationFn: (variables: TVariables) => Promise<TData>;
+  queryKeysToInvalidate?: readonly (readonly unknown[])[];
+  queryKeysToRemove?: readonly (readonly unknown[])[];
+  successMessage?: string;
+  optimisticUpdate?: OptimisticUpdate<TData, TVariables>;
+  activityLog?: ActivityLogConfig<TVariables, TData>;
+  errorContext?: ErrorContext;
+  onSuccessCallback?: (data: TData, variables: TVariables) => Promise<void> | void;
+  onErrorCallback?: (error: Error, variables: TVariables) => Promise<void> | void;
+}
+
+export interface ProjectMutationConfig<TData = unknown, TVariables = unknown> extends StandardMutationConfig<TData, TVariables> {
+  projectId: string;
+}
+
+/**
+ * Standard mutation hook with consistent error handling and activity tracking
+ */
+export function useStandardMutation<TData = unknown, TVariables = unknown>(
+  config: StandardMutationConfig<TData, TVariables>
+) {
   const queryClient = useQueryClient();
   const { user } = useSupabaseAuth();
-  const addOptimisticUpdate = useProjectStore(state => state.addOptimisticUpdate);
-  const removeOptimisticUpdate = useProjectStore(state => state.removeOptimisticUpdate);
 
   return useMutation({
-    mutationFn,
+    mutationFn: config.mutationFn,
     
-    // Optimistic updates
     onMutate: async (variables: TVariables) => {
-      if (!optimisticUpdate) return {};
-
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: optimisticUpdate.queryKey });
-      
-      // Snapshot previous value
-      const previousData = queryClient.getQueryData(optimisticUpdate.queryKey);
-      
-      // Optimistically update
-      queryClient.setQueryData(optimisticUpdate.queryKey, (old: any) => 
-        optimisticUpdate.updateFn(old, variables)
-      );
-
-      // Track optimistic update
-      const optimisticId = `${errorContext.action}_${Date.now()}`;
-      addOptimisticUpdate(optimisticId, {
-        id: optimisticId,
-        type: 'update',
-        entity: activityLog?.entityType || 'unknown',
-        data: queryClient.getQueryData(optimisticUpdate.queryKey),
-        originalData: previousData,
-        timestamp: Date.now()
-      });
-
-      return { previousData, optimisticId };
+      // Handle optimistic updates
+      if (config.optimisticUpdate) {
+        const { queryKey, updateFn } = config.optimisticUpdate;
+        
+        // Cancel outgoing refetches
+        await queryClient.cancelQueries({ queryKey });
+        
+        // Snapshot the previous value
+        const previousData = queryClient.getQueryData(queryKey);
+        
+        // Optimistically update to the new value
+        queryClient.setQueryData(queryKey, (old: TData) => updateFn(old, variables));
+        
+        // Return context object with the previous data
+        return { previousData, queryKey };
+      }
     },
-
-    // Error handling
-    onError: async (error: any, variables: TVariables, context: any) => {
-      // Rollback optimistic update
-      if (optimisticUpdate && context?.previousData) {
-        queryClient.setQueryData(optimisticUpdate.queryKey, context.previousData);
-      }
-
-      // Remove optimistic update tracking
-      if (context?.optimisticId) {
-        removeOptimisticUpdate(context.optimisticId);
-      }
-
-      // Handle error with unified service
-      const errorHandler = createMutationErrorHandler({
-        ...errorContext,
-        action: errorMessage || errorContext.action
-      });
-      errorHandler(error, variables, context);
-
-      // Custom error callback
-      if (onErrorCallback) {
-        try {
-          await onErrorCallback(error, variables);
-        } catch (callbackError) {
-          console.error('Error in onErrorCallback:', callbackError);
+    
+    onSuccess: async (data: TData, variables: TVariables, _context: MutationContext | undefined) => {
+      try {
+        // Invalidate queries
+        if (config.queryKeysToInvalidate) {
+          const invalidations = config.queryKeysToInvalidate.map(queryKey =>
+            queryClient.invalidateQueries({ queryKey })
+          );
+          await Promise.all(invalidations);
         }
-      }
-    },
-
-    // Success handling
-    onSuccess: async (data: TData, variables: TVariables, context: any) => {
-      // Remove optimistic update tracking
-      if (context?.optimisticId) {
-        removeOptimisticUpdate(context.optimisticId);
-      }
-
-      // Invalidate queries
-      for (const queryKey of queryKeysToInvalidate) {
-        queryClient.invalidateQueries({ queryKey });
-      }
-
-      // Remove query data
-      for (const queryKey of queryKeysToRemove) {
-        queryClient.removeQueries({ queryKey });
-      }
-
-      // Show success message
-      if (successMessage) {
-        ErrorHandlingService.showSuccess(successMessage);
-      }
-
-      // Log activity
-      if (activityLog && user) {
-        logActivityAsync({
-          projectId: '', // Should be provided in activityLog or variables
-          activityType: activityLog.activityType,
-          entityType: activityLog.entityType,
-          entityName: activityLog.getEntityName(variables, data),
-          entityId: activityLog.getEntityId?.(variables, data),
-          userId: user.id,
-          metadata: activityLog.getMetadata?.(variables, data)
-        });
-      }
-
-      // Custom success callback
-      if (onSuccessCallback) {
-        try {
-          await onSuccessCallback(data, variables);
-        } catch (callbackError) {
-          console.error('Error in onSuccessCallback:', callbackError);
+        
+        // Remove queries
+        if (config.queryKeysToRemove) {
+          config.queryKeysToRemove.forEach(queryKey =>
+            queryClient.removeQueries({ queryKey })
+          );
         }
+        
+        // Show success message
+        if (config.successMessage) {
+          ErrorHandlingService.showSuccess(config.successMessage);
+        }
+        
+        // Activity logging temporarily disabled to prevent crashes
+        // TODO: Re-implement activity logging with proper project context
+        if (config.activityLog && user) {
+          console.log('Activity would be logged:', {
+            activityType: config.activityLog.activityType,
+            entityType: config.activityLog.entityType,
+            entityName: config.activityLog.getEntityName(variables, data),
+            entityId: config.activityLog.getEntityId(variables, data)
+          });
+        }
+        
+        // Execute success callback
+        if (config.onSuccessCallback) {
+          await config.onSuccessCallback(data, variables);
+        }
+        
+      } catch (error) {
+        console.error('Error in mutation success handler:', error);
       }
     },
-
-    // Merge custom options
-    ...customOptions
-  });
-}
-
-/**
- * Convenience wrapper for project-specific mutations
- */
-export function useProjectMutation<TData, TVariables extends { projectId: string }>({
-  activityLog,
-  ...options
-}: Omit<StandardMutationOptions<TData, TVariables>, 'activityLog'> & {
-  activityLog?: Omit<StandardMutationOptions<TData, TVariables>['activityLog'], 'getEntityId'> & {
-    getEntityId?: (variables: TVariables, result?: TData) => string;
-  };
-}) {
-  return useStandardMutation({
-    ...options,
-    activityLog: activityLog ? {
-      ...activityLog,
-      getEntityId: activityLog.getEntityId || ((variables: TVariables) => variables.projectId)
-    } : undefined
-  });
-}
-
-/**
- * Convenience wrapper for file upload mutations
- */
-export function useUploadMutation<TData, TVariables extends { file?: File; files?: File[] }>({
-  ...options
-}: StandardMutationOptions<TData, TVariables>) {
-  return useStandardMutation({
-    ...options,
-    errorContext: {
-      action: 'upload file',
-      canRetry: true,
-      showToast: true,
-      ...options.errorContext
+    
+    onError: async (error: Error, variables: TVariables, context: MutationContext | undefined) => {
+      try {
+        // Restore optimistic updates
+        if (context?.previousData && context?.queryKey) {
+          queryClient.setQueryData(context.queryKey, context.previousData);
+        }
+        
+        // Handle error display
+        if (config.errorContext?.showToast) {
+          console.error('Mutation error:', error, {
+            action: config.errorContext.action,
+            canRetry: config.errorContext.canRetry
+          });
+        }
+        
+        // Execute error callback
+        if (config.onErrorCallback) {
+          await config.onErrorCallback(error, variables);
+        }
+        
+      } catch (callbackError) {
+        console.error('Error in mutation error handler:', callbackError);
+      }
     }
   });
+}
+
+/**
+ * Project-specific mutation hook with additional project context
+ */
+export function useProjectMutation<TData = unknown, TVariables = unknown>(
+  config: ProjectMutationConfig<TData, TVariables>
+) {
+  return useStandardMutation(config);
 }

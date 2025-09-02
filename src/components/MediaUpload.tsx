@@ -4,7 +4,7 @@
  * Replaces SimplifiedUpload (577 lines) with ~150 lines (74% reduction)
  */
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -18,13 +18,14 @@ import { cn } from '@/lib/utils';
 import { useMedia } from '@/hooks/useMedia';
 import { formatFileSize } from '@/utils/core/format';
 import type { MediaCategory } from '@/types/database';
+import type { MediaItem } from '@/types/media';
 
 // Types
 interface MediaUploadProps {
   projectId: string;
-  type: 'profile' | 'project_image' | 'document';
+  type: 'profile' | 'inspiration' | 'progress' | 'progress_video' | 'receipt' | 'report' | 'contract' | 'permit' | 'invoice' | 'blueprint' | 'other';
   phaseId?: string;
-  onComplete?: (items: any[]) => void;
+  onComplete?: (items: MediaItem[]) => void;
   onError?: (error: string) => void;
   maxFiles?: number;
   accept?: string;
@@ -45,10 +46,10 @@ interface UploadItem {
   error?: string;
 }
 
-// Configuration mapping
+// Configuration mapping for standardized schema
 const TYPE_CONFIG = {
   profile: {
-    category: 'profile_image' as MediaCategory,
+    category: 'profile' as MediaCategory,
     maxFiles: 1,
     accept: 'image/*',
     icon: Image,
@@ -56,22 +57,94 @@ const TYPE_CONFIG = {
     description: 'Upload project profile/cover image',
     allowCamera: true
   },
-  project_image: {
-    category: 'progress_image' as MediaCategory,
+  inspiration: {
+    category: 'inspiration' as MediaCategory,
     maxFiles: 20,
     accept: 'image/*',
     icon: Image,
-    label: 'Project Images',
-    description: 'Upload progress and inspiration photos',
+    label: 'Inspiration Images',
+    description: 'Upload inspiration and design reference photos',
     allowCamera: true
   },
-  document: {
-    category: 'document' as MediaCategory,
+  progress: {
+    category: 'progress' as MediaCategory,
     maxFiles: 50,
-    accept: '.pdf,.doc,.docx,.txt,.png,.jpg,.jpeg',
+    accept: 'image/*',
+    icon: Image,
+    label: 'Progress Photos',
+    description: 'Upload progress photos',
+    allowCamera: true
+  },
+  progress_video: {
+    category: 'progress_video' as MediaCategory,
+    maxFiles: 20,
+    accept: 'video/*',
+    icon: Image,
+    label: 'Progress Videos',
+    description: 'Upload progress videos',
+    allowCamera: true
+  },
+  receipt: {
+    category: 'receipt' as MediaCategory,
+    maxFiles: 20,
+    accept: 'image/*,.pdf',
     icon: FileText,
-    label: 'Documents',
-    description: 'Upload project documents and files',
+    label: 'Receipts',
+    description: 'Upload purchase receipts and invoices',
+    allowCamera: true
+  },
+  report: {
+    category: 'report' as MediaCategory,
+    maxFiles: 10,
+    accept: '.pdf,.doc,.docx,.txt',
+    icon: FileText,
+    label: 'Reports',
+    description: 'Upload inspection and project reports',
+    allowCamera: false
+  },
+  contract: {
+    category: 'contract' as MediaCategory,
+    maxFiles: 10,
+    accept: '.pdf,.doc,.docx',
+    icon: FileText,
+    label: 'Contracts',
+    description: 'Upload contracts and agreements',
+    allowCamera: false
+  },
+  permit: {
+    category: 'permit' as MediaCategory,
+    maxFiles: 10,
+    accept: '.pdf,.jpg,.jpeg,.png',
+    icon: FileText,
+    label: 'Permits',
+    description: 'Upload permits and certifications',
+    allowCamera: true
+  },
+  invoice: {
+    category: 'invoice' as MediaCategory,
+    maxFiles: 50,
+    accept: '.pdf,.jpg,.jpeg,.png',
+    icon: FileText,
+    label: 'Invoices',
+    description: 'Upload invoices and billing documents',
+    allowCamera: true
+  },
+  blueprint: {
+    category: 'blueprint' as MediaCategory,
+    maxFiles: 20,
+    accept: '.pdf,.dwg,.jpg,.jpeg,.png',
+    icon: FileText,
+    label: 'Blueprints',
+    description: 'Upload blueprints and technical drawings',
+    allowCamera: false
+  },
+  other: {
+    category: 'other' as MediaCategory,
+    maxFiles: 30,
+    accept: '*',
+    icon: FileText,
+    label: 'Other Documents',
+    description: 'Upload other project-related files',
     allowCamera: false
   }
 };
@@ -108,21 +181,31 @@ export function MediaUpload({
   variant = 'default',
   className
 }: MediaUploadProps) {
-  const config = TYPE_CONFIG[type];
-  const finalMaxFiles = maxFiles || config.maxFiles;
-  const finalAccept = accept || config.accept;
-  const finalAllowCamera = allowCamera !== undefined ? allowCamera : config.allowCamera;
-
+  // Always call hooks first to avoid conditional hook calls
   const [uploadItems, setUploadItems] = useState<UploadItem[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [cameraAvailable, setCameraAvailable] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const media = useMedia(projectId);
+  
+  // Get config with fallback to prevent undefined access
+  const config = TYPE_CONFIG[type] || {
+    category: 'other' as MediaCategory,
+    maxFiles: 10,
+    accept: '*',
+    icon: FileText,
+    label: 'Unknown Type',
+    description: 'Upload files',
+    allowCamera: false
+  };
+  
+  const finalMaxFiles = maxFiles || config.maxFiles;
+  const finalAccept = accept || config.accept;
+  const finalAllowCamera = allowCamera !== undefined ? allowCamera : config.allowCamera;
   const TypeIcon = config.icon;
 
   // Check camera on mount
-  React.useEffect(() => {
+  useEffect(() => {
     if (finalAllowCamera) {
       hasCamera().then(setCameraAvailable);
     }
@@ -215,9 +298,12 @@ export function MediaUpload({
       ));
 
       const files = pendingItems.map(item => item.file);
-      const uploadedItems = await media.upload(files, {
-        category: config.category,
-        phaseId
+      const uploadedItems = await media.upload({
+        files,
+        options: {
+          category: config.category,
+          phaseId
+        }
       });
 
       // Mark as completed
@@ -251,7 +337,6 @@ export function MediaUpload({
 
   const pendingCount = uploadItems.filter(item => item.status === 'pending').length;
   const completedCount = uploadItems.filter(item => item.status === 'completed').length;
-  const failedCount = uploadItems.filter(item => item.status === 'failed').length;
   const isUploading = uploadItems.some(item => item.status === 'uploading');
 
   if (variant === 'compact') {

@@ -31,7 +31,7 @@ export const useProjects = (filters?: ProjectFilters) => {
   console.log('useProjects called with filters:', filters);
   
   return useQuery({
-    queryKey: queryKeys.projects.list(filters || {}),
+    queryKey: queryKeys.projects.list(filters as Record<string, unknown> || {}),
     queryFn: async (): Promise<Project[]> => {
       console.log('useProjects queryFn executing...');
       // Use base table without complex joins to avoid issues
@@ -99,9 +99,9 @@ export const useProjects = (filters?: ProjectFilters) => {
         });
       }
 
-      // Transform using enhanced service with owner info enrichment
+      // Transform using base table transformation for raw database data
       try {
-        return await ProjectTransformService.transformProjects(data || []);
+        return (data || []).map(project => ProjectTransformService.transformProjectSummary(project));
       } catch (error) {
         console.error('Transform error in useProjects:', error);
         console.error('Raw data that failed:', data);
@@ -119,7 +119,7 @@ export const useProjects = (filters?: ProjectFilters) => {
  */
 export const useProjectMetrics = () => {
   return useQuery({
-    queryKey: queryKeys.projects.metrics(),
+    queryKey: queryKeys.aggregations.metrics(),
     queryFn: async () => {
       // Get all projects for current user with budget info
       const { data, error } = await supabase
@@ -178,7 +178,7 @@ export const useProjectMetrics = () => {
  */
 export const useProjectsByStatus = () => {
   return useQuery({
-    queryKey: queryKeys.projects.byStatus(),
+    queryKey: queryKeys.aggregations.byStatus(),
     queryFn: async () => {
       const { data, error } = await supabase
         .from('be_project')

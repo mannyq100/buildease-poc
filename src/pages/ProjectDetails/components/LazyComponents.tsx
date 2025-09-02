@@ -8,7 +8,7 @@ import React, { Suspense } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, Settings, ImageIcon } from 'lucide-react';
 // Infer prop types directly from components to avoid importing non-exported types
-type ProjectDocumentsSectionComponent = typeof import('./Documents/ProjectDocumentsSection')['ProjectDocumentsSection'];
+type ProjectDocumentsSectionComponent = typeof import('./Media/ProjectDocumentsSection')['ProjectDocumentsSection'];
 type ProjectDocumentsSectionProps = React.ComponentProps<ProjectDocumentsSectionComponent>;
 type ProjectSettingsSectionComponent = typeof import('./Settings/ProjectSettingsSection')['ProjectSettingsSection'];
 type ProjectSettingsSectionProps = React.ComponentProps<ProjectSettingsSectionComponent>;
@@ -59,7 +59,7 @@ const SettingsLoadingFallback = () => (
 
 // Lazy-loaded components
 const LazyProjectDocumentsSection = React.lazy(() => 
-  import('./Documents/ProjectDocumentsSection').then(module => ({
+  import('./Media/ProjectDocumentsSection').then(module => ({
     default: module.ProjectDocumentsSection
   }))
 );

@@ -57,8 +57,8 @@ export function useProjectDataStrategy(projectId: string): ProjectDataPriority {
       // Prefetch documents in background
       queryClient.prefetchQuery({
         queryKey: queryKeys.documents.byProject(projectId),
-        queryFn: () => import('./queries/useDocument').then(m => 
-          m.useProjectDocuments.queryFn?.(projectId)
+        queryFn: () => import('./queries/useProjectMedia').then(m => 
+          m.useProjectMedia.queryFn?.(projectId)
         ),
         staleTime: 15 * 60 * 1000, // 15 minutes
       });

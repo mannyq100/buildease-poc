@@ -17,7 +17,7 @@ export * from './ProjectHeader';
 export * from './Phases';
 
 // Documents components
-export * from './Documents';
+export * from './Media';
 
 // Settings components
 export * from './Settings';

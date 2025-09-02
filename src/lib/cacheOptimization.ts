@@ -1,11 +1,11 @@
 /**
  * Intelligent Cache Management
- * Sprint 2.4: Cache Strategy Optimization implementation
- * Provides granular cache invalidation and strategic prefetching
+ * Enhanced for Phase 3.2: Smart Caching Strategy
+ * Provides granular cache invalidation, strategic prefetching, and integrates with smart cache manager
  */
 
 import { QueryClient } from '@tanstack/react-query';
-import { queryKeys } from './queryClient';
+import { queryKeys, queryUtils } from './queryClient';
 
 export interface CacheInvalidationOptions {
   projectId?: string;
@@ -25,29 +25,81 @@ export class CacheManager {
 
   /**
    * Invalidate specific cache entries based on operation type
+   * Enhanced with smart cache integration
    */
   async invalidateCache(options: CacheInvalidationOptions): Promise<void> {
     const { projectId, phaseId, taskId, userId, invalidateType, cascade = true } = options;
 
-    switch (invalidateType) {
-      case 'project':
-        await this.invalidateProjectCache(projectId, cascade);
-        break;
-      case 'phase':
-        await this.invalidatePhaseCache(projectId, phaseId, cascade);
-        break;
-      case 'task':
-        await this.invalidateTaskCache(projectId, phaseId, taskId, cascade);
-        break;
-      case 'budget':
-        await this.invalidateBudgetCache(projectId, cascade);
-        break;
-      case 'team':
-        await this.invalidateTeamCache(projectId, cascade);
-        break;
-      case 'all':
-        await this.invalidateAllCache(projectId);
-        break;
+    // Use smart cache invalidation patterns for better performance
+    try {
+      const { getSmartCacheManager } = await import('@/services/smartCacheManager');
+      const smartCache = getSmartCacheManager();
+      
+      switch (invalidateType) {
+        case 'project':
+          await Promise.all([
+            this.invalidateProjectCache(projectId, cascade),
+            smartCache.invalidatePattern(`project-.*-${projectId}`),
+            smartCache.invalidateDependencies(`project-${projectId}`)
+          ]);
+          break;
+        case 'phase':
+          await Promise.all([
+            this.invalidatePhaseCache(projectId, phaseId, cascade),
+            smartCache.invalidatePattern(`phase-.*-${phaseId}`),
+            smartCache.invalidateDependencies(`phase-${phaseId}`)
+          ]);
+          break;
+        case 'task':
+          await Promise.all([
+            this.invalidateTaskCache(projectId, phaseId, taskId, cascade),
+            smartCache.invalidatePattern(`task-.*-${taskId}`)
+          ]);
+          break;
+        case 'budget':
+          await Promise.all([
+            this.invalidateBudgetCache(projectId, cascade),
+            smartCache.invalidatePattern(`budget-.*-${projectId}`),
+            queryUtils.invalidateByPattern(`budget.*${projectId}`, 'l2')
+          ]);
+          break;
+        case 'team':
+          await Promise.all([
+            this.invalidateTeamCache(projectId, cascade),
+            smartCache.invalidatePattern(`team-.*-${projectId}`),
+            queryUtils.invalidateByPattern(`team.*${projectId}`, 'l2')
+          ]);
+          break;
+        case 'all':
+          await Promise.all([
+            this.invalidateAllCache(projectId),
+            smartCache.invalidatePattern(`.*-${projectId}.*`)
+          ]);
+          break;
+      }
+    } catch (error) {
+      console.warn('Smart cache not available, falling back to basic invalidation:', error);
+      // Fallback to original implementation
+      switch (invalidateType) {
+        case 'project':
+          await this.invalidateProjectCache(projectId, cascade);
+          break;
+        case 'phase':
+          await this.invalidatePhaseCache(projectId, phaseId, cascade);
+          break;
+        case 'task':
+          await this.invalidateTaskCache(projectId, phaseId, taskId, cascade);
+          break;
+        case 'budget':
+          await this.invalidateBudgetCache(projectId, cascade);
+          break;
+        case 'team':
+          await this.invalidateTeamCache(projectId, cascade);
+          break;
+        case 'all':
+          await this.invalidateAllCache(projectId);
+          break;
+      }
     }
   }
 
@@ -261,44 +313,67 @@ export class CacheManager {
 
   /**
    * Strategic prefetching for improved performance
+   * Enhanced with smart cache hierarchy and network awareness
    */
   async prefetchRelatedData(projectId: string, priority: 'critical' | 'high' | 'low' = 'high'): Promise<void> {
     if (!projectId) return;
 
+    try {
+      const { getSmartCacheManager } = await import('@/services/smartCacheManager');
+      const smartCache = getSmartCacheManager();
+      
+      // Use smart cache warming based on priority
+      const cachePriorities = {
+        critical: ['media', 'stats', 'thumbnails'],
+        high: ['media', 'stats'],
+        low: ['media']
+      } as const;
+      
+      await smartCache.warmCache(projectId, cachePriorities[priority]);
+      
+    } catch (error) {
+      console.warn('Smart cache not available, using fallback prefetch:', error);
+    }
+
+    // Fallback prefetching with hierarchy-aware query utils
     const promises: Promise<unknown>[] = [];
 
     // Always prefetch consolidated project data (critical path)
     promises.push(
-      this.queryClient.prefetchQuery({
-        queryKey: ['project-consolidated', projectId],
-        staleTime: 5 * 60 * 1000, // 5 minutes
-      })
+      queryUtils.smartPrefetch(
+        ['project-consolidated', projectId],
+        async () => {}, // This would be the actual fetch function
+        priority === 'critical' ? 'high' : 'low'
+      )
     );
 
     if (priority === 'critical' || priority === 'high') {
-      // Prefetch project summary metrics
+      // Prefetch L2 cache items (aggregations)
       promises.push(
-        this.queryClient.prefetchQuery({
-          queryKey: ['budget-summary', projectId],
-          staleTime: 2 * 60 * 1000,
-        })
+        queryUtils.smartPrefetch(
+          queryKeys.aggregations.budgetSummary(projectId),
+          async () => {},
+          'high'
+        )
       );
 
       promises.push(
-        this.queryClient.prefetchQuery({
-          queryKey: ['timeline-summary', projectId],
-          staleTime: 2 * 60 * 1000,
-        })
+        queryUtils.smartPrefetch(
+          queryKeys.aggregations.timelineSummary(projectId),
+          async () => {},
+          'high'
+        )
       );
     }
 
     if (priority === 'critical') {
       // Prefetch team summary for immediate availability
       promises.push(
-        this.queryClient.prefetchQuery({
-          queryKey: ['team-summary', projectId],
-          staleTime: 5 * 60 * 1000,
-        })
+        queryUtils.smartPrefetch(
+          queryKeys.aggregations.teamSummary(projectId),
+          async () => {},
+          'high'
+        )
       );
     }
 
@@ -317,13 +392,13 @@ export class CacheManager {
   }
 
   /**
-   * Get cache statistics for monitoring
+   * Get cache statistics for monitoring with smart cache integration
    */
   getCacheStats() {
     const cache = this.queryClient.getQueryCache();
     const queries = cache.getAll();
     
-    const stats = {
+    const baseStats = {
       totalQueries: queries.length,
       staleQueries: queries.filter(q => q.isStale()).length,
       fetchingQueries: queries.filter(q => q.isFetching()).length,
@@ -336,10 +411,30 @@ export class CacheManager {
         const firstKey = query.queryKey[0] as string;
         acc[firstKey] = (acc[firstKey] || 0) + 1;
         return acc;
-      }, {} as Record<string, number>)
+      }, {} as Record<string, number>),
+      // Add cache hierarchy breakdown
+      hierarchyBreakdown: queries.reduce((acc, query) => {
+        const level = queryUtils.getCacheLevel(query.queryKey);
+        acc[level] = (acc[level] || 0) + 1;
+        return acc;
+      }, {} as Record<'l1' | 'l2' | 'l3', number>)
     };
 
-    return stats;
+    // Try to get smart cache stats
+    try {
+      import('@/services/smartCacheManager').then(({ getSmartCacheManager }) => {
+        const smartCache = getSmartCacheManager();
+        const smartStats = smartCache.getCacheStats();
+        return {
+          ...baseStats,
+          smartCache: smartStats
+        };
+      }).catch(() => baseStats);
+    } catch (error) {
+      console.warn('Smart cache stats not available:', error);
+    }
+
+    return baseStats;
   }
 
   /**

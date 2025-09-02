@@ -31,8 +31,7 @@ import { projectFormSchema, type CreateProjectFormValues } from './CreateProject
 import { Card } from '@/components/ui/card';
 import { useSubmissionActions, useProjectSubmission } from '@/stores/createProject/submissionStore';
 import { useImageActions, useImageState } from '@/stores/createProject/imageStore';
-import { useMediaOperations } from '@/hooks/useMediaOperations';
-import type { UploadType } from '@/types/upload';
+// useMedia hook no longer needed - operations handled by imageStore
 import {
   ChevronLeft,
   ChevronRight,
@@ -102,8 +101,7 @@ function CreateProjectContent() {
   const { uploadImages, clearAllImages } = useImageActions();
   const { localFiles: imageFiles, isUploading } = useImageState();
   
-  // Get unified media operations for handling uploads
-  const mediaOperations = useMediaOperations({ projectId: createdProjectId || '' });
+  // Media operations are now handled directly by imageStore using MediaService
   
   // Use refs to track previous values and prevent infinite loops
   const prevIsSuccessRef = useRef(false);
@@ -360,61 +358,8 @@ function CreateProjectContent() {
                 'Image upload to storage'
               );
 
-              // Step 2b: Persist URLs to database with retry logic
-              const uploadPromises: Promise<void>[] = [];
-              
-              if (images.length > 0) {
-                // Convert uploaded images to UploadResult format for the mutation
-                const imageResults = images.map((url, index) => {
-                  const extension = url.split('.').pop()?.toLowerCase() || 'jpg';
-                  return {
-                    id: `inspiration-${Date.now()}-${Math.random()}-${index}`,
-                    url,
-                    name: `inspiration-image-${Date.now()}-${index}.${extension}`,
-                    size: 0, // Size not available here, but not critical for database persistence
-                    type: 'inspiration' as UploadType, // Use category type, MIME type determined by handler
-                    uploadedAt: new Date()
-                  };
-                });
-                
-                uploadPromises.push(
-                  retryWithBackoff(
-                    () => mediaOperations.upload.uploadImages(imageResults, 'inspiration'),
-                    3,
-                    1500,
-                    'Inspiration images database save'
-                  )
-                );
-              }
-              
-              if (profileImage) {
-                // Upload profile image using unified media operations
-                const extension = profileImage.split('.').pop()?.toLowerCase() || 'jpg';
-                const profileImageData = [{
-                  url: profileImage,
-                  name: `profile-image-${Date.now()}.${extension}`,
-                  size: 0,
-                  type: 'profile' as UploadType, // Use category type, MIME type determined by handler
-                  uploadedAt: new Date()
-                }];
-                
-                uploadPromises.push(
-                  retryWithBackoff(
-                    () => mediaOperations.upload.uploadImages(profileImageData, 'profile'),
-                    3,
-                    1500,
-                    'Profile image database save'
-                  )
-                );
-              }
-
-              toast({
-                title: "Saving to database...",
-                description: "Almost done! Finalizing your project images.",
-              });
-
-              // Wait for all database persistence operations to complete
-              await Promise.all(uploadPromises);
+              // Note: Database persistence is already handled by imageStore.uploadImages() via MediaService
+              // The images and profileImage already contain the final URLs and database records
 
               // Clear local images after successful persistence
               clearAllImages();
@@ -506,7 +451,7 @@ function CreateProjectContent() {
         variant: "destructive",
       });
     }
-  }, [currentStep, totalSteps, methods, user?.id, submitProject, toast, imageFiles.length, uploadImages, clearAllImages, requiredFieldsByStep, mediaOperations.upload]);
+  }, [currentStep, totalSteps, methods, user?.id, submitProject, toast, imageFiles.length, uploadImages, clearAllImages, requiredFieldsByStep]);
 
   // Handle previous step
   const handleBack = useCallback(() => {

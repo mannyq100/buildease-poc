@@ -65,16 +65,39 @@ END $$;
 
 
 DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'media_type') THEN
+    CREATE TYPE construction_mgr.media_type AS ENUM (
+        'PHOTO',
+        'VIDEO',
+        'DOCUMENT'
+    );
+  END IF;
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'media_category') THEN
     CREATE TYPE construction_mgr.media_category AS ENUM (
-        'profile_image',
-        'inspiration_image', 
-        'progress_image',
-        'document'
+        -- Photo categories
+        'profile',
+        'inspiration', 
+        'progress',
+        
+        -- Video categories  
+        'progress_video',
+        
+        -- Document categories
+        'receipt',
+        'report', 
+        'contract',
+        'permit',
+        'invoice',
+        'blueprint',
+        'other'
     );
   END IF;
 END $$;
 
 -- Add comments for new enum types
-COMMENT ON TYPE construction_mgr.media_category IS 'Media category aligned with storage buckets: profile_image (profiles bucket), inspiration_image (project-inspiration bucket), progress_image (progress-images bucket), document (documents bucket)';
+COMMENT ON TYPE construction_mgr.media_type IS 'Primary media type that determines UI handling: PHOTO (shows preview), VIDEO (shows video player), DOCUMENT (shows download)';
+COMMENT ON TYPE construction_mgr.media_category IS 'Standardized media category system: PHOTO types (profile, inspiration, progress), VIDEO types (progress_video), DOCUMENT types (receipt, report, contract, permit, invoice, blueprint, other)';
 

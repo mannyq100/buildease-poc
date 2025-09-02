@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { useProjectDocuments, useDeleteDocument, type Document } from '@/hooks/queries/useDocuments';
+import { useProjectMedia, useDeleteMedia, type MediaItem } from '@/hooks/queries/useProjectMedia';
 import { formatFileSize, getDocumentTypeDisplayName, type DocumentType } from '@/services/storageService';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 interface DocumentListProps {
   projectId: string;
   phaseId?: string;
-  onEditDocument?: (document: Document) => void;
+  onEditDocument?: (document: MediaItem) => void;
   className?: string;
 }
 
@@ -30,8 +30,8 @@ export function DocumentList({
   const [documentsWithUrls, setDocumentsWithUrls] = useState<Record<string, string>>({});
   const [loadingUrls, setLoadingUrls] = useState<Record<string, boolean>>({});
 
-  const { data: documents = [], isLoading, error } = useProjectDocuments(projectId);
-  const deleteDocument = useDeleteDocument(projectId);
+  const { data: documents = [], isLoading, error } = useProjectMedia(projectId);
+  const deleteDocument = useDeleteMedia(projectId);
 
   // Filter documents by phase if phaseId is provided
   const filteredDocuments = phaseId 
@@ -40,15 +40,15 @@ export function DocumentList({
 
   // Group documents by type
   const groupedDocuments = filteredDocuments.reduce((groups, doc) => {
-    const type = doc.document_type;
+    const type = doc.media_type;
     if (!groups[type]) {
       groups[type] = [];
     }
     groups[type].push(doc);
     return groups;
-  }, {} as Record<string, Document[]>);
+  }, {} as Record<string, MediaItem[]>);
 
-  const getDocumentDownloadUrl = async (document: Document) => {
+  const getDocumentDownloadUrl = async (document: MediaItem) => {
     if (documentsWithUrls[document.id]) {
       // URL already cached
       window.open(documentsWithUrls[document.id], '_blank');
@@ -184,7 +184,7 @@ export function DocumentList({
                           {document.name}
                         </h4>
                         <Badge variant="secondary" className="text-xs">
-                          {getDocumentTypeDisplayName(document.document_type)}
+                          {getDocumentTypeDisplayName(document.media_type)}
                         </Badge>
                       </div>
                       
@@ -200,8 +200,8 @@ export function DocumentList({
                           <span>{formatDate(document.created_at)}</span>
                         </div>
                         
-                        {document.file_size && (
-                          <span>{formatFileSize(document.file_size)}</span>
+                        {document.file_size_bytes && (
+                          <span>{formatFileSize(document.file_size_bytes)}</span>
                         )}
                         
                         {document.phase_id && (

@@ -41,11 +41,20 @@ export {
   useMaterialTransactions,
 } from './useMaterial';
 
-// Document queries
+// Media queries (now using unified useMedia hook)
 export {
+  useMedia,
   useProjectDocuments,
   usePhaseDocuments,
   useDocument,
-  useDocumentUrl,
-  useProjectDocumentsByType,
-} from './useDocument';
+  useDocumentOperations,
+  useMediaByCategory,
+  useMediaByPhase,
+  useProfileImage,
+  useVirtualizedMedia,
+  useInfiniteMedia,
+  type MediaItem,
+  type MediaFilters,
+  type MediaStats,
+  type UploadOptions,
+} from '../useMedia';

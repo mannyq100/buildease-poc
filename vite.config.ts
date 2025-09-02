@@ -2,6 +2,7 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
+import { visualizer } from 'rollup-plugin-visualizer';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
@@ -28,6 +29,14 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       mode === 'development' && componentTagger(),
+      // Bundle analyzer for production builds
+      mode === 'production' && visualizer({
+        filename: 'dist/bundle-analysis.html',
+        open: false,
+        gzipSize: true,
+        brotliSize: true,
+        template: 'treemap'
+      }),
     ].filter(Boolean),
     // Optimize dependencies
     optimizeDeps: {
@@ -43,6 +52,9 @@ export default defineConfig(({ mode }) => {
         'class-variance-authority',
         'date-fns',
         'lucide-react',
+        'react-error-boundary',
+        'framer-motion',
+        'react-helmet-async',
       ],
       // Force optimization of problematic dependencies
       force: mode === 'development',
@@ -53,68 +65,18 @@ export default defineConfig(({ mode }) => {
       // Optimize bundle size and code splitting
       rollupOptions: {
         output: {
-          // Create separate chunks for large dependencies
-          manualChunks: (id) => {
-            // Node modules chunking
-            if (id.includes('node_modules')) {
-              // React ecosystem
-              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-                return 'react-vendor';
-              }
-              // UI library - split Radix components more granularly
-              if (id.includes('@radix-ui')) {
-                return 'ui-vendor';
-              }
-              // State management and data fetching
-              if (id.includes('@tanstack/react-query') || id.includes('zustand')) {
-                return 'state-vendor';
-              }
-              // Supabase and auth
-              if (id.includes('@supabase') || id.includes('auth')) {
-                return 'auth-vendor';
-              }
-              // Form handling
-              if (id.includes('react-hook-form') || id.includes('zod') || id.includes('@hookform')) {
-                return 'form-vendor';
-              }
-              // Date and utility libraries
-              if (id.includes('date-fns') || id.includes('clsx') || id.includes('class-variance-authority')) {
-                return 'utils-vendor';
-              }
-              // Animation libraries - split framer-motion separately due to size
-              if (id.includes('framer-motion')) {
-                return 'animation-vendor';
-              }
-              // Icons
-              if (id.includes('lucide-react')) {
-                return 'icons-vendor';
-              }
-              // Charts and visualization - large library
-              if (id.includes('recharts') || id.includes('d3')) {
-                return 'chart-vendor';
-              }
-              // Map libraries - very large
-              if (id.includes('leaflet') || id.includes('mapbox') || id.includes('google-maps')) {
-                return 'maps-vendor';
-              }
-            }
-            
-            // Application code chunking for large components
-            // Split large plan components
-            if (id.includes('src/components/plan/') && 
-                (id.includes('GeneratedPlan') || id.includes('LocationPlotForm'))) {
-              return 'plan-heavy';
-            }
-            // Split ProjectDetails into smaller chunks
-            if (id.includes('src/pages/ProjectDetails/') && 
-                (id.includes('ProjectDocumentsSection') || id.includes('ProjectDetails.tsx'))) {
-              return 'project-details';
-            }
+          // Aggressive manual chunking to meet performance budget
+          manualChunks: {
+            // Vendor chunks
+            'react-vendor': ['react', 'react-dom'],
+            'router-vendor': ['react-router-dom'],
+            'query-vendor': ['@tanstack/react-query'],
+            'supabase-vendor': ['@supabase/supabase-js'],
+            'ui-vendor': ['lucide-react', 'framer-motion'],
+            'form-vendor': ['react-hook-form', 'zod'],
+            'utils-vendor': ['clsx', 'class-variance-authority', 'date-fns'],
           },
-          // Optimize chunk size
-          chunkFileNames: () => {
-            return `js/[name]-[hash].js`;
-          },
+          chunkFileNames: 'js/[name]-[hash].js',
           entryFileNames: 'js/[name]-[hash].js',
           assetFileNames: (assetInfo) => {
             if (!assetInfo.name) return 'assets/[name]-[hash][extname]';
@@ -133,16 +95,23 @@ export default defineConfig(({ mode }) => {
           preset: 'recommended',
           moduleSideEffects: false,
         },
-        // No external dependencies needed for this build
+        external: (_id) => {
+          // Don't externalize anything for this build
+          return false;
+        }
       },
       // Further optimize the build
-      target: 'es2020', // Better compatibility while still modern
+      target: 'es2020',
       minify: 'esbuild',
       cssMinify: true,
-      // Split large chunks more aggressively
-      chunkSizeWarningLimit: 300,
+      // More aggressive chunk size limits for construction sites
+      chunkSizeWarningLimit: 200, // Stricter limit
       // Optimize build performance
-      reportCompressedSize: false, // Faster builds
+      reportCompressedSize: false,
+      
+      // Performance optimizations for construction site networks
+      assetsInlineLimit: 2048, // Smaller inline limit to reduce initial bundle
+      cssCodeSplit: true,
     },
     // Testing configuration (merged from vitest.config.ts)
     test: {

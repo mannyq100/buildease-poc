@@ -11,7 +11,8 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Progress } from '../ui/progress';
 import { Camera, Mail, User } from 'lucide-react';
-import { createPreviewUrl, revokePreviewUrl, uploadProfilePicture } from '@/services/storageService';
+import { MediaService } from '@/services/MediaService';
+import { useMemoryManagement } from '@/utils/memoryManager';
 import { useToast } from '@/hooks/use-toast';
 import type { SettingsFormData, ProfileUploadState } from '@/types/settings';
 import type { UserProfile } from '@/types/user';
@@ -47,6 +48,7 @@ export function ProfileCard({
 }: ProfileCardProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { createPreviewUrl, revokePreviewUrl } = useMemoryManagement();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -63,12 +65,13 @@ export function ProfileCard({
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
+    let previewUrl: string | null = null;
     try {
       // Show progress and preview immediately
       onUploadStateChange({ showProgress: true, uploadProgress: 10 });
 
       // Create a preview URL for immediate feedback
-      const previewUrl = createPreviewUrl(file);
+      previewUrl = createPreviewUrl(file);
       onFormDataChange({ pictureUrl: previewUrl });
       
       // Simulate progress for better UX
@@ -78,47 +81,52 @@ export function ProfileCard({
         });
       }, 300);
 
-      // Use the new uploadProfilePicture function
-      const result = await uploadProfilePicture(file, user.id);
+      // Use the unified MediaService for profile upload
+      const results = await MediaService.upload([file], {
+        projectId: 'profile', // Special projectId for profile images
+        type: 'profile',
+        userId: user.id,
+        name: `Profile picture for ${user.id}`,
+        description: 'User profile image'
+      });
 
       // Clear the progress interval
       clearInterval(progressInterval);
       onUploadStateChange({ uploadProgress: 100 });
 
-      if (result.success && result.publicUrl) {
+      if (results.length > 0) {
+        const uploadedMedia = results[0];
         // Update the form with the new URL
-        onFormDataChange({ pictureUrl: result.publicUrl });
+        onFormDataChange({ pictureUrl: uploadedMedia.file_path });
         toast({
           title: "Image uploaded",
           description: "Profile picture uploaded successfully!",
         });
       } else {
-        // Handle upload failure
-        toast({
-          title: "Upload failed",
-          description: result.error || "Failed to upload image. Please try again.",
-          variant: "destructive",
-        });
-        
-        // Revert to previous image
-        onFormDataChange({
-          pictureUrl: profile?.avatarUrl || user?.user_metadata?.avatar_url || ''
-        });
+        throw new Error('No upload results returned');
       }
 
-      // Clean up and hide progress
-      revokePreviewUrl(previewUrl);
+      // Clean up preview URL and hide progress
+      if (previewUrl) {
+        revokePreviewUrl(previewUrl);
+      }
       setTimeout(() => onUploadStateChange({ showProgress: false }), 500);
 
     } catch (error) {
       console.error('Error in upload process:', error);
       toast({
         title: "Upload failed",
-        description: "Failed to upload image. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to upload image. Please try again.",
         variant: "destructive",
       });
       onUploadStateChange({ showProgress: false });
       
+      // Clean up preview URL on error
+      if (previewUrl) {
+        revokePreviewUrl(previewUrl);
+      }
+      
+      // Revert to previous image
       onFormDataChange({
         pictureUrl: profile?.avatarUrl || user?.user_metadata?.avatar_url || ''
       });

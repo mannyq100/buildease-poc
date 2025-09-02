@@ -75,7 +75,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_be_project_slug_lower
     WHERE slug IS NOT NULL;
 
 -- Add comment to document the unified media approach
-COMMENT ON TABLE construction_mgr.be_project IS 'Core project information table. Media files are stored in be_document table with appropriate categories.';
+COMMENT ON TABLE construction_mgr.be_project IS 'Core project information table. Media files are stored in be_media_items table with appropriate categories.';
 
 -- =============================================================================
 -- PROJECT MEMBERS TABLE

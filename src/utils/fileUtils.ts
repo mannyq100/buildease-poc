@@ -3,6 +3,8 @@
  * Helper functions for file operations, formatting, and validation
  */
 
+import { memoryManager } from '@/utils/core/memoryManager';
+
 /**
  * Format bytes to human-readable string
  */
@@ -158,21 +160,21 @@ export function getMimeTypeFromExtension(extension: string): string {
 }
 
 /**
- * Create a preview URL for a file
+ * Create a preview URL for a file using centralized memory manager
  */
 export function createFilePreviewUrl(file: File): string | null {
   if (isImageFile(file) || isVideoFile(file)) {
-    return URL.createObjectURL(file);
+    return memoryManager.createPreviewUrl(file);
   }
   return null;
 }
 
 /**
- * Cleanup object URL
+ * Cleanup object URL using centralized memory manager
  */
 export function cleanupObjectUrl(url: string): void {
   if (url.startsWith('blob:')) {
-    URL.revokeObjectURL(url);
+    memoryManager.revokeBlobUrl(url);
   }
 }
 
@@ -308,6 +310,14 @@ export function compressImage(file: File, maxWidth: number = 1920, maxHeight: nu
     };
     
     img.onerror = () => reject(new Error('Failed to load image'));
-    img.src = URL.createObjectURL(file);
+    
+    // Create blob URL with proper cleanup
+    const blobUrl = memoryManager.createPreviewUrl(file);
+    img.src = blobUrl;
+    
+    // Register cleanup callback to clean up when image loading is done
+    memoryManager.registerCleanupCallback(blobUrl, () => {
+      // Additional cleanup if needed
+    });
   });
 }

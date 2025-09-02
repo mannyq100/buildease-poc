@@ -43,7 +43,7 @@ export interface ImageUploadStates {
   showImageUpload: boolean;
   imagesCollapsed: boolean;
   previewImage: { url: string; caption?: string } | null;
-  selectedImageType: 'profile' | 'inspiration' | 'progress' | null;
+  selectedImageType: 'profile' | 'inspiration' | 'progress' | 'progress_video' | null;
 }
 
 export interface ProjectDetailsUIState {

@@ -99,27 +99,23 @@ export function useAssignTask() {
       showToast: true
     },
     
-    onSuccessCallback: async (updatedTask, variables) => {
-      const { queryClient } = require('@tanstack/react-query');
-      
+    onSuccessCallback: async (updatedTask, variables, { queryClient }) => {
       // Invalidate specific queries with actual IDs
       queryClient.invalidateQueries({
         queryKey: ['project-consolidated', variables.projectId]
       });
+      
       queryClient.invalidateQueries({
         queryKey: ['tasks', variables.projectId]
       });
-      queryClient.invalidateQueries({
-        queryKey: ['task', variables.taskId]
-      });
       
       // Show dynamic success message
-      const { ErrorHandlingService } = require('@/services/errorHandlingService');
       const isAssignment = !!variables.assignedTo;
       const message = isAssignment 
         ? `Task assigned successfully`
         : `Task unassigned successfully`;
-      ErrorHandlingService.showSuccess(message);
+      
+      console.log(message);
     }
   });
 }
@@ -206,32 +202,28 @@ export function useBulkAssignTasks() {
       showToast: true
     },
     
-    onSuccessCallback: async (updatedTasks, variables) => {
-      const { queryClient } = require('@tanstack/react-query');
-      
+    onSuccessCallback: async (updatedTasks, variables, { queryClient }) => {
       // Invalidate relevant queries
       queryClient.invalidateQueries({
         queryKey: ['project-consolidated', variables.projectId]
       });
+      
       queryClient.invalidateQueries({
         queryKey: ['tasks', variables.projectId]
       });
       
-      // Invalidate individual task queries
-      variables.taskIds.forEach(taskId => {
-        queryClient.invalidateQueries({
-          queryKey: ['task', taskId]
-        });
+      queryClient.invalidateQueries({
+        queryKey: ['phases', variables.projectId]
       });
       
       // Show dynamic success message
-      const { ErrorHandlingService } = require('@/services/errorHandlingService');
       const isAssignment = !!variables.assignedTo;
       const message = isAssignment 
         ? `${updatedTasks.length} tasks assigned successfully`
         : `${updatedTasks.length} tasks unassigned successfully`;
-      ErrorHandlingService.showSuccess(message);
-    }
+      
+      console.log(message);
+    },
   });
 }
 

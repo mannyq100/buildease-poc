@@ -339,7 +339,7 @@ export class FileValidationService {
   /**
    * Get validation options for different contexts
    */
-  static getValidationOptions(context: 'profile' | 'inspiration' | 'progress'): Partial<FileValidationOptions> {
+  static getValidationOptions(context: 'profile' | 'inspiration' | 'progress' | 'progress_video'): Partial<FileValidationOptions> {
     switch (context) {
       case 'profile':
         return {
@@ -363,9 +363,23 @@ export class FileValidationService {
       
       case 'progress':
         return {
-          maxSizeBytes: 15 * 1024 * 1024, // 15MB for progress images
+          maxSizeBytes: 15 * 1024 * 1024, // 15MB for progress photos
           maxFiles: 20,
           requireImageDimensions: false, // More flexible for progress photos
+        };
+      
+      case 'progress_video':
+        return {
+          maxSizeBytes: 50 * 1024 * 1024, // 50MB for progress videos
+          maxFiles: 5,
+          requireImageDimensions: false,
+          allowedTypes: [
+            'video/mp4',
+            'video/quicktime',
+            'video/x-msvideo',
+            'video/webm'
+          ],
+          allowedExtensions: ['.mp4', '.mov', '.avi', '.webm'],
         };
       
       default:

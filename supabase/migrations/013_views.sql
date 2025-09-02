@@ -1,23 +1,7 @@
 -- Migration: 013_views.sql
--- Purpose: Defines all database views for the BuildEase application
--- 
--- OPTIMIZATION STRATEGY:
--- - Base views: Core project data aggregation and normalization
--- - Enhanced views: Server-side heavy computation optimization (eliminates Web Workers)
--- - Consolidated permissions: Single security and grant configuration
--- 
--- PERFORMANCE BENEFITS:
--- - Phase progress calculations moved to PostgreSQL (vs JavaScript)
--- - Task urgency scoring computed server-side (0-100 scale)
--- - Today's focus pre-filtered and sorted by urgency
--- - Mobile device CPU load reduced significantly
--- - Consistent calculations across all users
+-- Purpose: Database views for BuildEase construction management
 
--- =============================================================================
--- PROJECT SUMMARY VIEW
--- =============================================================================
-
--- Optimized view using CTEs to eliminate redundant subqueries
+-- Project summary with aggregated data
 CREATE OR REPLACE VIEW construction_mgr.project_summary AS
 WITH task_progress AS (
     SELECT 
@@ -73,10 +57,10 @@ materials_agg AS (
     FROM construction_mgr.be_material m
     GROUP BY m.project_id
 ),
-documents_agg AS (
-    SELECT d.project_id, COUNT(d.id) AS document_count
-    FROM construction_mgr.be_document d
-    GROUP BY d.project_id
+media_agg AS (
+    SELECT m.project_id, COUNT(m.id) AS media_count
+    FROM construction_mgr.be_media_items m
+    GROUP BY m.project_id
 ),
 members_agg AS (
     SELECT pm.project_id, COUNT(DISTINCT pm.user_id) AS member_count
@@ -96,12 +80,19 @@ SELECT
         ELSE 'planning'
     END as status,
     
-    -- Visual assets (now stored in be_document table)
-    -- Images are now accessed via be_document table with appropriate categories
     
     -- Project details from JSONB
-    COALESCE(p.details->>'client', 'Unknown Client') as client,
-    p.details->>'location' as location,
+    COALESCE(p.details->'owner_info'->>'name', 'Unknown Client') as client,
+    CASE 
+        WHEN p.details->'location' IS NOT NULL THEN
+            CONCAT_WS(', ',
+                NULLIF(p.details->'location'->>'street_address', ''),
+                NULLIF(p.details->'location'->>'city', ''),
+                NULLIF(p.details->'location'->>'region_or_state', ''),
+                NULLIF(p.details->'location'->>'country', '')
+            )
+        ELSE NULL
+    END as location,
     COALESCE(p.details->>'project_type', 'Construction') as project_type,
     
     -- Timeline (raw strings)
@@ -139,8 +130,8 @@ SELECT
     
     -- Counts (from aggregated data)
     COALESCE(ph_a.phase_count, 0) AS phases,
-    COALESCE(m_a.material_count, 0) AS materials,
-    COALESCE(d_a.document_count, 0) AS documents,
+    COALESCE(mat_a.material_count, 0) AS materials,
+    COALESCE(med_a.media_count, 0) AS media_items,
     COALESCE(mem_a.member_count, 0) AS members,
     COALESCE(ta.transaction_count, 0) AS transactions,
     COALESCE(t_a.open_task_count, 0) AS open_tasks,
@@ -155,15 +146,11 @@ LEFT JOIN transactions_agg ta ON ta.project_id = p.id
 LEFT JOIN phases_agg ph_a ON ph_a.project_id = p.id
 LEFT JOIN tasks_agg t_a ON t_a.project_id = p.id
 LEFT JOIN progress_agg pa ON pa.project_id = p.id
-LEFT JOIN materials_agg m_a ON m_a.project_id = p.id
-LEFT JOIN documents_agg d_a ON d_a.project_id = p.id
+LEFT JOIN materials_agg mat_a ON mat_a.project_id = p.id
+LEFT JOIN media_agg med_a ON med_a.project_id = p.id
 LEFT JOIN members_agg mem_a ON mem_a.project_id = p.id;
 
--- =============================================================================
--- PROJECT MEMBERS VIEW
--- =============================================================================
-
--- View to show project participants with details including profile pictures
+-- Project members with user details
 CREATE OR REPLACE VIEW construction_mgr.project_members AS
 SELECT
     pm.project_id,
@@ -176,10 +163,8 @@ SELECT
     pm.joined_at,
     -- Extract profile picture from user settings JSONB
     u.settings->>'picture_url' AS profile_picture_url,
-    -- Additional user info for enhanced team management
     u.company_name,
     u.status AS user_status,
-    -- Email and phone verification status for contact reliability
     COALESCE((u.settings->>'email_verified')::boolean, false) AS email_verified,
     COALESCE((u.settings->>'phone_verified')::boolean, false) AS phone_verified
 FROM
@@ -189,11 +174,7 @@ JOIN
 JOIN
     construction_mgr.be_user u ON pm.user_id = u.id;
 
--- =============================================================================
--- FINANCIAL SUMMARY VIEWS
--- =============================================================================
-
--- Optimized view using single aggregation pass for better performance
+-- Financial summary with transaction aggregation
 CREATE OR REPLACE VIEW construction_mgr.project_financial_summary AS
 WITH financial_aggregates AS (
   SELECT 
@@ -201,7 +182,6 @@ WITH financial_aggregates AS (
     p.name AS project_name,
     (p.budget->>'allocated')::numeric AS total_budget,
     (p.budget->>'currency')::text AS currency,
-    -- Single pass aggregation with FILTER clauses
     COUNT(ft.id) AS transaction_count,
     COALESCE(SUM(ft.amount) FILTER (WHERE ft.payment_status IN ('PAID', 'APPROVED', 'PENDING')), 0) AS total_spent,
     COALESCE(SUM(ft.amount) FILTER (WHERE ft.transaction_type = 'MATERIAL_PURCHASE'), 0) AS material_costs,
@@ -216,11 +196,7 @@ WITH financial_aggregates AS (
 )
 SELECT * FROM financial_aggregates;
 
--- =============================================================================
--- MATERIAL INVENTORY VIEW
--- =============================================================================
-
--- View to show material inventory status
+-- Material inventory with stock status
 CREATE OR REPLACE VIEW construction_mgr.material_inventory AS
 SELECT 
   m.id,
@@ -249,11 +225,7 @@ SELECT
 FROM construction_mgr.be_material m
 LEFT JOIN construction_mgr.be_project p ON m.project_id = p.id;
 
--- =============================================================================
--- PHASE DETAILS VIEW
--- =============================================================================
-
--- View to show project phase details
+-- Phase details with timeline and budget
 CREATE OR REPLACE VIEW construction_mgr.phase_details AS
 SELECT
     ph.id,
@@ -273,9 +245,9 @@ SELECT
     ph.updated_at,
     (
         SELECT COUNT(*)
-        FROM construction_mgr.be_document
+        FROM construction_mgr.be_media_items
         WHERE phase_id = ph.id
-    ) AS document_count,
+    ) AS media_count,
     (
         SELECT COUNT(*)
         FROM construction_mgr.financial_transaction
@@ -286,11 +258,7 @@ FROM
 JOIN
     construction_mgr.be_project p ON ph.project_id = p.id;
 
--- =============================================================================
--- PROJECT ACTIVITIES VIEW
--- =============================================================================
-
--- View for easier querying of project activities
+-- Project activities with user details
 CREATE OR REPLACE VIEW construction_mgr.project_activities AS
 SELECT 
     pa.*,
@@ -302,11 +270,7 @@ LEFT JOIN construction_mgr.be_project p ON pa.project_id = p.id
 LEFT JOIN construction_mgr.be_user u ON pa.user_id = u.id
 ORDER BY pa.created_at DESC;
 
--- =============================================================================
--- TASK SUMMARY VIEW
--- =============================================================================
-
--- View to show task summary with project and user details
+-- Task summary with status categorization
 CREATE OR REPLACE VIEW construction_mgr.task_summary AS
 SELECT
     t.id,
@@ -342,47 +306,40 @@ LEFT JOIN
 LEFT JOIN
     construction_mgr.be_user u ON t.assigned_to = u.id;
 
--- =============================================================================
--- DOCUMENT SUMMARY VIEW
--- =============================================================================
-
--- View to show document summary with project and phase details
-CREATE OR REPLACE VIEW construction_mgr.document_summary AS
+-- Media summary with size categorization
+CREATE OR REPLACE VIEW construction_mgr.media_summary AS
 SELECT
-    d.id,
-    d.name,
-    d.description,
-    d.document_type,
-    d.project_id,
+    m.id,
+    m.name,
+    m.description,
+    m.media_type,
+    m.category,
+    m.project_id,
     p.name AS project_name,
-    d.phase_id,
+    m.phase_id,
     ph.name AS phase_name,
-    d.file_path,
-    d.file_size_bytes,
-    d.mime_type,
-    d.tags,
-    d.caption,
-    d.processing_status,
-    d.created_at,
-    d.updated_at,
+    m.file_path,
+    m.file_size_bytes,
+    m.mime_type,
+    m.tags,
+    m.caption,
+    m.processing_status,
+    m.created_at,
+    m.updated_at,
     CASE 
-        WHEN d.file_size_bytes IS NULL THEN 'unknown'
-        WHEN d.file_size_bytes < 1024 * 1024 THEN 'small'
-        WHEN d.file_size_bytes < 10 * 1024 * 1024 THEN 'medium'
+        WHEN m.file_size_bytes IS NULL THEN 'unknown'
+        WHEN m.file_size_bytes < 1024 * 1024 THEN 'small'
+        WHEN m.file_size_bytes < 10 * 1024 * 1024 THEN 'medium'
         ELSE 'large'
     END AS size_category
 FROM
-    construction_mgr.be_document d
+    construction_mgr.be_media_items m
 JOIN
-    construction_mgr.be_project p ON d.project_id = p.id
+    construction_mgr.be_project p ON m.project_id = p.id
 LEFT JOIN
-    construction_mgr.be_phase ph ON d.phase_id = ph.id;
+    construction_mgr.be_phase ph ON m.phase_id = ph.id;
 
--- =============================================================================
--- COMMENT SUMMARY VIEW
--- =============================================================================
-
--- View to show comment summary with user and entity details
+-- Comment summary with entity references
 CREATE OR REPLACE VIEW construction_mgr.comment_summary AS
 SELECT
     c.id,
@@ -410,11 +367,7 @@ FROM
 JOIN
     construction_mgr.be_user u ON c.user_id = u.id;
 
--- =============================================================================
--- ENHANCED PHASE PROGRESS VIEW (Heavy Computation Optimization)
--- =============================================================================
-
--- Comprehensive phase view with pre-calculated progress and task metrics
+-- Phase progress with task metrics and timeline analysis
 CREATE OR REPLACE VIEW construction_mgr.phase_progress_summary AS
 WITH phase_task_metrics AS (
     SELECT 
@@ -424,8 +377,7 @@ WITH phase_task_metrics AS (
         COUNT(t.id) FILTER (WHERE t.status = 'IN_PROGRESS') as in_progress_tasks,
         COUNT(t.id) FILTER (WHERE t.status = 'PENDING') as pending_tasks,
         COUNT(t.id) FILTER (WHERE t.status = 'CANCELLED') as cancelled_tasks,
-        -- Task urgency calculation (server-side)
-        AVG(
+            AVG(
             CASE 
                 WHEN t.due_date < CURRENT_DATE AND t.status NOT IN ('COMPLETED', 'CANCELLED') THEN 100
                 WHEN t.due_date = CURRENT_DATE THEN 90
@@ -562,17 +514,11 @@ LEFT JOIN
 LEFT JOIN
     phase_timeline_analysis pta ON pta.id = ph.id;
 
--- =============================================================================
--- ENHANCED TASK PRIORITY VIEW (Urgency Scoring Optimization)
--- =============================================================================
-
--- Task view with server-side urgency scoring and workload analysis
--- Uses centralized urgency calculation function for consistency
+-- Task priority analysis with urgency scoring
 CREATE OR REPLACE VIEW construction_mgr.task_priority_analysis AS
 WITH task_urgency_base AS (
     SELECT 
         t.*,
-        -- Centralized urgency calculation for consistency across views
         CASE 
             WHEN t.completed_at IS NOT NULL THEN 0
             WHEN t.due_date < CURRENT_DATE AND t.status NOT IN ('COMPLETED', 'CANCELLED') THEN 100
@@ -585,7 +531,6 @@ WITH task_urgency_base AS (
             WHEN t.priority = 'LOW' THEN 20
             ELSE 10
         END as urgency_score,
-        -- Centralized status categorization
         CASE 
             WHEN t.completed_at IS NOT NULL THEN 'completed'
             WHEN t.due_date < CURRENT_DATE AND t.status NOT IN ('COMPLETED', 'CANCELLED') THEN 'overdue'
@@ -622,16 +567,13 @@ SELECT
     t.due_date,
     t.completed_at,
     
-    -- Use pre-calculated urgency score
     t.urgency_score,
     t.task_status_category,
     
-    -- Assignee workload context (helps with task redistribution)
     COALESCE(tw.total_assigned_tasks, 0) as assignee_total_tasks,
     COALESCE(tw.active_assigned_tasks, 0) as assignee_active_tasks,
     COALESCE(tw.overdue_assigned_tasks, 0) as assignee_overdue_tasks,
     
-    -- Workload indicator
     CASE 
         WHEN tw.overdue_assigned_tasks > 0 THEN 'overloaded'
         WHEN tw.active_assigned_tasks > 10 THEN 'heavy'
@@ -652,11 +594,7 @@ LEFT JOIN
 LEFT JOIN
     task_workload tw ON tw.assigned_to = t.assigned_to;
 
--- =============================================================================
--- TODAY'S FOCUS VIEW (Pre-calculated Today's Focus)
--- =============================================================================
-
--- Pre-calculated today's focus tasks - leverages task_priority_analysis for consistency
+-- Today's focus tasks filtered by urgency
 CREATE OR REPLACE VIEW construction_mgr.todays_focus_tasks AS
 SELECT 
     tpa.id,
@@ -674,7 +612,6 @@ SELECT
     tpa.urgency_score,
     tpa.task_status_category,
     
-    -- Focus category for today's focus filtering
     CASE 
         WHEN tpa.task_status_category = 'overdue' THEN 'overdue'
         WHEN tpa.task_status_category = 'due_today' THEN 'due_today'
@@ -696,11 +633,7 @@ WHERE
     )
 ORDER BY tpa.urgency_score DESC, tpa.due_date ASC;
 
--- =============================================================================
--- SET SECURITY INVOKER ON ALL VIEWS
--- =============================================================================
-
--- Ensure RLS applies to all views (base + enhanced optimization views)
+-- Set security invoker for RLS
 ALTER VIEW construction_mgr.project_summary SET (security_invoker = on);
 ALTER VIEW construction_mgr.project_members SET (security_invoker = on);
 ALTER VIEW construction_mgr.project_financial_summary SET (security_invoker = on);
@@ -708,18 +641,14 @@ ALTER VIEW construction_mgr.material_inventory SET (security_invoker = on);
 ALTER VIEW construction_mgr.phase_details SET (security_invoker = on);
 ALTER VIEW construction_mgr.project_activities SET (security_invoker = on);
 ALTER VIEW construction_mgr.task_summary SET (security_invoker = on);
-ALTER VIEW construction_mgr.document_summary SET (security_invoker = on);
+ALTER VIEW construction_mgr.media_summary SET (security_invoker = on);
 ALTER VIEW construction_mgr.comment_summary SET (security_invoker = on);
 -- Enhanced optimization views
 ALTER VIEW construction_mgr.phase_progress_summary SET (security_invoker = on);
 ALTER VIEW construction_mgr.task_priority_analysis SET (security_invoker = on);
 ALTER VIEW construction_mgr.todays_focus_tasks SET (security_invoker = on);
 
--- =============================================================================
--- GRANT PERMISSIONS ON ALL VIEWS
--- =============================================================================
-
--- Grant SELECT permissions to authenticated users (base + enhanced views)
+-- Grant view permissions
 GRANT SELECT ON construction_mgr.project_summary TO authenticated;
 GRANT SELECT ON construction_mgr.project_members TO authenticated;
 GRANT SELECT ON construction_mgr.project_financial_summary TO authenticated;
@@ -727,9 +656,8 @@ GRANT SELECT ON construction_mgr.material_inventory TO authenticated;
 GRANT SELECT ON construction_mgr.phase_details TO authenticated;
 GRANT SELECT ON construction_mgr.project_activities TO authenticated;
 GRANT SELECT ON construction_mgr.task_summary TO authenticated;
-GRANT SELECT ON construction_mgr.document_summary TO authenticated;
+GRANT SELECT ON construction_mgr.media_summary TO authenticated;
 GRANT SELECT ON construction_mgr.comment_summary TO authenticated;
--- Enhanced optimization views  
 GRANT SELECT ON construction_mgr.phase_progress_summary TO authenticated;
 GRANT SELECT ON construction_mgr.task_priority_analysis TO authenticated;
 GRANT SELECT ON construction_mgr.todays_focus_tasks TO authenticated;
