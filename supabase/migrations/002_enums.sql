@@ -91,13 +91,17 @@ DO $$ BEGIN
         'contract',
         'permit',
         'invoice',
-        'blueprint',
-        'other'
+        'specification',
+        'schedule',
+        'drawing',
+        'manual',
+        'certificate',
+        'other_document'
     );
   END IF;
 END $$;
 
 -- Add comments for new enum types
 COMMENT ON TYPE construction_mgr.media_type IS 'Primary media type that determines UI handling: PHOTO (shows preview), VIDEO (shows video player), DOCUMENT (shows download)';
-COMMENT ON TYPE construction_mgr.media_category IS 'Standardized media category system: PHOTO types (profile, inspiration, progress), VIDEO types (progress_video), DOCUMENT types (receipt, report, contract, permit, invoice, blueprint, other)';
+COMMENT ON TYPE construction_mgr.media_category IS 'Standardized media category system: PHOTO types (profile, inspiration, progress), VIDEO types (progress_video), DOCUMENT types (receipt, report, contract, permit, invoice, specification, schedule, drawing, manual, certificate, other_document)';
 

@@ -34,7 +34,7 @@ CREATE TABLE construction_mgr.be_media_items (
     CONSTRAINT chk_media_type_category_valid CHECK (
         (media_type = 'PHOTO' AND category IN ('profile', 'inspiration', 'progress')) OR
         (media_type = 'VIDEO' AND category IN ('progress_video')) OR  
-        (media_type = 'DOCUMENT' AND category IN ('receipt', 'report', 'contract', 'permit', 'invoice', 'blueprint', 'other'))
+        (media_type = 'DOCUMENT' AND category IN ('receipt', 'report', 'contract', 'permit', 'invoice', 'specification', 'schedule', 'drawing', 'manual', 'certificate', 'other_document'))
     )
 );
 
@@ -87,70 +87,4 @@ ON CONFLICT (id) DO UPDATE SET
   public = EXCLUDED.public,
   file_size_limit = EXCLUDED.file_size_limit,
   allowed_mime_types = EXCLUDED.allowed_mime_types;
-
--- =============================================================================
--- MEDIA QUERY FUNCTIONS
--- =============================================================================
-
--- Function to get project media by category and type
-CREATE OR REPLACE FUNCTION construction_mgr.get_project_media_by_category(
-    p_project_id UUID,
-    p_category construction_mgr.media_category DEFAULT NULL,
-    p_phase_id UUID DEFAULT NULL
-)
-RETURNS TABLE (
-    id UUID,
-    project_id UUID,
-    phase_id UUID,
-    category construction_mgr.media_category,
-    file_name TEXT,
-    file_path TEXT,
-    file_size_bytes BIGINT,
-    mime_type TEXT,
-    media_type TEXT,
-    description TEXT,
-    tags TEXT[],
-    created_at TIMESTAMPTZ,
-    updated_at TIMESTAMPTZ
-) AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        m.id,
-        m.project_id,
-        m.phase_id,
-        m.category,
-        m.name as file_name,
-        m.file_path,
-        m.file_size_bytes,
-        m.mime_type,
-        m.media_type,
-        m.description,
-        m.tags,
-        m.created_at,
-        m.updated_at
-    FROM construction_mgr.be_media_items m
-    WHERE m.project_id = p_project_id
-    AND (p_category IS NULL OR m.category = p_category)
-    AND (p_phase_id IS NULL OR m.phase_id = p_phase_id)
-    ORDER BY m.created_at DESC;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Grant execute permission on the function
-GRANT EXECUTE ON FUNCTION construction_mgr.get_project_media_by_category TO authenticated;
-
-
--- Project media view
-CREATE VIEW construction_mgr.project_media AS
-SELECT 
-    m.id, m.project_id, m.phase_id, m.category, m.name as file_name,
-    m.file_path, m.file_size_bytes, m.mime_type, m.media_type,
-    m.description, m.created_at, m.updated_at,
-    p.name as project_name, ph.name as phase_name
-FROM construction_mgr.be_media_items m
-LEFT JOIN construction_mgr.be_project p ON m.project_id = p.id
-LEFT JOIN construction_mgr.be_phase ph ON m.phase_id = ph.id;
-
-GRANT SELECT ON construction_mgr.project_media TO authenticated;
 

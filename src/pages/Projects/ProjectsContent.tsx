@@ -5,7 +5,9 @@
 
 import React, { Suspense, useMemo, useCallback } from 'react';
 import { Plus } from 'lucide-react';
-import { useProjects, useProjectMetrics } from '@/hooks/queries';
+import { useAllProjectSummaries, useProjectMetrics } from '@/hooks/queries/useProjectSummary';
+import type { ProjectSummaryFilters } from '@/hooks/queries/useProjectSummary';
+import type { ProjectSummary } from '@/types/projectSummary';
 import { ProjectsErrorBoundary } from '@/components/error-boundaries/ProjectsErrorBoundary';
 import { 
   ProjectsMetricsSkeleton, 
@@ -224,38 +226,38 @@ const ProjectsListSection = React.memo<{
   onViewSettingsChange: _onViewSettingsChange
 }) {
   // Memoize filter object to prevent unnecessary refetches
-  const memoizedFilters = useMemo(() => ({
+  const memoizedFilters = useMemo((): ProjectSummaryFilters => ({
     status: filters.status,
     search: filters.search,
     type: filters.type,
     client: filters.client,
   }), [filters.status, filters.search, filters.type, filters.client]);
 
-  // Fetch projects with memoized filters
-  const { data: projects, isLoading, error } = useProjects(memoizedFilters);
+  // Fetch project summaries with memoized filters
+  const { data: projectSummaries = [], isLoading, error } = useAllProjectSummaries(memoizedFilters);
 
   // Memoize action handlers to prevent unnecessary re-renders
-  const handleView = useCallback((project: import('@/types/project').Project) => {
-    const slugOrId = project.slug ?? project.id;
-    window.location.href = `/project/${slugOrId}`;
+  const handleView = useCallback((project: ProjectSummary) => {
+    const urlSlug = project.slug || project.id;
+    window.location.href = `/project/${urlSlug}`;
   }, []);
 
-  const handleEdit = useCallback((project: import('@/types/project').Project) => {
-    const slugOrId = project.slug ?? project.id;
-    window.location.href = `/project/${slugOrId}/edit`;
+  const handleEdit = useCallback((project: ProjectSummary) => {
+    const urlSlug = project.slug || project.id;
+    window.location.href = `/project/${urlSlug}/edit`;
   }, []);
 
-  const handleDelete = useCallback((project: import('@/types/project').Project) => {
+  const handleDelete = useCallback((project: ProjectSummary) => {
     console.log('Delete project:', project.id);
     // TODO: Implement with mutation hook
   }, []);
 
-  const handleDuplicate = useCallback((project: import('@/types/project').Project, newName: string) => {
+  const handleDuplicate = useCallback((project: ProjectSummary, newName: string) => {
     console.log('Duplicate project:', project.id, newName);
     // TODO: Implement with mutation hook
   }, []);
 
-  const handleStatusUpdate = useCallback((project: import('@/types/project').Project, status: string) => {
+  const handleStatusUpdate = useCallback((project: ProjectSummary, status: string) => {
     console.log('Update status:', project.id, status);
     // TODO: Implement with mutation hook
   }, []);
@@ -282,7 +284,7 @@ const ProjectsListSection = React.memo<{
   
   return (
     <ProjectsList 
-      projects={projects || []}
+      projects={projectSummaries}
       loading={isLoading}
       error={error ? createSupabaseError(error, 'network') : null}
       viewSettings={viewSettings}

@@ -9,7 +9,7 @@ export interface MediaItem {
   name: string;
   description?: string;
   media_type: 'PHOTO' | 'VIDEO' | 'DOCUMENT';
-  category: 'profile' | 'inspiration' | 'progress' | 'progress_video' | 'receipt' | 'report' | 'contract' | 'permit' | 'invoice' | 'blueprint' | 'other';
+  category: MediaCategory;
   project_id: string;
   phase_id?: string;
   file_path: string;

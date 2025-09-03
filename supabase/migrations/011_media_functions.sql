@@ -14,6 +14,8 @@ CREATE OR REPLACE FUNCTION private.has_storage_access(
 RETURNS BOOLEAN AS $$
 DECLARE
     path_parts TEXT[];
+    has_access BOOLEAN := FALSE;
+    has_project_access BOOLEAN := FALSE;
     project_id_str TEXT;
 BEGIN
     -- Handle null user
@@ -24,60 +26,68 @@ BEGIN
     -- Parse file path based on new unified media schema
     path_parts := string_to_array(file_path, '/');
     
-    -- For user_profiles: user_profiles/{user_id}/filename
+    -- For user_profiles: {user_id}/filename OR {user_id}/projects/{project_id}/{category}/filename
     IF bucket_name = 'user_profiles' THEN
-        -- Expected format: user_profiles/{user_id}/filename
-        RETURN array_length(path_parts, 1) >= 2 
-               AND path_parts[1] = 'user_profiles'
-               AND path_parts[2] = user_id::text;
+        -- Profile files: {user_id}/filename
+        IF array_length(path_parts, 1) = 2 AND path_parts[1] = has_storage_access.user_id::text THEN
+            RETURN TRUE;
+        END IF;
+        
+        -- Project files: {user_id}/projects/{project_id}/{category}/filename
+        IF array_length(path_parts, 1) >= 5 
+           AND path_parts[1] = has_storage_access.user_id::text 
+           AND path_parts[2] = 'projects' THEN
+            -- Check if user has access to the project
+            SELECT EXISTS(
+                SELECT 1 FROM construction_mgr.be_project_member pm 
+                WHERE pm.project_id::text = path_parts[3] 
+                AND pm.user_id = has_storage_access.user_id
+            ) OR EXISTS(
+                SELECT 1 FROM construction_mgr.be_project p 
+                WHERE p.id::text = path_parts[3] 
+                AND p.owner_id = has_storage_access.user_id
+            ) INTO has_project_access;
+            
+            RETURN has_project_access;
+        END IF;
+        
+        RETURN FALSE;
     END IF;
     
-    -- For PHOTO bucket: PHOTO/{project_id}/{category}/filename
+    -- For PHOTO bucket: {project_id}/{category}/filename
     IF bucket_name = 'PHOTO' THEN
-        -- Expected format: PHOTO/{project_id}/{category}/filename
-        IF array_length(path_parts, 1) < 4 THEN
+        -- Expected format: {project_id}/{category}/filename
+        IF array_length(path_parts, 1) < 3 THEN
             RETURN FALSE;
         END IF;
         
-        -- First part should be PHOTO, second part is project_id
-        IF path_parts[1] != 'PHOTO' THEN
-            RETURN FALSE;
-        END IF;
-        
-        project_id_str := path_parts[2];
-        RETURN private.has_project_access_direct(project_id_str::UUID, user_id);
+        -- First part is project_id
+        project_id_str := path_parts[1];
+        RETURN private.has_project_access_direct(project_id_str::UUID, has_storage_access.user_id);
     END IF;
     
-    -- For VIDEO bucket: VIDEO/{project_id}/{category}/filename
+    -- For VIDEO bucket: {project_id}/{category}/filename
     IF bucket_name = 'VIDEO' THEN
-        -- Expected format: VIDEO/{project_id}/{category}/filename
-        IF array_length(path_parts, 1) < 4 THEN
+        -- Expected format: {project_id}/{category}/filename
+        IF array_length(path_parts, 1) < 3 THEN
             RETURN FALSE;
         END IF;
         
-        -- First part should be VIDEO, second part is project_id
-        IF path_parts[1] != 'VIDEO' THEN
-            RETURN FALSE;
-        END IF;
-        
-        project_id_str := path_parts[2];
-        RETURN private.has_project_access_direct(project_id_str::UUID, user_id);
+        -- First part is project_id
+        project_id_str := path_parts[1];
+        RETURN private.has_project_access_direct(project_id_str::UUID, has_storage_access.user_id);
     END IF;
     
-    -- For DOCUMENT bucket: DOCUMENT/{project_id}/{category}/filename
+    -- For DOCUMENT bucket: {project_id}/{category}/filename
     IF bucket_name = 'DOCUMENT' THEN
-        -- Expected format: DOCUMENT/{project_id}/{category}/filename
-        IF array_length(path_parts, 1) < 4 THEN
+        -- Expected format: {project_id}/{category}/filename
+        IF array_length(path_parts, 1) < 3 THEN
             RETURN FALSE;
         END IF;
         
-        -- First part should be DOCUMENT, second part is project_id
-        IF path_parts[1] != 'DOCUMENT' THEN
-            RETURN FALSE;
-        END IF;
-        
-        project_id_str := path_parts[2];
-        RETURN private.has_project_access_direct(project_id_str::UUID, user_id);
+        -- First part is project_id
+        project_id_str := path_parts[1];
+        RETURN private.has_project_access_direct(project_id_str::UUID, has_storage_access.user_id);
     END IF;
     
     RETURN FALSE;
@@ -259,11 +269,11 @@ RETURNS TEXT[] AS $$
 BEGIN
     CASE p_media_type
         WHEN 'PHOTO' THEN
-            RETURN ARRAY['profile_image', 'inspiration_image', 'progress_image'];
+            RETURN ARRAY['profile', 'inspiration', 'progress'];
         WHEN 'VIDEO' THEN
             RETURN ARRAY['progress_video'];
         WHEN 'DOCUMENT' THEN
-            RETURN ARRAY['receipt', 'report', 'contract', 'permit', 'invoice', 'specification', 'schedule', 'drawing', 'manual', 'certificate', 'other_document'];
+            RETURN ARRAY['receipt', 'report', 'contract', 'permit', 'invoice', 'blueprint', 'other'];
         ELSE
             RETURN ARRAY[]::TEXT[]; -- Empty array for invalid types
     END CASE;

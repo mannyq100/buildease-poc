@@ -61,10 +61,11 @@ export function AppLayout({ showBreadcrumbs = true, className, customBreadcrumbs
   const { data: projectName, isLoading: projectLoading } = useQuery({
     queryKey: ['projects', 'breadcrumb-name-by-slug', params.slug],
     queryFn: async () => {
+      // Always use slug lookup (no UUID fallback)
       const { data, error } = await supabase
         .from('be_project')
         .select('name')
-        .ilike('slug', params.slug as string)
+        .eq('slug', params.slug as string)
         .single();
       if (error || !data) throw error ?? new Error('Project not found');
       return (data.name as string) || 'Project Details';

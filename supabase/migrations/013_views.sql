@@ -62,6 +62,17 @@ media_agg AS (
     FROM construction_mgr.be_media_items m
     GROUP BY m.project_id
 ),
+profile_image_agg AS (
+    SELECT DISTINCT ON (m.project_id)
+        m.project_id,
+        m.file_path as profile_image_url,
+        m.thumbnail_url as profile_image_thumbnail_url
+    FROM construction_mgr.be_media_items m
+    WHERE m.category = 'profile' 
+        AND m.media_type = 'PHOTO'
+        AND m.processing_status = 'completed'
+    ORDER BY m.project_id, m.created_at DESC
+),
 members_agg AS (
     SELECT pm.project_id, COUNT(DISTINCT pm.user_id) AS member_count
     FROM construction_mgr.be_project_member pm
@@ -70,6 +81,7 @@ members_agg AS (
 SELECT
     p.id,
     p.name,
+    p.slug,
     p.description,
     p.owner_id,
     CASE p.status 
@@ -80,6 +92,9 @@ SELECT
         ELSE 'planning'
     END as status,
     
+    -- Profile image from media items
+    pia.profile_image_url,
+    pia.profile_image_thumbnail_url,
     
     -- Project details from JSONB
     COALESCE(p.details->'owner_info'->>'name', 'Unknown Client') as client,
@@ -148,6 +163,7 @@ LEFT JOIN tasks_agg t_a ON t_a.project_id = p.id
 LEFT JOIN progress_agg pa ON pa.project_id = p.id
 LEFT JOIN materials_agg mat_a ON mat_a.project_id = p.id
 LEFT JOIN media_agg med_a ON med_a.project_id = p.id
+LEFT JOIN profile_image_agg pia ON pia.project_id = p.id
 LEFT JOIN members_agg mem_a ON mem_a.project_id = p.id;
 
 -- Project members with user details

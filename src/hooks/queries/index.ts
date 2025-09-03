@@ -3,20 +3,19 @@
  * Centralized exports for all Supabase query hooks
  */
 
-// Project queries
-export {
-  useProject,
-  useUserProjects,
-  useProjectMembers,
-} from './useProject';
+// Project queries (removed - functionality moved to specialized hooks)
 
-// Projects page queries
+// Projects page queries (moved to useProjectSummary for consolidation)
+
+// Project summary queries
 export {
-  useProjects,
+  useProjectSummary,
+  useProjectSummaries,
+  useAllProjectSummaries,
   useProjectMetrics,
-  useProjectsByStatus,
-  useProjectSearch,
-} from './useProjects';
+  type ProjectSummaryFilters,
+  type ProjectMetrics,
+} from './useProjectSummary';
 
 // Phase queries
 export {
@@ -46,13 +45,9 @@ export {
   useMedia,
   useProjectDocuments,
   usePhaseDocuments,
-  useDocument,
-  useDocumentOperations,
   useMediaByCategory,
   useMediaByPhase,
   useProfileImage,
-  useVirtualizedMedia,
-  useInfiniteMedia,
   type MediaItem,
   type MediaFilters,
   type MediaStats,

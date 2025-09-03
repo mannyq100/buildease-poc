@@ -13,14 +13,15 @@ import { ProjectDetailsSkeleton } from '@/components/ui/skeletons';
 export function ProjectDetailsPage() {
   const { slug } = useParams<{ slug: string }>();
   
-  // Resolve slug -> project UUID (unconditional hook; gate with enabled)
+  // Resolve slug -> project UUID
   const { data: projectId, isLoading, isError } = useQuery({
     queryKey: ['projects', 'slug-lookup', slug],
     queryFn: async () => {
+      // Always use slug lookup (no UUID fallback)
       const { data, error } = await supabase
         .from('be_project')
         .select('id')
-        .ilike('slug', slug as string)
+        .eq('slug', slug as string)
         .single();
       if (error || !data) throw error ?? new Error('Project not found');
       return data.id as string;

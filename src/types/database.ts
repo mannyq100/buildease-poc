@@ -12,6 +12,7 @@ export type Currency = 'GHS' | 'USD' | 'EUR';
 export type AuthProvider = 'GOOGLE' | 'FACEBOOK' | 'LINKEDIN' | 'AUTH0' | 'EMAIL';
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 export type UserTier = 'BASIC' | 'PREMIUM' | 'PROFESSIONAL';
+export type MediaCategory = 'profile' | 'inspiration' | 'progress' | 'progress_video' | 'receipt' | 'report' | 'contract' | 'permit' | 'invoice' | 'blueprint' | 'other';
 
 // AI Plan Generation types
 export type AIPlanJobStatus = 'pending' | 'processing' | 'completed' | 'failed';

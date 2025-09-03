@@ -28,9 +28,9 @@ export interface Project {
   owner_id: string;
   status: ProjectStatus;
   
-  // Visual assets - now handled by be_document table with media categories
-  // Removed: profile_image, inspiration_images, progress_images
-  // Use useProjectMedia hooks to fetch media by category
+  // Profile image from be_media_items
+  profile_image_url?: string | null;
+  profile_image_thumbnail_url?: string | null;
   
   // Project details (matches view)
   client: string;

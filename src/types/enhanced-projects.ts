@@ -4,6 +4,7 @@
  */
 
 import type { Project, ProjectStatus } from './project';
+import type { ProjectSummary } from './projectSummary';
 import type { SupabaseErrorWithContext } from './enhanced-project';
 
 // Remove UIProject type - use Project instead
@@ -64,13 +65,13 @@ export interface ProjectsErrorInfo {
 
 // Project card actions
 export interface ProjectCardActions {
-  onView: (project: Project) => void;
-  onEdit: (project: Project) => void;
-  onDelete: (project: Project) => void;
-  onDuplicate: (project: Project, newName: string) => void;
-  onStatusUpdate: (project: Project, status: ProjectStatus) => void;
-  onArchive?: (project: Project) => void;
-  onRestore?: (project: Project) => void;
+  onView: (project: ProjectSummary) => void;
+  onEdit: (project: ProjectSummary) => void;
+  onDelete: (project: ProjectSummary) => void;
+  onDuplicate: (project: ProjectSummary, newName: string) => void;
+  onStatusUpdate: (project: ProjectSummary, status: ProjectStatus) => void;
+  onArchive?: (project: ProjectSummary) => void;
+  onRestore?: (project: ProjectSummary) => void;
 }
 
 // Bulk operations
@@ -137,7 +138,7 @@ export interface ProjectsFiltersProps {
 }
 
 export interface ProjectsListProps {
-  projects: Project[]; // Using Project instead of UIProject
+  projects: ProjectSummary[]; // Using ProjectSummary for streamlined data flow
   loading?: boolean;
   error?: SupabaseErrorWithContext | null;
   viewSettings: ProjectsViewSettings;

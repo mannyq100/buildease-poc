@@ -65,7 +65,7 @@ const FILE_SIZE_LIMITS = {
 /** Storage bucket mapping with type safety */
 const STORAGE_BUCKETS = {
   PHOTO: 'PHOTO',
-  VIDEO: 'VIDEO',
+  VIDEO: 'VIDEO', 
   DOCUMENT: 'DOCUMENT',
   profile: 'user_profiles'
 } as const;
@@ -146,7 +146,8 @@ const CATEGORY_TYPE_MAP: Record<string, 'PHOTO' | 'VIDEO' | 'DOCUMENT'> = {
   profile: 'PHOTO',
   inspiration: 'PHOTO', 
   progress: 'PHOTO',
-  progress_video: 'VIDEO'
+  progress_video: 'VIDEO',
+  document: 'DOCUMENT',
 };
 
 const getMediaTypeFromCategory = (category: MediaCategory): 'PHOTO' | 'VIDEO' | 'DOCUMENT' => {
@@ -156,8 +157,13 @@ const getMediaTypeFromCategory = (category: MediaCategory): 'PHOTO' | 'VIDEO' | 
 /**
  * Get storage bucket with optimized logic
  */
-const getStorageBucket = (category: MediaCategory): string => {
-  return category === 'profile' ? STORAGE_BUCKETS.profile : STORAGE_BUCKETS[getMediaTypeFromCategory(category)];
+const getStorageBucket = (category: MediaCategory, context?: MediaContext): string => {
+  // User profile images go to user_profiles bucket (no projectId)
+  if (category === 'profile' && (!context?.projectId)) {
+    return STORAGE_BUCKETS.profile;
+  }
+  // All other uploads (including project profiles) go to media-type-specific buckets
+  return STORAGE_BUCKETS[getMediaTypeFromCategory(category)];
 };
 
 /**
@@ -166,12 +172,14 @@ const getStorageBucket = (category: MediaCategory): string => {
 const generateFilePath = (file: File, context: MediaContext, userId: string): string => {
   const fileName = generateFileName(file.name);
   
-  if (context.type === 'profile') {
+  // User profile images go to user_profiles bucket with user-based paths (no projectId)
+  if (context.type === 'profile' && !context.projectId) {
     return `${userId}/${fileName}`;
   }
   
-  const mediaType = getMediaTypeFromCategory(context.type);
-  return `${mediaType}/${context.projectId}/${context.type}/${fileName}`;
+  // All other files (including project profiles) go to media-type-specific buckets
+  // Format: {project_id}/{category}/filename (bucket name provides the media type context)
+  return `${context.projectId}/${context.type}/${fileName}`;
 };
 
 /**
@@ -263,42 +271,68 @@ export class MediaService {
     }
 
     const filePath = generateFilePath(file, context, userId);
-    const bucketName = getStorageBucket(context.type);
+    const bucketName = getStorageBucket(context.type, context);
     const mediaType = getMediaTypeFromCategory(context.type);
     
-    // Optimized storage upload
-    const { error: uploadError } = await supabase.storage
+    // Optimized storage upload with better error handling
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from(bucketName)
       .upload(filePath, file, { 
         cacheControl: '3600',
-        upsert: false,
-        duplex: 'half'
+        upsert: false
       });
 
     if (uploadError) {
+      console.error('Storage upload error details:', {
+        message: uploadError.message,
+        bucketName,
+        filePath,
+        fileSize: file.size,
+        fileType: file.type,
+        userId
+      });
       throw new Error(`Storage upload failed: ${uploadError.message}`);
     }
 
+    if (!uploadData) {
+      throw new Error('Storage upload succeeded but no data returned');
+    }
+
+    // Validate required fields before database insert
+    if (!context.projectId?.trim()) {
+      throw new Error('Project ID is required for media upload');
+    }
+
     // Create database record with structured metadata
+    const mediaRecord = {
+      name: context.name || file.name,
+      description: context.description || null,
+      media_type: mediaType,
+      category: context.type,
+      project_id: context.projectId,
+      phase_id: context.phaseId || null,
+      file_path: filePath,
+      file_size_bytes: file.size,
+      mime_type: file.type,
+      metadata: {
+        originalFileName: file.name,
+        uploadedAt: new Date().toISOString(),
+        uploadedBy: userId,
+        processingStatus: 'pending'
+      }
+    };
+
+    console.log('Inserting media record:', { 
+      name: mediaRecord.name, 
+      media_type: mediaRecord.media_type, 
+      category: mediaRecord.category, 
+      project_id: mediaRecord.project_id,
+      file_path: mediaRecord.file_path
+    });
+
     const { data: mediaItem, error: dbError } = await supabase
       .from('be_media_items')
-      .insert({
-        name: context.name || file.name,
-        description: context.description || null,
-        media_type: mediaType,
-        category: context.type,
-        project_id: context.projectId,
-        phase_id: context.phaseId || null,
-        file_path: filePath,
-        file_size_bytes: file.size,
-        mime_type: file.type,
-        metadata: {
-          originalFileName: file.name,
-          uploadedAt: new Date().toISOString(),
-          uploadedBy: userId,
-          processingStatus: 'pending'
-        }
-      })
+      .insert(mediaRecord)
       .select()
       .single();
 
@@ -415,7 +449,7 @@ export class MediaService {
       throw new Error(`Failed to fetch media item: ${fetchError.message}`);
     }
 
-    const bucketName = getStorageBucket(mediaItem.category);
+    const bucketName = getStorageBucket(mediaItem.category, { projectId: '', type: mediaItem.category });
 
     // Non-blocking storage deletion for better UX
     const storagePromise = supabase.storage
@@ -498,7 +532,7 @@ export class MediaService {
       throw new Error(`Failed to fetch media item: ${error.message}`);
     }
 
-    const bucketName = getStorageBucket(mediaItem.category);
+    const bucketName = getStorageBucket(mediaItem.category, { projectId: '', type: mediaItem.category });
     const { data, error: urlError } = await supabase.storage
       .from(bucketName)
       .createSignedUrl(mediaItem.file_path, expiresIn);

@@ -3,7 +3,7 @@
  * Displays project cards with construction worker-friendly interactions
  */
 
-import { useState, useOptimistic, useTransition, useMemo, memo } from 'react';
+import { useState, useTransition, useMemo, memo, useEffect } from 'react';
 import { AlertCircle, Loader2, Zap } from 'lucide-react';
 import { TouchOptimizedButton } from '@/components/ui/TouchOptimizedButton';
 import { ProjectCard } from '@/components/shared/ProjectCard';
@@ -11,7 +11,8 @@ import { cn } from '@/utils/core/ui';
 import type { 
   ProjectsListProps 
 } from '@/types/enhanced-projects';
-import type { Project, ProjectStatus } from '@/types/project';
+import type { ProjectSummary } from '@/types/projectSummary';
+import type { ProjectStatus } from '@/types/project';
 
 // Helper function to map project status to ProjectCard status
 function mapProjectStatus(status: ProjectStatus): 'active' | 'completed' | 'pending' | 'delayed' {
@@ -22,7 +23,6 @@ function mapProjectStatus(status: ProjectStatus): 'active' | 'completed' | 'pend
     case 'completed':
       return 'completed';
     case 'planning':
-    case 'upcoming':
       return 'pending';
     case 'on-hold':
       return 'delayed';
@@ -40,7 +40,7 @@ export const ProjectsList = memo(function ProjectsList({
   actions,
   className 
 }: ProjectsListProps) {
-  const [isPending, startTransition] = useTransition();
+  const [isPending, _startTransition] = useTransition();
   const [performanceMode, setPerformanceMode] = useState<'standard' | 'optimized'>('standard');
   
   // Debug logging
@@ -51,37 +51,13 @@ export const ProjectsList = memo(function ProjectsList({
     projects: projects?.slice(0, 1) // Log first project for debugging
   });
   
-  // Optimistic updates for instant UI feedback
-  const [optimisticProjects, addOptimisticUpdate] = useOptimistic(
-    projects,
-    (state: Project[], action: { type: string; projectId: string; payload?: any }) => {
-      switch (action.type) {
-        case 'UPDATE_STATUS':
-          return state.map(project => 
-            project.id === action.projectId 
-              ? { ...project, status: action.payload.status }
-              : project
-          );
-        case 'DELETE':
-          return state.filter(project => project.id !== action.projectId);
-        case 'DUPLICATE':
-          const originalProject = state.find(p => p.id === action.projectId);
-          if (!originalProject) return state;
-          const duplicatedProject: Project = {
-            ...originalProject,
-            id: `temp-${Date.now()}`,
-            name: action.payload.newName,
-            status: 'planning',
-            progress: 0,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          };
-          return [duplicatedProject, ...state];
-        default:
-          return state;
-      }
-    }
-  );
+  // Use regular state instead of useOptimistic for compatibility
+  const [optimisticProjects, setOptimisticProjects] = useState<ProjectSummary[]>(projects);
+  
+  // Update optimistic projects when props change
+  useEffect(() => {
+    setOptimisticProjects(projects);
+  }, [projects]);
 
   // Performance optimization: limit rendering for large datasets
   const shouldOptimize = optimisticProjects.length > 50;
@@ -115,7 +91,6 @@ export const ProjectsList = memo(function ProjectsList({
     return (
       <EmptyProjectsState 
         className={className}
-        onCreateProject={() => window.location.href = '/projects/new'}
       />
     );
   }
@@ -161,19 +136,19 @@ export const ProjectsList = memo(function ProjectsList({
           : "grid-cols-1",
         isPending && "opacity-75"
       )}>
-        {displayProjects.map((project) => (
+        {displayProjects.map((project: ProjectSummary) => (
           <ProjectCard
             key={project.id}
             title={project.name}
-            description={project.description}
+            description={project.description || ''}
             client={project.client}
             owner={project.owner_name}
             status={mapProjectStatus(project.status)}
             progress={project.progress}
-            imageUrl={''}
+            imageUrl={project.profile_image_thumbnail_url || project.profile_image_url || ''}
             startDate={project.start_date ? new Date(project.start_date).toLocaleDateString() : undefined}
             endDate={project.end_date ? new Date(project.end_date).toLocaleDateString() : undefined}
-            team={project.teamMembers}
+            team={[]} // ProjectSummary doesn't include team members array, just member count
             budget={{
               total: project.budget,
               spent: project.spent,

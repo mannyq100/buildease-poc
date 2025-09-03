@@ -7,12 +7,14 @@ export interface ProjectSummary {
   // Basic project info
   id: string;
   name: string;
+  slug: string | null;
   description: string | null;
   owner_id: string;
   status: 'active' | 'planning' | 'completed' | 'on-hold';
   
-  // Visual assets - now stored in be_document table with media categories
-  // Use useProjectMedia hooks to fetch media by category
+  // Profile image from be_media_items
+  profile_image_url: string | null;
+  profile_image_thumbnail_url: string | null;
   
   // Project details
   client: string;
