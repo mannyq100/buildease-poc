@@ -42,11 +42,7 @@ interface Config {
   useMocks: boolean;
   analyticsId?: string;
   logLevel: 'debug' | 'info' | 'warn' | 'error';
-  oauthConfig: {
-    googleClientId: string;
-    facebookAppId: string;
-    appleClientId: string;
-  };
+  // OAuth is handled by Supabase - no client-side configuration needed
 }
 
 // Get environment configuration
@@ -60,11 +56,6 @@ export const getConfig = (): Config => {
     useMocks: import.meta.env.VITE_USE_MOCK === 'true',
     analyticsId: import.meta.env.VITE_ANALYTICS_ID as string,
     logLevel: 'info',
-    oauthConfig: {
-      googleClientId: import.meta.env.VITE_GOOGLE_CLIENT_ID as string,
-      facebookAppId: import.meta.env.VITE_FACEBOOK_APP_ID as string,
-      appleClientId: import.meta.env.VITE_APPLE_CLIENT_ID as string,
-    }
   };
 
   // Environment-specific overrides

@@ -488,4 +488,4 @@ export function useErrorRecovery() {
 }
 
 // Export the legacy ErrorBoundary for compatibility
-export { ErrorBoundary } from './ErrorBoundary';
+export { ErrorBoundary } from '../ErrorBoundary';

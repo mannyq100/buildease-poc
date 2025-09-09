@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ToastContextProvider } from "@/components/ui/toast-context";
 import { HelmetProvider } from "react-helmet-async";
-import { ErrorBoundary } from "@/components/common/ErrorBoundary";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Libraries
 import { QueryClientProvider } from "@tanstack/react-query";

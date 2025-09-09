@@ -304,7 +304,7 @@ export class ConstructionSiteOptimizer {
     const warning = document.createElement('div');
     warning.id = 'connection-warning';
     warning.className = 'fixed top-0 left-0 right-0 bg-amber-100 border-b border-amber-300 p-2 text-center text-sm z-50';
-    warning.innerHTML = type === 'offline' 
+    warning.textContent = type === 'offline' 
       ? '📱 You\'re offline. Some features may not work.'
       : '📶 Poor connection detected. Optimizing for construction site use...';
     

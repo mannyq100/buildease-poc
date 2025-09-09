@@ -32,7 +32,6 @@ import { getTaskStatusColor, getTaskStatusIconColor, getTaskPriorityBadgeVariant
 import { usePhaseStatusManager } from '@/hooks/usePhaseStatusManager';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { usePhaseNotifications } from '@/hooks/usePhaseNotifications';
-import { ToastContainer } from '@/components/ToastContainer';
 import { TaskListSkeleton, OptimisticTaskCard } from '@/components/LoadingSkeletons';
 import { AssigneeSelect } from '@/components/ui/AssigneeSelect';
 import { useTaskAssignment, useBulkAssignTasks, useUpdateTaskStatus } from '@/hooks/mutations';
@@ -524,12 +523,7 @@ function PhaseTasksSectionContent({
       </AlertDialog>
     </div>
 
-    {/* Toast Notifications */}
-    <ToastContainer 
-      toasts={notifications.toasts} 
-      onRemove={notifications.removeToast}
-      position="bottom-right"
-    />
+    {/* Toast notifications are handled by the global Toaster in App.tsx */}
   </>
   );
 }
