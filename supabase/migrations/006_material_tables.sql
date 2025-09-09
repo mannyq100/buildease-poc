@@ -91,9 +91,13 @@ BEGIN
       UPDATE construction_mgr.be_material
       SET current_quantity = COALESCE(current_quantity, 0) + NEW.quantity
       WHERE id = NEW.material_id;
-    ELSIF NEW.transaction_type = 'USAGE' OR NEW.transaction_type = 'ADJUSTMENT' THEN
+    ELSIF NEW.transaction_type = 'USAGE' THEN
       UPDATE construction_mgr.be_material
-      SET current_quantity = GREATEST(0, COALESCE(current_quantity, 0) - NEW.quantity)
+      SET current_quantity = GREATEST(0, COALESCE(current_quantity, 0) - ABS(NEW.quantity))
+      WHERE id = NEW.material_id;
+    ELSIF NEW.transaction_type = 'ADJUSTMENT' THEN
+      UPDATE construction_mgr.be_material
+      SET current_quantity = GREATEST(0, COALESCE(current_quantity, 0) + NEW.quantity)
       WHERE id = NEW.material_id;
     END IF;
   END IF;

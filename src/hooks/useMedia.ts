@@ -30,6 +30,9 @@ export interface MediaItem {
   created_at: string;
   updated_at: string;
   metadata: Record<string, unknown>;
+  // Computed properties for UI
+  url: string; // Generated from file_path for easy access
+  size: number; // Alias for file_size_bytes for UI components
 }
 
 export interface MediaFilters {
@@ -228,7 +231,7 @@ export function useMedia(projectId: string, options: { filters?: MediaFilters; e
   const updateMutation = useMutation({
     mutationFn: ({ mediaId, updates }: { 
       mediaId: string; 
-      updates: Partial<Pick<MediaItem, 'name' | 'description' | 'metadata'>> 
+      updates: Partial<Pick<MediaItem, 'name' | 'description' | 'category' | 'metadata'>> 
     }) => MediaService.update(mediaId, updates),
     onSuccess: async (updatedItem, { updates }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.documents.byProject(projectId) });

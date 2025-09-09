@@ -126,22 +126,62 @@ export function ProjectDocumentsSection({
     }
   }, [toast, deleteMedia]);
 
-  const handleSetAsProfile = useCallback(async (imageUrl: string) => {
+  const handleSetAsProfile = useCallback(async (mediaId: string) => {
     try {
-      // Find the media item by URL
-      const imageDoc = projectMediaItems?.find((item) => item.file_path === imageUrl);
+      // Find the media item by ID
+      const mediaItem = projectMediaItems?.find(item => item.id === mediaId);
       
-      if (!imageDoc?.id) {
+      if (!mediaItem) {
         toast({
           title: "Error",
-          description: "Cannot find image to set as profile.",
+          description: "Cannot find media item to set as profile.",
           variant: "destructive",
         });
         return;
       }
-      
-      // Update media item to set as profile
-      await update({ mediaId: imageDoc.id, updates: { metadata: { isProfile: true } } });
+
+      // Only photos can be set as profile
+      if (mediaItem.media_type !== 'PHOTO') {
+        toast({
+          title: "Error", 
+          description: "Only photos can be set as profile images.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // First, find any existing profile images and change them to inspiration
+      const existingProfileImages = projectMediaItems?.filter(item => 
+        item.category === 'profile' && item.media_type === 'PHOTO'
+      ) || [];
+
+      // Update all existing profile images to inspiration category
+      for (const existingProfile of existingProfileImages) {
+        await update({ 
+          mediaId: existingProfile.id, 
+          updates: { 
+            category: 'inspiration',
+            metadata: { 
+              ...existingProfile.metadata,
+              previousCategory: 'profile',
+              changedAt: new Date().toISOString()
+            }
+          } 
+        });
+      }
+
+      // Set the new image as profile by changing its category
+      await update({ 
+        mediaId: mediaItem.id, 
+        updates: { 
+          category: 'profile',
+          metadata: {
+            ...mediaItem.metadata,
+            previousCategory: mediaItem.category,
+            setAsProfileAt: new Date().toISOString()
+          }
+        }
+      });
       
       toast({
         title: "Success",
@@ -149,6 +189,7 @@ export function ProjectDocumentsSection({
       });
       
     } catch (error) {
+      console.error('Set as profile error:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to set profile image. Please try again.",

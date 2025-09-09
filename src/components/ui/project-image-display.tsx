@@ -50,15 +50,18 @@ export function ProjectImageDisplay({
   
   // Handle image load error
   const handleError = useCallback((event: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    console.warn('Image load error for URL:', src, event.nativeEvent);
     setLoadingState('error');
     onError?.(event.nativeEvent);
-  }, [onError]);
+  }, [onError, src]);
   
   // Set initial state based on src
   React.useEffect(() => {
     if (!src || src.trim() === '') {
+      console.log('ProjectImageDisplay: No src provided');
       setLoadingState('no-src');
     } else {
+      console.log('ProjectImageDisplay: Loading image:', src);
       setLoadingState('loading');
     }
   }, [src]);

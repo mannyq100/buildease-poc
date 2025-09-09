@@ -5,9 +5,8 @@
  */
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -219,27 +218,6 @@ export function ProjectSettingsSection({
 
   return (
     <div className="space-y-6">
-      {/* Settings Header */}
-      <Card className="border-slate-200/40 shadow-xl bg-gradient-to-br from-white via-slate-50/30 to-buildease-blue-50/20 backdrop-blur-md rounded-2xl">
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                <Settings className="h-6 w-6 text-buildease-blue-600" />
-                Project Settings
-              </CardTitle>
-              <p className="text-sm text-slate-600 mt-1">Configure project preferences and notifications</p>
-            </div>
-            {hasChanges && (
-              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                <AlertTriangle className="h-3 w-3 mr-1" />
-                Unsaved Changes
-              </Badge>
-            )}
-          </div>
-        </CardHeader>
-      </Card>
-
       {/* Settings Navigation */}
       <Card className="border-slate-200/40 shadow-xl bg-gradient-to-br from-white via-slate-50/30 to-slate-100/20 backdrop-blur-md rounded-2xl">
         <CardContent className="p-2">

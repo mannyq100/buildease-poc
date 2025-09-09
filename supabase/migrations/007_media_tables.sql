@@ -51,8 +51,6 @@ CREATE TRIGGER update_media_modtime
 -- Primary indexes for common queries
 CREATE INDEX idx_media_project ON construction_mgr.be_media_items (project_id);
 CREATE INDEX idx_media_phase ON construction_mgr.be_media_items (phase_id);
-CREATE INDEX idx_media_type ON construction_mgr.be_media_items (media_type);
-CREATE INDEX idx_media_category ON construction_mgr.be_media_items (category);
 
 -- Composite indexes for complex queries
 CREATE INDEX idx_media_project_category ON construction_mgr.be_media_items (project_id, category);
@@ -68,20 +66,22 @@ CREATE INDEX idx_media_metadata ON construction_mgr.be_media_items USING gin (me
 -- STORAGE BUCKETS SETUP
 -- =============================================================================
 
--- Storage buckets with comprehensive MIME type support
+-- Storage buckets for BuildEase media types
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES 
   ('user_profiles', 'user_profiles', true, 10485760, 
-   ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif', 'image/avif', 'image/bmp']),
+   ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif']),
   
   ('PHOTO', 'PHOTO', false, 52428800,
-   ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif', 'image/avif', 'image/bmp', 'image/tiff', 'image/tif']),
+   ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/tiff']),
    
   ('VIDEO', 'VIDEO', false, 209715200,
-   ARRAY['video/mp4', 'video/mpeg', 'video/quicktime', 'video/mov', 'video/x-msvideo', 'video/avi', 'video/webm', 'video/ogg', 'video/3gpp', 'video/3gp']),
+   ARRAY['video/mp4', 'video/webm', 'video/quicktime', 'video/mov']),
    
   ('DOCUMENT', 'DOCUMENT', false, 104857600,
-   ARRAY['application/pdf', 'application/msword', 'application/doc', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/xls', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-powerpoint', 'application/ppt', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'text/plain', 'text/csv', 'application/zip', 'application/x-zip-compressed', 'application/rtf', 'application/json', 'image/svg+xml'])
+   ARRAY['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
+         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/plain',
+         'application/msword', 'application/vnd.ms-excel'])
 
 ON CONFLICT (id) DO UPDATE SET
   public = EXCLUDED.public,

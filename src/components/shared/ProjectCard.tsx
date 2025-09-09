@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Building2, Calendar, Users } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import { ProjectImageDisplay } from '@/components/ui/project-image-display';
+import { SmartProjectImageDisplay } from '@/components/ui/SmartProjectImageDisplay';
 import { cn } from '@/utils/core/ui';
 
 export interface TeamMember {
@@ -105,7 +105,7 @@ export function ProjectCard({
     >
       {/* Enhanced Project Image */}
       <div className="relative w-full h-48 overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800">
-        <ProjectImageDisplay
+        <SmartProjectImageDisplay
           src={imageUrl}
           alt={title}
           className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110 group-hover:brightness-110"

@@ -62,7 +62,7 @@ const FILE_SIZE_LIMITS = {
   DOCUMENT: 50 // MB - Plans, contracts, etc.
 } as const;
 
-/** Storage bucket mapping with type safety */
+/** Storage bucket mapping with type safety - Individual media type buckets */
 const STORAGE_BUCKETS = {
   PHOTO: 'PHOTO',
   VIDEO: 'VIDEO', 
@@ -155,19 +155,19 @@ const getMediaTypeFromCategory = (category: MediaCategory): 'PHOTO' | 'VIDEO' | 
 };
 
 /**
- * Get storage bucket with optimized logic
+ * Get storage bucket with optimized logic for individual media type buckets
  */
 const getStorageBucket = (category: MediaCategory, context?: MediaContext): string => {
   // User profile images go to user_profiles bucket (no projectId)
   if (category === 'profile' && (!context?.projectId)) {
     return STORAGE_BUCKETS.profile;
   }
-  // All other uploads (including project profiles) go to media-type-specific buckets
+  // All other uploads go to media-type-specific buckets
   return STORAGE_BUCKETS[getMediaTypeFromCategory(category)];
 };
 
 /**
- * Generate optimized file path structure
+ * Generate optimized file path structure for individual media type buckets
  */
 const generateFilePath = (file: File, context: MediaContext, userId: string): string => {
   const fileName = generateFileName(file.name);
@@ -177,8 +177,8 @@ const generateFilePath = (file: File, context: MediaContext, userId: string): st
     return `${userId}/${fileName}`;
   }
   
-  // All other files (including project profiles) go to media-type-specific buckets
-  // Format: {project_id}/{category}/filename (bucket name provides the media type context)
+  // Project files go to media-type-specific buckets
+  // Format: {project_id}/{category}/filename
   return `${context.projectId}/${context.type}/${fileName}`;
 };
 
@@ -274,6 +274,15 @@ export class MediaService {
     const bucketName = getStorageBucket(context.type, context);
     const mediaType = getMediaTypeFromCategory(context.type);
     
+    // Debug logging to help troubleshoot bucket issues
+    console.log('Upload context:', {
+      category: context.type,
+      projectId: context.projectId,
+      bucketName,
+      mediaType,
+      filePath
+    });
+    
     // Optimized storage upload with better error handling
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from(bucketName)
@@ -298,6 +307,74 @@ export class MediaService {
       throw new Error('Storage upload succeeded but no data returned');
     }
 
+    // Verify upload and get complete file URL from Supabase
+    let fileUrl: string;
+    
+    // Determine if this is a public bucket (user_profiles)
+    const isPublicBucket = bucketName === 'user_profiles' || bucketName === STORAGE_BUCKETS.profile;
+    
+    if (isPublicBucket) {
+      // For public buckets, get public URL
+      const { data: urlData } = supabase.storage
+        .from(bucketName)
+        .getPublicUrl(filePath);
+
+      if (!urlData?.publicUrl) {
+        // Cleanup on failure
+        try {
+          await supabase.storage.from(bucketName).remove([filePath]);
+        } catch (cleanupError) {
+          console.warn('Storage cleanup failed:', cleanupError);
+        }
+        throw new Error('Failed to generate public URL for uploaded file');
+      }
+      
+      fileUrl = urlData.publicUrl;
+    } else if (bucketName === 'PHOTO' || bucketName === 'VIDEO' || bucketName === 'DOCUMENT' || 
+               (Object.values(STORAGE_BUCKETS) as string[]).includes(bucketName)) {
+      // For private buckets (PHOTO, VIDEO, DOCUMENT), create a signed URL for verification
+      const { data: signedUrlData, error: urlError } = await supabase.storage
+        .from(bucketName)
+        .createSignedUrl(filePath, 3600); // 1 hour expiry for verification
+
+      if (urlError || !signedUrlData?.signedUrl) {
+        // Cleanup on failure
+        try {
+          await supabase.storage.from(bucketName).remove([filePath]);
+        } catch (cleanupError) {
+          console.warn('Storage cleanup failed:', cleanupError);
+        }
+        throw new Error(`Failed to verify uploaded file: ${urlError?.message || 'No signed URL generated'}`);
+      }
+      
+      fileUrl = signedUrlData.signedUrl;
+    } else {
+      // Unknown bucket - this should not happen
+      throw new Error(`Unknown storage bucket: ${bucketName}. Expected one of: ${Object.values(STORAGE_BUCKETS).join(', ')}`);
+    }
+
+    // Verify the file actually exists by making a HEAD request
+    try {
+      const response = await fetch(fileUrl, { method: 'HEAD' });
+      if (!response.ok) {
+        throw new Error(`File verification failed: HTTP ${response.status}`);
+      }
+      
+      // Verify file size matches what we expect
+      const contentLength = response.headers.get('content-length');
+      if (contentLength && parseInt(contentLength) !== file.size) {
+        console.warn(`File size mismatch: expected ${file.size}, got ${contentLength}`);
+      }
+    } catch (verificationError) {
+      // Cleanup on verification failure
+      try {
+        await supabase.storage.from(bucketName).remove([filePath]);
+      } catch (cleanupError) {
+        console.warn('Storage cleanup failed:', cleanupError);
+      }
+      throw new Error(`File verification failed: ${verificationError instanceof Error ? verificationError.message : 'Unknown error'}`);
+    }
+
     // Validate required fields before database insert
     if (!context.projectId?.trim()) {
       throw new Error('Project ID is required for media upload');
@@ -311,14 +388,18 @@ export class MediaService {
       category: context.type,
       project_id: context.projectId,
       phase_id: context.phaseId || null,
-      file_path: filePath,
+      file_path: fileUrl, // Always store complete URL for all buckets
       file_size_bytes: file.size,
       mime_type: file.type,
       metadata: {
         originalFileName: file.name,
         uploadedAt: new Date().toISOString(),
         uploadedBy: userId,
-        processingStatus: 'pending'
+        processingStatus: 'pending',
+        bucketName: bucketName,
+        storagePath: filePath, // Always keep relative path for storage operations
+        verifiedUrl: fileUrl, // Keep the verified URL for reference
+        isPublic: isPublicBucket
       }
     };
 
@@ -438,7 +519,7 @@ export class MediaService {
     
     const { data: mediaItem, error: fetchError } = await supabase
       .from('be_media_items')
-      .select('file_path, category')
+      .select('file_path, category, metadata')
       .eq('id', mediaId)
       .single();
 
@@ -449,12 +530,16 @@ export class MediaService {
       throw new Error(`Failed to fetch media item: ${fetchError.message}`);
     }
 
-    const bucketName = getStorageBucket(mediaItem.category, { projectId: '', type: mediaItem.category });
+    const metadata = (mediaItem.metadata as Record<string, unknown>) || {};
+    const bucketName = (metadata.bucketName as string) || getStorageBucket(mediaItem.category, { projectId: '', type: mediaItem.category });
+    
+    // Extract storage path from metadata, fallback to file_path for backward compatibility
+    const storagePath = (metadata.storagePath as string) || mediaItem.file_path;
 
     // Non-blocking storage deletion for better UX
     const storagePromise = supabase.storage
       .from(bucketName)
-      .remove([mediaItem.file_path])
+      .remove([storagePath])
       .then(({ error }) => {
         if (error) console.warn(`Storage deletion failed for ${mediaId}:`, error);
       });
@@ -477,7 +562,7 @@ export class MediaService {
    */
   static async update(
     mediaId: string, 
-    updates: Partial<Pick<MediaItem, 'name' | 'description'>>
+    updates: Partial<Pick<MediaItem, 'name' | 'description' | 'category' | 'metadata'>>
   ): Promise<MediaItem> {
     if (!mediaId?.trim()) {
       throw new Error('Media ID is required for update');
@@ -508,11 +593,18 @@ export class MediaService {
       throw new Error(`Update failed: ${error.message}`);
     }
     
-    return mediaItem;
+    // Transform the returned data to include computed properties
+    const transformedItem = {
+      ...mediaItem,
+      url: mediaItem.file_path,
+      size: mediaItem.file_size_bytes
+    };
+    
+    return transformedItem;
   }
 
   /**
-   * Get signed URL with optimized caching
+   * Get media URL - returns stored complete URL or generates new signed URL for private buckets
    */
   static async getUrl(mediaId: string, expiresIn = 3600): Promise<string> {
     if (!mediaId?.trim()) {
@@ -521,7 +613,7 @@ export class MediaService {
     
     const { data: mediaItem, error } = await supabase
       .from('be_media_items')
-      .select('file_path, category')
+      .select('file_path, category, metadata')
       .eq('id', mediaId)
       .single();
 
@@ -532,20 +624,66 @@ export class MediaService {
       throw new Error(`Failed to fetch media item: ${error.message}`);
     }
 
-    const bucketName = getStorageBucket(mediaItem.category, { projectId: '', type: mediaItem.category });
+    const metadata = (mediaItem.metadata as Record<string, unknown>) || {};
+    const bucketName = (metadata.bucketName as string) || getStorageBucket(mediaItem.category, { projectId: '', type: mediaItem.category });
+    const storagePath = (metadata.storagePath as string);
+    const isPublic = metadata.isPublic === true || bucketName === 'user_profiles' || bucketName === STORAGE_BUCKETS.profile;
+
+    // For public buckets (user_profiles), file_path contains the complete public URL
+    if (isPublic) {
+      // file_path now always contains complete URL for public buckets
+      if (mediaItem.file_path.startsWith('http')) {
+        return mediaItem.file_path;
+      }
+      
+      // Fallback: generate public URL using storage path if available
+      if (storagePath) {
+        const { data: urlData } = supabase.storage
+          .from(bucketName)
+          .getPublicUrl(storagePath);
+        
+        if (urlData?.publicUrl) {
+          return urlData.publicUrl;
+        }
+      }
+      
+      throw new Error('Failed to generate public URL');
+    }
+
+    // For private buckets (PHOTO, VIDEO, DOCUMENT), check if stored URL is still valid
+    // If file_path contains a complete signed URL, we can return it if it's not expired
+    if (mediaItem.file_path.startsWith('http')) {
+      // For private buckets, always generate a new signed URL to ensure it's not expired
+      // Use storagePath from metadata for this operation
+      if (storagePath) {
+        const { data, error: urlError } = await supabase.storage
+          .from(bucketName)
+          .createSignedUrl(storagePath, expiresIn);
+        
+        if (!urlError && data?.signedUrl) {
+          return data.signedUrl;
+        }
+      }
+    }
+
+    // Fallback: generate signed URL using storage path
+    if (!storagePath) {
+      throw new Error('Missing storage path information for private bucket file');
+    }
+
     const { data, error: urlError } = await supabase.storage
       .from(bucketName)
-      .createSignedUrl(mediaItem.file_path, expiresIn);
+      .createSignedUrl(storagePath, expiresIn);
     
     if (urlError) {
-      throw new Error(`Failed to generate URL: ${urlError.message}`);
+      throw new Error(`Failed to generate signed URL: ${urlError.message}`);
     }
     
     return data.signedUrl;
   }
 
   /**
-   * Get project media with optimized queries
+   * Get project media with optimized queries and computed properties
    */
   static async getProjectMedia(projectId: string, category?: MediaCategory): Promise<MediaItem[]> {
     if (!projectId?.trim()) {
@@ -569,7 +707,14 @@ export class MediaService {
       throw new Error(`Failed to fetch media: ${error.message}`);
     }
     
-    return data || [];
+    // Transform data to include computed properties for UI
+    const mediaItems = (data || []).map(item => ({
+      ...item,
+      url: item.file_path, // Use file_path as URL (it now contains complete URLs)
+      size: item.file_size_bytes // Alias for UI components
+    }));
+    
+    return mediaItems;
   }
 
   /**
@@ -649,7 +794,44 @@ export class MediaService {
   }
   
   /**
-   * Get service health status
+   * Get available storage buckets based on media type
+   */
+  static getAvailableBuckets(): typeof STORAGE_BUCKETS {
+    return { ...STORAGE_BUCKETS };
+  }
+
+  /**
+   * Validate bucket configuration - ensures all required buckets exist
+   */
+  static async validateBucketConfiguration(): Promise<{ valid: boolean; missing: string[]; errors: string[] }> {
+    const requiredBuckets = Object.values(STORAGE_BUCKETS);
+    const missing: string[] = [];
+    const errors: string[] = [];
+
+    for (const bucketName of requiredBuckets) {
+      try {
+        const { data, error } = await supabase.storage.from(bucketName).list('', { limit: 1 });
+        if (error) {
+          if (error.message.includes('bucket does not exist') || error.message.includes('not found')) {
+            missing.push(bucketName);
+          } else {
+            errors.push(`Bucket ${bucketName}: ${error.message}`);
+          }
+        }
+      } catch (error) {
+        errors.push(`Bucket ${bucketName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+
+    return {
+      valid: missing.length === 0 && errors.length === 0,
+      missing,
+      errors
+    };
+  }
+
+  /**
+   * Get service health status with enhanced bucket validation
    */
   static async healthCheck(): Promise<{ status: 'healthy' | 'degraded' | 'unhealthy'; details: string }> {
     try {
@@ -659,10 +841,14 @@ export class MediaService {
         return { status: 'degraded', details: 'User not authenticated' };
       }
       
-      // Quick storage check
-      const { error } = await supabase.storage.from('PHOTO').list('', { limit: 1 });
-      if (error) {
-        return { status: 'unhealthy', details: `Storage error: ${error.message}` };
+      // Validate bucket configuration
+      const bucketValidation = await this.validateBucketConfiguration();
+      if (!bucketValidation.valid) {
+        const issues = [
+          ...bucketValidation.missing.map(b => `Missing bucket: ${b}`),
+          ...bucketValidation.errors
+        ];
+        return { status: 'unhealthy', details: `Bucket issues: ${issues.join(', ')}` };
       }
       
       return { status: 'healthy', details: 'All systems operational' };

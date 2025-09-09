@@ -101,7 +101,7 @@ BEGIN
     IF NEW.is_active = true THEN
         UPDATE construction_mgr.ai_generated_plan
         SET is_active = false, updated_at = CURRENT_TIMESTAMP
-        WHERE project_id = NEW.project_id AND id != COALESCE(NEW.id, '00000000-0000-0000-0000-000000000000'::uuid);
+        WHERE project_id = NEW.project_id AND (NEW.id IS NULL OR id != NEW.id);
     END IF;
     
     RETURN NEW;

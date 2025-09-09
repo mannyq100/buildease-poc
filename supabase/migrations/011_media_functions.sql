@@ -5,7 +5,54 @@
 -- STORAGE ACCESS FUNCTIONS
 -- =============================================================================
 
--- Simplified helper function for storage access
+-- Safe UUID casting function
+CREATE OR REPLACE FUNCTION private.safe_uuid_cast(input_text TEXT)
+RETURNS UUID AS $$
+BEGIN
+    IF input_text IS NULL OR length(trim(input_text)) = 0 THEN
+        RETURN NULL;
+    END IF;
+    
+    -- Validate UUID format
+    IF input_text !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN
+        RETURN NULL;
+    END IF;
+    
+    RETURN input_text::UUID;
+EXCEPTION
+    WHEN invalid_text_representation THEN
+        RETURN NULL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Path validation function
+CREATE OR REPLACE FUNCTION private.validate_storage_path(file_path TEXT)
+RETURNS BOOLEAN AS $$
+BEGIN
+    IF file_path IS NULL OR length(trim(file_path)) = 0 THEN
+        RETURN FALSE;
+    END IF;
+    
+    -- Reject paths with traversal sequences
+    IF file_path ~ '\.\./|/\.\.|/\./|^\./' THEN
+        RETURN FALSE;
+    END IF;
+    
+    -- Reject encoded traversal attempts
+    IF file_path ~ '%2e%2e|%2f%2e%2e|%252e%252e' THEN
+        RETURN FALSE;
+    END IF;
+    
+    -- Reject dangerous characters
+    IF file_path ~ '\x00|[\x01-\x1f\x7f-\x9f]' THEN
+        RETURN FALSE;
+    END IF;
+    
+    RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Secure storage access function
 CREATE OR REPLACE FUNCTION private.has_storage_access(
     bucket_name TEXT, 
     file_path TEXT, 
@@ -14,114 +61,56 @@ CREATE OR REPLACE FUNCTION private.has_storage_access(
 RETURNS BOOLEAN AS $$
 DECLARE
     path_parts TEXT[];
-    has_access BOOLEAN := FALSE;
-    has_project_access BOOLEAN := FALSE;
-    project_id_str TEXT;
+    project_id_uuid UUID;
 BEGIN
-    -- Handle null user
     IF user_id IS NULL THEN
         RETURN FALSE;
     END IF;
     
-    -- Parse file path based on new unified media schema
-    path_parts := string_to_array(file_path, '/');
-    
-    -- For user_profiles: {user_id}/filename OR {user_id}/projects/{project_id}/{category}/filename
-    IF bucket_name = 'user_profiles' THEN
-        -- Profile files: {user_id}/filename
-        IF array_length(path_parts, 1) = 2 AND path_parts[1] = has_storage_access.user_id::text THEN
-            RETURN TRUE;
-        END IF;
-        
-        -- Project files: {user_id}/projects/{project_id}/{category}/filename
-        IF array_length(path_parts, 1) >= 5 
-           AND path_parts[1] = has_storage_access.user_id::text 
-           AND path_parts[2] = 'projects' THEN
-            -- Check if user has access to the project
-            SELECT EXISTS(
-                SELECT 1 FROM construction_mgr.be_project_member pm 
-                WHERE pm.project_id::text = path_parts[3] 
-                AND pm.user_id = has_storage_access.user_id
-            ) OR EXISTS(
-                SELECT 1 FROM construction_mgr.be_project p 
-                WHERE p.id::text = path_parts[3] 
-                AND p.owner_id = has_storage_access.user_id
-            ) INTO has_project_access;
-            
-            RETURN has_project_access;
-        END IF;
-        
+    -- Validate path security first
+    IF NOT private.validate_storage_path(file_path) THEN
         RETURN FALSE;
     END IF;
     
-    -- For PHOTO bucket: {project_id}/{category}/filename
-    IF bucket_name = 'PHOTO' THEN
-        -- Expected format: {project_id}/{category}/filename
-        IF array_length(path_parts, 1) < 3 THEN
+    path_parts := string_to_array(file_path, '/');
+    
+    -- User profile bucket: {user_id}/filename (exact match)
+    IF bucket_name = 'user_profiles' THEN
+        IF array_length(path_parts, 1) != 2 THEN
             RETURN FALSE;
         END IF;
         
-        -- First part is project_id
-        project_id_str := path_parts[1];
-        RETURN private.has_project_access_direct(project_id_str::UUID, has_storage_access.user_id);
+        IF path_parts[1] != user_id::text THEN
+            RETURN FALSE;
+        END IF;
+        
+        -- Ensure filename doesn't contain dangerous characters
+        IF path_parts[2] ~ '[./\\]' THEN
+            RETURN FALSE;
+        END IF;
+        
+        RETURN TRUE;
     END IF;
     
-    -- For VIDEO bucket: {project_id}/{category}/filename
-    IF bucket_name = 'VIDEO' THEN
-        -- Expected format: {project_id}/{category}/filename
+    -- Media buckets (PHOTO, VIDEO, DOCUMENT): {project_id}/category/filename
+    IF bucket_name IN ('PHOTO', 'VIDEO', 'DOCUMENT') THEN
         IF array_length(path_parts, 1) < 3 THEN
             RETURN FALSE;
         END IF;
         
-        -- First part is project_id
-        project_id_str := path_parts[1];
-        RETURN private.has_project_access_direct(project_id_str::UUID, has_storage_access.user_id);
-    END IF;
-    
-    -- For DOCUMENT bucket: {project_id}/{category}/filename
-    IF bucket_name = 'DOCUMENT' THEN
-        -- Expected format: {project_id}/{category}/filename
-        IF array_length(path_parts, 1) < 3 THEN
+        -- Safe UUID casting for project ID
+        project_id_uuid := private.safe_uuid_cast(path_parts[1]);
+        IF project_id_uuid IS NULL THEN
             RETURN FALSE;
         END IF;
         
-        -- First part is project_id
-        project_id_str := path_parts[1];
-        RETURN private.has_project_access_direct(project_id_str::UUID, has_storage_access.user_id);
+        RETURN private.has_project_access_direct(project_id_uuid, user_id);
     END IF;
     
     RETURN FALSE;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Cleanup function for debugging (optional)
-CREATE OR REPLACE FUNCTION construction_mgr.debug_storage_access(
-    p_bucket_id TEXT,
-    p_file_path TEXT,
-    p_user_id UUID DEFAULT auth.uid()
-)
-RETURNS TABLE (
-    has_access BOOLEAN,
-    path_structure TEXT[],
-    bucket_exists BOOLEAN,
-    error_message TEXT
-)
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        private.has_storage_access(p_bucket_id, p_file_path, p_user_id) as has_access,
-        string_to_array(p_file_path, '/') as path_structure,
-        EXISTS(SELECT 1 FROM storage.buckets WHERE id = p_bucket_id) as bucket_exists,
-        CASE 
-            WHEN p_user_id IS NULL THEN 'User not authenticated'
-            WHEN NOT EXISTS(SELECT 1 FROM storage.buckets WHERE id = p_bucket_id) THEN 'Bucket does not exist'
-            ELSE 'OK'
-        END as error_message;
-END;
-$$;
 
 -- =============================================================================
 -- MEDIA STATISTICS FUNCTIONS
@@ -273,7 +262,7 @@ BEGIN
         WHEN 'VIDEO' THEN
             RETURN ARRAY['progress_video'];
         WHEN 'DOCUMENT' THEN
-            RETURN ARRAY['receipt', 'report', 'contract', 'permit', 'invoice', 'blueprint', 'other'];
+            RETURN ARRAY['receipt', 'report', 'contract', 'permit', 'invoice', 'drawing', 'other_document'];
         ELSE
             RETURN ARRAY[]::TEXT[]; -- Empty array for invalid types
     END CASE;
@@ -284,8 +273,7 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 -- GRANT PERMISSIONS
 -- =============================================================================
 
--- Grant permissions for simplified media functions
-GRANT EXECUTE ON FUNCTION construction_mgr.debug_storage_access TO authenticated;
+-- Grant permissions for media functions (debug function removed from public access)
 GRANT EXECUTE ON FUNCTION construction_mgr.get_project_media_stats TO authenticated;
 GRANT EXECUTE ON FUNCTION construction_mgr.search_project_media TO authenticated;
 GRANT EXECUTE ON FUNCTION construction_mgr.get_media_type_counts TO authenticated;

@@ -11,7 +11,7 @@ interface MediaGridProps {
   items: MediaItem[];
   onItemClick: (item: MediaItem, e: React.MouseEvent) => void;
   onDelete: (item: MediaItem) => Promise<void>;
-  onSetAsProfile: (imageUrl: string) => void;
+  onSetAsProfile: (mediaId: string) => void;
   onDownload: (item: MediaItem) => Promise<void>;
   permissions: {
     canDelete: (item: MediaItem) => boolean;

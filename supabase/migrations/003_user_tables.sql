@@ -49,25 +49,7 @@ CREATE INDEX IF NOT EXISTS idx_audit_entity ON construction_mgr.be_audit_log (en
 CREATE INDEX IF NOT EXISTS idx_audit_action ON construction_mgr.be_audit_log (action);
 CREATE INDEX IF NOT EXISTS idx_audit_details ON construction_mgr.be_audit_log USING gin (details);
 
-CREATE TABLE construction_mgr.be_project_permission (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  project_id UUID NOT NULL,
-  user_id UUID NOT NULL,
-  permission construction_mgr.permission_type NOT NULL,
-  granted_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  granted_by UUID NOT NULL,
-  active BOOLEAN NOT NULL DEFAULT TRUE,
-  CONSTRAINT fk_permission_user FOREIGN KEY (user_id) REFERENCES construction_mgr.be_user(id) ON DELETE CASCADE,
-  CONSTRAINT fk_permission_granted_by FOREIGN KEY (granted_by) REFERENCES construction_mgr.be_user(id),
-  CONSTRAINT unique_user_project_permission UNIQUE (project_id, user_id, permission)
-);
-
-CREATE INDEX IF NOT EXISTS idx_permission_project ON construction_mgr.be_project_permission(project_id);
-CREATE INDEX IF NOT EXISTS idx_permission_user ON construction_mgr.be_project_permission(user_id);
-CREATE INDEX IF NOT EXISTS idx_permission_type ON construction_mgr.be_project_permission(permission);
-CREATE INDEX IF NOT EXISTS idx_permission_active ON construction_mgr.be_project_permission(active);
-CREATE INDEX IF NOT EXISTS idx_project_permission_user_project ON construction_mgr.be_project_permission (user_id, project_id);
-CREATE INDEX IF NOT EXISTS idx_permission_financial ON construction_mgr.be_project_permission (project_id, user_id) WHERE permission IN ('VIEW_FINANCIALS', 'VIEW_BUDGET') AND active = TRUE;
+-- Note: be_project_permission table moved to 004_project_tables.sql due to dependency on be_project
 
 CREATE TABLE construction_mgr.be_notification (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

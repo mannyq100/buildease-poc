@@ -509,9 +509,9 @@ CREATE POLICY "Users can update own activities"
 
 -- Service role can manage all activities
 CREATE POLICY "Service role can manage project activities" 
-    ON construction_mgr.be_project_activity FOR ALL
-    USING (auth.jwt() ->> 'role' = 'service_role')
-    WITH CHECK (auth.jwt() ->> 'role' = 'service_role');
+    ON construction_mgr.be_project_activity FOR ALL TO service_role
+    USING (true)
+    WITH CHECK (true);
 
 -- =============================================================================
 -- FINANCIAL TRANSACTION TABLE POLICIES
@@ -671,10 +671,11 @@ CREATE POLICY "Project owners can manage AI plan jobs"
         private.is_project_owner_direct(project_id, auth.uid())
     );
 
-CREATE POLICY "System can create and update AI plan jobs"
+CREATE POLICY "Service role can manage AI plan jobs"
     ON construction_mgr.ai_plan_jobs
-    FOR ALL
-    USING (true);
+    FOR ALL TO service_role
+    USING (true)
+    WITH CHECK (true);
 
 -- =============================================================================
 -- AI GENERATED PLAN TABLE POLICIES
@@ -687,20 +688,28 @@ ALTER TABLE construction_mgr.ai_generated_plan ENABLE ROW LEVEL SECURITY;
 -- We can add more granular policies here if needed.
 
 -- =============================================================================
--- STORAGE BUCKET POLICIES - Updated for Unified Media Schema
+-- STORAGE POLICIES - Individual Media Type Buckets
 -- =============================================================================
 
--- RLS is already enabled on storage.objects by Supabase
--- ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+-- Enable RLS on storage.buckets (handled by Supabase automatically)
 
--- 1. USER_PROFILES BUCKET (public read, user manages own files)
+-- Service role manages buckets  
+CREATE POLICY "Service role manages buckets"
+ON storage.buckets FOR ALL TO service_role
+USING (true) WITH CHECK (true);
+
+-- Users can view allowed buckets
+CREATE POLICY "Users can view allowed buckets"
+ON storage.buckets FOR SELECT TO authenticated
+USING (id IN ('user_profiles', 'PHOTO', 'VIDEO', 'DOCUMENT'));
+
+-- Storage object policies for user profiles (public bucket)
 CREATE POLICY "Public read access for user profiles"
 ON storage.objects FOR SELECT
 USING (bucket_id = 'user_profiles');
 
-CREATE POLICY "Users can manage their own profile pictures"
-ON storage.objects FOR ALL
-TO authenticated
+CREATE POLICY "Users manage their profile files"
+ON storage.objects FOR ALL TO authenticated
 USING (
     bucket_id = 'user_profiles' 
     AND private.has_storage_access('user_profiles', name, auth.uid())
@@ -710,18 +719,8 @@ WITH CHECK (
     AND private.has_storage_access('user_profiles', name, auth.uid())
 );
 
--- 2. PHOTO BUCKET (project-based access)  
-CREATE POLICY "Project members can view PHOTO bucket"
-ON storage.objects FOR SELECT
-TO authenticated
-USING (
-    bucket_id = 'PHOTO'
-    AND private.has_storage_access('PHOTO', name, auth.uid())
-);
-
-CREATE POLICY "Project members can manage PHOTO bucket"
-ON storage.objects FOR ALL
-TO authenticated
+CREATE POLICY "Project members manage PHOTO files"
+ON storage.objects FOR ALL TO authenticated
 USING (
     bucket_id = 'PHOTO'
     AND private.has_storage_access('PHOTO', name, auth.uid())
@@ -731,18 +730,8 @@ WITH CHECK (
     AND private.has_storage_access('PHOTO', name, auth.uid())
 );
 
--- 3. VIDEO BUCKET (project-based access)
-CREATE POLICY "Project members can view VIDEO bucket"
-ON storage.objects FOR SELECT
-TO authenticated
-USING (
-    bucket_id = 'VIDEO'
-    AND private.has_storage_access('VIDEO', name, auth.uid())
-);
-
-CREATE POLICY "Project members can manage VIDEO bucket"
-ON storage.objects FOR ALL
-TO authenticated
+CREATE POLICY "Project members manage VIDEO files"
+ON storage.objects FOR ALL TO authenticated
 USING (
     bucket_id = 'VIDEO'
     AND private.has_storage_access('VIDEO', name, auth.uid())
@@ -752,18 +741,8 @@ WITH CHECK (
     AND private.has_storage_access('VIDEO', name, auth.uid())
 );
 
--- 4. DOCUMENT BUCKET (project-based access)
-CREATE POLICY "Project members can view DOCUMENT bucket"
-ON storage.objects FOR SELECT
-TO authenticated
-USING (
-    bucket_id = 'DOCUMENT'
-    AND private.has_storage_access('DOCUMENT', name, auth.uid())
-);
-
-CREATE POLICY "Project members can manage DOCUMENT bucket"
-ON storage.objects FOR ALL
-TO authenticated
+CREATE POLICY "Project members manage DOCUMENT files"
+ON storage.objects FOR ALL TO authenticated
 USING (
     bucket_id = 'DOCUMENT'
     AND private.has_storage_access('DOCUMENT', name, auth.uid())

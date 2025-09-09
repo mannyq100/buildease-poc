@@ -17,7 +17,7 @@ interface MediaItemCardProps {
   item: MediaItem;
   onClick: (item: MediaItem, e: React.MouseEvent) => void;
   onDelete: (item: MediaItem) => Promise<void>;
-  onSetAsProfile: (imageUrl: string) => void;
+  onSetAsProfile: (mediaId: string) => void;
   onDownload: (item: MediaItem) => Promise<void>;
   permissions: {
     canDelete: (item: MediaItem) => boolean;
@@ -184,7 +184,7 @@ export const MediaItemCard = memo<MediaItemCardProps>(({
               
               {canSetAsProfile && item.category !== 'profile' && (
                 <DropdownMenuItem onClick={() => {
-                  onSetAsProfile(item.url);
+                  onSetAsProfile(item.id);
                 }}>
                   <Star className="h-4 w-4 mr-2" />
                   Set as Profile

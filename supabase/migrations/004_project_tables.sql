@@ -103,6 +103,31 @@ CREATE INDEX IF NOT EXISTS idx_project_member_covering
     INCLUDE (role, joined_at);
 
 -- =============================================================================
+-- PROJECT PERMISSIONS TABLE  
+-- =============================================================================
+
+CREATE TABLE construction_mgr.be_project_permission (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID NOT NULL,
+  user_id UUID NOT NULL,
+  permission construction_mgr.permission_type NOT NULL,
+  granted_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  granted_by UUID NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  CONSTRAINT fk_permission_project FOREIGN KEY (project_id) REFERENCES construction_mgr.be_project(id) ON DELETE CASCADE,
+  CONSTRAINT fk_permission_user FOREIGN KEY (user_id) REFERENCES construction_mgr.be_user(id) ON DELETE CASCADE,
+  CONSTRAINT fk_permission_granted_by FOREIGN KEY (granted_by) REFERENCES construction_mgr.be_user(id),
+  CONSTRAINT unique_user_project_permission UNIQUE (project_id, user_id, permission)
+);
+
+CREATE INDEX IF NOT EXISTS idx_permission_project ON construction_mgr.be_project_permission(project_id);
+CREATE INDEX IF NOT EXISTS idx_permission_user ON construction_mgr.be_project_permission(user_id);
+CREATE INDEX IF NOT EXISTS idx_permission_type ON construction_mgr.be_project_permission(permission);
+CREATE INDEX IF NOT EXISTS idx_permission_active ON construction_mgr.be_project_permission(active);
+CREATE INDEX IF NOT EXISTS idx_project_permission_user_project ON construction_mgr.be_project_permission (user_id, project_id);
+CREATE INDEX IF NOT EXISTS idx_permission_financial ON construction_mgr.be_project_permission (project_id, user_id) WHERE permission IN ('VIEW_FINANCIALS', 'VIEW_BUDGET') AND active = TRUE;
+
+-- =============================================================================
 -- PROJECT PHASE TABLE
 -- =============================================================================
 
@@ -124,7 +149,7 @@ CREATE TABLE construction_mgr.be_phase (
     budget JSONB NOT NULL DEFAULT '{
       "allocated": 0,
       "spent": 0,
-      "currency": "GHS"
+      "currency": "USD"
     }',
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -5,24 +5,7 @@
 -- HELPER FUNCTIONS
 -- =============================================================================
 
--- Helper function to get the real user ID (for shadow users)
-CREATE OR REPLACE FUNCTION construction_mgr.get_real_user_id()
-RETURNS UUID AS $$
-BEGIN
-    -- For now, just return auth.uid() - can be enhanced later for shadow users
-    RETURN auth.uid();
-END;
-$$ LANGUAGE plpgsql STABLE;
-
--- Helper function to get the current authenticated user's UUID (enhanced for shadow users)
-CREATE OR REPLACE FUNCTION construction_mgr.get_auth_user_id()
-RETURNS UUID AS $$
-BEGIN
-    -- This will be replaced by the simplified auth_user_id() function
-    -- which handles shadow users properly
-    RETURN COALESCE(construction_mgr.get_real_user_id(), auth.uid());
-END;
-$$ LANGUAGE plpgsql STABLE;
+-- Note: Redundant user ID helper functions removed. Use auth.uid() directly.
 
 -- =============================================================================
 -- DIRECT ACCESS FUNCTIONS (TIER 1) - Used by RLS policies to avoid recursion
