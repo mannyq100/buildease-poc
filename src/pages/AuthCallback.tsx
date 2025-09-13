@@ -22,7 +22,7 @@ export default function AuthCallback() {
         if (session) {
           // Already have a session, redirect to dashboard
           // Session found, redirecting to dashboard
-          navigate('/dashboard')
+          navigate('/projects')
         } else {
           // No session yet, try to exchange the code if present
           if (hashParams.get('access_token') || queryParams.get('code')) {
@@ -47,7 +47,7 @@ export default function AuthCallback() {
             // Successfully authenticated, redirecting
             
             // Get the return URL from localStorage if it exists
-            const returnUrl = localStorage.getItem('returnUrl') || '/dashboard'
+            const returnUrl = localStorage.getItem('returnUrl') || '/projects'
             // Clear the return URL from localStorage
             localStorage.removeItem('returnUrl')
             

@@ -51,7 +51,7 @@ export default function Signup() {
 
   useEffect(() => {
     if (auth.isAuthenticated) {
-      navigate('/dashboard')
+      navigate('/projects')
     }
   }, [auth.isAuthenticated, navigate])
 
@@ -118,7 +118,7 @@ export default function Signup() {
   }
 
   if (auth.isAuthenticated) {
-    navigate('/dashboard')
+    navigate('/projects')
     return null
   }
 

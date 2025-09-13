@@ -37,18 +37,31 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
         }
       })
       
+      // Add message listener for service worker communication
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data?.type === 'CACHE_UPDATED') {
+          console.log('[Main] Cache updated by service worker')
+        }
+      })
+      
       // Preload critical chunks in service worker if on good connection
-      const networkQuality = bundleOptimization.monitor.getMetrics().networkQuality
-      if (networkQuality === 'excellent' || networkQuality === 'good') {
-        registration.active?.postMessage({
-          type: 'PRELOAD_CRITICAL_CHUNKS',
-          payload: {
-            urls: [
-              '/js/react-vendor-*.js',
-              '/js/ui-vendor-*.js'
-            ]
+      if (registration.active) {
+        const networkQuality = bundleOptimization.monitor.getMetrics().networkQuality
+        if (networkQuality === 'excellent' || networkQuality === 'good') {
+          try {
+            registration.active.postMessage({
+              type: 'PRELOAD_CRITICAL_CHUNKS',
+              payload: {
+                urls: [
+                  '/js/react-vendor-*.js',
+                  '/js/ui-vendor-*.js'
+                ]
+              }
+            })
+          } catch (error) {
+            console.warn('[Main] Failed to send preload message to service worker:', error)
           }
-        })
+        }
       }
       
     } catch (error) {

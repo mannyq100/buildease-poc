@@ -38,8 +38,8 @@ export function ProjectsErrorBoundary({
     }
   };
   
-  const handleGoToDashboard = () => {
-    navigate('/dashboard', { replace: true });
+  const handleGoToProjects = () => {
+    navigate('/projects', { replace: true });
   };
   
   const _handleRefreshPage = () => {
@@ -59,7 +59,7 @@ export function ProjectsErrorBoundary({
   }
   
   // Full page error handling
-  const errorInfo = createProjectErrorInfo(error, handleRetry, handleGoToDashboard);
+  const errorInfo = createProjectErrorInfo(error, handleRetry, handleGoToProjects);
   
   return (
     <div className="flex items-center justify-center min-h-[60vh] p-4">

@@ -32,9 +32,8 @@ import '@/styles/dark-theme.css';
 import { AppLayout } from "@/components/layout/AppLayout";
 
 // Page Components - Lazy loaded for better performance and code splitting
-const Dashboard = lazy(() => import("./pages/Dashboard").then(m => ({ default: m.Dashboard })));
+// Dashboard removed - now redirects to Projects page
 const ProjectDetails = lazy(() => import("./pages/ProjectDetails/ProjectDetailsPage").then(m => ({ default: m.ProjectDetailsPage })));
-const PhaseDetails = lazy(() => import("./pages/PhaseDetails"));
 const GeneratedPlan = lazy(() => import("./pages/GeneratedPlan"));
 const TaskPlanningSetup = lazy(() => import("./pages/TaskPlanningSetup"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -86,15 +85,20 @@ function AuthRedirector() {
   const location = useLocation();
 
   useEffect(() => {
-    // If user is authenticated and on the landing page, redirect to dashboard
+    // If user is authenticated and on the landing page, redirect to projects
     if (!isLoading && isAuthenticated && location.pathname === '/') {
-      navigate('/dashboard', { replace: true });
+      navigate('/projects', { replace: true });
     }
     
-    // If user is authenticated and trying to access login/signup pages, redirect to dashboard
+    // If user is authenticated and trying to access login/signup pages, redirect to projects
     if (!isLoading && isAuthenticated && 
         (location.pathname === '/login' || location.pathname === '/signup')) {
-      navigate('/dashboard', { replace: true });
+      navigate('/projects', { replace: true });
+    }
+
+    // If user is trying to access old dashboard route, redirect to projects
+    if (!isLoading && isAuthenticated && location.pathname === '/dashboard') {
+      navigate('/projects', { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate, location.pathname]);
 
@@ -147,19 +151,15 @@ function App() {
                           <AppLayout />
                         </ProtectedRoute>
                       }>
-                        {/* Dashboard (default protected route) */}
-                        <Route path="dashboard" element={<Dashboard />} />
+                        {/* Dashboard route now redirects to Projects (handled in AuthRedirector) */}
                         
-                        {/* Project management routes */}
+                        {/* Project management routes - Projects is now the main page */}
                         <Route path="projects" element={<Projects />} />
                         <Route path="project/:slug" element={<ProjectDetails />} />
                         <Route path="projects/new" element={<CreateProject />} />
 
                         
                         {/* Phase management routes */}
-                        <Route path="phase-details" element={<PhaseDetails />} />
-                        <Route path="phase/:id" element={<PhaseDetails />} />
-                        <Route path="phases/:phaseId" element={<PhaseDetails />} />
                         <Route path="generate-tasks" element={<TaskPlanningSetup />} />
                         <Route path="generated-plan" element={<GeneratedPlan />} />
                         

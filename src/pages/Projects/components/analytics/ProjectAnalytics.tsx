@@ -1,3 +1,8 @@
+/**
+ * ProjectAnalytics - Cross-project analytics component with real Supabase data
+ * Migrated from DataVisualization with enhanced functionality for project portfolio analysis
+ */
+
 import { useState, useMemo, useCallback } from 'react';
 import {
   ResponsiveContainer,
@@ -18,10 +23,8 @@ import {
   AreaChart
 } from 'recharts';
 import { Button } from '@/components/ui/button';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon, SlidersHorizontal, Calendar, PanelTop } from 'lucide-react';
-import DashboardCard from './DashboardCard';
+import { BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon, PanelTop, TrendingUp, Loader2 } from 'lucide-react';
+import { useProjectAnalytics } from '../../hooks/useProjectAnalytics';
 
 import { 
   CHART_COLOR_ARRAY,
@@ -54,32 +57,14 @@ const _chartTheme = {
   }
 };
 
-interface DataVisualizationProps {
-  data: Record<string, unknown>[];
-  title: string;
-  description?: string;
-  xAxisKey?: string;
-  yAxisKeys?: string[];
-  pieKey?: string;
-  pieValueKey?: string;
-  showToggle?: boolean;
-  defaultChartType?: ChartType;
-  height?: number;
+interface ProjectAnalyticsProps {
   className?: string;
+  height?: number;
   colorScheme?: ColorScheme;
-  filters?: {
-    type: 'select' | 'dateRange' | 'search';
-    label: string;
-    options?: {value: string, label: string}[];
-    onChange: (value: string) => void;
-  }[];
+  defaultTab?: string;
 }
 
 type ChartDataItem = Record<string, string | number>;
-
-const _formatData = (_data: ChartDataItem[], _keys: string[]) => {
-  // ... existing implementation
-};
 
 interface TooltipProps {
   active?: boolean;
@@ -215,92 +200,101 @@ const renderActiveShape = (props: RenderActiveShapeProps) => {
   );
 };
 
-export function DataVisualization({
-  data,
-  title,
-  description,
-  xAxisKey = 'name',
-  yAxisKeys = ['value'],
-  pieKey = 'name',
-  pieValueKey = 'value',
-  showToggle = true,
-  defaultChartType = 'bar',
-  height = 300,
+export function ProjectAnalytics({
   className,
+  height = 300,
   colorScheme = 'primary',
-  filters = [],
-}: DataVisualizationProps) {
-  const [chartType, setChartType] = useState<ChartType>(defaultChartType);
+  defaultTab = 'progress'
+}: ProjectAnalyticsProps) {
+  const [activeTab, setActiveTab] = useState(defaultTab);
+  const [chartType, setChartType] = useState<ChartType>('bar');
   const [activeIndex, setActiveIndex] = useState(0);
   
   const darkMode = isDarkMode();
   const theme = getCurrentTheme();
   const colors = useMemo(() => getChartColors(colorScheme), [colorScheme]);
   
-  // Memoize the chart data to prevent unnecessary re-renders
-  const chartData = useMemo(() => data, [data]);
+  // Fetch real project analytics data
+  const { chartData, isLoading, error, refreshData } = useProjectAnalytics();
   
   // Move the onPieEnter callback inside the component
   const onPieEnter = useCallback((_: MouseEvent, index: number) => {
     setActiveIndex(index);
   }, []);
   
-  // Memoize filter UI to prevent unnecessary re-renders
-  const filtersUI = useMemo(() => {
-    if (filters.length === 0) return null;
-    
-    return (
-      <div className="flex flex-wrap gap-3 mb-4">
-        <div className="flex items-center">
-          <SlidersHorizontal className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filters:</span>
-        </div>
-        
-        {filters.map((filter, index) => (
-          <div key={index} className="flex-1 min-w-[120px] max-w-[240px]">
-            {filter.type === 'select' && (
-              <Select onValueChange={filter.onChange}>
-                <SelectTrigger className="h-8 text-xs bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700">
-                  <SelectValue placeholder={filter.label} />
-                </SelectTrigger>
-                <SelectContent>
-                  {filter.options?.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-            
-            {filter.type === 'search' && (
-              <Input 
-                placeholder={filter.label}
-                onChange={(e) => filter.onChange(e.target.value)}
-                className="h-8 text-xs bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700"
-              />
-            )}
-            
-            {filter.type === 'dateRange' && (
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-                <Input 
-                  placeholder={filter.label}
-                  type="date"
-                  onChange={(e) => filter.onChange(e.target.value)}
-                  className="h-8 text-xs pl-8 bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700"
-                />
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    );
-  }, [filters]);
-  
+  // Get current chart data based on active tab
+  const currentChartData = useMemo(() => {
+    switch (activeTab) {
+      case 'progress':
+        return chartData.projectProgress;
+      case 'budget':
+        return chartData.budgetTrend;
+      case 'tasks':
+        return chartData.taskStatus;
+      case 'materials':
+        return chartData.materialUsage;
+      default:
+        return chartData.projectProgress;
+    }
+  }, [activeTab, chartData]);
+
+  // Get chart configuration based on active tab
+  const chartConfig = useMemo(() => {
+    switch (activeTab) {
+      case 'progress':
+        return {
+          title: 'Project Progress',
+          description: 'Progress percentage across all projects',
+          xAxisKey: 'name',
+          yAxisKeys: ['value'],
+          defaultChartType: 'bar' as ChartType
+        };
+      case 'budget':
+        return {
+          title: 'Budget Trend',
+          description: 'Planned vs actual spending over time',
+          xAxisKey: 'name',
+          yAxisKeys: ['Planned', 'Actual'],
+          defaultChartType: 'area' as ChartType
+        };
+      case 'tasks':
+        return {
+          title: 'Task Status Distribution',
+          description: 'Status breakdown of all project tasks',
+          pieKey: 'name',
+          pieValueKey: 'value',
+          defaultChartType: 'pie' as ChartType
+        };
+      case 'materials':
+        return {
+          title: 'Project Type Distribution',
+          description: 'Distribution of projects by type',
+          pieKey: 'name',
+          pieValueKey: 'value',
+          defaultChartType: 'pie' as ChartType
+        };
+      default:
+        return {
+          title: 'Project Progress',
+          description: 'Progress percentage across all projects',
+          xAxisKey: 'name',
+          yAxisKeys: ['value'],
+          defaultChartType: 'bar' as ChartType
+        };
+    }
+  }, [activeTab]);
+
+  // Handle refresh
+  const handleRefresh = useCallback(async () => {
+    await refreshData();
+  }, [refreshData]);
+
   // Memoize chart toggle UI
   const chartToggleUI = useMemo(() => {
-    if (!showToggle) return null;
+    // For pie charts, don't show chart type toggles
+    if (chartConfig.defaultChartType === 'pie') {
+      return null;
+    }
     
     return (
       <div className="flex items-center gap-1" role="tablist" aria-label="Chart type selection">
@@ -352,41 +346,60 @@ export function DataVisualization({
           <PanelTop className="h-3.5 w-3.5" />
           <span className="sr-only">Area Chart</span>
         </Button>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className={cn(
-            "rounded-full", 
-            chartType === 'pie' ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" : ""
-          )}
-          onClick={() => setChartType('pie')}
-          title="Pie Chart"
-          role="tab"
-          aria-selected={chartType === 'pie'}
-          aria-controls="chart-view"
-        >
-          <PieChartIcon className="h-3.5 w-3.5" />
-          <span className="sr-only">Pie Chart</span>
-        </Button>
       </div>
     );
-  }, [showToggle, chartType]);
+  }, [chartType, chartConfig.defaultChartType]);
+  
+  // Compute active chart type based on chart config and current chart type
+  const activeChartType = useMemo(() => {
+    return chartConfig.defaultChartType === 'pie' ? 'pie' : chartType;
+  }, [chartConfig.defaultChartType, chartType]);
   
   // Memoize the chart content to prevent unnecessary re-renders
   const chartContent = useMemo(() => {
-    switch (chartType) {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <div className="flex items-center gap-2 text-gray-500">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span>Loading analytics...</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+          <p className="mb-2">Failed to load analytics data</p>
+          <Button variant="outline" size="sm" onClick={handleRefresh}>
+            Try Again
+          </Button>
+        </div>
+      );
+    }
+
+    if (!currentChartData || currentChartData.length === 0) {
+      return (
+        <div className="flex items-center justify-center h-64 text-gray-500">
+          <p>No data available for this chart</p>
+        </div>
+      );
+    }
+
+    switch (activeChartType) {
       case 'bar':
         return (
           <ResponsiveContainer width="100%" height={height}>
             <BarChart 
-              data={chartData} 
+              data={currentChartData} 
               margin={{ top: 10, right: 30, left: 0, bottom: 5 }}
               barGap={8}
               barCategoryGap={16}
               className="animate-in fade-in duration-700"
             >
               <defs>
-                {yAxisKeys.map((key, index) => (
+                {chartConfig.yAxisKeys?.map((key, index) => (
                   <linearGradient key={`gradient-${key}`} id={`gradient-${key}`} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={colors[index % colors.length]} stopOpacity={0.8}/>
                     <stop offset="95%" stopColor={colors[index % colors.length]} stopOpacity={0.4}/>
@@ -395,7 +408,7 @@ export function DataVisualization({
               </defs>
               <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700 opacity-50" />
               <XAxis 
-                dataKey={xAxisKey}
+                dataKey={chartConfig.xAxisKey}
                 tick={{ fontSize: 12 }}
                 tickLine={{ stroke: theme.gridColor }}
                 axisLine={{ stroke: theme.gridColor }}
@@ -416,7 +429,7 @@ export function DataVisualization({
                 iconType="circle" 
                 iconSize={8}
               />
-              {yAxisKeys.map((key, index) => (
+              {chartConfig.yAxisKeys?.map((key, index) => (
                 <Bar 
                   key={key} 
                   dataKey={key} 
@@ -438,13 +451,13 @@ export function DataVisualization({
         return (
           <ResponsiveContainer width="100%" height={height}>
             <LineChart 
-              data={chartData} 
+              data={currentChartData} 
               margin={{ top: 10, right: 30, left: 0, bottom: 5 }}
               className="animate-in fade-in duration-700"
             >
               <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700 opacity-50" />
               <XAxis 
-                dataKey={xAxisKey}
+                dataKey={chartConfig.xAxisKey}
                 tick={{ fontSize: 12 }}
                 tickLine={{ stroke: theme.gridColor }}
                 axisLine={{ stroke: theme.gridColor }}
@@ -462,7 +475,7 @@ export function DataVisualization({
                 iconType="circle" 
                 iconSize={8}
               />
-              {yAxisKeys.map((key, index) => (
+              {chartConfig.yAxisKeys?.map((key, index) => (
                 <Line 
                   key={key} 
                   type="monotone" 
@@ -485,12 +498,12 @@ export function DataVisualization({
         return (
           <ResponsiveContainer width="100%" height={height}>
             <AreaChart 
-              data={chartData} 
+              data={currentChartData} 
               margin={{ top: 10, right: 30, left: 0, bottom: 5 }}
               className="animate-in fade-in duration-700"
             >
               <defs>
-                {yAxisKeys.map((key, index) => (
+                {chartConfig.yAxisKeys?.map((key, index) => (
                   <linearGradient key={`area-gradient-${key}`} id={`area-gradient-${key}`} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={colors[index % colors.length]} stopOpacity={0.8}/>
                     <stop offset="95%" stopColor={colors[index % colors.length]} stopOpacity={0.1}/>
@@ -499,7 +512,7 @@ export function DataVisualization({
               </defs>
               <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700 opacity-50" />
               <XAxis 
-                dataKey={xAxisKey}
+                dataKey={chartConfig.xAxisKey}
                 tick={{ fontSize: 12 }}
                 tickLine={{ stroke: theme.gridColor }}
                 axisLine={{ stroke: theme.gridColor }}
@@ -517,7 +530,7 @@ export function DataVisualization({
                 iconType="circle" 
                 iconSize={8}
               />
-              {yAxisKeys.map((key, index) => (
+              {chartConfig.yAxisKeys?.map((key, index) => (
                 <Area 
                   key={key} 
                   type="monotone" 
@@ -545,22 +558,22 @@ export function DataVisualization({
               <Pie
                 activeIndex={activeIndex}
                 activeShape={renderActiveShape}
-                data={chartData}
+                data={currentChartData}
                 cx="50%"
                 cy="50%"
                 innerRadius={60}
                 outerRadius={80}
                 paddingAngle={2}
                 fill="#8884d8"
-                dataKey={pieValueKey}
-                nameKey={pieKey}
+                dataKey={chartConfig.pieValueKey}
+                nameKey={chartConfig.pieKey}
                 onMouseEnter={onPieEnter}
                 animationDuration={1500}
                 animationEasing="ease-out"
                 aria-label="Pie chart segments"
                 role="img"
               >
-                {chartData.map((entry, index) => (
+                {currentChartData.map((entry, index) => (
                   <Cell 
                     key={`cell-${index}`} 
                     fill={CHART_COLOR_ARRAY[index % CHART_COLOR_ARRAY.length]} 
@@ -582,27 +595,86 @@ export function DataVisualization({
           </ResponsiveContainer>
         );
     }
-  }, [chartType, chartData, height, xAxisKey, yAxisKeys, colors, theme, darkMode, pieKey, pieValueKey, activeIndex, onPieEnter]);
+  }, [activeChartType, currentChartData, height, chartConfig, colors, theme, darkMode, activeIndex, onPieEnter, isLoading, error, handleRefresh]);
   
   return (
-    <DashboardCard
-      variant="chart"
-      title={title}
-      subtitle={description}
-      className={cn("overflow-hidden", className)}
-      headerSlot={chartToggleUI}
-    >
-      <div 
-        className="p-4 pt-0" 
-        id="chart-view" 
-        role="tabpanel" 
-        aria-label={`${title} ${chartType} chart`}
-      >
-        {filtersUI}
-        {chartContent}
+    <div className={cn("bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-slate-200/60 overflow-hidden", className)}>
+      {/* Header */}
+      <div className="bg-gradient-to-r from-slate-50 to-white px-6 py-4 border-b border-slate-200/50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+              <TrendingUp className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-slate-900">Portfolio Analytics</h3>
+              <p className="text-sm text-slate-600">Cross-project insights and trends</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {chartToggleUI}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isLoading}
+              className="ml-2"
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <TrendingUp className="h-4 w-4" />
+              )}
+              <span className="ml-1 hidden sm:inline">Refresh</span>
+            </Button>
+          </div>
+        </div>
       </div>
-    </DashboardCard>
+
+      {/* Tab Navigation */}
+      <div className="px-6 py-3 border-b border-slate-200/50 bg-slate-50/50">
+        <div className="flex gap-1 overflow-x-auto">
+          {[
+            { id: 'progress', label: 'Progress', icon: BarChart3 },
+            { id: 'budget', label: 'Budget', icon: TrendingUp },
+            { id: 'tasks', label: 'Tasks', icon: PieChartIcon },
+            { id: 'materials', label: 'Types', icon: PieChartIcon }
+          ].map((tab) => (
+            <Button
+              key={tab.id}
+              variant={activeTab === tab.id ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "flex-shrink-0 min-h-[44px]",
+                activeTab === tab.id && "bg-blue-600 text-white shadow-md"
+              )}
+            >
+              <tab.icon className="h-4 w-4 mr-1.5" />
+              {tab.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Chart Content */}
+      <div className="p-6">
+        <div className="mb-4">
+          <h4 className="text-lg font-semibold text-slate-900">{chartConfig.title}</h4>
+          <p className="text-sm text-slate-600">{chartConfig.description}</p>
+        </div>
+        
+        <div 
+          className="w-full" 
+          id="chart-view" 
+          role="tabpanel" 
+          aria-label={`${chartConfig.title} chart`}
+        >
+          {chartContent}
+        </div>
+      </div>
+    </div>
   );
 }
 
-export default DataVisualization;
+export default ProjectAnalytics;

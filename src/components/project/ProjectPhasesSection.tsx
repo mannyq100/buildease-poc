@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus } from 'lucide-react';
 import { PhaseCard } from '../phases/PhaseCard';
-import { PhaseDetailsPanel } from '@/components/project/PhaseDetailsPanel';
 import { Phase } from '@/types/phase';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { fadeInUpVariants } from '@/utils/core/animations';
@@ -11,8 +10,6 @@ import { cn } from '@/utils/core/ui';
 
 interface ProjectPhasesSectionProps {
   phases: Phase[];
-  expandedPhase: number | null;
-  onToggleExpand: (phaseId: number) => void;
   onPhaseClick: (phaseId: number) => void;
   onAddTask: (phaseId: number, e: React.MouseEvent) => void;
   onAddPhase: () => void;
@@ -21,12 +18,9 @@ interface ProjectPhasesSectionProps {
 
 /**
  * ProjectPhasesSection - Displays the list of project phases with actions
- * Enhanced to show detailed phase information with tabs when expanded
  */
 export function ProjectPhasesSection({
   phases,
-  expandedPhase,
-  onToggleExpand,
   onPhaseClick,
   onAddTask,
   onAddPhase,
@@ -68,32 +62,14 @@ export function ProjectPhasesSection({
             ) : (
               <div className="grid gap-4 p-4">
                 {phases.map((phase) => (
-                  <div key={phase.id} className="space-y-4">
-                    <PhaseCard 
-                      phase={phase}
-                      isExpanded={expandedPhase === phase.id}
-                      onExpandToggle={onToggleExpand}
-                      onViewDetails={onPhaseClick}
-                      onAddTask={(e) => onAddTask(phase.id, e)}
-                      className={expandedPhase === phase.id ? 
-                        "ring-2 ring-blue-500/30 dark:ring-blue-500/20 shadow-md" : 
-                        ""}
-                    />
-                    
-                    {/* Render phase details panel if this phase is expanded */}
-                    {expandedPhase === phase.id && (
-                      <m.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <PhaseDetailsPanel 
-                          phaseId={phase.id}
-                          onClose={() => onToggleExpand(phase.id)}
-                        />
-                      </m.div>
-                    )}
-                  </div>
+                  <PhaseCard 
+                    key={phase.id}
+                    phase={phase}
+                    isExpanded={false}
+                    onExpandToggle={() => {}}
+                    onViewDetails={onPhaseClick}
+                    onAddTask={(e) => onAddTask(phase.id, e)}
+                  />
                 ))}
               </div>
             )}

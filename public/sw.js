@@ -407,7 +407,17 @@ self.addEventListener('message', (event) => {
       break;
     case 'GET_CACHE_STATUS':
       handleGetCacheStatus().then(status => {
-        event.ports[0]?.postMessage(status);
+        try {
+          if (event.ports[0]) {
+            event.ports[0].postMessage(status);
+          } else {
+            console.log('[ServiceWorker] Cache status ready:', status);
+          }
+        } catch (error) {
+          console.warn('[ServiceWorker] Failed to send cache status:', error);
+        }
+      }).catch(error => {
+        console.error('[ServiceWorker] Failed to get cache status:', error);
       });
       break;
   }

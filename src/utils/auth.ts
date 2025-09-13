@@ -85,7 +85,7 @@ export function getSocialLoginErrorMessage(provider: Provider, err: unknown): st
 export function parseRedirectParams(location: { search: string; state?: { from?: string } }) {
   const searchParams = new URLSearchParams(location.search)
   return {
-    from: location.state?.from || searchParams.get('from') || '/dashboard',
+    from: location.state?.from || searchParams.get('from') || '/projects',
     errorParam: searchParams.get('error'),
     errorMessage: searchParams.get('message')
   }

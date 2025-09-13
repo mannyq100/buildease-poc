@@ -82,7 +82,7 @@ export function AppLayout({ showBreadcrumbs = true, className, customBreadcrumbs
     return [
       {
         name: 'Home',
-        path: '/dashboard',
+        path: '/projects',
         icon: <Home className="h-4 w-4" />,
         active: false
       },

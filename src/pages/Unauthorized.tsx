@@ -30,7 +30,7 @@ export function Unauthorized() {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button asChild variant="default">
-              <Link to="/dashboard">Go to Dashboard</Link>
+              <Link to="/projects">Go to Projects</Link>
             </Button>
           </div>
         </div>

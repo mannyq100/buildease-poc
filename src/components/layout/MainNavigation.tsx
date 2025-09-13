@@ -6,7 +6,6 @@ import {
   LogOut,
   X,
   LayoutDashboard,
-  Briefcase,
   Calendar,
   Package,
   DollarSign,
@@ -86,8 +85,7 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ className, onCollapseCh
 
   // Main navigation items
   const navItems = [
-    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { label: 'Projects', path: '/projects', icon: Briefcase },
+    { label: 'Projects', path: '/projects', icon: LayoutDashboard },
     { label: 'Team', path: '/team', icon: Users },
     { label: 'Messages', path: '/messaging', icon: MessagesSquare },
     { label: 'Schedule', path: '/schedule', icon: Calendar },

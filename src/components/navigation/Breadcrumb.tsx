@@ -60,7 +60,7 @@ export const Breadcrumb: React.FC<BreadcrumbsProps> = ({
     
     // Always start with home
     const generatedItems: BreadcrumbPath[] = [
-      { name: homeLabel, path: '/dashboard', icon: homeIcon }
+      { name: homeLabel, path: '/projects', icon: homeIcon }
     ];
     
     // Build up the breadcrumb items

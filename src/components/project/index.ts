@@ -1,4 +1,3 @@
-export * from './PhaseDetailsPanel';
 export * from './ProjectPhasesSection';
 export * from './ProjectEditDialog';
 export * from './ProjectActivitySection';

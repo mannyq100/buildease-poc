@@ -19,7 +19,7 @@ export function LandingPage() {
     if (!isAuthenticated) {
       navigate('/login')
     } else {
-      navigate('/dashboard')
+      navigate('/projects')
     }
   }
 
@@ -29,7 +29,7 @@ export function LandingPage() {
     if (!isAuthenticated) {
       navigate('/signup')
     } else {
-      navigate('/dashboard')
+      navigate('/projects')
     }
   }
 

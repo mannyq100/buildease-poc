@@ -78,6 +78,7 @@ export const queryKeys = {
   // L2 Cache: Aggregated data, medium TTL
   aggregations: {
     metrics: () => ['aggregations', 'project-metrics'] as const,
+    analytics: () => ['aggregations', 'project-analytics'] as const,
     byStatus: () => ['aggregations', 'projects-by-status'] as const,
     projectStats: (projectId: string) => ['aggregations', 'project-stats', projectId] as const,
     budgetSummary: (projectId: string) => ['aggregations', 'budget-summary', projectId] as const,

@@ -3,8 +3,8 @@
  * Implements React 19 Suspense boundaries for optimal mobile performance
  */
 
-import React, { Suspense, useMemo, useCallback } from 'react';
-import { Plus } from 'lucide-react';
+import React, { Suspense, useMemo, useCallback, useState } from 'react';
+import { Plus, ChevronDown, ChevronUp, TrendingUp } from 'lucide-react';
 import { useAllProjectSummaries, useProjectMetrics } from '@/hooks/queries/useProjectSummary';
 import type { ProjectSummaryFilters } from '@/hooks/queries/useProjectSummary';
 import type { ProjectSummary } from '@/types/projectSummary';
@@ -31,6 +31,10 @@ const ProjectsList = React.lazy(() =>
   import('./components/ProjectsList').then(m => ({ default: m.ProjectsList }))
 );
 
+const ProjectAnalytics = React.lazy(() => 
+  import('./components/analytics/ProjectAnalytics').then(m => ({ default: m.ProjectAnalytics }))
+);
+
 // Preload components on idle for better performance
 if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
   window.requestIdleCallback(() => {
@@ -38,6 +42,8 @@ if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
     import('./components/ProjectsMetrics');
     import('./components/ProjectsFilters');
     import('./components/ProjectsList');
+    // Preload analytics on demand (user will need to expand to see it)
+    setTimeout(() => import('./components/analytics/ProjectAnalytics'), 2000);
   });
 } else {
   // Fallback for browsers without requestIdleCallback
@@ -45,6 +51,8 @@ if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
     import('./components/ProjectsMetrics');
     import('./components/ProjectsFilters');
     import('./components/ProjectsList');
+    // Preload analytics on demand
+    setTimeout(() => import('./components/analytics/ProjectAnalytics'), 2000);
   }, 100);
 }
 
@@ -54,9 +62,14 @@ export const ProjectsContent = React.memo<ProjectsContentProps>(function Project
   viewSettings, 
   onViewSettingsChange 
 }) {
+  const [isAnalyticsExpanded, setIsAnalyticsExpanded] = useState(false);
   
   const handleCreateProject = useCallback(() => {
     window.location.href = '/projects/new';
+  }, []);
+
+  const toggleAnalytics = useCallback(() => {
+    setIsAnalyticsExpanded(prev => !prev);
   }, []);
 
   return (
@@ -128,6 +141,57 @@ export const ProjectsContent = React.memo<ProjectsContentProps>(function Project
               />
             </Suspense>
           </div>
+        </div>
+
+        {/* Portfolio Analytics Section - Collapsible */}
+        <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-lg border border-slate-200/60 overflow-hidden
+                        hover:shadow-xl hover:shadow-slate-500/5 transition-all duration-300">
+          <div 
+            className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-slate-200/50 cursor-pointer
+                       hover:from-blue-100 hover:to-indigo-100 transition-colors duration-200"
+            onClick={toggleAnalytics}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
+                  <TrendingUp className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">Portfolio Analytics</h3>
+                  <p className="text-sm text-slate-600">
+                    {isAnalyticsExpanded ? 'Cross-project insights and trends' : 'Click to view portfolio analytics and charts'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-500 hidden sm:block">
+                  {isAnalyticsExpanded ? 'Hide' : 'Show'} Charts
+                </span>
+                {isAnalyticsExpanded ? (
+                  <ChevronUp className="h-5 w-5 text-slate-600" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-slate-600" />
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {isAnalyticsExpanded && (
+            <div className="p-6 bg-gradient-to-br from-white to-slate-50/30">
+              <Suspense 
+                fallback={
+                  <div className="flex items-center justify-center h-64">
+                    <div className="flex items-center gap-2 text-gray-500">
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
+                      <span>Loading analytics...</span>
+                    </div>
+                  </div>
+                }
+              >
+                <ProjectAnalytics />
+              </Suspense>
+            </div>
+          )}
         </div>
 
         {/* Projects List Section */}
