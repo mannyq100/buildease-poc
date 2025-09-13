@@ -9,7 +9,6 @@ import {
   Award,
   Clock,
   CheckCircle2,
-  MessageSquare
 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
@@ -24,7 +23,6 @@ export interface TeamMemberCardProps {
   member: TeamMember
   viewMode?: ViewMode
   onViewProfile?: (member: TeamMember) => void
-  onStartChat?: (member: TeamMember) => void
   onClick?: () => void
   className?: string
 }
@@ -37,7 +35,6 @@ export function TeamMemberCard({
   member,
   viewMode = 'grid',
   onViewProfile,
-  onStartChat,
   onClick,
   className
 }: TeamMemberCardProps) {
@@ -93,16 +90,6 @@ export function TeamMemberCard({
     }
   }
   
-  // Handle chat click
-  const handleStartChat = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (onStartChat) {
-      onStartChat(member)
-    } else {
-      // Navigate to messaging page with state to start chat with this team member
-      navigate('/messaging', { state: { startChatWith: member } })
-    }
-  }
   
   // Render grid view
   if (viewMode === 'grid') {
@@ -142,15 +129,6 @@ export function TeamMemberCard({
                 </Button>
               )}
               
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-full text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                onClick={handleStartChat}
-                aria-label={`Message ${member.name}`}
-              >
-                <MessageSquare className="h-4 w-4" />
-              </Button>
             </div>
           </div>
           
@@ -322,15 +300,6 @@ export function TeamMemberCard({
           </Button>
         )}
         
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 rounded-full text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 mt-1"
-          onClick={handleStartChat}
-          aria-label={`Message ${member.name}`}
-        >
-          <MessageSquare className="h-4 w-4" />
-        </Button>
       </div>
       
       <div className="flex items-center pr-4 pl-2">

@@ -45,7 +45,6 @@ const Expenses = lazy(() => import("./pages/Expenses"));
 const Projects = lazy(() => import("./pages/Projects").then(m => ({ default: m.Projects })));
 const CreateProject = lazy(() => import("./pages/CreateProject").then(m => ({ default: m.CreateProject })));
 const Settings = lazy(() => import('./pages/Settings'));
-const Messaging = lazy(() => import('./pages/Messaging'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
@@ -169,7 +168,6 @@ function App() {
                         <Route path="materials" element={<Materials />} />
                         <Route path="expenses" element={<Expenses />} />
                         <Route path="documents" element={<Documents />} />
-                        <Route path="messaging" element={<Messaging />} />
                         <Route path="settings" element={<Settings />} />
                         
                         {/* Admin routes with role-based protection */}

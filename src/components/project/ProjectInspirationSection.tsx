@@ -5,7 +5,7 @@
  */
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProjectInspirationGallery } from '@/components/ui/project-inspiration-gallery';
-import { useProjectImages } from '@/hooks/useProjectImages';
+import { useMedia } from '@/hooks/useMedia';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/utils/core/ui';
 
@@ -18,7 +18,8 @@ export function ProjectInspirationSection({
   projectId,
   className 
 }: ProjectInspirationSectionProps) {
-  const { inspirationImages, profileImage, isLoading, error } = useProjectImages(projectId);
+  const { inspirationImages, profileImages, isLoading, error } = useMedia(projectId);
+  const profileImage = profileImages[0] || null;
   
   // If there are no images and we're not loading, don't render the section
   if (!isLoading && inspirationImages.length === 0 && !error) {

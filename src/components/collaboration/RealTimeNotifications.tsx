@@ -6,7 +6,7 @@
 
 import { useState, useCallback } from 'react';
 import { useRealTimeCollaboration } from '@/hooks/useRealTimeCollaboration';
-import { useNotifications } from '@/hooks/queries/useNotifications';
+import { useNotifications } from '@/stores/notificationStore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';

@@ -6,7 +6,6 @@
 // Re-export all mock services
 export * from './services/teamService';
 export * from './services/projectService';
-export * from './services/dashboardService';
 export * from './services/taskService';
 export * from './services/materialService';
 

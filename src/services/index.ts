@@ -15,5 +15,4 @@ export * as activityService from './activityService';
 // Existing services (re-export for convenience)
 export { default as projectService } from './projectService';
 export { default as projectCreationService } from './projectCreationService';
-export { default as documentService } from './documentService';
 export { default as notificationService } from './notificationService';

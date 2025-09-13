@@ -12,7 +12,6 @@ import {
   Users,
   FileText,
   Menu,
-  MessagesSquare,
   ChevronRight,
   ChevronLeft
 } from 'lucide-react';
@@ -87,7 +86,6 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ className, onCollapseCh
   const navItems = [
     { label: 'Projects', path: '/projects', icon: LayoutDashboard },
     { label: 'Team', path: '/team', icon: Users },
-    { label: 'Messages', path: '/messaging', icon: MessagesSquare },
     { label: 'Schedule', path: '/schedule', icon: Calendar },
     { label: 'Materials', path: '/materials', icon: Package },
     { label: 'Expenses', path: '/expenses', icon: DollarSign },

@@ -8,8 +8,27 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { useProjectMedia, useDeleteMedia, type MediaItem } from '@/hooks/queries/useProjectMedia';
-import { formatFileSize, getDocumentTypeDisplayName, type DocumentType } from '@/services/storageService';
+import { useMedia, type MediaItem } from '@/hooks/useMedia';
+import { formatFileSize } from '@/utils/core/format';
+
+// Document type utilities
+type DocumentType = string;
+
+const getDocumentTypeDisplayName = (type: string): string => {
+  const typeMap: Record<string, string> = {
+    'application/pdf': 'PDF Documents',
+    'application/msword': 'Word Documents',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'Word Documents',
+    'application/vnd.ms-excel': 'Excel Documents',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'Excel Documents',
+    'image/jpeg': 'Images',
+    'image/png': 'Images',
+    'image/gif': 'Images',
+    'image/webp': 'Images',
+    'text/plain': 'Text Documents'
+  };
+  return typeMap[type] || 'Other Documents';
+};
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
@@ -30,8 +49,7 @@ export function DocumentList({
   const [documentsWithUrls, setDocumentsWithUrls] = useState<Record<string, string>>({});
   const [loadingUrls, setLoadingUrls] = useState<Record<string, boolean>>({});
 
-  const { data: documents = [], isLoading, error } = useProjectMedia(projectId);
-  const deleteDocument = useDeleteMedia(projectId);
+  const { documents = [], isLoading, error, delete: deleteMedia } = useMedia(projectId);
 
   // Filter documents by phase if phaseId is provided
   const filteredDocuments = phaseId 
@@ -80,7 +98,7 @@ export function DocumentList({
 
   const handleDeleteDocument = async (documentId: string) => {
     try {
-      await deleteDocument.mutateAsync(documentId);
+      await deleteMedia(documentId);
       // Remove from URL cache
       setDocumentsWithUrls(prev => {
         const newUrls = { ...prev };

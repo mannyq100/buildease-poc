@@ -49,7 +49,6 @@ export interface TeamMemberCardProps {
   member: TeamMember
   viewMode?: 'grid' | 'list'
   onViewProfile?: (member: TeamMember) => void
-  onStartChat?: (member: TeamMember) => void
   className?: string
 }
 

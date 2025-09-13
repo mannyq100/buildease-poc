@@ -367,7 +367,6 @@ export default function Team() {
                       key={member.id}
                       member={member}
                       onViewProfile={handleViewProfile}
-                      onStartChat={(member) => navigate('/messaging', { state: { startChatWith: member } })}
                     />
                   ))}
                 </div>
@@ -434,17 +433,6 @@ export default function Team() {
                                 }}
                               >
                                 View
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                className="text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-300"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  navigate('/messaging', { state: { startChatWith: member } })
-                                }}
-                              >
-                                Message
                               </Button>
                             </div>
                           </td>
