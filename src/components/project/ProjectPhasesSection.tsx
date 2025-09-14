@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus } from 'lucide-react';
-import { PhaseCard } from '../phases/PhaseCard';
+import { PhaseCard } from '@/components/shared/PhaseCard';
 import { Phase } from '@/types/phase';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { fadeInUpVariants } from '@/utils/core/animations';
@@ -64,11 +64,17 @@ export function ProjectPhasesSection({
                 {phases.map((phase) => (
                   <PhaseCard 
                     key={phase.id}
-                    phase={phase}
-                    isExpanded={false}
-                    onExpandToggle={() => {}}
-                    onViewDetails={onPhaseClick}
-                    onAddTask={(e) => onAddTask(phase.id, e)}
+                    name={phase.name}
+                    progress={phase.progress}
+                    startDate={phase.startDate}
+                    endDate={phase.endDate}
+                    status={phase.status}
+                    budget={phase.budget}
+                    spent={phase.spent}
+                    expanded={false}
+                    onToggleExpand={() => {}}
+                    onClick={() => onPhaseClick(phase.id)}
+                    onAddTask={() => onAddTask(phase.id, {} as React.MouseEvent)}
                   />
                 ))}
               </div>

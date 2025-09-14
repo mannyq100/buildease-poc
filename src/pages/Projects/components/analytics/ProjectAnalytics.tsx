@@ -598,41 +598,30 @@ export function ProjectAnalytics({
   }, [activeChartType, currentChartData, height, chartConfig, colors, theme, darkMode, activeIndex, onPieEnter, isLoading, error, handleRefresh]);
   
   return (
-    <div className={cn("bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-slate-200/60 overflow-hidden", className)}>
-      {/* Header */}
-      <div className="bg-gradient-to-r from-slate-50 to-white px-6 py-4 border-b border-slate-200/50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-              <TrendingUp className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-slate-900">Portfolio Analytics</h3>
-              <p className="text-sm text-slate-600">Cross-project insights and trends</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {chartToggleUI}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={isLoading}
-              className="ml-2"
-            >
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <TrendingUp className="h-4 w-4" />
-              )}
-              <span className="ml-1 hidden sm:inline">Refresh</span>
-            </Button>
-          </div>
+    <div className={cn("space-y-4", className)}>
+      {/* Controls Bar */}
+      <div className="flex items-center justify-between bg-slate-50/50 rounded-lg p-4">
+        <div className="flex items-center gap-2">
+          {chartToggleUI}
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={isLoading}
+          className="bg-white"
+        >
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <TrendingUp className="h-4 w-4" />
+          )}
+          <span className="ml-1 hidden sm:inline">Refresh</span>
+        </Button>
       </div>
 
       {/* Tab Navigation */}
-      <div className="px-6 py-3 border-b border-slate-200/50 bg-slate-50/50">
+      <div className="bg-slate-50/50 rounded-lg p-3">
         <div className="flex gap-1 overflow-x-auto">
           {[
             { id: 'progress', label: 'Progress', icon: BarChart3 },
@@ -658,7 +647,7 @@ export function ProjectAnalytics({
       </div>
 
       {/* Chart Content */}
-      <div className="p-6">
+      <div className="bg-white rounded-lg border border-slate-200/60 p-6">
         <div className="mb-4">
           <h4 className="text-lg font-semibold text-slate-900">{chartConfig.title}</h4>
           <p className="text-sm text-slate-600">{chartConfig.description}</p>

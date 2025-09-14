@@ -1,21 +1,12 @@
 /**
- * Collaboration Components - BuildEase Real-time Collaboration
- * Export all real-time collaboration components
+ * Collaboration Services - BuildEase WebSocket Integration
+ * Export only the websocketService for auditService dependency
  */
 
-export { PresenceIndicator } from './PresenceIndicator';
-export { LiveCursors, ContainerLiveCursors } from './LiveCursors';
-export { RealTimeComments, InlineRealTimeComments } from './RealTimeComments';
-export { RealTimeNotifications } from './RealTimeNotifications';
-export { CollaborativeDocumentViewer } from './CollaborativeDocumentViewer';
-export { CollaborationDashboard } from './CollaborationDashboard';
-export { CollaborationProvider, useCollaboration } from './CollaborationProvider';
-
-// Re-export hooks and services for convenience
-export { useRealTimeCollaboration } from '@/hooks/useRealTimeCollaboration';
+// Export websocketService for auditService usage
 export { websocketService } from '@/services/websocketService';
 
-// Re-export types for convenience
+// Re-export types for websocketService
 export type {
   CollaborationEvent,
   UserPresence,

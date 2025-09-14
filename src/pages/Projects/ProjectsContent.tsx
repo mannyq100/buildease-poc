@@ -3,7 +3,7 @@
  * Implements React 19 Suspense boundaries for optimal mobile performance
  */
 
-import React, { Suspense, useMemo, useCallback, useState } from 'react';
+import React, { Suspense, useMemo, useCallback, useState, useEffect } from 'react';
 import { Plus, ChevronDown, ChevronUp, TrendingUp } from 'lucide-react';
 import { useAllProjectSummaries, useProjectMetrics } from '@/hooks/queries/useProjectSummary';
 import type { ProjectSummaryFilters } from '@/hooks/queries/useProjectSummary';
@@ -63,6 +63,7 @@ export const ProjectsContent = React.memo<ProjectsContentProps>(function Project
   onViewSettingsChange 
 }) {
   const [isAnalyticsExpanded, setIsAnalyticsExpanded] = useState(false);
+  const [projectCount, setProjectCount] = useState(0);
   
   const handleCreateProject = useCallback(() => {
     window.location.href = '/projects/new';
@@ -70,6 +71,10 @@ export const ProjectsContent = React.memo<ProjectsContentProps>(function Project
 
   const toggleAnalytics = useCallback(() => {
     setIsAnalyticsExpanded(prev => !prev);
+  }, []);
+
+  const handleProjectCountChange = useCallback((count: number) => {
+    setProjectCount(count);
   }, []);
 
   return (
@@ -143,56 +148,58 @@ export const ProjectsContent = React.memo<ProjectsContentProps>(function Project
           </div>
         </div>
 
-        {/* Portfolio Analytics Section - Collapsible */}
-        <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-lg border border-slate-200/60 overflow-hidden
-                        hover:shadow-xl hover:shadow-slate-500/5 transition-all duration-300">
-          <div 
-            className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-slate-200/50 cursor-pointer
-                       hover:from-blue-100 hover:to-indigo-100 transition-colors duration-200"
-            onClick={toggleAnalytics}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
-                  <TrendingUp className="h-4 w-4 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-900">Portfolio Analytics</h3>
-                  <p className="text-sm text-slate-600">
-                    {isAnalyticsExpanded ? 'Cross-project insights and trends' : 'Click to view portfolio analytics and charts'}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-500 hidden sm:block">
-                  {isAnalyticsExpanded ? 'Hide' : 'Show'} Charts
-                </span>
-                {isAnalyticsExpanded ? (
-                  <ChevronUp className="h-5 w-5 text-slate-600" />
-                ) : (
-                  <ChevronDown className="h-5 w-5 text-slate-600" />
-                )}
-              </div>
-            </div>
-          </div>
-          
-          {isAnalyticsExpanded && (
-            <div className="p-6 bg-gradient-to-br from-white to-slate-50/30">
-              <Suspense 
-                fallback={
-                  <div className="flex items-center justify-center h-64">
-                    <div className="flex items-center gap-2 text-gray-500">
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
-                      <span>Loading analytics...</span>
-                    </div>
+        {/* Portfolio Analytics Section - Only show when project count > 1 */}
+        {projectCount > 1 && (
+          <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-lg border border-slate-200/60 overflow-hidden
+                          hover:shadow-xl hover:shadow-slate-500/5 transition-all duration-300">
+            <div 
+              className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-slate-200/50 cursor-pointer
+                         hover:from-blue-100 hover:to-indigo-100 transition-colors duration-200"
+              onClick={toggleAnalytics}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
+                    <TrendingUp className="h-4 w-4 text-white" />
                   </div>
-                }
-              >
-                <ProjectAnalytics />
-              </Suspense>
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-900">Portfolio Analytics</h3>
+                    <p className="text-sm text-slate-600">
+                      {isAnalyticsExpanded ? 'Cross-project insights and trends' : 'Click to view portfolio analytics and charts'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-500 hidden sm:block">
+                    {isAnalyticsExpanded ? 'Hide' : 'Show'} Charts
+                  </span>
+                  {isAnalyticsExpanded ? (
+                    <ChevronUp className="h-5 w-5 text-slate-600" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5 text-slate-600" />
+                  )}
+                </div>
+              </div>
             </div>
-          )}
-        </div>
+            
+            {isAnalyticsExpanded && (
+              <div className="p-6 bg-gradient-to-br from-white to-slate-50/30">
+                <Suspense 
+                  fallback={
+                    <div className="flex items-center justify-center h-64">
+                      <div className="flex items-center gap-2 text-gray-500">
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
+                        <span>Loading analytics...</span>
+                      </div>
+                    </div>
+                  }
+                >
+                  <ProjectAnalytics />
+                </Suspense>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Projects List Section */}
         <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-slate-200/60 overflow-hidden
@@ -215,6 +222,7 @@ export const ProjectsContent = React.memo<ProjectsContentProps>(function Project
                 filters={filters}
                 viewSettings={viewSettings}
                 onViewSettingsChange={onViewSettingsChange}
+                onProjectCountChange={handleProjectCountChange}
               />
             </Suspense>
           </div>
@@ -284,10 +292,12 @@ const ProjectsListSection = React.memo<{
   filters: ProjectsContentProps['filters'];
   viewSettings: ProjectsContentProps['viewSettings'];
   onViewSettingsChange: ProjectsContentProps['onViewSettingsChange'];
+  onProjectCountChange?: (count: number) => void;
 }>(function ProjectsListSection({ 
   filters, 
   viewSettings,
-  onViewSettingsChange: _onViewSettingsChange
+  onViewSettingsChange: _onViewSettingsChange,
+  onProjectCountChange
 }) {
   // Memoize filter object to prevent unnecessary refetches
   const memoizedFilters = useMemo((): ProjectSummaryFilters => ({
@@ -299,6 +309,13 @@ const ProjectsListSection = React.memo<{
 
   // Fetch project summaries with memoized filters
   const { data: projectSummaries = [], isLoading, error } = useAllProjectSummaries(memoizedFilters);
+
+  // Notify parent of project count changes
+  useEffect(() => {
+    if (onProjectCountChange && !isLoading) {
+      onProjectCountChange(projectSummaries.length);
+    }
+  }, [projectSummaries.length, isLoading, onProjectCountChange]);
 
   // Memoize action handlers to prevent unnecessary re-renders
   const handleView = useCallback((project: ProjectSummary) => {
