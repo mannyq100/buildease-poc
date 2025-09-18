@@ -15,26 +15,11 @@
 
 import { supabase } from '@/lib/supabase';
 import type { MediaCategory } from '@/types/database';
+import type { MediaItem } from '@/types/media';
 
 // ============================================================================
-// TYPES & INTERFACES
+// TYPES & INTERFACES (Phase 1 Enhancement)
 // ============================================================================
-
-export interface MediaItem {
-  id: string;
-  name: string;
-  description?: string;
-  media_type: 'PHOTO' | 'VIDEO' | 'DOCUMENT';
-  category: MediaCategory;
-  project_id: string;
-  phase_id?: string;
-  file_path: string;
-  file_size_bytes: number;
-  mime_type: string;
-  metadata: Record<string, unknown>;
-  created_at: string;
-  updated_at: string;
-}
 
 export interface MediaContext {
   projectId: string;
@@ -62,12 +47,35 @@ const FILE_SIZE_LIMITS = {
   DOCUMENT: 50 // MB - Plans, contracts, etc.
 } as const;
 
-/** Storage bucket mapping with type safety - Individual media type buckets */
-const STORAGE_BUCKETS = {
-  PHOTO: 'PHOTO',
-  VIDEO: 'VIDEO', 
-  DOCUMENT: 'DOCUMENT',
-  profile: 'user_profiles'
+/** Enhanced URL expiration times by media type for construction site usage */
+const URL_EXPIRY_TIMES = {
+  PHOTO: 24 * 60 * 60, // 24 hours - Frequent access for progress tracking
+  VIDEO: 48 * 60 * 60, // 48 hours - Larger files, less frequent access
+  DOCUMENT: 72 * 60 * 60, // 72 hours - Plans/contracts accessed less frequently
+  DEFAULT: 24 * 60 * 60 // 24 hours - Default fallback
+} as const;
+
+/** 
+ * PHASE 1 ENHANCEMENT: Simplified Storage Configuration
+ * Single bucket approach for better reliability and maintenance
+ */
+const STORAGE_CONFIG = {
+  // Primary bucket for photos - actual bucket names from migration
+  bucket: 'PHOTO',
+  
+  // Path structure: {visibility}/{project_id}/{category}/{filename}
+  paths: {
+    public: 'public',
+    private: 'private'
+  },
+  
+  // Legacy bucket mapping (for backward compatibility)
+  legacyBuckets: {
+    PHOTO: 'PHOTO',
+    VIDEO: 'VIDEO', 
+    DOCUMENT: 'DOCUMENT',
+    profile: 'user_profiles'
+  }
 } as const;
 
 /** Optimized MIME type validation */
@@ -140,30 +148,55 @@ const generateFileName = (originalName: string | undefined): string => {
 };
 
 /**
- * Optimized category-to-media-type mapping using object lookup
+ * Enhanced media type detection with intelligent fallback to file content analysis
  */
-const CATEGORY_TYPE_MAP: Record<string, 'PHOTO' | 'VIDEO' | 'DOCUMENT'> = {
-  profile: 'PHOTO',
-  inspiration: 'PHOTO', 
-  progress: 'PHOTO',
-  progress_video: 'VIDEO',
-  document: 'DOCUMENT',
-};
-
-const getMediaTypeFromCategory = (category: MediaCategory): 'PHOTO' | 'VIDEO' | 'DOCUMENT' => {
-  return CATEGORY_TYPE_MAP[category] || 'DOCUMENT';
+const getMediaTypeFromFile = (file: File): 'PHOTO' | 'VIDEO' | 'DOCUMENT' => {
+  const fileType = (file.type || '').toLowerCase().trim();
+  
+  // Primary detection: Use MIME type if available
+  if (fileType) {
+    if (fileType.startsWith('image/')) return 'PHOTO';
+    if (fileType.startsWith('video/')) return 'VIDEO';
+    if (fileType.startsWith('application/') || fileType.startsWith('text/')) return 'DOCUMENT';
+  }
+  
+  // Fallback detection: Use file extension
+  if (file.name) {
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    if (extension) {
+      const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'heic', 'heif'];
+      const videoExtensions = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', '3gp'];
+      const documentExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv', 'zip', 'rar'];
+      
+      if (imageExtensions.includes(extension)) return 'PHOTO';
+      if (videoExtensions.includes(extension)) return 'VIDEO';
+      if (documentExtensions.includes(extension)) return 'DOCUMENT';
+    }
+  }
+  
+  // Final fallback: assume document
+  return 'DOCUMENT';
 };
 
 /**
- * Get storage bucket with optimized logic for individual media type buckets
+ * Get media type with smart file analysis (primary) and category fallback (secondary)
  */
-const getStorageBucket = (category: MediaCategory, context?: MediaContext): string => {
-  // User profile images go to user_profiles bucket (no projectId)
-  if (category === 'profile' && (!context?.projectId)) {
-    return STORAGE_BUCKETS.profile;
-  }
-  // All other uploads go to media-type-specific buckets
-  return STORAGE_BUCKETS[getMediaTypeFromCategory(category)];
+const getMediaTypeFromCategory = (category: MediaCategory): 'PHOTO' | 'VIDEO' | 'DOCUMENT' => {
+  // Category-based logic for known patterns
+  if (category === 'progress_video') return 'VIDEO';
+  if (['profile', 'inspiration', 'progress'].includes(category)) return 'PHOTO';
+  
+  // Handle any other image-related categories that might be added
+  if (typeof category === 'string' && category.includes('image')) return 'PHOTO';
+  
+  return 'DOCUMENT'; // All document categories default to DOCUMENT
+};
+
+/**
+ * Simple bucket mapping based on media type
+ */
+const getStorageBucket = (category: MediaCategory): string => {
+  return getMediaTypeFromCategory(category); // Direct mapping: PHOTO -> PHOTO, VIDEO -> VIDEO, DOCUMENT -> DOCUMENT
 };
 
 /**
@@ -183,15 +216,53 @@ const generateFilePath = (file: File, context: MediaContext, userId: string): st
 };
 
 /**
- * Fast file type validation using Set lookup
+ * Fast file type validation using Set lookup with fallback for undefined MIME types
  */
 const isValidFileType = (file: File, mediaType: keyof typeof SUPPORTED_TYPES): boolean => {
-  const normalizedType = file.type.toLowerCase().trim();
+  const normalizedType = (file.type || '').toLowerCase().trim();
+  
+  // If MIME type is missing, try to infer from file extension
+  if (!normalizedType && file.name) {
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    if (extension) {
+      // Map common extensions to MIME types for validation
+      const extensionToMimeType: Record<string, string> = {
+        // Images
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg', 
+        'png': 'image/png',
+        'webp': 'image/webp',
+        'heic': 'image/heic',
+        // Videos
+        'mp4': 'video/mp4',
+        'mov': 'video/mov', 
+        'avi': 'video/avi',
+        'webm': 'video/webm',
+        // Documents
+        'pdf': 'application/pdf',
+        'doc': 'application/msword',
+        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'txt': 'text/plain',
+        'csv': 'text/csv',
+        'zip': 'application/zip'
+      };
+      
+      const inferredMimeType = extensionToMimeType[extension];
+      if (inferredMimeType) {
+        const isSupported = SUPPORTED_TYPES[mediaType].has(inferredMimeType);
+        if (!isSupported) {
+          console.warn(`Inferred MIME type "${inferredMimeType}" (from .${extension}) not supported for ${mediaType}. Supported types:`, Array.from(SUPPORTED_TYPES[mediaType]));
+        }
+        return isSupported;
+      }
+    }
+  }
+  
   const isSupported = SUPPORTED_TYPES[mediaType].has(normalizedType);
   
   // Debug logging for unsupported types
   if (!isSupported) {
-    console.warn(`Unsupported MIME type: "${file.type}" for ${mediaType}. Supported types:`, Array.from(SUPPORTED_TYPES[mediaType]));
+    console.warn(`Unsupported MIME type: "${file.type || 'undefined'}" for ${mediaType}. Supported types:`, Array.from(SUPPORTED_TYPES[mediaType]));
   }
   
   return isSupported;
@@ -225,23 +296,30 @@ export class MediaService {
     }
     
     for (const file of fileArray) {
-      const mediaType = file.type.startsWith('image/') ? 'PHOTO' : 
-                       file.type.startsWith('video/') ? 'VIDEO' : 'DOCUMENT';
+      // Basic file validation - detailed media type validation happens in uploadFile
+      if (!file.name || file.name.trim() === '') {
+        return {
+          isValid: false,
+          error: 'All files must have valid names'
+        };
+      }
       
+      if (file.size === 0) {
+        return {
+          isValid: false,
+          error: `File "${file.name}" is empty (0 bytes)`
+        };
+      }
+      
+      // Smart media type detection for size limits only
+      const mediaType = getMediaTypeFromFile(file);
       const fileSizeMB = file.size / (1024 * 1024);
       const sizeLimit = FILE_SIZE_LIMITS[mediaType];
       
       if (fileSizeMB > sizeLimit) {
         return {
           isValid: false,
-          error: `File "${file.name}" (${fileSizeMB.toFixed(1)}MB) exceeds ${sizeLimit}MB limit for ${mediaType}`
-        };
-      }
-      
-      if (!isValidFileType(file, mediaType)) {
-        return {
-          isValid: false,
-          error: `File type "${file.type}" is not supported for ${mediaType}`
+          error: `File "${file.name}" (${fileSizeMB.toFixed(1)}MB) exceeds ${sizeLimit}MB limit for ${mediaType} files`
         };
       }
       
@@ -258,12 +336,6 @@ export class MediaService {
    * Optimized single file upload with enhanced error handling
    */
   static async uploadFile(file: File, context: MediaContext): Promise<MediaItem> {
-    // Pre-validate single file
-    const validation = this.validateFiles([file]);
-    if (!validation.isValid) {
-      throw new Error(validation.error);
-    }
-    
     // Get cached user ID
     const userId = context.userId || await getCurrentUserId();
     if (!userId) {
@@ -271,15 +343,34 @@ export class MediaService {
     }
 
     const filePath = generateFilePath(file, context, userId);
-    const bucketName = getStorageBucket(context.type, context);
-    const mediaType = getMediaTypeFromCategory(context.type);
     
-    // Debug logging to help troubleshoot bucket issues
+    // Smart media type detection: Use file content first, category as fallback
+    const fileBasedMediaType = getMediaTypeFromFile(file);
+    const categoryBasedMediaType = getMediaTypeFromCategory(context.type);
+    
+    // Use file-based detection as primary, but warn if there's a mismatch
+    const mediaType = fileBasedMediaType;
+    const bucketName = mediaType; // Direct mapping: PHOTO -> PHOTO, VIDEO -> VIDEO, DOCUMENT -> DOCUMENT
+    
+    if (fileBasedMediaType !== categoryBasedMediaType) {
+      console.warn(`Media type mismatch: File analysis suggests "${fileBasedMediaType}" but category "${context.type}" suggests "${categoryBasedMediaType}". Using file-based detection: "${fileBasedMediaType}"`);
+    }
+    
+    // Validate file against the determined media type
+    if (!isValidFileType(file, mediaType)) {
+      throw new Error(`File type "${file.type || 'unknown'}" is not supported for ${mediaType} uploads. Supported types: ${Array.from(SUPPORTED_TYPES[mediaType]).join(', ')}`);
+    }
+    
+    // Debug logging to help troubleshoot upload issues
     console.log('Upload context:', {
+      filename: file.name,
+      filetype: file.type,
       category: context.type,
       projectId: context.projectId,
+      fileBasedMediaType,
+      categoryBasedMediaType,
+      finalMediaType: mediaType,
       bucketName,
-      mediaType,
       filePath
     });
     
@@ -300,6 +391,13 @@ export class MediaService {
         fileType: file.type,
         userId
       });
+      
+      // If bucket not found, provide helpful error message with valid buckets
+      if (uploadError.message.includes('Bucket not found')) {
+        const validBuckets = ['PHOTO', 'VIDEO', 'DOCUMENT', 'user_profiles'];
+        throw new Error(`Storage bucket '${bucketName}' not found. Valid buckets: ${validBuckets.join(', ')}`);
+      }
+      
       throw new Error(`Storage upload failed: ${uploadError.message}`);
     }
 
@@ -311,7 +409,7 @@ export class MediaService {
     let fileUrl: string;
     
     // Determine if this is a public bucket (user_profiles)
-    const isPublicBucket = bucketName === 'user_profiles' || bucketName === STORAGE_BUCKETS.profile;
+    const isPublicBucket = bucketName === 'user_profiles';
     
     if (isPublicBucket) {
       // For public buckets, get public URL
@@ -330,12 +428,13 @@ export class MediaService {
       }
       
       fileUrl = urlData.publicUrl;
-    } else if (bucketName === 'PHOTO' || bucketName === 'VIDEO' || bucketName === 'DOCUMENT' || 
-               (Object.values(STORAGE_BUCKETS) as string[]).includes(bucketName)) {
+    } else if (bucketName === 'PHOTO' || bucketName === 'VIDEO' || bucketName === 'DOCUMENT') {
       // For private buckets (PHOTO, VIDEO, DOCUMENT), create a signed URL for verification
+      // Use enhanced expiry time based on media type
+      const verificationExpiryTime = this.getExpiryTime(mediaType);
       const { data: signedUrlData, error: urlError } = await supabase.storage
         .from(bucketName)
-        .createSignedUrl(filePath, 3600); // 1 hour expiry for verification
+        .createSignedUrl(filePath, verificationExpiryTime);
 
       if (urlError || !signedUrlData?.signedUrl) {
         // Cleanup on failure
@@ -350,7 +449,7 @@ export class MediaService {
       fileUrl = signedUrlData.signedUrl;
     } else {
       // Unknown bucket - this should not happen
-      throw new Error(`Unknown storage bucket: ${bucketName}. Expected one of: ${Object.values(STORAGE_BUCKETS).join(', ')}`);
+      throw new Error(`Unknown storage bucket: ${bucketName}. Expected: ${STORAGE_CONFIG.bucket}`);
     }
 
     // Verify the file actually exists by making a HEAD request
@@ -382,7 +481,7 @@ export class MediaService {
 
     // Create database record with structured metadata
     const mediaRecord = {
-      name: context.name || file.name,
+      name: context.name || file.name || 'Uploaded File',
       description: context.description || null,
       media_type: mediaType,
       category: context.type,
@@ -390,9 +489,9 @@ export class MediaService {
       phase_id: context.phaseId || null,
       file_path: fileUrl, // Always store complete URL for all buckets
       file_size_bytes: file.size,
-      mime_type: file.type,
+      mime_type: file.type || 'application/octet-stream',
       metadata: {
-        originalFileName: file.name,
+        originalFileName: file.name || 'unknown',
         uploadedAt: new Date().toISOString(),
         uploadedBy: userId,
         processingStatus: 'pending',
@@ -463,7 +562,7 @@ export class MediaService {
       try {
         // Call progress with current file being processed
         if (typeof onProgress === 'function') {
-          onProgress(i, fileArray.length, file.name);
+          onProgress(i, fileArray.length, file.name || 'File');
         }
         
         const mediaItem = await this.uploadFile(file, context);
@@ -472,11 +571,11 @@ export class MediaService {
         
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.error(`Upload failed for ${file.name}:`, error);
+        console.error(`Upload failed for ${file.name || 'file'}:`, error);
         
         results.push({ 
           success: false, 
-          error: `${file.name}: ${errorMessage}` 
+          error: `${file.name || 'File'}: ${errorMessage}` 
         });
       }
       
@@ -531,7 +630,7 @@ export class MediaService {
     }
 
     const metadata = (mediaItem.metadata as Record<string, unknown>) || {};
-    const bucketName = (metadata.bucketName as string) || getStorageBucket(mediaItem.category, { projectId: '', type: mediaItem.category });
+    const bucketName = (metadata.bucketName as string) || getStorageBucket(mediaItem.category);
     
     // Extract storage path from metadata, fallback to file_path for backward compatibility
     const storagePath = (metadata.storagePath as string) || mediaItem.file_path;
@@ -604,16 +703,33 @@ export class MediaService {
   }
 
   /**
-   * Get media URL - returns stored complete URL or generates new signed URL for private buckets
+   * Get appropriate URL expiration time based on media type
    */
-  static async getUrl(mediaId: string, expiresIn = 3600): Promise<string> {
+  private static getExpiryTime(mediaType?: string): number {
+    switch (mediaType) {
+      case 'PHOTO':
+        return URL_EXPIRY_TIMES.PHOTO;
+      case 'VIDEO':
+        return URL_EXPIRY_TIMES.VIDEO;
+      case 'DOCUMENT':
+        return URL_EXPIRY_TIMES.DOCUMENT;
+      default:
+        return URL_EXPIRY_TIMES.DEFAULT;
+    }
+  }
+
+  /**
+   * Get media URL - returns stored complete URL or generates new signed URL for private buckets
+   * Now uses enhanced expiration times based on media type
+   */
+  static async getUrl(mediaId: string, expiresIn?: number): Promise<string> {
     if (!mediaId?.trim()) {
       throw new Error('Media ID is required');
     }
     
     const { data: mediaItem, error } = await supabase
       .from('be_media_items')
-      .select('file_path, category, metadata')
+      .select('file_path, category, metadata, media_type')
       .eq('id', mediaId)
       .single();
 
@@ -625,9 +741,12 @@ export class MediaService {
     }
 
     const metadata = (mediaItem.metadata as Record<string, unknown>) || {};
-    const bucketName = (metadata.bucketName as string) || getStorageBucket(mediaItem.category, { projectId: '', type: mediaItem.category });
+    const bucketName = (metadata.bucketName as string) || getStorageBucket(mediaItem.category);
     const storagePath = (metadata.storagePath as string);
-    const isPublic = metadata.isPublic === true || bucketName === 'user_profiles' || bucketName === STORAGE_BUCKETS.profile;
+    const isPublic = metadata.isPublic === true || bucketName === 'user_profiles';
+    
+    // Use provided expiresIn or determine based on media type
+    const actualExpiresIn = expiresIn ?? this.getExpiryTime(mediaItem.media_type);
 
     // For public buckets (user_profiles), file_path contains the complete public URL
     if (isPublic) {
@@ -658,7 +777,7 @@ export class MediaService {
       if (storagePath) {
         const { data, error: urlError } = await supabase.storage
           .from(bucketName)
-          .createSignedUrl(storagePath, expiresIn);
+          .createSignedUrl(storagePath, actualExpiresIn);
         
         if (!urlError && data?.signedUrl) {
           return data.signedUrl;
@@ -673,7 +792,7 @@ export class MediaService {
 
     const { data, error: urlError } = await supabase.storage
       .from(bucketName)
-      .createSignedUrl(storagePath, expiresIn);
+      .createSignedUrl(storagePath, actualExpiresIn);
     
     if (urlError) {
       throw new Error(`Failed to generate signed URL: ${urlError.message}`);
@@ -796,30 +915,30 @@ export class MediaService {
   /**
    * Get available storage buckets based on media type
    */
-  static getAvailableBuckets(): typeof STORAGE_BUCKETS {
-    return { ...STORAGE_BUCKETS };
+  static getAvailableBuckets(): { buckets: string[] } {
+    return { buckets: ['PHOTO', 'VIDEO', 'DOCUMENT', 'user_profiles'] };
   }
 
   /**
    * Validate bucket configuration - ensures all required buckets exist
    */
   static async validateBucketConfiguration(): Promise<{ valid: boolean; missing: string[]; errors: string[] }> {
-    const requiredBuckets = Object.values(STORAGE_BUCKETS);
+    const requiredBuckets = ['PHOTO', 'VIDEO', 'DOCUMENT', 'user_profiles'];
     const missing: string[] = [];
     const errors: string[] = [];
 
     for (const bucketName of requiredBuckets) {
       try {
-        const { data, error } = await supabase.storage.from(bucketName).list('', { limit: 1 });
+        const { data: _data, error } = await supabase.storage.from(bucketName).list('', { limit: 1 });
         if (error) {
           if (error.message.includes('bucket does not exist') || error.message.includes('not found')) {
-            missing.push(bucketName);
+            missing.push(bucketName as string);
           } else {
-            errors.push(`Bucket ${bucketName}: ${error.message}`);
+            errors.push(`Bucket ${bucketName as string}: ${error.message}`);
           }
         }
       } catch (error) {
-        errors.push(`Bucket ${bucketName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        errors.push(`Bucket ${bucketName as string}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
 
@@ -858,6 +977,32 @@ export class MediaService {
         details: `Health check failed: ${error instanceof Error ? error.message : 'Unknown error'}` 
       };
     }
+  }
+
+  /**
+   * Get media item by ID
+   * @param mediaId - The media item ID
+   * @returns Promise that resolves to the media item or null if not found
+   */
+  static async getMediaItem(mediaId: string): Promise<any | null> {
+    if (!mediaId?.trim()) {
+      throw new Error('Media ID is required');
+    }
+
+    const { data: mediaItem, error } = await supabase
+      .from('be_media_items')
+      .select('*')
+      .eq('id', mediaId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return null; // Item not found
+      }
+      throw new Error(`Failed to fetch media item: ${error.message}`);
+    }
+
+    return mediaItem;
   }
 }
 

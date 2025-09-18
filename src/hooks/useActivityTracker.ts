@@ -22,7 +22,7 @@ interface ActivityTrackingOptions {
 
 export function useActivityTracker({ projectId }: UseActivityTrackerProps) {
   const { user } = useSupabaseAuth();
-  const { safeActivityTrack } = useActivityErrorBoundary();
+  const { withErrorBoundary } = useActivityErrorBoundary();
 
   // Get user context for activity tracking
   const getUserContext = useCallback(() => ({
@@ -63,12 +63,11 @@ export function useActivityTracker({ projectId }: UseActivityTrackerProps) {
       return activityService.createActivity(activityData);
     }
 
-    return safeActivityTrack(
-      `${activityType}-tracking`,
+    return withErrorBoundary(
       () => activityService.createActivity(activityData),
-      options?.fallbackMessage
-    );
-  }, [projectId, getUserContext, safeActivityTrack]);
+      { activityType, fallbackMessage: options?.fallbackMessage }
+    )();
+  }, [projectId, getUserContext, withErrorBoundary]);
 
   // Document operations
   const trackDocumentUpload = useCallback(async (
@@ -85,14 +84,13 @@ export function useActivityTracker({ projectId }: UseActivityTrackerProps) {
       );
     }
 
-    return safeActivityTrack(
-      'document-upload',
+    return withErrorBoundary(
       () => activityService.trackDocumentUpload(
         projectId, documentId, documentName, documentType, userId, userName
       ),
-      options?.fallbackMessage || 'Document uploaded but activity not recorded'
-    );
-  }, [projectId, getUserContext, safeActivityTrack]);
+      { fallbackMessage: options?.fallbackMessage || 'Document uploaded but activity not recorded' }
+    )();
+  }, [projectId, getUserContext, withErrorBoundary]);
 
   const trackDocumentDelete = useCallback(async (
     documentName: string,
@@ -106,14 +104,13 @@ export function useActivityTracker({ projectId }: UseActivityTrackerProps) {
       );
     }
 
-    return safeActivityTrack(
-      'document-delete',
+    return withErrorBoundary(
       () => activityService.trackDocumentDelete(
         projectId, documentName, userId, userName
       ),
-      options?.fallbackMessage || 'Document deleted but activity not recorded'
-    );
-  }, [projectId, getUserContext, safeActivityTrack]);
+      { fallbackMessage: options?.fallbackMessage || 'Document deleted but activity not recorded' }
+    )();
+  }, [projectId, getUserContext, withErrorBoundary]);
 
   // Expense operations
   const trackExpenseCreate = useCallback(async (
@@ -135,12 +132,11 @@ export function useActivityTracker({ projectId }: UseActivityTrackerProps) {
       return trackingFn();
     }
 
-    return safeActivityTrack(
-      'expense-create',
+    return withErrorBoundary(
       trackingFn,
-      options?.fallbackMessage || 'Expense created but activity not recorded'
-    );
-  }, [projectId, getUserContext, safeActivityTrack]);
+      { fallbackMessage: options?.fallbackMessage || 'Expense created but activity not recorded' }
+    )();
+  }, [projectId, getUserContext, withErrorBoundary]);
 
   const trackBudgetUpdate = useCallback(async (
     previousAmount: number,
@@ -160,12 +156,11 @@ export function useActivityTracker({ projectId }: UseActivityTrackerProps) {
       return trackingFn();
     }
 
-    return safeActivityTrack(
-      'budget-update',
+    return withErrorBoundary(
       trackingFn,
-      options?.fallbackMessage || 'Budget updated but activity not recorded'
-    );
-  }, [projectId, getUserContext, safeActivityTrack]);
+      { fallbackMessage: options?.fallbackMessage || 'Budget updated but activity not recorded' }
+    )();
+  }, [projectId, getUserContext, withErrorBoundary]);
 
   // Task operations
   const trackTaskComplete = useCallback(async (
@@ -182,14 +177,13 @@ export function useActivityTracker({ projectId }: UseActivityTrackerProps) {
       );
     }
 
-    return safeActivityTrack(
-      'task-complete',
+    return withErrorBoundary(
       () => activityService.trackTaskComplete(
         projectId, taskId, taskTitle, phaseId, userId, userName
       ),
-      options?.fallbackMessage || 'Task completed but activity not recorded'
-    );
-  }, [projectId, getUserContext, safeActivityTrack]);
+      { fallbackMessage: options?.fallbackMessage || 'Task completed but activity not recorded' }
+    )();
+  }, [projectId, getUserContext, withErrorBoundary]);
 
   // Status and phase operations
   const trackStatusChange = useCallback(async (
@@ -207,14 +201,13 @@ export function useActivityTracker({ projectId }: UseActivityTrackerProps) {
       );
     }
 
-    return safeActivityTrack(
-      'status-change',
+    return withErrorBoundary(
       () => activityService.trackStatusChange(
         projectId, title, description, status, userId, userName, metadata
       ),
-      options?.fallbackMessage || 'Status changed but activity not recorded'
-    );
-  }, [projectId, getUserContext, safeActivityTrack]);
+      { fallbackMessage: options?.fallbackMessage || 'Status changed but activity not recorded' }
+    )();
+  }, [projectId, getUserContext, withErrorBoundary]);
 
   // Team member operations
   const trackTeamMemberAdd = useCallback(async (

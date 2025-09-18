@@ -77,7 +77,7 @@ export class FileValidationService {
     }
 
     // File extension validation (additional security layer)
-    const fileExtension = this.getFileExtension(file.name).toLowerCase();
+    const fileExtension = this.getFileExtension(file.name || '').toLowerCase();
     if (!config.allowedExtensions.includes(fileExtension)) {
       errors.push(
         `File extension "${fileExtension}" is not allowed. Allowed extensions: ${config.allowedExtensions.join(', ')}`
@@ -91,7 +91,7 @@ export class FileValidationService {
     }
 
     // Image-specific validation
-    if (file.type.startsWith('image/')) {
+    if (file.type && file.type.startsWith('image/')) {
       try {
         const imageValidation = await this.validateImageFile(file, config);
         if (!imageValidation.isValid) {
@@ -258,7 +258,7 @@ export class FileValidationService {
       signatureMatch = true;
     }
 
-    if (!signatureMatch && file.type.startsWith('image/')) {
+    if (!signatureMatch && file.type && file.type.startsWith('image/')) {
       errors.push('File content does not match declared file type (possible security risk)');
     }
 

@@ -15,6 +15,7 @@ export interface TeamMember {
 
 export interface ProjectCardProps {
   /** Project details */
+  id?: string; // Project ID for direct profile image lookup
   title: string;
   description?: string;
   client: string;
@@ -49,6 +50,7 @@ export interface ProjectCardProps {
  * - Progressive disclosure for complex tasks
  */
 export function ProjectCard({
+  id,
   title,
   client,
   owner,
@@ -106,6 +108,7 @@ export function ProjectCard({
       {/* Enhanced Project Image */}
       <div className="relative w-full h-48 overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800">
         <SmartProjectImageDisplay
+          projectId={id}
           src={imageUrl}
           alt={title}
           className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110 group-hover:brightness-110"

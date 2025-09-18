@@ -139,6 +139,7 @@ export const ProjectsList = memo(function ProjectsList({
         {displayProjects.map((project: ProjectSummary) => (
           <ProjectCard
             key={project.id}
+            id={project.id}
             title={project.name}
             description={project.description || ''}
             client={project.client}

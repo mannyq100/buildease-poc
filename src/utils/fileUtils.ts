@@ -32,7 +32,7 @@ export function isImageFile(filename: string | File): boolean {
   const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'];
   
   if (filename instanceof File) {
-    return filename.type.startsWith('image/');
+    return filename.type ? filename.type.startsWith('image/') : false;
   }
   
   const ext = getFileExtension(filename);
@@ -46,7 +46,7 @@ export function isVideoFile(filename: string | File): boolean {
   const videoExtensions = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'];
   
   if (filename instanceof File) {
-    return filename.type.startsWith('video/');
+    return filename.type ? filename.type.startsWith('video/') : false;
   }
   
   const ext = getFileExtension(filename);
@@ -156,7 +156,7 @@ export function getMimeTypeFromExtension(extension: string): string {
     'csv': 'text/csv'
   };
   
-  return mimeTypes[extension.toLowerCase()] || 'application/octet-stream';
+  return mimeTypes[(extension || '').toLowerCase()] || 'application/octet-stream';
 }
 
 /**

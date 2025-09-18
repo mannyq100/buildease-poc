@@ -3,7 +3,7 @@
  * Handles display and actions for images and documents
  */
 
-import React, { memo } from 'react';
+import React, { memo, useState, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -11,7 +11,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { MoreVertical, Download, Star, Trash2, FileText, ImageIcon, Calendar, Play } from 'lucide-react';
 import { MediaItem } from '../types';
 import { useLazyImage } from '../hooks/useMemoryManagement';
-import { formatFileSize, formatMediaDate, getCategoryBadgeConfig, isImageType, isVideoType, isDownloadableDocument } from '../utils/mediaUtils';
+import { formatFileSize } from '@/utils/core/format';
+import { formatMediaDate, getCategoryBadgeConfig, isImageType, isVideoType, isDownloadableDocument } from '../utils/mediaUtils';
 
 interface MediaItemCardProps {
   item: MediaItem;
@@ -26,8 +27,47 @@ interface MediaItemCardProps {
   };
 }
 
-const LazyImage = memo<{ src: string; alt: string; className?: string }>(({ src, alt, className }) => {
+const LazyImage = memo<{ src: string; alt: string; className?: string; mediaId?: string }>(({ src, alt, className, mediaId }) => {
   const { imgRef, isLoaded, error, shouldLoad, handleLoad, handleError } = useLazyImage(src);
+  
+  // Enhanced error handling with URL refresh if we have mediaId
+  const [refreshAttempted, setRefreshAttempted] = useState(false);
+  const [refreshedUrl, setRefreshedUrl] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleImageError = useCallback(async (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    // Try URL refresh if we have mediaId and haven't attempted refresh yet
+    if (mediaId && !refreshAttempted && !isRefreshing) {
+      setRefreshAttempted(true);
+      setIsRefreshing(true);
+      
+      try {
+        console.warn(`Image load failed for media ${mediaId}, attempting URL refresh...`);
+        const { MediaService } = await import('@/services/MediaService');
+        const newUrl = await MediaService.getUrl(mediaId);
+        
+        if (newUrl && newUrl !== src) {
+          console.log(`🔄 URL refreshed for media ${mediaId}`);
+          setRefreshedUrl(newUrl);
+          // Safely trigger a reload by changing the src
+          const img = e.currentTarget;
+          if (img && img instanceof HTMLImageElement) {
+            img.src = newUrl;
+            return; // Don't call handleError, let the reload attempt proceed
+          }
+        }
+      } catch (refreshError) {
+        console.error(`Failed to refresh URL for media ${mediaId}:`, refreshError);
+      } finally {
+        setIsRefreshing(false);
+      }
+    }
+    
+    handleError(e.nativeEvent);
+  }, [mediaId, refreshAttempted, isRefreshing, src, handleError]);
+
+  // Use refreshed URL if available, otherwise use original src
+  const currentSrc = refreshedUrl || src;
 
   return (
     <div ref={imgRef} className={`relative ${className}`}>
@@ -36,14 +76,19 @@ const LazyImage = memo<{ src: string; alt: string; className?: string }>(({ src,
       )}
       {shouldLoad && (
         <img
-          src={src}
+          src={currentSrc}
           alt={alt}
           onLoad={handleLoad}
-          onError={handleError}
+          onError={handleImageError}
           className={`w-full h-full object-cover transition-opacity duration-300 ${
             isLoaded ? 'opacity-100' : 'opacity-0'
           } ${className}`}
         />
+      )}
+      {isRefreshing && (
+        <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+          <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+        </div>
       )}
       {error && (
         <div className="absolute inset-0 bg-slate-100 flex items-center justify-center">
@@ -83,6 +128,7 @@ export const MediaItemCard = memo<MediaItemCardProps>(({
             <LazyImage
               src={item.url}
               alt={item.name}
+              mediaId={item.id}
               className="rounded-t-2xl group-hover:scale-105 transition-transform duration-500 ease-out"
             />
             {/* Subtle overlay for better text contrast */}

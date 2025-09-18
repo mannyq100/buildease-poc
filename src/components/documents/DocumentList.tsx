@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { useMedia, type MediaItem } from '@/hooks/useMedia';
+import { useMedia } from '@/hooks/useMedia';
+import { MediaItem } from '@/types/media';
 import { formatFileSize } from '@/utils/core/format';
 
 // Document type utilities
@@ -53,12 +54,12 @@ export function DocumentList({
 
   // Filter documents by phase if phaseId is provided
   const filteredDocuments = phaseId 
-    ? documents.filter(doc => doc.phase_id === phaseId)
+    ? documents.filter(doc => (doc.phaseId || doc.phase_id) === phaseId)
     : documents;
 
   // Group documents by type
   const groupedDocuments = filteredDocuments.reduce((groups, doc) => {
-    const type = doc.media_type;
+    const type = doc.mediaType || doc.media_type || 'DOCUMENT';
     if (!groups[type]) {
       groups[type] = [];
     }
@@ -78,7 +79,7 @@ export function DocumentList({
     try {
       const { data, error } = await supabase.storage
         .from('documents')
-        .createSignedUrl(document.file_path, 3600); // 1 hour expiry
+        .createSignedUrl(document.filePath || document.file_path || '', 3600); // 1 hour expiry
 
       if (error) {
         throw error;
@@ -202,7 +203,7 @@ export function DocumentList({
                           {document.name}
                         </h4>
                         <Badge variant="secondary" className="text-xs">
-                          {getDocumentTypeDisplayName(document.media_type)}
+                          {getDocumentTypeDisplayName(document.mediaType || document.media_type || 'DOCUMENT')}
                         </Badge>
                       </div>
                       
@@ -215,14 +216,14 @@ export function DocumentList({
                       <div className="flex items-center space-x-4 text-xs text-gray-500">
                         <div className="flex items-center space-x-1">
                           <Calendar className="h-3 w-3" />
-                          <span>{formatDate(document.created_at)}</span>
+                          <span>{formatDate(document.createdAt || document.created_at || '')}</span>
                         </div>
                         
-                        {document.file_size_bytes && (
-                          <span>{formatFileSize(document.file_size_bytes)}</span>
+                        {(document.fileSize || document.file_size_bytes) && (
+                          <span>{formatFileSize(document.fileSize || document.file_size_bytes || 0)}</span>
                         )}
                         
-                        {document.phase_id && (
+                        {(document.phaseId || document.phase_id) && (
                           <div className="flex items-center space-x-1">
                             <Folder className="h-3 w-3" />
                             <span>Phase Document</span>

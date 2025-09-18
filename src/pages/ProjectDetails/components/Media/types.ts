@@ -1,35 +1,28 @@
 /**
- * Strict type definitions for ProjectDocumentsSection
- * Following BuildEase coding standards for type safety
+ * Type definitions for ProjectDocumentsSection
+ * Uses global MediaItem type and defines local component-specific types
  */
 
+import type { MediaItem } from '@/types/media';
+import type { MediaCategory } from '@/types/database';
+
+// Local display types for legacy compatibility
 export type MediaType = 'image' | 'document' | 'video';
 
-export type DocumentType = 'contract' | 'permit' | 'invoice' | 'blueprint' | 'other';
+// Re-export MediaItem from global types for consistency
+export type { MediaItem };
 
-export type MediaCategory = 'profile' | 'inspiration' | 'progress' | 'progress_video' | DocumentType;
+import type { UploadResult } from '@/types/upload';
 
-export interface MediaItem {
-  readonly id: string;
-  readonly name: string;
-  readonly url: string;
-  readonly media_type: 'PHOTO' | 'VIDEO' | 'DOCUMENT'; // Database field
-  readonly category: MediaCategory; // Database field
-  readonly size?: number;
-  readonly created_at: string; // Database field
-  readonly uploaded_at?: Date;
-  // Legacy compatibility fields
-  readonly type: MediaType; // Computed display type for backward compatibility
-  readonly documentType?: string;
-}
-
+// Component-specific filter interface
 export interface MediaFilters {
   readonly media_type?: 'all' | 'PHOTO' | 'VIDEO' | 'DOCUMENT';
-  readonly category?: 'all' | string;
+  readonly category?: 'all' | MediaCategory;
   readonly phase_id?: 'all' | string;
   readonly search?: string;
 }
 
+// Component state management
 export interface MediaState {
   readonly search: string;
   readonly filters: MediaFilters;
@@ -43,6 +36,7 @@ export interface MediaState {
   };
 }
 
+// Component action handlers
 export interface MediaActions {
   readonly onDelete: (item: MediaItem) => Promise<void>;
   readonly onEdit: (item: MediaItem) => Promise<void>;
@@ -50,15 +44,14 @@ export interface MediaActions {
   readonly onSetAsProfile: (item: MediaItem) => Promise<void>;
 }
 
+// Permission checking interface
 export interface MediaPermissions {
   readonly canDelete: (item: MediaItem) => boolean;
   readonly canEdit: (item: MediaItem) => boolean;
   readonly canSetAsProfile: (item: MediaItem) => boolean;
 }
 
-import type { UploadResult } from '@/types/upload';
-
-// Upload-related types
+// Upload modal props
 export interface UploadModalProps {
   readonly isOpen: boolean;
   readonly type: 'inspiration' | 'progress' | 'documents';

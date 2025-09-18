@@ -3,10 +3,9 @@
  * Clean, mobile-first filtering with enhanced visual design
  */
 
-import React, { useState } from 'react';
-import { Search, X, Filter } from 'lucide-react';
+import { useState } from 'react';
+import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/utils/core/ui';
 import type { ProjectsFiltersProps } from '@/types/enhanced-projects';
 import type { ProjectStatus } from '@/types/project';

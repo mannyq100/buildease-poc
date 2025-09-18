@@ -20,8 +20,12 @@ const DOCUMENT_CATEGORIES = [
   { value: 'contract', label: 'Contract', description: 'Legal contracts and agreements' },
   { value: 'permit', label: 'Permit', description: 'Building permits and approvals' },
   { value: 'invoice', label: 'Invoice', description: 'Invoices and billing documents' },
-  { value: 'blueprint', label: 'Blueprint', description: 'Architectural plans and drawings' },
-  { value: 'other', label: 'Other', description: 'Other documents' }
+  { value: 'specification', label: 'Specification', description: 'Technical specifications and requirements' },
+  { value: 'schedule', label: 'Schedule', description: 'Project schedules and timelines' },
+  { value: 'drawing', label: 'Drawing', description: 'Architectural plans and drawings' },
+  { value: 'manual', label: 'Manual', description: 'User manuals and instructions' },
+  { value: 'certificate', label: 'Certificate', description: 'Certificates and compliance documents' },
+  { value: 'other_document', label: 'Other', description: 'Other documents' }
 ] as const;
 
 interface FileWithMetadata {
@@ -53,7 +57,7 @@ export function DocumentUploadModal({
     const newFiles: FileWithMetadata[] = filesArray.map(file => ({
       file,
       customName: file.name.replace(/\.[^/.]+$/, ''), // Remove file extension for default name
-      category: 'other' as MediaCategory // Default category
+      category: 'other_document' as MediaCategory // Default category
     }));
 
     setFiles(prev => [...prev, ...newFiles]);

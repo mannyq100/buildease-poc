@@ -1,64 +1,48 @@
 /**
- * Unified Media Type Definitions - Phase 1.2
- * Single source of truth for all media-related types
- * Consolidates duplicate interfaces from multiple files
+ * Unified Media types for BuildEase construction management
+ * Unified interface for all media-related operations
+ * 
+ * STANDARDIZED PROPERTIES (Phase 1 Enhancement):
+ * - Consistent naming across all components
+ * - Computed properties for UI convenience
+ * - Backward compatibility maintained
  */
 
+import type { MediaCategory } from '@/types/database';
+
 export interface MediaItem {
+  // Core database fields (standardized names)
   id: string;
   name: string;
   description?: string;
-  media_type: 'PHOTO' | 'VIDEO' | 'DOCUMENT';
   category: MediaCategory;
-  project_id: string;
+  mediaType: 'PHOTO' | 'VIDEO' | 'DOCUMENT'; // Standardized from media_type
+  projectId: string; // Standardized from project_id
+  phaseId?: string; // Standardized from phase_id
+  filePath: string; // Standardized from file_path
+  fileSize: number; // Standardized from file_size_bytes (in bytes)
+  mimeType: string; // Standardized from mime_type
+  createdAt: string; // Standardized from created_at
+  updatedAt: string; // Standardized from updated_at
+  metadata: Record<string, unknown>;
+  
+  // Computed properties for UI convenience
+  url: string; // Generated from filePath for easy access
+  thumbnailUrl?: string; // Optional thumbnail URL
+  
+  // Database compatibility fields (match database schema)
+  media_type?: 'PHOTO' | 'VIDEO' | 'DOCUMENT';
+  project_id?: string;
   phase_id?: string;
-  file_path: string;
-  file_size_bytes: number;
-  mime_type: string;
-  metadata: Record<string, any>;
-  created_at: string;
-  updated_at: string;
+  file_path?: string;
+  file_size_bytes?: number;
+  mime_type?: string;
+  created_at?: string;
+  updated_at?: string;
 }
-
-export type MediaCategory = 'profile' | 'inspiration' | 'progress' | 'progress_video' | 'receipt' | 'report' | 'contract' | 'permit' | 'invoice' | 'blueprint' | 'other';
 
 export type MediaType = 'PHOTO' | 'VIDEO' | 'DOCUMENT';
 
-/**
- * Transform database Document record to unified MediaItem
- * Maps be_media_items table structure to consistent interface
- */
-export function transformDbDocumentToMediaItem(doc: {
-  id: string;
-  name: string;
-  description?: string;
-  media_type: string;
-  category: string;
-  project_id: string;
-  phase_id?: string;
-  file_path: string;
-  file_size_bytes?: number;
-  mime_type?: string;
-  metadata: Record<string, any>;
-  created_at: string;
-  updated_at: string;
-}): MediaItem {
-  return {
-    id: doc.id,
-    name: doc.name,
-    description: doc.description,
-    media_type: doc.media_type as MediaType,
-    category: doc.category as MediaCategory,
-    project_id: doc.project_id,
-    phase_id: doc.phase_id,
-    file_path: doc.file_path,
-    file_size_bytes: doc.file_size_bytes || 0,
-    mime_type: doc.mime_type || 'application/octet-stream',
-    metadata: doc.metadata || {},
-    created_at: doc.created_at,
-    updated_at: doc.updated_at,
-  };
-}
 
 /**
  * Get media category from document metadata or tags
@@ -66,9 +50,9 @@ export function transformDbDocumentToMediaItem(doc: {
 export function getCategoryFromDocument(doc: {
   category?: string;
   tags?: string[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }): MediaCategory {
-  const validCategories: MediaCategory[] = ['profile', 'inspiration', 'progress', 'progress_video', 'receipt', 'report', 'contract', 'permit', 'invoice', 'blueprint', 'other'];
+  const validCategories: MediaCategory[] = ['profile', 'inspiration', 'progress', 'progress_video', 'receipt', 'report', 'contract', 'permit', 'invoice', 'specification', 'schedule', 'drawing', 'manual', 'certificate', 'other_document'];
   
   // Direct category match
   if (doc.category && validCategories.includes(doc.category as MediaCategory)) {
@@ -97,8 +81,8 @@ export function getCategoryFromDocument(doc: {
     }
   }
   
-  // Default to other for documents
-  return 'other';
+  // Default to other_document for documents
+  return 'other_document';
 }
 
 /**

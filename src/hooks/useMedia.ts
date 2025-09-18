@@ -11,29 +11,11 @@ import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { toast } from 'sonner';
 import type { MediaCategory } from '@/types/database';
+import type { MediaItem } from '@/types/media';
 
 // ============================================================================
-// TYPES
+// Media Hook Types and Interfaces
 // ============================================================================
-
-export interface MediaItem {
-  id: string;
-  name: string;
-  description?: string;
-  category: MediaCategory;
-  project_id: string;
-  phase_id?: string;
-  file_path: string;
-  file_size_bytes: number;
-  mime_type: string;
-  media_type: 'PHOTO' | 'VIDEO' | 'DOCUMENT';
-  created_at: string;
-  updated_at: string;
-  metadata: Record<string, unknown>;
-  // Computed properties for UI
-  url: string; // Generated from file_path for easy access
-  size: number; // Alias for file_size_bytes for UI components
-}
 
 export interface MediaFilters {
   category?: MediaCategory | 'all';
@@ -71,8 +53,12 @@ const calculateStats = (items: MediaItem[]): MediaStats => {
 
   items.forEach(item => {
     stats.byCategory[item.category]++;
-    stats.byType[item.media_type]++;
-    stats.totalSizeMB += item.file_size_bytes / (1024 * 1024);
+    const mediaType = item.mediaType || item.media_type;
+    if (mediaType) {
+      stats.byType[mediaType]++;
+    }
+    const fileSize = item.fileSize || item.file_size_bytes || 0;
+    stats.totalSizeMB += fileSize / (1024 * 1024);
   });
 
   stats.totalSizeMB = Math.round(stats.totalSizeMB * 100) / 100;
@@ -84,16 +70,18 @@ const applyFilters = (items: MediaItem[], filters: MediaFilters): MediaItem[] =>
     if (filters.category && filters.category !== 'all' && item.category !== filters.category) {
       return false;
     }
-    if (filters.media_type && filters.media_type !== 'all' && item.media_type !== filters.media_type) {
+    const mediaType = item.mediaType || item.media_type;
+    if (filters.media_type && filters.media_type !== 'all' && mediaType !== filters.media_type) {
       return false;
     }
-    if (filters.phase_id && filters.phase_id !== 'all' && item.phase_id !== filters.phase_id) {
+    const phaseId = item.phaseId || item.phase_id;
+    if (filters.phase_id && filters.phase_id !== 'all' && phaseId !== filters.phase_id) {
       return false;
     }
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
-      return item.name.toLowerCase().includes(searchLower) || 
-             item.description?.toLowerCase().includes(searchLower);
+      return (item.name || '').toLowerCase().includes(searchLower) || 
+             (item.description || '').toLowerCase().includes(searchLower);
     }
     return true;
   });

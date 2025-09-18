@@ -6,6 +6,8 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
+import { formatFileSize } from '@/utils/core/format';
+import { formatMediaDate } from '@/pages/ProjectDetails/components/Media/utils/mediaUtils';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +22,7 @@ import {
   AlertCircle,
   Loader2 
 } from 'lucide-react';
-import type { MediaItem } from '@/hooks/useMedia';
+import { MediaItem } from '@/types/media';
 
 export interface LazyMediaItemProps {
   item: MediaItem;
@@ -100,12 +102,10 @@ export function LazyMediaItem({
 
   // Generate thumbnail URL based on media type and network quality
   const getThumbnailUrl = useCallback((item: MediaItem): string => {
-    // For construction site optimization, we'd integrate with your media service
-    // This is a placeholder implementation
-    const baseUrl = item.filePath;
+    const baseUrl = item.url || item.filePath || item.file_path || '';
+    const mediaType = item.mediaType || item.media_type;
     
-    if (item.mediaType === 'PHOTO') {
-      // Add quality parameters based on network
+    if (mediaType === 'PHOTO') {
       const qualityParam = {
         high: 'w=400&h=400&q=85',
         medium: 'w=300&h=300&q=70',
@@ -113,7 +113,7 @@ export function LazyMediaItem({
         cached: 'w=100&h=100&q=30'
       }[getImageQuality];
       
-      return `${baseUrl}?${qualityParam}&f=webp`; // WebP format for better compression
+      return `${baseUrl}?${qualityParam}&f=webp`;
     }
     
     return baseUrl;
@@ -130,10 +130,11 @@ export function LazyMediaItem({
 
   // Start loading when in view
   useEffect(() => {
-    if (isInView && item.mediaType === 'PHOTO' && !imageState.loaded && !imageState.loading && !imageState.error) {
+    const mediaType = item.mediaType || item.media_type;
+    if (isInView && mediaType === 'PHOTO' && !imageState.loaded && !imageState.loading && !imageState.error) {
       setImageState(prev => ({ ...prev, loading: true }));
     }
-  }, [isInView, item.mediaType, imageState]);
+  }, [isInView, item.mediaType, item.media_type, imageState]);
 
   // Get media type icon
   const getMediaIcon = (mediaType: string) => {
@@ -149,19 +150,7 @@ export function LazyMediaItem({
     }
   };
 
-  // Format file size for display
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  // Format date for display
-  const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString();
-  };
+  // Use shared utilities from mediaUtils
 
   // Handle selection change
   const handleSelectionChange = useCallback((checked: boolean) => {
@@ -193,7 +182,8 @@ export function LazyMediaItem({
 
   // Render media preview
   const renderMediaPreview = () => {
-    if (item.mediaType === 'PHOTO') {
+    const mediaType = item.mediaType || item.media_type;
+    if (mediaType === 'PHOTO') {
       if (!isInView) {
         return (
           <div className="absolute inset-0 bg-muted flex items-center justify-center">
@@ -224,7 +214,7 @@ export function LazyMediaItem({
       );
     }
 
-    if (item.mediaType === 'VIDEO') {
+    if (mediaType === 'VIDEO') {
       return (
         <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
           <div className="bg-black/50 rounded-full p-3">
@@ -344,9 +334,9 @@ export function LazyMediaItem({
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <div className="flex items-center space-x-2">
               <Calendar className="h-3 w-3" />
-              <span>{formatDate(item.createdAt)}</span>
+              <span>{formatMediaDate(item.createdAt || item.created_at || '')}</span>
             </div>
-            <span>{formatFileSize(item.fileSize)}</span>
+            <span>{formatFileSize(item.fileSize || item.file_size_bytes || 0)}</span>
           </div>
 
           {/* Category badge */}

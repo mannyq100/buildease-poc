@@ -260,20 +260,25 @@ export function useActivityErrorBoundary({
     fn: (...args: T) => Promise<any> | any,
     context?: Record<string, unknown>
   ) => {
-    return async (...args: T): Promise<void> => {
+    return async (...args: T): Promise<any> => {
       try {
         const result = fn(...args);
         
         // Handle async functions
         if (result && typeof result.then === 'function') {
-          await result;
+          return await result;
         }
+        
+        return result;
       } catch (error) {
         handleError(error instanceof Error ? error : new Error(String(error)), {
           function_name: fn.name,
           arguments: args,
           ...context
         });
+        
+        // Return null on error to indicate failure
+        return null;
       }
     };
   }, [handleError]);

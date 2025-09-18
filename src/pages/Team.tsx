@@ -47,7 +47,7 @@ import type { TeamMember } from '@/types/team'
 import type { ViewMode } from '@/types/common'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useTeamFilters } from '@/hooks/useTeamFilters'
-import { getTeamMembers, getDepartments, getStatusOptions, getProjects } from '@/services/teamService'
+import { getTeamMembers } from '@/services/teamService'
 
 /**
  * Team management page component
@@ -514,7 +514,7 @@ function EmptyTeamState({ hasFilters, onAddMember }: EmptyTeamStateProps) {
       </p>
       {!hasFilters && (
         <Button
-          onClick={handleOpenAddMember}
+          onClick={onAddMember}
           className="mt-4"
         >
           <Plus className="mr-2 h-4 w-4" /> Add Team Member

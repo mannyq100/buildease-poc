@@ -8,7 +8,7 @@ import { AuthProvider } from '@/types/user';
 import { API_CONFIG } from '@/config';
 
 // API URL fallback if not specified in config
-const API_URL = API_CONFIG.baseUrl || import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : '/api');
+const API_URL = API_CONFIG.baseUrl || import.meta.env.VITE_API_URL || (import.meta.env.VITE_SUPABASE_URL + '/rest/v1');
 
 // Create axios instance with default config
 const axiosClient: AxiosInstance = axios.create({

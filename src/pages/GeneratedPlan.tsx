@@ -12,7 +12,7 @@ import { usePlanState } from '@/hooks/usePlanState'
 import { usePlanLoading } from '@/hooks/usePlanLoading'
 import { usePlanActions } from '@/hooks/usePlanActions'
 import { usePlanActionsOptimistic } from '@/hooks/usePlanActionsOptimistic'
-import { PlanApiMock } from '@/services/planApiMock'
+// import { PlanApiMock } from '@/services/planApiMock' // Temporarily disabled - file missing
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { Phase as ModalPhase, Task as ModalTask, Material as ModalMaterial } from '@/components/shared/modals'
 import { 
@@ -52,17 +52,17 @@ export default function GeneratedPlan() {
   const optimisticActions = usePlanActionsOptimistic({
     phases: plan?.phases || [],
     apiActions: {
-      addPhase: PlanApiMock.addPhase,
-      updatePhase: PlanApiMock.updatePhase,
-      deletePhase: PlanApiMock.deletePhase,
-      reorderPhase: PlanApiMock.reorderPhase,
-      addTask: PlanApiMock.addTask,
-      updateTask: PlanApiMock.updateTask,
-      deleteTask: PlanApiMock.deleteTask,
-      addMaterial: PlanApiMock.addMaterial,
-      updateMaterial: PlanApiMock.updateMaterial,
-      deleteMaterial: PlanApiMock.deleteMaterial,
-      updatePlanDates: PlanApiMock.updatePlanDates
+      addPhase: async () => ({ success: true }),
+      updatePhase: async () => ({ success: true }),
+      deletePhase: async () => ({ success: true }),
+      reorderPhase: async () => ({ success: true }),
+      addTask: async () => ({ success: true }),
+      updateTask: async () => ({ success: true }),
+      deleteTask: async () => ({ success: true }),
+      addMaterial: async () => ({ success: true }),
+      updateMaterial: async () => ({ success: true }),
+      deleteMaterial: async () => ({ success: true }),
+      updatePlanDates: async () => ({ success: true })
     },
     setPhaseLoading: loadingActions.setPhaseLoading,
     setTaskLoading: loadingActions.setTaskLoading,

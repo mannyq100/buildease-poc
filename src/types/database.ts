@@ -12,7 +12,7 @@ export type Currency = 'GHS' | 'USD' | 'EUR';
 export type AuthProvider = 'GOOGLE' | 'FACEBOOK' | 'LINKEDIN' | 'AUTH0' | 'EMAIL';
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 export type UserTier = 'BASIC' | 'PREMIUM' | 'PROFESSIONAL';
-export type MediaCategory = 'profile' | 'inspiration' | 'progress' | 'progress_video' | 'receipt' | 'report' | 'contract' | 'permit' | 'invoice' | 'blueprint' | 'other';
+export type MediaCategory = 'profile' | 'inspiration' | 'progress' | 'progress_video' | 'receipt' | 'report' | 'contract' | 'permit' | 'invoice' | 'specification' | 'schedule' | 'drawing' | 'manual' | 'certificate' | 'other_document';
 
 // AI Plan Generation types
 export type AIPlanJobStatus = 'pending' | 'processing' | 'completed' | 'failed';
@@ -257,7 +257,7 @@ export interface MaterialTransaction {
 
 // Standardized Media types matching database schema
 export type MediaType = 'PHOTO' | 'VIDEO' | 'DOCUMENT';
-export type MediaCategory = 'profile' | 'inspiration' | 'progress' | 'progress_video' | 'receipt' | 'report' | 'contract' | 'permit' | 'invoice' | 'blueprint' | 'other';
+export type MediaCategory = 'profile' | 'inspiration' | 'progress' | 'progress_video' | 'receipt' | 'report' | 'contract' | 'permit' | 'invoice' | 'specification' | 'schedule' | 'drawing' | 'manual' | 'certificate' | 'other_document';
 export type ProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed';
 export type CollectionType = 'album' | 'progress' | 'inspection' | 'before_after' | 'custom';
 export type MediaProcessingType = 'thumbnail' | 'compress' | 'watermark' | 'ocr' | 'virus_scan';

@@ -463,17 +463,65 @@ class AuditService {
     }
 
     try {
+      // Filter out entries without valid project_id to comply with RLS policy
+      const validEntries = batch.filter(entry => entry.project_id && entry.project_id.trim() !== '');
+      
+      if (validEntries.length === 0) {
+        console.log('No valid project entries to audit - skipping batch');
+        return;
+      }
+      
+      // Transform audit entries to match database schema
+      const transformedBatch = validEntries.map(entry => ({
+        project_id: entry.project_id,
+        activity_type: entry.action, // Map action to activity_type
+        title: entry.description || entry.action,
+        description: entry.description,
+        user_id: entry.user_id,
+        user_name: entry.user_name,
+        entity_type: entry.entity_type,
+        entity_id: entry.entity_id,
+        metadata: {
+          ...entry.metadata,
+          action_category: entry.action_category,
+          severity: entry.severity,
+          compliance_relevant: entry.compliance_relevant,
+          risk_score: entry.risk_score,
+          tags: entry.tags,
+          ip_address: entry.ip_address,
+          user_agent: entry.user_agent,
+          session_id: entry.session_id,
+          user_email: entry.user_email
+        },
+        status: this.mapSeverityToStatus(entry.severity)
+      }));
+
       const { error } = await supabase
         .from('be_project_activity')
-        .insert(batch);
+        .insert(transformedBatch);
 
       if (error) {
         console.error('Failed to insert audit batch:', error);
+        
+        // If RLS policy violation, log a warning but don't fail
+        if (error.code === '42501') {
+          console.warn('Audit logging blocked by RLS policy - user may not be a project member');
+        }
         // Could implement retry logic here
       }
 
     } catch (error) {
       console.error('Batch processing error:', error);
+    }
+  }
+
+  private mapSeverityToStatus(severity: AuditLogEntry['severity']): string {
+    switch (severity) {
+      case 'critical': return 'error';
+      case 'high': return 'warning';
+      case 'medium': return 'info';
+      case 'low': return 'info';
+      default: return 'info';
     }
   }
 
