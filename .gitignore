@@ -53,3 +53,5 @@ tasks/
 supabase-backup-do-not-use
 **/reset_database.sh
 **/reset_database.sql
+# Local Netlify folder
+.netlify
