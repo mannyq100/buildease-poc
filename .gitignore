@@ -31,7 +31,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-.vercel
 .cursor
 .windsurf*
 supabase-backup

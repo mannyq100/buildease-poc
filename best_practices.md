@@ -33,7 +33,7 @@ BuildEase is a mobile-first construction management platform focused on fast, re
 - Frameworks: Vitest (+ @testing-library/react, jest-dom)
 - Location & naming
   - Tests live under src/tests and/or co-located next to modules using *.test.ts(x) or *.spec.ts(x)
-  - Vercel ignores *.test.* files during builds
+  - Build tools ignore *.test.* files during builds
 - Setup: src/tests/setup.ts registers jest-dom matchers and cleans up after each test
 - Philosophy
   - Unit tests for hooks, utilities, and pure services
@@ -124,7 +124,7 @@ BuildEase is a mobile-first construction management platform focused on fast, re
   - Build: npm run build (Vite; manualChunks configured)
   - Test: npm run test (Vitest)
 - Configuration patterns
-  - Env: lib/env-config.ts with environment helpers (development/staging/production; Vercel-aware)
+  - Env: lib/env-config.ts with environment helpers (development/staging/production)
   - Query client: lib/queryClient.ts with cache hierarchy and mobile optimizations
   - Supabase: lib/supabase.ts using secure storage adapter, schema 'construction_mgr'
   - Path alias: '@' -> src

@@ -6,26 +6,9 @@
 // Environment type definition
 export type Environment = 'development' | 'staging' | 'production';
 
-// Vercel-specific detection
-export const isVercelEnvironment = (): boolean => {
-  return import.meta.env.VERCEL === '1';
-};
-
-export const getVercelEnvironment = (): string | undefined => {
-  return import.meta.env.VERCEL_ENV;
-};
 
 // Get current environment
 export const getEnvironment = (): Environment => {
-  // If running on Vercel, use Vercel environment
-  if (isVercelEnvironment()) {
-    const vercelEnv = getVercelEnvironment();
-    if (vercelEnv === 'production') return 'production';
-    if (vercelEnv === 'preview') return 'staging';
-    return 'development';
-  }
-  
-  // Otherwise use the local env variable
   return (import.meta.env.VITE_ENV as Environment) || 'development';
 };
 
@@ -86,7 +69,7 @@ export const logEnvironmentInfo = (): void => {
   const config = getConfig();
   const env = getEnvironment();
   
-  console.log(`Running in ${env} environment${isVercelEnvironment() ? ` on Vercel (${getVercelEnvironment()})` : ''}`);
+  console.log(`Running in ${env} environment`);
   
   if (isDevelopment()) {
     console.log('Environment Configuration:', {
