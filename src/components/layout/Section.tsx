@@ -1,6 +1,6 @@
 import * as React from "react";
 import { cn } from "@/utils/core/ui";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/Accordion";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export interface SectionProps extends React.HTMLAttributes<HTMLDivElement> {
   title?: string;

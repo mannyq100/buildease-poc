@@ -1,92 +1,46 @@
-import { Step, Stat, Testimonial } from '@/types/landing'
+import { Step, Stat, Testimonial, FeatureData } from '@/types/landing'
 
 // Define feature data without JSX
-export const LANDING_FEATURES_DATA = [
-  {
-    title: 'Project Dashboard',
-    description: 'Get a complete overview of your project status, tasks, and expenses all in one place.',
-    iconPath: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
-  },
-  {
-    title: 'Budget Tracking',
-    description: 'Track your expenses against your budget and get alerts when approaching limits.',
-    iconPath: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
-  },
-  {
-    title: 'Schedule Management',
-    description: 'Plan and track your construction timeline with interactive Gantt chart and notifications.',
-    iconPath: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
-  },
-  {
-    title: 'Team Collaboration',
-    description: 'Coordinate with contractors, suppliers, and team members through a virtual platform.',
-    iconPath: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z',
-  },
-  {
-    title: 'Material Management',
-    description: 'Keep track of all your building materials, inventory, and deliveries to prevent delays.',
-    iconPath: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
-  },
-  {
-    title: 'Document Management',
-    description: 'Store and organize all your construction documents, permits, and contracts in one secure location.',
-    iconPath: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
-  },
+export const LANDING_FEATURES_DATA: FeatureData[] = [
+  { title: 'Projects Dashboard', description: 'See progress, risks, and next actions at a glance.', iconName: 'dashboard' },
+  { title: 'Budget & Expenses', description: 'Approve, batch, and export—always know your burn.', iconName: 'budget' },
+  { title: 'Flexible Phases', description: 'Use templates or build your own workflow with default tasks.', iconName: 'phases' },
+  { title: 'Schedule Tracking', description: 'Track milestones and timelines to keep projects on time.', iconName: 'schedule' },
+  { title: 'Team Management', description: 'Manage roles, contacts, and collaboration in one place.', iconName: 'team' },
+  { title: 'Documents & Media', description: 'Auto-save images and organize permits, contracts, and files.', iconName: 'documents' },
+  { title: 'Reports & Analytics', description: 'Share progress vs plan, trends, and insights with stakeholders.', iconName: 'reports' },
+  { title: 'Mobile-First', description: 'Fast on-site, touch-friendly, and optimized for the field.', iconName: 'mobile' },
+  { title: 'Secure by Design', description: 'Supabase auth, storage, and RLS-powered data protection.', iconName: 'security' },
 ]
 
 export const HOW_IT_WORKS_STEPS: Step[] = [
-  {
-    number: 1,
-    title: 'Create your project',
-    description: 'Set up your construction project with details.',
-  },
-  {
-    number: 2,
-    title: 'Add your team',
-    description: 'Invite contractors, suppliers, and team members to collaborate on your project.',
-  },
-  {
-    number: 3,
-    title: 'Track progress',
-    description: 'Monitor construction progress in real time with photos, updates, and milestone tracking.',
-  },
-  {
-    number: 4,
-    title: 'Complete on budget',
-    description: 'Finish your construction project on time and within budget with BuildEase\'s tools.',
-  },
+  { number: 1, title: 'Create', description: 'Set project basics—location, type, currency, and timeline.' },
+  { number: 2, title: 'Plan', description: 'Choose phases and default tasks or customize your workflow.' },
+  { number: 3, title: 'Track', description: 'Add expenses, upload progress photos, and keep the team aligned.' },
+  { number: 4, title: 'Report', description: 'Share insights and exports to keep stakeholders informed.' },
 ]
 
 export const LANDING_STATS: Stat[] = [
-  {
-    value: '1,500+',
-    label: 'Projects Completed',
-  },
-  {
-    value: '30%',
-    label: 'Time Saved',
-  },
-  {
-    value: '97%',
-    label: 'Schedule Management',
-  },
+  { value: '1,500+', label: 'Projects Tracked' },
+  { value: '30%', label: 'Faster Approvals' },
+  { value: '97%', label: 'On‑time Phases' },
 ]
 
 export const LANDING_TESTIMONIALS: Testimonial[] = [
   {
     id: '1',
     name: 'Kofi Mensah',
-    role: 'Client Builder',
+    role: 'Homeowner',
     location: 'Accra',
-    content: 'BuildEase has all I needed for my dream journey as a first-time homebuilder. It helped me stay organized!',
+    content: 'BuildEase helped me stay organized and on budget from day one. I always knew what was next.',
     avatar: '/images/avatars/person-2.jpg',
   },
   {
     id: '2',
     name: 'Ama Owusu',
-    role: 'Small Contractor',
+    role: 'Contractor',
     location: 'Kumasi',
-    content: 'As a contractor, I find the tools so easy to use. My clients love how transparent the process is!',
+    content: 'Simple to use, powerful where it matters. My clients love the transparency and quick updates.',
     avatar: '/images/avatars/person-3.jpg',
   },
 ]

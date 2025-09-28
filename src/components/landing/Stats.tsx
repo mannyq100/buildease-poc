@@ -7,6 +7,41 @@ interface StatsProps {
 }
 
 export function Stats({ stats }: StatsProps) {
+  function AnimatedStatValue({ value }: { value: string }) {
+    // Extract numeric portion and suffix (e.g., 1500 + '+', 30 + '%')
+    const match = value.match(/[0-9,.]+/)
+    const numericStr = match ? match[0] : ''
+    const suffix = match ? value.slice(match[0].length) : value
+    const target = Number(numericStr.replace(/,/g, '')) || 0
+
+    const [display, setDisplay] = React.useState(0)
+
+    React.useEffect(() => {
+      let raf = 0
+      const duration = 900 // ms
+      const start = performance.now()
+
+      const tick = (now: number) => {
+        const elapsed = now - start
+        const p = Math.min(1, elapsed / duration)
+        const eased = 1 - Math.pow(1 - p, 3) // easeOutCubic
+        setDisplay(Math.round(target * eased))
+        if (p < 1) raf = requestAnimationFrame(tick)
+      }
+
+      raf = requestAnimationFrame(tick)
+      return () => cancelAnimationFrame(raf)
+    }, [target])
+
+    const formatted = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(display)
+    return (
+      <>
+        {numericStr ? formatted : value}
+        {numericStr ? suffix : ''}
+      </>
+    )
+  }
+
   return (
     <section className="py-0 bg-transparent relative">
       <div className="container px-4 mx-auto">
@@ -41,7 +76,7 @@ export function Stats({ stats }: StatsProps) {
                   whileHover={{ scale: 1.05 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 >
-                  {stat.value}
+                  <AnimatedStatValue value={stat.value} />
                 </motion.div>
                 
                 <div className="text-gray-600 font-opensans text-sm md:text-base font-medium tracking-wide relative z-10 group-hover:text-gray-800 transition-colors duration-300">

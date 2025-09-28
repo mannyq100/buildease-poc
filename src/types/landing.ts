@@ -9,7 +9,18 @@ export interface Feature {
 export interface FeatureData {
   title: string
   description: string
-  iconPath: string
+  // Optional icon fields: prefer iconName mapped to lucide-react; fallback to raw SVG path
+  iconName?:
+    | 'dashboard'
+    | 'budget'
+    | 'phases'
+    | 'schedule'
+    | 'team'
+    | 'documents'
+    | 'reports'
+    | 'mobile'
+    | 'security'
+  iconPath?: string
 }
 
 export interface Step {

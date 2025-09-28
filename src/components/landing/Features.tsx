@@ -1,4 +1,3 @@
-import React from 'react'
 import { motion } from 'framer-motion'
 import { Feature } from '@/types/landing'
 import { FeatureCard } from './FeatureCard'
@@ -56,15 +55,16 @@ export function Features({ features }: FeaturesProps) {
 
         {/* Feature Grid */}
         <motion.div 
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 max-w-7xl mx-auto"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true, margin: "-50px" }}
           transition={{ duration: 0.8, delay: 0.2 }}
         >
-          {features.slice(0, 6).map((feature, index) => (
-            <FeatureCard key={index} feature={feature} index={index} />
-          ))}
+          <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 max-w-7xl mx-auto auto-rows-min">
+            {features.map((feature, index) => (
+              <FeatureCard key={index} feature={feature} index={index} />
+            ))}
+          </motion.div>
         </motion.div>
       </div>
     </section>
