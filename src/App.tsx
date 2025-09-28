@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ToastContextProvider } from "@/components/ui/toast-context";
 import { HelmetProvider } from "react-helmet-async";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import ConfigurationErrorBoundary from "@/components/ConfigurationErrorBoundary";
 
 // Libraries
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -117,13 +118,14 @@ function App() {
   }, []);
 
   return (
-    <BrowserRouter>
-      <LazyMotion features={domAnimation}>
-        <QueryClientProvider client={queryClient}>
-          <ThemeProvider>
-            <HelmetProvider>
-              <TooltipProvider>
-                <ToastContextProvider>
+    <ConfigurationErrorBoundary>
+      <BrowserRouter>
+        <LazyMotion features={domAnimation}>
+          <QueryClientProvider client={queryClient}>
+            <ThemeProvider>
+              <HelmetProvider>
+                <TooltipProvider>
+                  <ToastContextProvider>
                   <Toaster />
                   <Sonner />
                   {/* Display environment indicator in non-production environments */}
@@ -191,6 +193,7 @@ function App() {
         </QueryClientProvider>
       </LazyMotion>
     </BrowserRouter>
+    </ConfigurationErrorBoundary>
   );
 }
 

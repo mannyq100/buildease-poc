@@ -1,40 +1,44 @@
 /**
- * Unified Media types for BuildEase construction management
- * Unified interface for all media-related operations
+ * Media Types for BuildEase Construction Management
  * 
- * STANDARDIZED PROPERTIES (Phase 1 Enhancement):
- * - Consistent naming across all components
- * - Computed properties for UI convenience
- * - Backward compatibility maintained
+ * Clean architecture with:
+ * - Type-safe category system
+ * - Relative storage paths (no URL coupling)  
+ * - Consistent field naming across components
  */
 
 import type { MediaCategory } from '@/types/database';
 
 export interface MediaItem {
-  // Core database fields (standardized names)
+  // Core fields
   id: string;
   name: string;
   description?: string;
   category: MediaCategory;
-  mediaType: 'PHOTO' | 'VIDEO' | 'DOCUMENT'; // Standardized from media_type
-  projectId: string; // Standardized from project_id
-  phaseId?: string; // Standardized from phase_id
-  filePath: string; // Standardized from file_path
-  fileSize: number; // Standardized from file_size_bytes (in bytes)
-  mimeType: string; // Standardized from mime_type
-  createdAt: string; // Standardized from created_at
-  updatedAt: string; // Standardized from updated_at
+  mediaType: 'PHOTO' | 'VIDEO' | 'DOCUMENT';
+  projectId?: string | null; // NULL for user profiles
+  phaseId?: string;
+  
+  // Storage fields (relative paths only)
+  storagePath: string;    // e.g., "user/123/avatar.jpg"
+  bucketName: string;     // e.g., "profiles", "PHOTO", "VIDEO", "DOCUMENT"
+  
+  // File metadata
+  fileSize: number;       // Size in bytes
+  mimeType: string;
+  createdAt: string;
+  updatedAt: string;
   metadata: Record<string, unknown>;
   
-  // Computed properties for UI convenience
-  url: string; // Generated from filePath for easy access
-  thumbnailUrl?: string; // Optional thumbnail URL
+  // Computed properties (generated on-demand)
+  url?: string;
+  thumbnailUrl?: string;
   
-  // Database compatibility fields (match database schema)
+  // Database compatibility fields
   media_type?: 'PHOTO' | 'VIDEO' | 'DOCUMENT';
-  project_id?: string;
+  project_id?: string | null;
   phase_id?: string;
-  file_path?: string;
+  file_path?: string;     // Same as storagePath
   file_size_bytes?: number;
   mime_type?: string;
   created_at?: string;

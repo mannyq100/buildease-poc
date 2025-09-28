@@ -52,7 +52,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Secure storage access function
+-- Legacy storage access function (deprecated - use has_profile_storage_access for profiles)
 CREATE OR REPLACE FUNCTION private.has_storage_access(
     bucket_name TEXT, 
     file_path TEXT, 
@@ -74,24 +74,6 @@ BEGIN
     
     path_parts := string_to_array(file_path, '/');
     
-    -- User profile bucket: {user_id}/filename (exact match)
-    IF bucket_name = 'user_profiles' THEN
-        IF array_length(path_parts, 1) != 2 THEN
-            RETURN FALSE;
-        END IF;
-        
-        IF path_parts[1] != user_id::text THEN
-            RETURN FALSE;
-        END IF;
-        
-        -- Ensure filename doesn't contain dangerous characters
-        IF path_parts[2] ~ '[./\\]' THEN
-            RETURN FALSE;
-        END IF;
-        
-        RETURN TRUE;
-    END IF;
-    
     -- Media buckets (PHOTO, VIDEO, DOCUMENT): {project_id}/category/filename
     IF bucket_name IN ('PHOTO', 'VIDEO', 'DOCUMENT') THEN
         IF array_length(path_parts, 1) < 3 THEN
@@ -109,6 +91,48 @@ BEGIN
     
     RETURN FALSE;
 END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Enhanced profile storage access function for unified profiles bucket
+CREATE OR REPLACE FUNCTION private.has_profile_storage_access(
+    file_path TEXT, 
+    user_id UUID DEFAULT auth.uid()
+)
+RETURNS BOOLEAN AS $$
+DECLARE
+    path_parts TEXT[];
+    entity_id_uuid UUID;
+BEGIN
+    IF user_id IS NULL THEN
+        RETURN FALSE;
+    END IF;
+    
+    -- Validate path security
+    IF NOT private.validate_storage_path(file_path) THEN
+        RETURN FALSE;
+    END IF;
+    
+    path_parts := string_to_array(file_path, '/');
+    
+    -- Expected format: user/{user_id}/filename OR project/{project_id}/filename
+    IF array_length(path_parts, 1) < 3 THEN
+        RETURN FALSE;
+    END IF;
+    
+    -- User profile: user/{user_id}/filename
+    IF path_parts[1] = 'user' THEN
+        entity_id_uuid := private.safe_uuid_cast(path_parts[2]);
+        RETURN entity_id_uuid = user_id;
+    END IF;
+    
+    -- Project profile: project/{project_id}/filename
+    IF path_parts[1] = 'project' THEN
+        entity_id_uuid := private.safe_uuid_cast(path_parts[2]);
+        RETURN private.has_project_access_direct(entity_id_uuid, user_id);
+    END IF;
+    
+    RETURN FALSE;
+    END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 
@@ -139,25 +163,18 @@ BEGIN
         ROUND(COALESCE(SUM(file_size_bytes), 0)::NUMERIC / (1024.0 * 1024.0), 2) as total_size_mb,
         COALESCE(
             jsonb_object_agg(
-                COALESCE(media_type::text, 'unknown'), 
-                type_count
-            ), 
+                media_type::text, 
+                COUNT(*)
+            ) FILTER (WHERE media_type IS NOT NULL), 
             '{}'::jsonb
         ) as media_types,
         COUNT(CASE WHEN created_at >= NOW() - INTERVAL '7 days' THEN 1 END)::INTEGER as recent_uploads,
         COUNT(CASE WHEN media_type = 'PHOTO' THEN 1 END)::INTEGER as photos_count,
         COUNT(CASE WHEN media_type = 'VIDEO' THEN 1 END)::INTEGER as videos_count,
         COUNT(CASE WHEN media_type = 'DOCUMENT' THEN 1 END)::INTEGER as documents_count
-    FROM (
-        SELECT 
-            media_type,
-            file_size_bytes,
-            created_at,
-            COUNT(*) as type_count
-        FROM construction_mgr.be_media_items 
-        WHERE project_id = project_uuid
-        GROUP BY media_type, file_size_bytes, created_at
-    ) subq;
+    FROM construction_mgr.be_media_items 
+    WHERE project_id = project_uuid
+    GROUP BY ();
 END;
 $$;
 
@@ -262,7 +279,7 @@ BEGIN
         WHEN 'VIDEO' THEN
             RETURN ARRAY['progress_video'];
         WHEN 'DOCUMENT' THEN
-            RETURN ARRAY['receipt', 'report', 'contract', 'permit', 'invoice', 'drawing', 'other_document'];
+            RETURN ARRAY['receipt', 'report', 'contract', 'permit', 'invoice', 'specification', 'schedule', 'drawing', 'manual', 'certificate', 'other_document'];
         ELSE
             RETURN ARRAY[]::TEXT[]; -- Empty array for invalid types
     END CASE;

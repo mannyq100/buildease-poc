@@ -154,7 +154,7 @@ CREATE POLICY "Users can delete projects they own"
     USING (owner_id = auth.uid());
 
 -- RLS policy for project budget
-CREATE POLICY "Only members with VIEW_BUDGET permission can see project budget"
+CREATE POLICY "View project budget with permission"
     ON construction_mgr.be_project
     FOR SELECT
     USING (
@@ -260,7 +260,7 @@ CREATE POLICY "Project participants with CONTRACTOR role can update phases"
     );
 
 -- Phase budget RLS policy
-CREATE POLICY "Only members with VIEW_BUDGET permission can see phase budget details"
+CREATE POLICY "View phase budget with permission"
     ON construction_mgr.be_phase
     FOR SELECT
     USING (
@@ -412,7 +412,7 @@ CREATE POLICY "Users can delete their own comments"
 -- Enable RLS on quality inspection table
 ALTER TABLE construction_mgr.be_quality_inspection ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can view quality inspections for phases they have access to"
+CREATE POLICY "View quality inspections with access"
     ON construction_mgr.be_quality_inspection
     FOR SELECT
     USING (
@@ -435,7 +435,7 @@ CREATE POLICY "Project owners can manage quality inspections"
         )
     );
 
-CREATE POLICY "Project participants with ADMIN role can manage quality inspections"
+CREATE POLICY "Admin role manage quality inspections"
     ON construction_mgr.be_quality_inspection
     FOR ALL
     USING (
@@ -457,7 +457,7 @@ CREATE POLICY "Inspectors can update their own inspections"
         inspector_id = auth.uid()
     );
 
-CREATE POLICY "Project participants with CONTRACTOR role can create and update inspections"
+CREATE POLICY "Contractor role manage inspections"
     ON construction_mgr.be_quality_inspection
     FOR ALL
     USING (
@@ -520,7 +520,7 @@ CREATE POLICY "Service role can manage project activities"
 -- Enable RLS on financial transaction table
 ALTER TABLE construction_mgr.financial_transaction ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can view financial transactions for projects they have access to"
+CREATE POLICY "View financial transactions with access"
     ON construction_mgr.financial_transaction
     FOR SELECT
     USING (
@@ -534,7 +534,7 @@ CREATE POLICY "Project owners can manage financial transactions"
         private.is_project_owner_direct(project_id, auth.uid())
     );
 
-CREATE POLICY "Project participants with ADMIN role can manage financial transactions"
+CREATE POLICY "Admin role manage financial transactions"
     ON construction_mgr.financial_transaction
     FOR ALL
     USING (
@@ -609,7 +609,7 @@ CREATE POLICY "Project participants with SUPPLIER role can update materials"
 -- Enable RLS on material transaction table
 ALTER TABLE construction_mgr.material_transaction ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can view material transactions for projects they have access to"
+CREATE POLICY "View material transactions with access"
     ON construction_mgr.material_transaction
     FOR SELECT
     USING (
@@ -633,17 +633,27 @@ ALTER TABLE construction_mgr.be_media_items ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view media items for accessible projects"
     ON construction_mgr.be_media_items
     FOR SELECT
-    USING (private.has_project_access_direct(project_id, auth.uid()));
+    USING (
+        (project_id IS NOT NULL AND private.has_project_access_direct(project_id, auth.uid())) OR
+        (project_id IS NULL AND category = 'profile' AND (metadata->>'uploadedBy')::uuid = auth.uid())
+    );
 
 CREATE POLICY "Users can manage media items for owned projects"
     ON construction_mgr.be_media_items
     FOR ALL
-    USING (private.is_project_owner_direct(project_id, auth.uid()));
+    USING (
+        (project_id IS NOT NULL AND private.is_project_owner_direct(project_id, auth.uid())) OR
+        (project_id IS NULL AND category = 'profile' AND (metadata->>'uploadedBy')::uuid = auth.uid())
+    );
 
 CREATE POLICY "Project members can create media items"
     ON construction_mgr.be_media_items
     FOR INSERT
-    WITH CHECK (private.has_project_access_direct(project_id, auth.uid()));
+    WITH CHECK (
+        (project_id IS NOT NULL AND private.has_project_access_direct(project_id, auth.uid())) OR
+        (project_id IS NULL AND category = 'profile' AND (metadata->>'uploadedBy')::uuid = auth.uid())
+    );
+
 
 -- =============================================================================
 -- REMOVED: Complex collection and processing table policies
@@ -701,22 +711,22 @@ USING (true) WITH CHECK (true);
 -- Users can view allowed buckets
 CREATE POLICY "Users can view allowed buckets"
 ON storage.buckets FOR SELECT TO authenticated
-USING (id IN ('user_profiles', 'PHOTO', 'VIDEO', 'DOCUMENT'));
+USING (id IN ('profiles', 'PHOTO', 'VIDEO', 'DOCUMENT'));
 
--- Storage object policies for user profiles (public bucket)
-CREATE POLICY "Public read access for user profiles"
+-- Storage object policies for unified profiles bucket (public bucket)
+CREATE POLICY "Public read access for profiles"
 ON storage.objects FOR SELECT
-USING (bucket_id = 'user_profiles');
+USING (bucket_id = 'profiles');
 
-CREATE POLICY "Users manage their profile files"
+CREATE POLICY "Users manage profile files"
 ON storage.objects FOR ALL TO authenticated
 USING (
-    bucket_id = 'user_profiles' 
-    AND private.has_storage_access('user_profiles', name, auth.uid())
+    bucket_id = 'profiles' 
+    AND private.has_profile_storage_access(name, auth.uid())
 )
 WITH CHECK (
-    bucket_id = 'user_profiles' 
-    AND private.has_storage_access('user_profiles', name, auth.uid())
+    bucket_id = 'profiles' 
+    AND private.has_profile_storage_access(name, auth.uid())
 );
 
 CREATE POLICY "Project members manage PHOTO files"

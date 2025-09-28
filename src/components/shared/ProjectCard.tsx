@@ -140,10 +140,10 @@ export function ProjectCard({
         
         {/* Enhanced Client and Owner */}
         <div className="space-y-2 mb-4">
-          <div className="flex items-center text-sm text-buildease-blue-700 dark:text-slate-400">
+          {/* <div className="flex items-center text-sm text-buildease-blue-700 dark:text-slate-400">
             <Building2 className="h-4 w-4 mr-2 flex-shrink-0 text-buildease-orange-600 dark:text-buildease-orange-400" />
             <span className="line-clamp-1 font-medium">{client}</span>
-          </div>
+          </div> */}
           {owner && (
             <div className="flex items-center text-xs text-slate-600 dark:text-slate-400">
               <Users className="h-3 w-3 mr-2 flex-shrink-0 text-green-600 dark:text-green-400" />

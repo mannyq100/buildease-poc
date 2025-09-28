@@ -326,7 +326,7 @@ export function initializeBundleOptimization() {
   const unsubscribe = monitor.subscribe((metrics) => {
     const budgetCheck = monitor.checkBudget();
     
-    if (!budgetCheck.passed && process.env.NODE_ENV === 'development') {
+    if (!budgetCheck.passed && import.meta.env.DEV) {
       console.warn('Performance budget violations:', budgetCheck.violations);
     }
 
@@ -347,7 +347,7 @@ export function initializeBundleOptimization() {
   // Add critical resource hints
   addResourceHints([
     { href: '/api', as: 'fetch', type: 'preconnect' },
-    { href: process.env.VITE_SUPABASE_URL || '', as: 'fetch', type: 'preconnect' },
+    { href: import.meta.env.VITE_SUPABASE_URL || '', as: 'fetch', type: 'preconnect' },
   ]);
 
   return {

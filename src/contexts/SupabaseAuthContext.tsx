@@ -492,11 +492,21 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         // Add other providers as needed
       }
       
+      // Generate redirect URL based on environment
+      const getRedirectUrl = () => {
+        // For production, always use the deployed domain
+        if (window.location.hostname === 'buildease-one.netlify.app') {
+          return 'https://buildease-one.netlify.app/auth/callback';
+        }
+        // For development or other environments
+        return `${window.location.origin}/auth/callback`;
+      };
+
       // Call Supabase Auth with provider-specific config
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: getRedirectUrl(),
           scopes,
           queryParams,
         },
@@ -688,8 +698,16 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const resetPassword = async (email: string) => {
     try {
       setAuthError(null);
+      // Generate redirect URL based on environment
+      const getResetRedirectUrl = () => {
+        if (window.location.hostname === 'buildease-one.netlify.app') {
+          return 'https://buildease-one.netlify.app/auth/reset-password';
+        }
+        return `${window.location.origin}/auth/reset-password`;
+      };
+
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
+        redirectTo: getResetRedirectUrl(),
       });
       
       if (error) {

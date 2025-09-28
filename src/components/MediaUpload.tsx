@@ -1,7 +1,6 @@
 /**
- * Unified Media Upload Component
- * Single component for all media upload types with mobile-first design
- * Replaces SimplifiedUpload (577 lines) with ~150 lines (74% reduction)
+ * MediaUpload Component - Clean Architecture
+ * Type-safe media upload with mobile-first design
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
@@ -129,17 +128,17 @@ const TYPE_CONFIG = {
     description: 'Upload invoices and billing documents',
     allowCamera: true
   },
-  blueprint: {
-    category: 'blueprint' as MediaCategory,
+  drawing: {
+    category: 'drawing' as MediaCategory,
     maxFiles: 20,
     accept: '.pdf,.dwg,.jpg,.jpeg,.png',
     icon: FileText,
-    label: 'Blueprints',
+    label: 'Technical Drawings',
     description: 'Upload blueprints and technical drawings',
     allowCamera: false
   },
-  other: {
-    category: 'other' as MediaCategory,
+  other_document: {
+    category: 'other_document' as MediaCategory,
     maxFiles: 30,
     accept: '*',
     icon: FileText,
@@ -190,7 +189,7 @@ export function MediaUpload({
   
   // Get config with fallback to prevent undefined access
   const config = TYPE_CONFIG[type] || {
-    category: 'other' as MediaCategory,
+    category: 'other_document' as MediaCategory,
     maxFiles: 10,
     accept: '*',
     icon: FileText,

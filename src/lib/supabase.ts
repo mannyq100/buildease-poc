@@ -6,11 +6,25 @@ import { createClient } from '@supabase/supabase-js'
 import { storageAdapter } from '../utils/auth/StorageAdapter'
 import { logger } from '../utils/core/logger'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
+// Validate environment variables
 if (!supabaseUrl || !supabaseAnonKey) {
-  logger.error('Missing Supabase environment variables. Make sure to set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY')
+  const missingVars = []
+  if (!supabaseUrl) missingVars.push('VITE_SUPABASE_URL')
+  if (!supabaseAnonKey) missingVars.push('VITE_SUPABASE_ANON_KEY')
+  
+  logger.error(`Missing Supabase environment variables: ${missingVars.join(', ')}`)
+  throw new Error(`Missing required environment variables: ${missingVars.join(', ')}. Please configure these in your deployment environment.`)
+}
+
+// Validate URL format
+try {
+  new URL(supabaseUrl)
+} catch {
+  logger.error('Invalid Supabase URL format:', supabaseUrl)
+  throw new Error('VITE_SUPABASE_URL must be a valid URL')
 }
 
 // Storage implementation for optimal performance

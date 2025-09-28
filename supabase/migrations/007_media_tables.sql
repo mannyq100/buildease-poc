@@ -11,7 +11,7 @@ CREATE TABLE construction_mgr.be_media_items (
     name VARCHAR(255) NOT NULL,
     description TEXT,
     media_type construction_mgr.media_type NOT NULL,
-    project_id UUID NOT NULL,
+    project_id UUID, -- Allow NULL for user profile images
     phase_id UUID,
     file_path TEXT NOT NULL UNIQUE,
     file_size_bytes BIGINT,
@@ -33,8 +33,15 @@ CREATE TABLE construction_mgr.be_media_items (
     -- Constraint to ensure valid media_type and category combinations
     CONSTRAINT chk_media_type_category_valid CHECK (
         (media_type = 'PHOTO' AND category IN ('profile', 'inspiration', 'progress')) OR
-        (media_type = 'VIDEO' AND category IN ('progress_video')) OR  
+        (media_type = 'VIDEO' AND category IN ('progress_video')) OR
         (media_type = 'DOCUMENT' AND category IN ('receipt', 'report', 'contract', 'permit', 'invoice', 'specification', 'schedule', 'drawing', 'manual', 'certificate', 'other_document'))
+    ),
+    
+    -- Constraint for project_id: profile images can be user profiles (NULL) or project profiles (with project_id)
+    -- Non-profile media must have a project_id
+    CONSTRAINT chk_project_id_requirement CHECK (
+        (category = 'profile') OR 
+        (category != 'profile' AND project_id IS NOT NULL)
     )
 );
 
@@ -69,9 +76,11 @@ CREATE INDEX idx_media_metadata ON construction_mgr.be_media_items USING gin (me
 -- Storage buckets for BuildEase media types
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES 
-  ('user_profiles', 'user_profiles', true, 10485760, 
+  -- Unified profiles bucket for both user and project profile images
+  ('profiles', 'profiles', true, 10485760, 
    ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif']),
   
+  -- Private buckets for project media
   ('PHOTO', 'PHOTO', false, 52428800,
    ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/tiff']),
    

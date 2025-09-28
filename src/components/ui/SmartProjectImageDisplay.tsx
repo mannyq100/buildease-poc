@@ -1,65 +1,36 @@
 /**
  * SmartProjectImageDisplay.tsx
  * Enhanced project image display with automatic URL validation and refresh
- * Handles expired signed URLs gracefully
+ * Optimized for project profile images with fallback handling
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { ProjectImageDisplay } from './project-image-display';
 import { useAutoRefreshUrl } from '@/hooks/useAutoRefreshUrl';
 import { useProjectProfileImage, getProfileImageUrls } from '@/hooks/useProjectProfileImage';
 import { isSignedUrlExpired } from '@/services/URLValidator';
+import { supabase } from '@/lib/supabase';
 
-// Utility function to extract mediaId from Supabase signed URL
-function extractMediaIdFromUrl(url: string | null | undefined): string | undefined {
-  if (!url) return undefined;
+// Utility function to convert storage path to public URL
+function getPublicUrlFromPath(path: string | null | undefined): string | null {
+  if (!path) return null;
   
-  try {
-    // Supabase signed URLs typically have format: /storage/v1/object/sign/BUCKET/mediaId/path...
-    // Extract the UUID part after the bucket name
-    const urlObj = new URL(url);
-    const pathParts = urlObj.pathname.split('/');
-    
-    // Find the bucket index and get the next part (should be mediaId)
-    const bucketIndex = pathParts.findIndex(part => ['PHOTO', 'VIDEO', 'DOCUMENT'].includes(part));
-    if (bucketIndex >= 0 && pathParts[bucketIndex + 1]) {
-      const possibleMediaId = pathParts[bucketIndex + 1];
-      // Validate it looks like a UUID
-      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(possibleMediaId)) {
-        return possibleMediaId;
-      }
+  // Return as-is if already a full URL
+  if (path.startsWith('http')) return path;
+  
+  // Convert storage path to public URL
+  if (path.includes('/')) {
+    try {
+      const { data } = supabase.storage.from('profiles').getPublicUrl(path);
+      return data.publicUrl;
+    } catch (error) {
+      console.warn('Failed to generate public URL from path:', path, error);
+      return null;
     }
-  } catch (error) {
-    console.warn('Failed to extract mediaId from URL:', url, error);
   }
   
-  return undefined;
+  return path;
 }
 
-// Utility function to extract projectId from URL path (for future profile image lookup)
-function extractProjectIdFromUrl(url: string | null | undefined): string | undefined {
-  if (!url) return undefined;
-  
-  try {
-    const urlObj = new URL(url);
-    const pathParts = urlObj.pathname.split('/');
-    
-    // Look for a UUID in the path that might be a project ID
-    // This is less reliable but could be useful for debugging
-    for (const part of pathParts) {
-      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(part)) {
-        // Skip the mediaId we already found
-        const mediaId = extractMediaIdFromUrl(url);
-        if (part !== mediaId) {
-          return part;
-        }
-      }
-    }
-  } catch (error) {
-    console.warn('Failed to extract projectId from URL:', url, error);
-  }
-  
-  return undefined;
-}
 
 interface SmartProjectImageDisplayProps {
   /** Primary image URL (profile_image_url) */
@@ -99,140 +70,119 @@ export function SmartProjectImageDisplay({
   onError
 }: SmartProjectImageDisplayProps) {
   
-  const [manualRefreshCount, setManualRefreshCount] = useState(0);
   const [knownBrokenMediaIds, setKnownBrokenMediaIds] = useState<Set<string>>(new Set());
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Query current profile image if projectId is provided (primary method)
   const { data: profileImageData, isLoading: isLoadingProfile } = useProjectProfileImage(projectId);
-  const profileUrls = getProfileImageUrls(profileImageData);
   
-  // Determine the best source URLs to use
-  const effectiveSrc = profileUrls.imageUrl || src;
-  const effectiveFallbackSrc = profileUrls.thumbnailUrl || fallbackSrc;
-  const effectiveMediaId = profileUrls.mediaId || mediaId || extractMediaIdFromUrl(effectiveSrc) || extractMediaIdFromUrl(effectiveFallbackSrc);
+  // Memoize profile URLs to prevent unnecessary recalculations
+  const profileUrls = useMemo(() => getProfileImageUrls(profileImageData), [profileImageData]);
   
-  // Extract mediaId from URL if not provided explicitly (fallback)
-  const resolvedMediaId = effectiveMediaId;
+  // Determine effective URLs and media ID
+  const { effectiveSrc, effectiveFallbackSrc, resolvedMediaId } = useMemo(() => {
+    const src_ = profileUrls.imageUrl || src;
+    const fallbackSrc_ = profileUrls.thumbnailUrl || fallbackSrc;
+    
+    // Only use real media IDs (not synthetic ones from project_summary)
+    const mediaId_ = (profileUrls.mediaId && !profileUrls.mediaId.startsWith('project-')) 
+      ? profileUrls.mediaId 
+      : mediaId;
+    
+    return {
+      effectiveSrc: src_,
+      effectiveFallbackSrc: fallbackSrc_,
+      resolvedMediaId: mediaId_
+    };
+  }, [profileUrls, src, fallbackSrc, mediaId]);
   
-  // Use auto-refresh hook if we have a mediaId for dynamic URL refresh
+  // Use auto-refresh hook only for real media IDs (not profile images from project_summary)
   const autoRefreshResult = useAutoRefreshUrl(
     resolvedMediaId, 
     effectiveSrc, 
     {
-      autoRefresh: true,
-      onRefresh: (newUrl) => {
-        console.log(`🔄 Profile image URL refreshed for media ${resolvedMediaId}: ${newUrl}`);
-      },
+      autoRefresh: !!resolvedMediaId,
       onRefreshError: (error) => {
-        // Reduce console noise for common media not found errors
-        if (error.message.includes('not found')) {
-          console.warn(`Media ${resolvedMediaId} no longer exists, will use fallback image. The project's profile_image_url may need to be updated to point to a current media item.`);
-          // Mark this mediaId as broken to avoid future refresh attempts
-          if (resolvedMediaId) {
-            setKnownBrokenMediaIds(prev => new Set(prev).add(resolvedMediaId));
-          }
-        } else {
-          console.error(`❌ Failed to refresh URL for media ${resolvedMediaId}:`, error);
+        if (error.message.includes('not found') && resolvedMediaId) {
+          setKnownBrokenMediaIds(prev => new Set(prev).add(resolvedMediaId));
         }
       }
     }
   );
   
   // Determine the best URL to use
-  const getBestUrl = useCallback(() => {
-    // If we have mediaId and auto-refresh is working, use that URL
+  const imageUrl = useMemo(() => {
+    // Priority 1: Profile images from project_summary (public URLs)
+    if (profileUrls.imageUrl) {
+      return getPublicUrlFromPath(profileUrls.imageUrl);
+    }
+    
+    // Priority 2: Auto-refreshed URL for media items
     if (resolvedMediaId && autoRefreshResult.url) {
       return autoRefreshResult.url;
     }
     
-    // Check if primary URL is expired
-    if (effectiveSrc && !isSignedUrlExpired(effectiveSrc)) {
-      return effectiveSrc;
+    // Priority 3: Primary URL if valid and not expired
+    const primaryUrl = getPublicUrlFromPath(effectiveSrc);
+    if (primaryUrl && !isSignedUrlExpired(primaryUrl)) {
+      return primaryUrl;
     }
     
-    // Check if fallback URL is expired
-    if (effectiveFallbackSrc && !isSignedUrlExpired(effectiveFallbackSrc)) {
-      return effectiveFallbackSrc;
+    // Priority 4: Fallback URL if valid and not expired
+    const fallbackUrl = getPublicUrlFromPath(effectiveFallbackSrc);
+    if (fallbackUrl && !isSignedUrlExpired(fallbackUrl)) {
+      return fallbackUrl;
     }
     
-    // Return whatever we have, even if expired (ProjectImageDisplay will handle fallback)
-    return effectiveSrc || effectiveFallbackSrc;
-  }, [effectiveSrc, effectiveFallbackSrc, resolvedMediaId, autoRefreshResult.url]);
-  
-  const [imageUrl, setImageUrl] = useState<string | null>(getBestUrl());
-  const [isRefreshing, setIsRefreshing] = useState(false);
+    // Last resort: return best available URL
+    return primaryUrl || fallbackUrl || effectiveSrc || effectiveFallbackSrc;
+  }, [
+    profileUrls.imageUrl,
+    resolvedMediaId,
+    autoRefreshResult.url,
+    effectiveSrc,
+    effectiveFallbackSrc
+  ]);
 
-  // Update URL when sources change or auto-refresh provides new URL
-  useEffect(() => {
-    const bestUrl = getBestUrl();
-    setImageUrl(bestUrl);
-  }, [getBestUrl]);
-
-  // Handle load error with URL refresh attempt
+  // Handle image load errors with optional refresh
   const handleImageError = useCallback(async (error: Event) => {
-    console.warn('Image load error, checking if URL needs refresh:', { src: imageUrl, mediaId: resolvedMediaId });
-    
-    // Don't try to refresh URLs for media items we know are broken
-    if (resolvedMediaId && knownBrokenMediaIds.has(resolvedMediaId)) {
-      console.warn(`Skipping refresh for known broken media ${resolvedMediaId}`);
+    // Skip refresh for known broken media or if already refreshing
+    if (!resolvedMediaId || 
+        knownBrokenMediaIds.has(resolvedMediaId) || 
+        isRefreshing || 
+        !autoRefreshResult.refresh) {
       onError?.(error);
       return;
     }
     
-    // If we have mediaId and haven't tried refreshing yet, attempt refresh
-    if (resolvedMediaId && !isRefreshing && autoRefreshResult.refresh) {
-      setIsRefreshing(true);
-      try {
-        await autoRefreshResult.refresh();
-        setManualRefreshCount(prev => prev + 1);
-        console.log(`🔄 URL refresh successful for media ${resolvedMediaId}`);
-        return; // Don't call onError if refresh was successful
-      } catch (refreshError) {
-        console.warn(`Failed to refresh URL for media ${resolvedMediaId}:`, refreshError.message);
-        // Continue to fallback handling - don't prevent image fallback
-      } finally {
-        setIsRefreshing(false);
-      }
+    // Attempt URL refresh for media items
+    setIsRefreshing(true);
+    try {
+      await autoRefreshResult.refresh();
+      return; // Success - don't call onError
+    } catch {
+      // Refresh failed, continue to fallback
+    } finally {
+      setIsRefreshing(false);
     }
     
-    // Call original error handler for fallback display
     onError?.(error);
-  }, [imageUrl, resolvedMediaId, isRefreshing, autoRefreshResult.refresh, onError, knownBrokenMediaIds]);
+  }, [resolvedMediaId, isRefreshing, autoRefreshResult.refresh, onError, knownBrokenMediaIds]);
 
-  // Handle load success
-  const handleLoad = useCallback(() => {
-    onLoad?.();
-  }, [onLoad]);
-
-  // Show loading state while refreshing URLs or loading profile data
-  if ((autoRefreshResult.isRefreshing || isRefreshing || isLoadingProfile) && !imageUrl) {
-    return (
-      <ProjectImageDisplay
-        src={null} // This will show the loader
-        alt={alt}
-        className={className}
-        fallbackClassName={fallbackClassName}
-        aspectRatio={aspectRatio}
-        priority={priority}
-        showLoadingState={true}
-        onLoad={handleLoad}
-        onError={handleImageError}
-      />
-    );
-  }
-
-  // Show the validated URL or let ProjectImageDisplay handle the fallback
+  // Determine loading state
+  const isLoading = autoRefreshResult.isRefreshing || isRefreshing || isLoadingProfile;
+  
   return (
     <ProjectImageDisplay
-      src={imageUrl}
+      src={isLoading && !imageUrl ? null : imageUrl}
       alt={alt}
       className={className}
       fallbackClassName={fallbackClassName}
       aspectRatio={aspectRatio}
       priority={priority}
-      showLoadingState={autoRefreshResult.isRefreshing || isRefreshing || isLoadingProfile}
+      showLoadingState={isLoading}
       showErrorState={true}
-      onLoad={handleLoad}
+      onLoad={onLoad}
       onError={handleImageError}
     />
   );

@@ -83,7 +83,7 @@ export function ProfileCard({
 
       // Use the unified MediaService for profile upload
       const results = await MediaService.upload([file], {
-        projectId: 'profile', // Special projectId for profile images
+        projectId: undefined, // No project for user profile images
         type: 'profile',
         userId: user.id,
         name: `Profile picture for ${user.id}`,
@@ -281,12 +281,12 @@ export function ProfileCard({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="company" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+            <Label htmlFor="companyName" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
               Company
             </Label>
             <Input
-              id="company"
-              name="company"
+              id="companyName"
+              name="companyName"
               value={formData.companyName}
               onChange={handleInputChange}
               className="h-11 border-slate-300 dark:border-slate-600 focus:border-buildease-blue-500 focus:ring-buildease-blue-500/20 transition-colors"

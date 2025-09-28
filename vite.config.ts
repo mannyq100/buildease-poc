@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { VitePWA } from 'vite-plugin-pwa';
 import path from "path";
 
 export default defineConfig({
@@ -14,6 +15,25 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg}']
+      },
+      manifest: {
+        name: 'BuildEase Construction Management',
+        short_name: 'BuildEase',
+        description: 'Modern construction project management platform',
+        theme_color: '#2B6CB0',
+        icons: [
+          {
+            src: '/buildease-logo-1.svg',
+            sizes: 'any',
+            type: 'image/svg+xml'
+          }
+        ]
+      }
+    })
   ],
   build: {
     outDir: 'dist',

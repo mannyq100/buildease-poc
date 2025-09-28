@@ -66,7 +66,7 @@ profile_image_agg AS (
     SELECT DISTINCT ON (m.project_id)
         m.project_id,
         m.file_path as profile_image_url,
-        m.thumbnail_url as profile_image_thumbnail_url
+        m.file_path as profile_image_thumbnail_url
     FROM construction_mgr.be_media_items m
     WHERE m.category = 'profile' 
         AND m.media_type = 'PHOTO'
@@ -243,6 +243,22 @@ LEFT JOIN construction_mgr.be_project p ON m.project_id = p.id;
 
 -- Phase details with timeline and budget
 CREATE OR REPLACE VIEW construction_mgr.phase_details AS
+WITH phase_media_counts AS (
+    SELECT 
+        phase_id,
+        COUNT(*) as media_count
+    FROM construction_mgr.be_media_items
+    WHERE phase_id IS NOT NULL
+    GROUP BY phase_id
+),
+phase_transaction_counts AS (
+    SELECT 
+        phase_id,
+        COUNT(*) as transaction_count
+    FROM construction_mgr.financial_transaction
+    WHERE phase_id IS NOT NULL
+    GROUP BY phase_id
+)
 SELECT
     ph.id,
     ph.name,
@@ -259,27 +275,23 @@ SELECT
     ph.budget->>'spent' AS budget_spent,
     ph.created_at,
     ph.updated_at,
-    (
-        SELECT COUNT(*)
-        FROM construction_mgr.be_media_items
-        WHERE phase_id = ph.id
-    ) AS media_count,
-    (
-        SELECT COUNT(*)
-        FROM construction_mgr.financial_transaction
-        WHERE phase_id = ph.id
-    ) AS transaction_count
+    COALESCE(pmc.media_count, 0) AS media_count,
+    COALESCE(ptc.transaction_count, 0) AS transaction_count
 FROM
     construction_mgr.be_phase ph
 JOIN
-    construction_mgr.be_project p ON ph.project_id = p.id;
+    construction_mgr.be_project p ON ph.project_id = p.id
+LEFT JOIN
+    phase_media_counts pmc ON pmc.phase_id = ph.id
+LEFT JOIN
+    phase_transaction_counts ptc ON ptc.phase_id = ph.id;
 
 -- Project activities with user details
 CREATE OR REPLACE VIEW construction_mgr.project_activities AS
 SELECT 
     pa.*,
     p.name as project_name,
-    u.first_name || ' ' || COALESCE(u.last_name, '') as full_user_name,
+    CONCAT(u.first_name, ' ', COALESCE(u.last_name, '')) as full_user_name,
     u.email as user_email
 FROM construction_mgr.be_project_activity pa
 LEFT JOIN construction_mgr.be_project p ON pa.project_id = p.id
@@ -344,13 +356,13 @@ SELECT
     m.updated_at,
     CASE 
         WHEN m.file_size_bytes IS NULL THEN 'unknown'
-        WHEN m.file_size_bytes < 1024 * 1024 THEN 'small'
-        WHEN m.file_size_bytes < 10 * 1024 * 1024 THEN 'medium'
+        WHEN m.file_size_bytes < 1048576 THEN 'small'  -- 1MB
+        WHEN m.file_size_bytes < 10485760 THEN 'medium'  -- 10MB
         ELSE 'large'
     END AS size_category
 FROM
     construction_mgr.be_media_items m
-JOIN
+LEFT JOIN
     construction_mgr.be_project p ON m.project_id = p.id
 LEFT JOIN
     construction_mgr.be_phase ph ON m.phase_id = ph.id;
@@ -393,7 +405,7 @@ WITH phase_task_metrics AS (
         COUNT(t.id) FILTER (WHERE t.status = 'IN_PROGRESS') as in_progress_tasks,
         COUNT(t.id) FILTER (WHERE t.status = 'PENDING') as pending_tasks,
         COUNT(t.id) FILTER (WHERE t.status = 'CANCELLED') as cancelled_tasks,
-            AVG(
+            COALESCE(AVG(
             CASE 
                 WHEN t.due_date < CURRENT_DATE AND t.status NOT IN ('COMPLETED', 'CANCELLED') THEN 100
                 WHEN t.due_date = CURRENT_DATE THEN 90
@@ -403,7 +415,7 @@ WITH phase_task_metrics AS (
                 WHEN t.priority = 'MEDIUM' THEN 40
                 ELSE 20
             END
-        ) as avg_urgency_score,
+        ), 0) as avg_urgency_score,
         -- Overdue task count
         COUNT(t.id) FILTER (WHERE t.due_date < CURRENT_DATE AND t.status NOT IN ('COMPLETED', 'CANCELLED')) as overdue_tasks,
         -- Due today/soon counts

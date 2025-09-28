@@ -1,6 +1,7 @@
 /**
- * Simplified Media Hook - Clean, performant media operations
- * Streamlined from 780 lines to ~150 lines while maintaining core functionality
+
+* Media Hook - Clean Architecture for BuildEase
+ * Type-safe media operations with React Query optimization
  */
 
 import { useState, useCallback, useMemo } from 'react';
@@ -46,7 +47,23 @@ export interface UploadOptions {
 const calculateStats = (items: MediaItem[]): MediaStats => {
   const stats: MediaStats = {
     total: items.length,
-    byCategory: { profile: 0, inspiration: 0, progress: 0, progress_video: 0, receipt: 0, report: 0, contract: 0, permit: 0, invoice: 0, blueprint: 0, other: 0 },
+    byCategory: { 
+      profile: 0, 
+      inspiration: 0, 
+      progress: 0, 
+      progress_video: 0, 
+      receipt: 0, 
+      report: 0, 
+      contract: 0, 
+      permit: 0, 
+      invoice: 0, 
+      specification: 0, 
+      schedule: 0, 
+      drawing: 0, 
+      manual: 0, 
+      certificate: 0, 
+      other_document: 0 
+    },
     byType: { PHOTO: 0, VIDEO: 0, DOCUMENT: 0 },
     totalSizeMB: 0
   };
@@ -133,7 +150,7 @@ export function useMedia(projectId: string, options: { filters?: MediaFilters; e
     mutationFn: async ({ files, options: uploadOptions }: { files: File[]; options?: UploadOptions }) => {
       if (!user) throw new Error('User must be authenticated');
       
-      const category = uploadOptions?.category || 'other';
+      const category = uploadOptions?.category || 'other_document';
       const context = {
         projectId,
         type: category,
