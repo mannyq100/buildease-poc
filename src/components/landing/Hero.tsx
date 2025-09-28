@@ -1,129 +1,197 @@
 import React from 'react'
 import { motion } from 'framer-motion'
+import { Stat } from '@/types/landing'
 
 interface HeroProps {
   onSignup: () => void
   onScrollToSection: (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => void
+  stats: Stat[]
 }
-export function Hero({ onSignup, onScrollToSection }: HeroProps) {
+
+export function Hero({ onSignup, onScrollToSection, stats }: HeroProps) {
+  // Animated stat value component
+  function AnimatedStatValue({ value }: { value: string }) {
+    const match = value.match(/[0-9,.]+/)
+    const numericStr = match ? match[0] : ''
+    const suffix = match ? value.slice(match[0].length) : value
+    const target = Number(numericStr.replace(/,/g, '')) || 0
+
+    const [display, setDisplay] = React.useState(0)
+
+    React.useEffect(() => {
+      let raf = 0
+      const duration = 1200 // ms
+      const start = performance.now()
+
+      const tick = (now: number) => {
+        const elapsed = now - start
+        const p = Math.min(1, elapsed / duration)
+        const eased = 1 - Math.pow(1 - p, 3) // easeOutCubic
+        setDisplay(Math.round(target * eased))
+        if (p < 1) raf = requestAnimationFrame(tick)
+      }
+
+      raf = requestAnimationFrame(tick)
+      return () => cancelAnimationFrame(raf)
+    }, [target])
+
+    const formatted = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(display)
+    return (
+      <>
+        {numericStr ? formatted : value}
+        {numericStr ? suffix : ''}
+      </>
+    )
+  }
+
   return (
-    <section className="relative overflow-hidden pt-16" style={{ minHeight: '90vh' }}>
-      {/* Dynamic Background */}
+    <section className="relative bg-gradient-to-br from-blue-50 via-white to-orange-50/30 pt-16 min-h-screen flex flex-col overflow-hidden">
+      {/* Enhanced Dark Background */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-900/85 via-gray-800/80 to-[#1E293B]/75 z-10"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-900/70 via-gray-800/60 to-blue-900/50 z-10"></div>
         <img 
-          src="/images/construction-01.png" 
-          alt="Construction site" 
-          className="w-full h-full object-cover scale-105"
+          src="/images/landing/hero-page-2.png" 
+          alt="Modern construction site with workers and equipment" 
+          className="w-full h-full object-cover"
+          loading="eager"
+          fetchPriority="high"
         />
-        <div className="absolute bottom-32 left-10 w-16 h-16 bg-gradient-to-tr from-[#2B6CB0]/20 to-[#1E40AF]/10 rounded-full blur-2xl" />
-        <div className="absolute top-1/2 left-1/4 w-12 h-12 bg-gradient-to-br from-[#10B981]/15 to-[#059669]/8 rounded-full blur-xl opacity-50" />
       </div>
       
-      {/* Content */}
-      <div className="container mx-auto px-4 py-16 md:py-20 relative z-20 h-full flex items-center">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-16 items-center w-full">
-          {/* Left: Value prop */}
-          <div className="text-center md:text-left">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-            >
-              {/* Trust Badge */}
-              <motion.div 
-              className="inline-flex items-center bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-6 py-3 mb-6"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                whileHover={{ scale: 1.05 }}
-              >
-                <div className="w-3 h-3 bg-green-400 rounded-full mr-3 animate-pulse"></div>
-                <span className="text-sm font-medium text-white/90 font-inter">Trusted by Construction Professionals</span>
-              </motion.div>
-             
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-inter mb-6 tracking-tight leading-tight text-white">
-                Run construction projects on time and on budget.
-              </h1>
-              
-              <p className="text-lg md:text-xl text-gray-200 font-opensans mb-10 leading-relaxed max-w-2xl md:max-w-none mx-auto md:mx-0">
-                Create a project, plan phases, control expenses, track progress, and deliver with confidence—built for the field.
-              </p>
-              
-              {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 md:gap-6 justify-center md:justify-start items-center mb-10">
-                <motion.button
-                  type="button"
-                  className="group bg-gradient-to-r from-[#ED8936] via-[#F59E0B] to-[#F56500] hover:from-[#F56500] hover:to-[#EA580C] text-white px-10 py-4 rounded-full text-lg font-semibold transition-all duration-300 font-inter shadow-2xl hover:shadow-orange-500/40 transform hover:scale-105 min-w-[220px] relative overflow-hidden"
-                  onClick={onSignup}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <span className="relative z-10">Get Started</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                </motion.button>
-                
-                <motion.a
-                  href="#how-it-works"
-                  className="group bg-white/10 backdrop-blur-md text-white border border-white/30 hover:bg-white/20 hover:border-white/50 px-10 py-4 rounded-full text-lg font-medium transition-all duration-300 font-inter flex items-center min-w-[220px] justify-center"
-                  onClick={(e) => onScrollToSection(e, 'how-it-works')}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <svg className="w-6 h-6 mr-3 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z"/>
-                  </svg>
-                  Watch Demo
-                </motion.a>
-              </div>
-              
-              {/* Trust Indicators */}
-              <motion.div 
-              className="flex flex-wrap justify-center md:justify-start items-center gap-6 md:gap-8 text-white/80 text-sm"
+      {/* Decorative Elements */}
+      <div className="absolute top-20 right-20 w-32 h-32 bg-gradient-to-br from-orange-200/30 to-orange-300/20 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-20 left-20 w-24 h-24 bg-gradient-to-tr from-blue-200/30 to-blue-300/20 rounded-full blur-2xl"></div>
+      
+      {/* Main Content */}
+      <div className="flex-1 flex items-center">
+        <div className="container mx-auto px-4 py-14 relative z-20">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-12 lg:gap-16 items-center max-w-7xl mx-auto">
+            {/* Left: Value proposition */}
+            <div className="text-center lg:text-left">
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.4 }}
+                transition={{ duration: 0.6 }}
               >
-                {[
-                  'Completely Free',
-                  'No Setup Required', 
-                  'Start Building today'
-                ].map((text, index) => (
-                  <div key={index} className="flex items-center">
-                    <svg className="w-5 h-5 mr-2 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                {/* Trust Badge */}
+                <div className="inline-flex items-center bg-gradient-to-r from-emerald-50/90 to-green-50/90 backdrop-blur-sm border border-emerald-200/80 rounded-full px-6 py-3 mb-6 shadow-lg">
+                  <div className="w-2 h-2 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full mr-3 animate-pulse"></div>
+                  <span className="text-sm font-medium text-emerald-800 font-inter">Trusted by Construction Professionals</span>
+                </div>
+               
+                <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold font-inter mb-6 tracking-tight leading-[1.1] text-white drop-shadow-lg">
+                  <span className="whitespace-nowrap">Build with Confidence</span>
+                  <br/>
+                  <span className="bg-gradient-to-r from-white to-gray-100 bg-clip-text text-transparent whitespace-nowrap">
+                    Manage with Ease
+                  </span>
+                </h1>
+                
+                <p className="text-xl md:text-2xl text-gray-100 font-opensans mb-8 leading-relaxed max-w-2xl mx-auto lg:mx-0 drop-shadow-md">
+                  Create projects, plan phases, control expenses, and track progress with confidence—built for the field.
+                </p>
+                
+                {/* CTA Buttons */}
+                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center mb-8">
+                  <button
+                    type="button"
+                    className="bg-gradient-to-r from-[#ED8936] to-[#DD7324] hover:from-[#DD7324] hover:to-[#CC6214] text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all duration-200 font-inter shadow-xl hover:shadow-2xl transform hover:scale-105 min-w-[200px]"
+                    onClick={onSignup}
+                  >
+                    Get Started Free
+                  </button>
+                  
+                  <a
+                    href="#how-it-works"
+                    className="text-white hover:text-gray-200 border-2 border-white/40 hover:border-white/60 backdrop-blur-sm bg-white/10 hover:bg-white/20 px-8 py-4 rounded-lg text-lg font-medium transition-all duration-200 font-inter flex items-center min-w-[200px] justify-center shadow-lg hover:shadow-xl"
+                    onClick={(e) => onScrollToSection(e, 'how-it-works')}
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"/>
                     </svg>
-                    {text}
-                  </div>
-                ))}
+                    Watch Demo
+                  </a>
+                </div>
+                
+                {/* Trust Indicators */}
+                <div className="flex flex-wrap justify-center lg:justify-start items-center gap-8 text-white/90 text-sm">
+                  {[
+                    'Completely Free',
+                    'No Setup Required', 
+                    'Start Building Today'
+                  ].map((text, index) => (
+                    <div key={index} className="flex items-center">
+                      <svg className="w-4 h-4 mr-2 text-green-400 drop-shadow-sm" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      <span className="drop-shadow-sm">{text}</span>
+                    </div>
+                  ))}
+                </div>
               </motion.div>
+            </div>
+
+            {/* Right: Product preview */}
+            <motion.div 
+              className="relative flex justify-center lg:justify-start"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-4 border border-white/20 max-w-m w-full">
+                <div className="rounded-xl overflow-hidden">
+                  <img
+                    src="/images/landing/projects-dashboard.png"
+                    alt="BuildEase projects dashboard showing project overview and progress tracking"
+                    className="w-full h-[300px] md:h-[300px] lg:h-[450px] object-cover"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="mt-4 grid grid-cols-3 gap-4">
+                  <div className="h-14 rounded-lg bg-gradient-to-r from-gray-100 to-gray-200"></div>
+                  <div className="h-14 rounded-lg bg-gradient-to-r from-blue-100 to-blue-200"></div>
+                  <div className="h-14 rounded-lg bg-gradient-to-r from-orange-100 to-orange-200"></div>
+                </div>
+              </div>
             </motion.div>
           </div>
+        </div>
+      </div>
 
-          {/* Right: Product mockup */}
-          <motion.div 
-            className="relative"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-          >
-            <div className="relative rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-3 md:p-4 shadow-2xl">
-              <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-[#2B6CB0]/40 via-transparent to-[#ED8936]/40 blur-lg opacity-40 pointer-events-none" />
-              <div className="relative rounded-xl overflow-hidden ring-1 ring-white/20">
-                <img
-                  src="/images/house-construction.jpg"
-                  alt="BuildEase project overview"
-                  className="w-full h-[260px] md:h-[360px] object-cover"
-                  loading="lazy"
-                />
-              </div>
-              <div className="mt-4 grid grid-cols-3 gap-2">
-                <div className="h-16 rounded-md bg-white/10 ring-1 ring-white/10"></div>
-                <div className="h-16 rounded-md bg-white/10 ring-1 ring-white/10"></div>
-                <div className="h-16 rounded-md bg-white/10 ring-1 ring-white/10"></div>
-              </div>
-            </div>
-          </motion.div>
+      {/* Stats Section - Integrated at bottom */}
+      <div className="relative z-20 pb-16">
+        <div className="container px-4 mx-auto">
+          <div className="max-w-6xl mx-auto">
+            <motion.div 
+              className="grid grid-cols-1 sm:grid-cols-3 gap-6"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+            >
+              {stats.map((stat, index) => (
+                <motion.div 
+                  key={index} 
+                  className="bg-white/10 backdrop-blur-md rounded-2xl p-6 text-center shadow-xl border border-white/20 hover:bg-white/20 transition-all duration-300 relative overflow-hidden group"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.6 + index * 0.1 }}
+                >
+                  {/* Decorative background */}
+                  <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-white/20 to-orange-200/20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                  
+                  <div className="relative z-10">
+                    <div className="text-4xl md:text-5xl font-bold font-inter bg-gradient-to-r from-white to-gray-100 bg-clip-text text-transparent mb-3 drop-shadow-lg">
+                      <AnimatedStatValue value={stat.value} />
+                    </div>
+                    
+                    <div className="text-white/90 font-opensans text-base md:text-lg font-medium drop-shadow-sm">
+                      {stat.label}
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
         </div>
       </div>
     </section>

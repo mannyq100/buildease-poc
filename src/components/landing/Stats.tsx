@@ -43,59 +43,35 @@ export function Stats({ stats }: StatsProps) {
   }
 
   return (
-    <section className="py-0 bg-transparent relative">
+    <section className="py-16 bg-gradient-to-br from-blue-50/50 via-white to-orange-50/30">
       <div className="container px-4 mx-auto">
-        <motion.div 
-          className="bg-white shadow-lg rounded-xl py-6 px-8 -mt-20 relative z-10 max-w-4xl mx-auto border border-gray-100"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-50px" }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-        >
-          {/* Subtle background effects */}
-          <div className="absolute inset-0 bg-gradient-to-br from-[#2B6CB0]/3 via-transparent to-[#ED8936]/3"></div>
-          <div className="absolute top-0 left-0 w-20 h-20 bg-gradient-to-br from-[#ED8936]/10 to-transparent rounded-full blur-3xl -translate-x-10 -translate-y-10"></div>
-          <div className="absolute bottom-0 right-0 w-24 h-24 bg-gradient-to-tl from-[#2B6CB0]/10 to-transparent rounded-full blur-3xl translate-x-12 translate-y-12"></div>
-          
-          <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
             {stats.map((stat, index) => (
               <motion.div 
                 key={index} 
-                className="flex flex-col items-center group relative"
+                className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 text-center shadow-lg border border-white/50 hover:shadow-xl hover:bg-white/80 transition-all duration-300 relative overflow-hidden"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                whileHover={{ scale: 1.02 }}
               >
-                {/* Animated background blob */}
-                <div className="absolute inset-0 bg-gradient-to-br from-[#2B6CB0]/10 to-[#ED8936]/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 scale-110 blur-xl"></div>
+                {/* Decorative background */}
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-100/40 to-orange-100/40 rounded-full blur-2xl"></div>
                 
-                <motion.div 
-                  className="text-3xl md:text-4xl lg:text-5xl font-bold font-inter text-gray-900 mb-3 relative z-10"
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                >
-                  <AnimatedStatValue value={stat.value} />
-                </motion.div>
-                
-                <div className="text-gray-600 font-opensans text-sm md:text-base font-medium tracking-wide relative z-10 group-hover:text-gray-800 transition-colors duration-300">
-                  {stat.label}
+                <div className="relative z-10">
+                  <div className="text-5xl md:text-6xl font-bold font-inter bg-gradient-to-r from-[#2B6CB0] to-[#1E40AF] bg-clip-text text-transparent mb-4">
+                    <AnimatedStatValue value={stat.value} />
+                  </div>
+                  
+                  <div className="text-gray-700 font-opensans text-lg font-medium">
+                    {stat.label}
+                  </div>
                 </div>
-                
-                {/* Separator line */}
-                {index < stats.length - 1 && (
-                  <div className="hidden sm:block absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-4 w-px h-16 bg-gradient-to-b from-transparent via-gray-200 to-transparent"></div>
-                )}
               </motion.div>
             ))}
           </div>
-          
-          {/* Animated border */}
-          <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#2B6CB0]/20 via-[#ED8936]/20 to-[#2B6CB0]/20 p-[1px] opacity-50">
-            <div className="w-full h-full bg-white rounded-2xl"></div>
-          </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   )

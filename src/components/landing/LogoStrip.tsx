@@ -9,7 +9,7 @@ const LOGOS = [
 
 export function LogoStrip() {
   return (
-    <section className="py-10 bg-white">
+    <section className="py-16 bg-white">
       <div className="container mx-auto px-4">
         <div className="text-center mb-6">
           <p className="text-xs uppercase tracking-wider text-gray-500">Trusted by builders</p>

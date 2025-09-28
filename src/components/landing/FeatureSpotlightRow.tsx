@@ -12,7 +12,7 @@ interface FeatureSpotlightRowProps {
 
 export function FeatureSpotlightRow({ title, description, bullets, imageSrc, imageAlt = '', reverse }: FeatureSpotlightRowProps) {
   return (
-    <section className="py-16 bg-white">
+    <section className="py-12 bg-white">
       <div className="container mx-auto px-4">
         <div className={cn(
           'grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 items-center',

@@ -10,7 +10,7 @@ export const LANDING_FEATURES_DATA: FeatureData[] = [
   { title: 'Documents & Media', description: 'Auto-save images and organize permits, contracts, and files.', iconName: 'documents' },
   { title: 'Reports & Analytics', description: 'Share progress vs plan, trends, and insights with stakeholders.', iconName: 'reports' },
   { title: 'Mobile-First', description: 'Fast on-site, touch-friendly, and optimized for the field.', iconName: 'mobile' },
-  { title: 'Secure by Design', description: 'Supabase auth, storage, and RLS-powered data protection.', iconName: 'security' },
+  { title: 'Secure by Design', description: 'Enterprise-grade authentication, secure storage, and data protection.', iconName: 'security' },
 ]
 
 export const HOW_IT_WORKS_STEPS: Step[] = [

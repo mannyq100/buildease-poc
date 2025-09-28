@@ -15,7 +15,7 @@ const FAQS = [
   },
   {
     q: 'How are my files stored?',
-    a: 'Documents and images are stored securely with Supabase Storage. Access is controlled using row-level security (RLS) policies.'
+    a: 'Documents and images are stored securely in the cloud with enterprise-grade security and access controls.'
   }
 ]
 
