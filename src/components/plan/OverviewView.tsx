@@ -6,7 +6,8 @@ import { PhaseCard } from './PhaseCard';
 import { LazyPhaseList } from './LazyPhaseList';
 import { MobileStickyActionBar } from './MobileStickyActionBar';
 import { motion } from 'framer-motion';
-import { formatDate, containerVariants, itemVariants } from '@/utils/plan-helpers';
+import { containerVariants, itemVariants } from '@/utils/plan-helpers';
+import { formatDate } from '@/utils/core/date';
 import { OverviewViewProps } from '@/types/plan/views';
 import {
   DndContext,

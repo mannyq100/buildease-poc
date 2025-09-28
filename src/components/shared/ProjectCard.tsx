@@ -1,7 +1,7 @@
 // React import removed as it's not needed in React 17+
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Building2, Calendar, Users } from 'lucide-react';
+import { Calendar, Users } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { SmartProjectImageDisplay } from '@/components/ui/SmartProjectImageDisplay';
 import { cn } from '@/utils/core/ui';

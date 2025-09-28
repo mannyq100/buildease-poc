@@ -3,30 +3,11 @@
  */
 import { Expense, TopCategory } from '@/types/expenses';
 
-/**
- * Format currency amount as a string with dollar sign and commas
- * @param amount The numeric amount to format
- * @returns Formatted currency string
- */
-export function formatCurrency(amount: number): string {
-  return `$${amount.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })}`;
-}
+// Currency formatting moved to @/utils/core/currencyUtils
+// Use formatCurrency from there for better currency support
 
-/**
- * Format a date string into a localized date format
- * @param dateString The date string to format (YYYY-MM-DD)
- * @returns Formatted date string
- */
-export function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
-}
+// Date formatting moved to @/utils/core/date
+// Use formatDate from there for consistent date handling
 
 /**
  * Calculate expenses grouped by category

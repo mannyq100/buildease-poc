@@ -91,34 +91,8 @@ export function calculateCostEstimate(formData: ProjectFormData): CostEstimate {
   return { min, max };
 }
 
-/**
- * Format currency based on currency code
- * 
- * @param amount The amount to format
- * @param currency The currency code (cedi, usd, etc.)
- * @returns Formatted currency string
- */
-export function formatCurrency(amount: number, currency: string): string {
-  let symbol = '₵';
-  let localeName = 'en-GH';
-  
-  switch (currency) {
-    case 'usd':
-      symbol = '$';
-      localeName = 'en-US';
-      break;
-    case 'euro':
-      symbol = '€';
-      localeName = 'de-DE';
-      break;
-    case 'gbp':
-      symbol = '£';
-      localeName = 'en-GB';
-      break;
-  }
-  
-  return `${symbol}${amount.toLocaleString(localeName)}`;
-}
+// Currency formatting moved to @/utils/core/currencyUtils
+// Use formatCurrency from there for comprehensive currency support
 
 /**
  * Calculate tab completion percentage

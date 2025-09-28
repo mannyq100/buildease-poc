@@ -81,10 +81,7 @@ export interface DashboardCardProps {
   action?: ReactNode;
 }
 
-/**
- * Status types for various components
- */
-export type StatusType = 'completed' | 'in-progress' | 'pending' | 'delayed' | 'cancelled' | 'warning' | 'success';
+// StatusType now imported from common.ts to avoid duplication
 
 /**
  * Navigation item structure

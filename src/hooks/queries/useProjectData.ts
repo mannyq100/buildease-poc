@@ -244,16 +244,16 @@ export function useProjectData(projectId: string) {
           description: task.description || '',
           status: task.status as 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'BLOCKED' | 'CANCELLED',
           priority: task.priority as 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT',
-          created_by: '', // TODO: Add from database if available
+          created_by: '', // Not available in current task_priority_analysis view
           assigned_to: task.assigned_to,
-          start_date: undefined, // TODO: Add from database if available  
+          start_date: undefined, // Not available in current task_priority_analysis view  
           due_date: task.due_date,
-          completed_at: undefined, // TODO: Add from database if available
+          completed_at: undefined, // Not available in current task_priority_analysis view
           completed_by: undefined,
           completion_notes: undefined,
-          dependencies: [], // TODO: Add from database if available
-          tags: [], // TODO: Add from database if available
-          comments: [], // TODO: Add from database if available
+          dependencies: [], // Task dependencies not implemented yet
+          tags: [], // Task tagging not implemented yet
+          comments: [], // Task comments loaded separately when needed
           created_at: task.created_at,
           updated_at: task.updated_at,
           // Server-calculated optimization fields
@@ -270,7 +270,7 @@ export function useProjectData(projectId: string) {
           category: 'CONSTRUCTION',
           status: phase.status,
           project_id: projectId,
-          details: {}, // TODO: Add from database if available
+          details: {}, // Phase details not implemented in current schema
           timeline: phase.timeline || {},
           budget: {
             allocated: phase.budget_allocated || 0,

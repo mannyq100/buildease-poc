@@ -5,7 +5,7 @@ import { motion as m } from 'framer-motion';
 import { MaterialModal } from '@/components/shared/modals/MaterialModal';
 import { Material } from '@/components/shared/modals';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { formatCurrency } from '@/utils/plan-helpers';
+import { formatCurrency } from '@/utils/core/currencyUtils';
 import { useMaterialModal } from '@/stores/modalStore';
 import { BudgetViewProps } from '@/types/plan/views';
 import {
@@ -108,7 +108,7 @@ export function BudgetView({ plan }: BudgetViewProps) {
       <div className="flex-1">
         <h3 className="text-sm font-semibold text-buildease-blue-800 dark:text-buildease-blue-200">{title}</h3>
         <p className="text-xl font-bold text-buildease-blue-800 dark:text-buildease-blue-200">
-          {formatCurrency(amount)}
+          {formatCurrency(amount, 'USD')}
         </p>
       </div>
       <div className="text-right">
@@ -143,7 +143,7 @@ export function BudgetView({ plan }: BudgetViewProps) {
             <div className="text-center mb-8">
               <p className="text-lg font-medium text-buildease-blue-600/80 dark:text-buildease-blue-400/80">Total Budget</p>
               <h2 className="text-4xl font-bold text-buildease-blue-800 dark:text-buildease-blue-200 tracking-tight mt-2">
-                {formatCurrency(calculatedTotals.total)}
+                {formatCurrency(calculatedTotals.total, 'USD')}
               </h2>
             </div>
             
@@ -229,7 +229,7 @@ export function BudgetView({ plan }: BudgetViewProps) {
                       <TableCell>{material.category}</TableCell>
                       <TableCell>{material.quantity} {material.unit}</TableCell>
                       <TableCell className="text-right font-semibold text-buildease-blue-800 dark:text-buildease-blue-200">
-                        {formatCurrency(material.cost || 0)}
+                        {formatCurrency(material.cost || 0, 'USD')}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">

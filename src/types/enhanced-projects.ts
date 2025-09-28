@@ -7,8 +7,6 @@ import type { Project, ProjectStatus } from './project';
 import type { ProjectSummary } from './projectSummary';
 import type { SupabaseErrorWithContext } from './enhanced-project';
 
-// Remove UIProject type - use Project instead
-// export type UIProject = Project; // No longer needed
 
 // Projects page specific filters
 export interface ProjectsFilters {

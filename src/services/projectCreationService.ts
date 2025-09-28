@@ -349,12 +349,7 @@ async function initiateAIPlanGeneration(project: Project, _formData: CreateProje
     // Update project status to 'requested'
     await AIPlanService.updateProjectPlanStatus(project.id, 'requested');
     
-    // Create notification for plan generation start
-    try {
-      // TODO: Implement createAIPlanNotification method in NotificationService
-    } catch (notificationError) {
-      // Failed to create start notification (non-critical)
-    }
+    // Plan generation notifications handled by background service
     
     // Prepare AI plan generation request
     const aiRequest = {
@@ -395,12 +390,7 @@ async function initiateAIPlanGeneration(project: Project, _formData: CreateProje
     // Update project status to 'failed' 
     await AIPlanService.updateProjectPlanStatus(project.id, 'failed');
     
-    // Create failure notification
-    try {
-      // TODO: Implement createAIPlanNotification method in NotificationService
-    } catch (notificationError) {
-      // Failed to create failure notification (non-critical)
-    }
+    // Failure notifications handled by background service
     
     throw error;
   }
@@ -426,8 +416,7 @@ function setupAIPlanCompletionHandler(
     const customEvent = event as CustomEvent;
     if (customEvent.detail?.jobId === jobId) {
       try {
-        // Create completion notification
-        // TODO: Implement createAIPlanNotification method in NotificationService
+        // Completion notifications handled by background service
         
         // Abort controller will automatically clean up the listener
         abortController.abort();

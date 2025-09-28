@@ -1,21 +1,14 @@
 /**
  * GanttChart - Enhanced visual timeline component for project phases
- * Beautiful, intuitive Gantt chart with improved aesthetics and usability
+ * Refactored for better maintainability and code organization
  * Mobile-first design with clear visual hierarchy
  */
 
 import React, { useMemo, useRef, useEffect, useState } from 'react';
+import { Edit3, Calendar, Plus } from 'lucide-react';
 import { cn } from '@/utils/core/ui';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { 
-  Calendar, 
-  ZoomIn, 
-  ZoomOut,
-  Maximize2,
-  Edit3,
-  Plus
-} from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   TimelinePhase,
   TimelineScale,
@@ -24,7 +17,6 @@ import {
   calculatePhasePosition,
   generateTimeMarkers,
   assignPhaseRows,
-  formatDuration,
   getTodayMarkerPosition,
   getPhaseTimelineColor,
   generateMilestones,
@@ -33,9 +25,14 @@ import {
   calculateDependencyArrows,
   generateDependencyPath,
   calculateCriticalPath,
-  getEffectivePhaseDate
+  getEffectivePhaseDate,
+  formatDuration
 } from '@/utils/timeline/timelineUtils';
 import { ProjectPhase } from '@/types/projectDetails';
+
+// Import refactored components
+import { GanttHeader } from './gantt/GanttHeader';
+import { TimelineHeader } from './gantt/TimelineHeader';
 
 interface GanttChartProps {
   phases: ProjectPhase[];
@@ -233,75 +230,14 @@ export function GanttChart({
 
   return (
     <Card className={cn('overflow-hidden shadow-lg border-0', className)}>
-      {/* Simplified Header */}
-      <div className="bg-gradient-to-r from-slate-50 to-white border-b border-slate-200/60 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-buildease-blue-500/10 text-buildease-blue-600">
-              <Calendar className="h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-slate-900">Timeline View</h3>
-              <p className="text-sm text-slate-500">Visual project schedule</p>
-            </div>
-          </div>
-          
-          {/* Enhanced Timeline Controls */}
-          <div className="flex items-center gap-2">
-            <div className="hidden sm:flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleZoomOut}
-                className="h-8 w-8 p-0 rounded-lg hover:bg-slate-100"
-                title="Zoom Out (Ctrl + -)"
-              >
-                <ZoomOut className="h-3.5 w-3.5 text-slate-600" />
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleZoomToFit}
-                className="h-8 w-8 p-0 rounded-lg hover:bg-slate-100"
-                title="Fit to View (Ctrl + F)"
-              >
-                <Maximize2 className="h-3.5 w-3.5 text-slate-600" />
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleZoomIn}
-                className="h-8 w-8 p-0 rounded-lg hover:bg-slate-100"
-                title="Zoom In (Ctrl + +)"
-              >
-                <ZoomIn className="h-3.5 w-3.5 text-slate-600" />
-              </Button>
-            </div>
-            
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={scrollToToday}
-              className="bg-white border-slate-200 hover:bg-slate-50 text-slate-700 shadow-sm"
-            >
-              <span className="hidden sm:inline">Today</span>
-              <span className="sm:hidden">📅</span>
-            </Button>
-            
-            {onAddPhase && (
-              <Button
-                size="sm"
-                onClick={onAddPhase}
-                className="bg-gradient-to-r from-buildease-blue-600 to-buildease-blue-700 hover:from-buildease-blue-700 hover:to-buildease-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                <span className="hidden sm:inline">Add Phase</span>
-                <span className="sm:hidden">Add</span>
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* Header */}
+      <GanttHeader
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onZoomToFit={handleZoomToFit}
+        onScrollToToday={scrollToToday}
+        onAddPhase={onAddPhase}
+      />
 
       <div className="bg-white">
         <div 
@@ -309,66 +245,15 @@ export function GanttChart({
           className="relative"
           style={{ height: chartHeight }}
         >
-          {/* Enhanced Timeline Header */}
-          <div 
-            className="sticky top-0 z-20 bg-gradient-to-b from-slate-50 to-slate-100/80 border-b border-slate-300/60 flex shadow-sm"
-            style={{ height: HEADER_HEIGHT }}
-          >
-            {/* Phase Names Header */}
-            <div 
-              className="flex-shrink-0 bg-gradient-to-r from-slate-100 to-slate-50 border-r border-slate-300/60 flex items-center justify-center shadow-sm"
-              style={{ width: PHASE_NAME_WIDTH }}
-            >
-              <div className="text-center">
-                <span className="text-sm font-bold text-slate-800">Project Phases</span>
-                <div className="text-xs text-slate-500 mt-1">{timelinePhases.length} total</div>
-              </div>
-            </div>
-            
-            {/* Timeline Scale Header */}
-            <div className="flex-1 timeline-scroll overflow-x-auto">
-              <div 
-                className="relative h-full bg-gradient-to-b from-white/50 to-transparent"
-                style={{ width: timelineScale.viewportWidth }}
-              >
-                {/* Enhanced Time Markers */}
-                {timeMarkers.map((marker, index) => (
-                  <div
-                    key={index}
-                    className="absolute flex flex-col items-center justify-center h-full group"
-                    style={{ left: marker.x }}
-                  >
-                    <div className={cn(
-                      'text-xs font-semibold mb-2 px-2 py-1 rounded-md transition-colors',
-                      marker.type === 'major' 
-                        ? 'text-slate-800 bg-white/80 shadow-sm' 
-                        : 'text-slate-600 bg-slate-100/60'
-                    )}>
-                      {marker.label}
-                    </div>
-                    <div className={cn(
-                      'transition-all duration-200',
-                      marker.type === 'major' 
-                        ? 'w-0.5 h-8 bg-slate-400 group-hover:bg-buildease-blue-500' 
-                        : 'w-px h-4 bg-slate-300 group-hover:bg-slate-400'
-                    )} />
-                  </div>
-                ))}
-                
-                {/* Enhanced Today Marker in Header */}
-                {todayPosition && (
-                  <div
-                    className="absolute top-0 w-1 bg-gradient-to-b from-red-500 to-red-600 z-10 h-full rounded-full shadow-lg"
-                    style={{ left: todayPosition - 2 }}
-                  >
-                    <div className="absolute -top-1 -left-8 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs px-3 py-1.5 rounded-full shadow-lg font-semibold">
-                      Today
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          {/* Timeline Header */}
+          <TimelineHeader
+            timeMarkers={timeMarkers}
+            timelineScale={timelineScale}
+            todayPosition={todayPosition}
+            phaseNameWidth={PHASE_NAME_WIDTH}
+            headerHeight={HEADER_HEIGHT}
+            phasesCount={timelinePhases.length}
+          />
 
           {/* Phase Rows */}
           <div className="flex">

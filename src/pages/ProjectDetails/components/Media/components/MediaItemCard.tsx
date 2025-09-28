@@ -42,12 +42,10 @@ const LazyImage = memo<{ src: string; alt: string; className?: string; mediaId?:
       setIsRefreshing(true);
       
       try {
-        console.warn(`Image load failed for media ${mediaId}, attempting URL refresh...`);
         const { MediaService } = await import('@/services/MediaService');
         const newUrl = await MediaService.getUrl(mediaId);
         
         if (newUrl && newUrl !== src) {
-          console.log(`🔄 URL refreshed for media ${mediaId}`);
           setRefreshedUrl(newUrl);
           // Safely trigger a reload by changing the src
           const img = e.currentTarget;
@@ -57,7 +55,10 @@ const LazyImage = memo<{ src: string; alt: string; className?: string; mediaId?:
           }
         }
       } catch (refreshError) {
-        console.error(`Failed to refresh URL for media ${mediaId}:`, refreshError);
+        // Silently handle refresh failures - media item might be deleted or inaccessible
+        if (!refreshError.message?.includes('not found')) {
+          console.warn(`Failed to refresh URL for media ${mediaId}:`, refreshError.message);
+        }
       } finally {
         setIsRefreshing(false);
       }

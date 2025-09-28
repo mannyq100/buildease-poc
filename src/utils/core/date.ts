@@ -20,7 +20,7 @@ export function formatDate(
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('en-US', options).format(date);
   } catch (error) {
-    console.error('Error formatting date:', error);
+    // Return original string if formatting fails
     return dateString;
   }
 }

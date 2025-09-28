@@ -66,7 +66,12 @@ export function useAutoRefreshUrl(
       onRefresh?.(newUrl);
     } catch (error) {
       const refreshError = error instanceof Error ? error : new Error('Failed to refresh URL');
-      console.error('URL refresh failed:', refreshError);
+      
+      // Only log non-"not found" errors to reduce console noise
+      if (!refreshError.message?.includes('not found')) {
+        console.warn('URL refresh failed:', refreshError.message);
+      }
+      
       onRefreshError?.(refreshError);
       setIsExpired(true);
     } finally {

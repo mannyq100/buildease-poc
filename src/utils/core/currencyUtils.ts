@@ -75,7 +75,7 @@ export function getCurrencyFromCountry(countryName: string): SupportedCurrency {
     
   } catch (error) {
     // Handle any errors gracefully
-    console.warn('Error getting currency from country:', error);
+    // Error handled gracefully, no logging needed in production
     return DEFAULT_CURRENCY;
   }
 }
@@ -169,7 +169,7 @@ export function getCountriesWithCurrency() {
       .sort((a, b) => a.name.localeCompare(b.name));
       
   } catch (error) {
-    console.warn('Error getting countries with currency:', error);
+    // Error handled gracefully, no logging needed in production
     return [];
   }
 }
@@ -213,7 +213,7 @@ export function getCurrencyExchangeContext(
   fromCurrency: SupportedCurrency,
   toCurrency: SupportedCurrency = 'USD'
 ) {
-  // TODO: Integrate with exchange rate API for live rates
+  // Future enhancement: Integrate with exchange rate API for live rates
   // For now, return placeholder structure
   return {
     from: fromCurrency,

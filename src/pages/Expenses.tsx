@@ -33,12 +33,15 @@ import { getProjectBudget } from '@/data/mock/expenses/budgetData';
 
 // Utilities
 import {
-  formatCurrency,
-  formatDate,
   calculateExpensesByCategory,
   findTopCategory,
   calculateGrowthInsights
 } from '@/utils/expenseUtils';
+import { formatCurrency as formatCurrencyBase } from '@/utils/core/currencyUtils';
+
+// Create a wrapper to maintain compatibility with existing components
+const formatCurrency = (amount: number) => formatCurrencyBase(amount, 'USD');
+import { formatDate } from '@/utils/core/date';
 
 // Import the components
 import {
